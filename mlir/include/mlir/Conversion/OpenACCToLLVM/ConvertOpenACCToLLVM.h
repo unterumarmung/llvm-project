@@ -14,6 +14,7 @@
 namespace mlir {
 class LLVMTypeConverter;
 class ModuleOp;
+class ConversionTarget;
 template <typename T>
 class OperationPass;
 class RewritePatternSet;
@@ -65,6 +66,11 @@ public:
   void setBasePointer(OpBuilder &builder, Location loc, Value basePtr);
   void setSize(OpBuilder &builder, Location loc, Value size);
 };
+
+/// Configure dynamic conversion legality of regionless operations from OpenACC
+/// to LLVM.
+void configureOpenACCToLLVMConversionLegality(ConversionTarget &target,
+                                              LLVMTypeConverter &typeConverter);
 
 /// Collect the patterns to convert from the OpenACC dialect LLVMIR dialect.
 void populateOpenACCToLLVMConversionPatterns(LLVMTypeConverter &converter,

@@ -152,26 +152,8 @@ void mlir::populateOpenACCToLLVMConversionPatterns(
   patterns.add<LegalizeDataOpForLLVMTranslation<acc::UpdateOp>>(converter);
 }
 
-namespace {
-struct ConvertOpenACCToLLVMPass
-    : public impl::ConvertOpenACCToLLVMBase<ConvertOpenACCToLLVMPass> {
-  void runOnOperation() override;
-};
-} // namespace
-
-void ConvertOpenACCToLLVMPass::runOnOperation() {
-  auto op = getOperation();
-  auto *context = op.getContext();
-
-  // Convert to OpenACC operations with LLVM IR dialect
-  RewritePatternSet patterns(context);
-  LLVMTypeConverter converter(context);
-  populateOpenACCToLLVMConversionPatterns(converter, patterns);
-
-  ConversionTarget target(*context);
-  target.addLegalDialect<LLVM::LLVMDialect>();
-  target.addLegalOp<UnrealizedConversionCastOp>();
-
+void mlir::configureOpenACCToLLVMConversionLegality(
+    ConversionTarget &target, LLVMTypeConverter &typeConverter) {
   auto allDataOperandsAreConverted = [](ValueRange operands) {
     return llvm::all_of(operands, [](Value operand) {
       return DataDescriptor::isValid(operand) ||
@@ -232,6 +214,29 @@ void ConvertOpenACCToLLVMPass::runOnOperation() {
         return allDataOperandsAreConverted(op.hostOperands()) &&
                allDataOperandsAreConverted(op.deviceOperands());
       });
+}
+
+namespace {
+struct ConvertOpenACCToLLVMPass
+    : public impl::ConvertOpenACCToLLVMBase<ConvertOpenACCToLLVMPass> {
+  void runOnOperation() override;
+};
+} // namespace
+
+void ConvertOpenACCToLLVMPass::runOnOperation() {
+  auto op = getOperation();
+  auto *context = op.getContext();
+
+  // Convert to OpenACC operations with LLVM IR dialect
+  RewritePatternSet patterns(context);
+  LLVMTypeConverter converter(context);
+  populateOpenACCToLLVMConversionPatterns(converter, patterns);
+
+  ConversionTarget target(*context);
+  target.addLegalDialect<LLVM::LLVMDialect>();
+  target.addLegalOp<UnrealizedConversionCastOp>();
+
+  configureOpenACCToLLVMConversionLegality(target, converter);
 
   if (failed(applyPartialConversion(op, target, std::move(patterns))))
     signalPassFailure();
