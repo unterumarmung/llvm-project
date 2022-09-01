@@ -87,6 +87,7 @@ class LegalizeDataOpForLLVMTranslation : public ConvertOpToLLVMPattern<Op> {
   LogicalResult
   matchAndRewrite(Op op, typename Op::Adaptor adaptor,
                   ConversionPatternRewriter &builder) const override {
+    llvm::errs() << *op->getParentOp() << "\n\n";
     Location loc = op.getLoc();
     TypeConverter *converter = ConvertToLLVMPattern::getTypeConverter();
 

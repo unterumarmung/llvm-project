@@ -27,8 +27,10 @@
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
 #include "mlir/Conversion/MathToLibm/MathToLibm.h"
 #include "mlir/Conversion/OpenMPToLLVM/ConvertOpenMPToLLVM.h"
+#include "mlir/Conversion/OpenACCToLLVM/ConvertOpenACCToLLVM.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/OpenMP/OpenMPDialect.h"
+#include "mlir/Dialect/OpenACC/OpenACC.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Matchers.h"
 #include "mlir/Pass/Pass.h"
@@ -360,6 +362,7 @@ struct AllocaOpConversion : public FIROpConversion<fir::AllocaOp> {
   mlir::LogicalResult
   matchAndRewrite(fir::AllocaOp alloc, OpAdaptor adaptor,
                   mlir::ConversionPatternRewriter &rewriter) const override {
+    const auto& parent = *alloc->getParentOp();
     mlir::ValueRange operands = adaptor.getOperands();
     auto loc = alloc.getLoc();
     mlir::Type ity = lowerTy().indexType();
@@ -412,6 +415,7 @@ struct AllocaOpConversion : public FIROpConversion<fir::AllocaOp> {
                                                       alloc->getAttrs());
       rewriter.replaceOpWithNewOp<mlir::LLVM::BitcastOp>(alloc, resultTy, al);
     }
+
     return mlir::success();
   }
 };
@@ -3342,6 +3346,7 @@ public:
                                                                   options);
     mlir::populateFuncToLLVMConversionPatterns(typeConverter, pattern);
     mlir::populateOpenMPToLLVMConversionPatterns(typeConverter, pattern);
+    mlir::populateOpenACCToLLVMConversionPatterns(typeConverter, pattern);
     mlir::arith::populateArithmeticToLLVMConversionPatterns(typeConverter,
                                                             pattern);
     mlir::cf::populateControlFlowToLLVMConversionPatterns(typeConverter,
@@ -3359,9 +3364,11 @@ public:
     mlir::configureOpenMPToLLVMConversionLegality(target, typeConverter);
     target.addLegalDialect<mlir::omp::OpenMPDialect>();
 
+    mlir::configureOpenACCToLLVMConversionLegality(target, typeConverter);
+    target.addLegalDialect<mlir::acc::OpenACCDialect>();
+    
     // required NOPs for applying a full conversion
     target.addLegalOp<mlir::ModuleOp>();
-
     // apply the patterns
     if (mlir::failed(mlir::applyFullConversion(getModule(), target,
                                                std::move(pattern)))) {
