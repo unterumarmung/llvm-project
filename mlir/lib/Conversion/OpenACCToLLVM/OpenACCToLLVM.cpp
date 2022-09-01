@@ -173,12 +173,10 @@ void ConvertOpenACCToLLVMPass::runOnOperation() {
   target.addLegalOp<UnrealizedConversionCastOp>();
 
   auto allDataOperandsAreConverted = [](ValueRange operands) {
-    for (Value operand : operands) {
-      if (!DataDescriptor::isValid(operand) &&
-          !operand.getType().isa<LLVM::LLVMPointerType>())
-        return false;
-    }
-    return true;
+    return llvm::all_of(operands, [](Value operand) {
+      return DataDescriptor::isValid(operand) ||
+             operand.getType().isa<LLVM::LLVMPointerType>();
+    });
   };
 
   target.addDynamicallyLegalOp<acc::DataOp>(
