@@ -533,13 +533,13 @@ bool SampleProfileReaderText::hasFormat(const MemoryBuffer &Buffer) {
 
   // Check that the first non-comment line is a valid function header.
   line_iterator LineIt(Buffer, /*SkipBlanks=*/true, '#');
-  if (!LineIt.is_at_eof()) {
-    if ((*LineIt)[0] != ' ') {
+  if ((!LineIt.is_at_eof()) && ((*LineIt)[0] != ' ')) 
+    {
       uint64_t NumSamples, NumHeadSamples;
       StringRef FName;
       result = ParseHead(*LineIt, FName, NumSamples, NumHeadSamples);
     }
-  }
+  
 
   return result;
 }
@@ -1824,9 +1824,8 @@ std::error_code SampleProfileReaderGCC::readFunctionProfiles() {
 std::error_code SampleProfileReaderGCC::readOneFunctionProfile(
     const InlineCallStack &InlineStack, bool Update, uint32_t Offset) {
   uint64_t HeadCount = 0;
-  if (InlineStack.size() == 0)
-    if (!GcovBuffer.readInt64(HeadCount))
-      return sampleprof_error::truncated;
+  if ((InlineStack.size() == 0) && (!GcovBuffer.readInt64(HeadCount)))
+    return sampleprof_error::truncated;
 
   uint32_t NameIdx;
   if (!GcovBuffer.readInt(NameIdx))

@@ -944,9 +944,9 @@ static void genDeclareDataOperandOperations(
     // present/deviceptr),
     //   whose semantics are scope-dependent and are represented via a
     //   structured `acc.declare` region.
-    if (symbol.detailsIf<Fortran::semantics::CommonBlockDetails>() ||
-        Fortran::semantics::FindCommonBlockContaining(symbol)) {
-      if (isValidClauseForGlobalDeclare(dataClause)) {
+    if ((symbol.detailsIf<Fortran::semantics::CommonBlockDetails>() ||
+        Fortran::semantics::FindCommonBlockContaining(symbol)) && (isValidClauseForGlobalDeclare(dataClause))) 
+      {
         emitCommonGlobal(
             converter, builder, accObject, dataClause,
             [&](mlir::OpBuilder &modBuilder,
@@ -966,7 +966,7 @@ static void genDeclareDataOperandOperations(
             });
         continue;
       }
-    }
+    
     Fortran::semantics::MaybeExpr designator = Fortran::common::visit(
         [&](auto &&s) { return ea.Analyze(s); }, accObject.u);
 
@@ -2509,9 +2509,9 @@ static Op createComputeOp(
           }
         } else if (const auto *accClauseList =
                        std::get_if<Fortran::parser::AccObjectList>(
-                           &(*accSelfClause).u)) {
+                           &(*accSelfClause).u); accClauseList && (accClauseList->v.size() == 1)) 
           // TODO This would be nicer to be done in canonicalization step.
-          if (accClauseList->v.size() == 1) {
+          {
             const auto &accObject = accClauseList->v.front();
             if (const auto *designator =
                     std::get_if<Fortran::parser::Designator>(&accObject.u)) {
@@ -2524,7 +2524,7 @@ static Op createComputeOp(
               }
             }
           }
-        }
+        
       } else {
         addSelfAttr = true;
       }

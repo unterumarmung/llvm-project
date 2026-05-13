@@ -211,20 +211,18 @@ bool A57ChainingConstraint::addIntraChainConstraint(PBQPRAGraph &G, unsigned Rd,
     PBQP::PBQPNum sameParityMax = std::numeric_limits<PBQP::PBQPNum>::min();
     for (unsigned j = 0, je = vRaAllowed->size(); j != je; ++j) {
       unsigned pRa = (*vRaAllowed)[j];
-      if (haveSameParity(pRd, pRa))
-        if (costs[i + 1][j + 1] !=
+      if ((haveSameParity(pRd, pRa)) && (costs[i + 1][j + 1] !=
                 std::numeric_limits<PBQP::PBQPNum>::infinity() &&
-            costs[i + 1][j + 1] > sameParityMax)
-          sameParityMax = costs[i + 1][j + 1];
+            costs[i + 1][j + 1] > sameParityMax))
+        sameParityMax = costs[i + 1][j + 1];
     }
 
     // Ensure all registers with a different parity have a higher cost
     // than sameParityMax
     for (unsigned j = 0, je = vRaAllowed->size(); j != je; ++j) {
       unsigned pRa = (*vRaAllowed)[j];
-      if (!haveSameParity(pRd, pRa))
-        if (sameParityMax > costs[i + 1][j + 1])
-          costs[i + 1][j + 1] = sameParityMax + 1.0;
+      if ((!haveSameParity(pRd, pRa)) && (sameParityMax > costs[i + 1][j + 1]))
+        costs[i + 1][j + 1] = sameParityMax + 1.0;
     }
   }
   G.updateEdgeCosts(edge, std::move(costs));
@@ -288,20 +286,18 @@ void A57ChainingConstraint::addInterChainConstraint(PBQPRAGraph &G, unsigned Rd,
         PBQP::PBQPNum sameParityMax = std::numeric_limits<PBQP::PBQPNum>::min();
         for (unsigned j = 0, je = vRrAllowed->size(); j != je; ++j) {
           unsigned pRa = (*vRrAllowed)[j];
-          if (!haveSameParity(pRd, pRa))
-            if (costs[i + 1][j + 1] !=
+          if ((!haveSameParity(pRd, pRa)) && (costs[i + 1][j + 1] !=
                     std::numeric_limits<PBQP::PBQPNum>::infinity() &&
-                costs[i + 1][j + 1] > sameParityMax)
-              sameParityMax = costs[i + 1][j + 1];
+                costs[i + 1][j + 1] > sameParityMax))
+            sameParityMax = costs[i + 1][j + 1];
         }
 
         // Ensure all registers with same parity have a higher cost
         // than sameParityMax
         for (unsigned j = 0, je = vRrAllowed->size(); j != je; ++j) {
           unsigned pRa = (*vRrAllowed)[j];
-          if (haveSameParity(pRd, pRa))
-            if (sameParityMax > costs[i + 1][j + 1])
-              costs[i + 1][j + 1] = sameParityMax + 1.0;
+          if ((haveSameParity(pRd, pRa)) && (sameParityMax > costs[i + 1][j + 1]))
+            costs[i + 1][j + 1] = sameParityMax + 1.0;
         }
       }
       G.updateEdgeCosts(edge, std::move(costs));

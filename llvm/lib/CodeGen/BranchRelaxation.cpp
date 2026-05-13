@@ -713,14 +713,14 @@ bool BranchRelaxation::relaxBranchInstructions() {
     if (Last->isUnconditionalBranch()) {
       // Unconditional branch destination might be unanalyzable, assume these
       // are OK.
-      if (MachineBasicBlock *DestBB = TII->getBranchDestBlock(*Last)) {
-        if (!isBlockInRange(*Last, *DestBB) && !TII->isTailCall(*Last) &&
-            !RelaxedUnconditionals.contains({&MBB, DestBB})) {
+      if (MachineBasicBlock *DestBB = TII->getBranchDestBlock(*Last); DestBB && (!isBlockInRange(*Last, *DestBB) && !TII->isTailCall(*Last) &&
+            !RelaxedUnconditionals.contains({&MBB, DestBB}))) 
+        {
           fixupUnconditionalBranch(*Last);
           ++NumUnconditionalRelaxed;
           Changed = true;
         }
-      }
+      
     }
 
     // Loop over the conditional branches.

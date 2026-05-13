@@ -135,14 +135,14 @@ static LogicalResult getBackwardSliceImpl(Operation *op,
       // TODO: determine whether we want to recurse backward into the other
       // blocks of parentOp, which are not technically backward unless they flow
       // into us. For now, just bail.
-      if (parentOp && backwardSlice->count(parentOp) == 0) {
-        if (!parentOp->hasTrait<OpTrait::IsIsolatedFromAbove>() &&
+      if ((parentOp && backwardSlice->count(parentOp) == 0) && (!parentOp->hasTrait<OpTrait::IsIsolatedFromAbove>() &&
             parentOp->getNumRegions() == 1 &&
-            parentOp->getRegion(0).hasOneBlock()) {
+            parentOp->getRegion(0).hasOneBlock())) 
+        {
           return getBackwardSliceImpl(parentOp, visited, backwardSlice,
                                       options);
         }
-      }
+      
     } else {
       return failure();
     }
@@ -161,8 +161,8 @@ static LogicalResult getBackwardSliceImpl(Operation *op,
           [&](Region *childRegion) { descendents.insert(childRegion); });
       region.walk([&](Operation *op) {
         for (OpOperand &operand : op->getOpOperands()) {
-          if (!descendents.contains(operand.get().getParentRegion()))
-            if (!processValue(operand.get()).succeeded()) {
+          if ((!descendents.contains(operand.get().getParentRegion())) && (!processValue(operand.get()).succeeded()))
+            {
               return WalkResult::interrupt();
             }
         }

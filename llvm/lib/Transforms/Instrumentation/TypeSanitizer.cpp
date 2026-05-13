@@ -869,12 +869,12 @@ bool TypeSanitizer::instrumentMemInst(Value *V, Instruction *ShadowBase,
       Dest = MI->getDest();
       Size = MI->getLength();
 
-      if (auto *MTI = dyn_cast<MemTransferInst>(MI)) {
-        if (MTI->getSourceAddressSpace() == 0) {
+      if (auto *MTI = dyn_cast<MemTransferInst>(MI); MTI && (MTI->getSourceAddressSpace() == 0)) 
+        {
           Src = MTI->getSource();
           NeedsMemMove = isa<MemMoveInst>(MTI);
         }
-      }
+      
     } else if (auto *II = dyn_cast<LifetimeIntrinsic>(I)) {
       auto *AI = dyn_cast<AllocaInst>(II->getArgOperand(0));
       if (!AI)

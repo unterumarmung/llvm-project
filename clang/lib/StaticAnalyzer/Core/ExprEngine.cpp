@@ -300,8 +300,8 @@ ProgramStateRef ExprEngine::getInitialState(const LocationContext *InitLoc) {
     }
   }
 
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(D)) {
-    if (MD->isImplicitObjectMemberFunction()) {
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(D); MD && (MD->isImplicitObjectMemberFunction())) 
+    {
       // Precondition: 'this' is always non-null upon entry to the
       // top-level function.  This is our starting assumption for
       // analyzing an "open" program.
@@ -315,7 +315,7 @@ ProgramStateRef ExprEngine::getInitialState(const LocationContext *InitLoc) {
         }
       }
     }
-  }
+  
 
   return state;
 }
@@ -2147,8 +2147,8 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
       // For instance method operators, make sure the 'this' argument has a
       // valid region.
       const Decl *Callee = OCE->getCalleeDecl();
-      if (const auto *MD = dyn_cast_or_null<CXXMethodDecl>(Callee)) {
-        if (MD->isImplicitObjectMemberFunction()) {
+      if (const auto *MD = dyn_cast_or_null<CXXMethodDecl>(Callee); MD && (MD->isImplicitObjectMemberFunction())) 
+        {
           ProgramStateRef State = Pred->getState();
           const LocationContext *LCtx = Pred->getLocationContext();
           ProgramStateRef NewState =
@@ -2161,7 +2161,7 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
               break;
           }
         }
-      }
+      
       [[fallthrough]];
     }
 
@@ -2789,8 +2789,8 @@ assumeCondition(const Stmt *ConditionStmt, ExplodedNode *N) {
 
   if (X.isUnknownOrUndef()) {
     // Give it a chance to recover from unknown.
-    if (const auto *Ex = dyn_cast<Expr>(ConditionExpr)) {
-      if (Ex->getType()->isIntegralOrEnumerationType()) {
+    if (const auto *Ex = dyn_cast<Expr>(ConditionExpr); Ex && (Ex->getType()->isIntegralOrEnumerationType())) 
+      {
         // Try to recover some path-sensitivity.  Right now casts of symbolic
         // integers that promote their values are currently not tracked well.
         // If 'ConditionExpr' is such an expression, try and recover the
@@ -2803,7 +2803,7 @@ assumeCondition(const Stmt *ConditionStmt, ExplodedNode *N) {
           X = recovered;
         }
       }
-    }
+    
   }
 
   // If the condition is still unknown, give up.
@@ -2901,7 +2901,7 @@ void ExprEngine::processBranch(
           BlockEdge BE(getCurrBlock(), DstT, LC);
           Dst.insert(Engine.makeNode(BE, StTrue, PredN));
         }
-      } else if (!AMgr.options.InlineFunctionsWithAmbiguousLoops) {
+      } else if ((!AMgr.options.InlineFunctionsWithAmbiguousLoops) && (!LC->inTopFrame())) 
         // FIXME: There is an ancient and arbitrary heuristic in
         // `ExprEngine::processCFGBlockEntrance` which prevents all further
         // inlining of a function if it finds an execution path within that
@@ -2917,11 +2917,11 @@ void ExprEngine::processBranch(
         // (activates if the third iteration can be entered, and will not
         // recognize cases where the fourth iteration would't be completed), but
         // should be good enough for practical purposes.
-        if (!LC->inTopFrame()) {
+        {
           Engine.FunctionSummaries->markShouldNotInline(
               LC->getStackFrame()->getDecl());
         }
-      }
+      
     }
 
     if (StFalse) {
@@ -3167,10 +3167,9 @@ void ExprEngine::processSwitch(const SwitchStmt *Switch, ExplodedNode *Pred,
     // Note that this isn't as accurate as it could be.  Even if there isn't
     // a case for a particular enum value as long as that enum value isn't
     // feasible then it shouldn't be considered for making 'default:' reachable.
-    if (Condition->IgnoreParenImpCasts()->getType()->isEnumeralType()) {
-      if (Switch->isAllEnumCasesCovered())
-        continue;
-    }
+    if ((Condition->IgnoreParenImpCasts()->getType()->isEnumeralType()) && (Switch->isAllEnumCasesCovered())) 
+      continue;
+    
 
     BlockEdge BE(SwitchBlock, DefaultBlock, LCtx);
     Dst.insert(Engine.makeNode(BE, State, Node));
@@ -3634,10 +3633,9 @@ ProgramStateRef ExprEngine::processPointerEscapedOnBind(
     }
 
     // Case (3).
-    if (const auto *VR = dyn_cast<VarRegion>(MR->getBaseRegion()))
-      if (isa<StackArgumentsSpaceRegion>(Space) &&
-          VR->getStackFrame()->inTopFrame())
-        if (const auto *RD = VR->getValueType()->getAsCXXRecordDecl())
+    if (const auto *VR = dyn_cast<VarRegion>(MR->getBaseRegion()); VR && (isa<StackArgumentsSpaceRegion>(Space) &&
+          VR->getStackFrame()->inTopFrame()))
+      if (const auto *RD = VR->getValueType()->getAsCXXRecordDecl())
           if (!RD->hasTrivialDestructor()) {
             Escaped.push_back(LocAndVal.second);
             continue;
@@ -3649,10 +3647,9 @@ ProgramStateRef ExprEngine::processPointerEscapedOnBind(
     // Do this only if we know that the store is not supposed to generate the
     // same state.
     SVal StoredVal = State->getSVal(MR);
-    if (StoredVal != LocAndVal.second)
-      if (State ==
-          (State->bindLoc(loc::MemRegionVal(MR), LocAndVal.second, LCtx)))
-        Escaped.push_back(LocAndVal.second);
+    if ((StoredVal != LocAndVal.second) && (State ==
+          (State->bindLoc(loc::MemRegionVal(MR), LocAndVal.second, LCtx))))
+      Escaped.push_back(LocAndVal.second);
   }
 
   if (Escaped.empty())

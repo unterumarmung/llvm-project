@@ -178,15 +178,14 @@ static Error processString(StringRef Str, NullHandlingMethod NullHandler,
   size_t Pos = 0;
 
   auto AddRes = [&Result, NullHandler, IsLongString](UTF16 Char) -> Error {
-    if (!IsLongString) {
-      if (NullHandler == NullHandlingMethod::UserResource) {
+    if ((!IsLongString) && (NullHandler == NullHandlingMethod::UserResource) && (Char > 0xFF)) 
+      
         // Narrow strings in user-defined resources are *not* output in
         // UTF-16 format.
-        if (Char > 0xFF)
-          return createError("Non-8-bit codepoint (" + Twine(Char) +
+        return createError("Non-8-bit codepoint (" + Twine(Char) +
                              ") can't occur in a user-defined narrow string");
-      }
-    }
+      
+    
 
     Result.push_back(Char);
     return Error::success();

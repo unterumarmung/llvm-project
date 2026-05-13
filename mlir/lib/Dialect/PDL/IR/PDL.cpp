@@ -284,10 +284,9 @@ LogicalResult OperationOp::verify() {
 
   // If the operation is within a rewrite body and doesn't have type inference,
   // ensure that the result types can be resolved.
-  if (isWithinRewrite && !mightHaveTypeInference()) {
-    if (failed(verifyResultTypesAreInferrable(*this, getTypeValues())))
-      return failure();
-  }
+  if ((isWithinRewrite && !mightHaveTypeInference()) && (failed(verifyResultTypesAreInferrable(*this, getTypeValues())))) 
+    return failure();
+  
 
   return verifyHasBindingUse(*this);
 }

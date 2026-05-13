@@ -255,15 +255,15 @@ void Parser::ParseHLSLAnnotations(ParsedAttributes &Attrs,
     }
     OffsetStr = OffsetStr.substr(1);
     unsigned SubComponent = 0;
-    if (!OffsetStr.empty()) {
+    if ((!OffsetStr.empty()) && (OffsetStr.getAsInteger(10, SubComponent))) 
       // Make sure SubComponent is a number.
-      if (OffsetStr.getAsInteger(10, SubComponent)) {
+      {
         Diag(SubComponentLoc.getLocWithOffset(1),
              diag::err_hlsl_unsupported_register_number);
         SkipUntil(tok::r_paren, StopAtSemi); // skip through )
         return;
       }
-    }
+    
     unsigned Component = 0;
     ConsumeToken(); // consume identifier.
     SourceLocation ComponentLoc;

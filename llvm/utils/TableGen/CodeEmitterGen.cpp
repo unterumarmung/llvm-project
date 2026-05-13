@@ -88,13 +88,11 @@ private:
 int CodeEmitterGen::getVariableBit(const std::string &VarName,
                                    const BitsInit *BI, int Bit) {
   if (const VarBitInit *VBI = dyn_cast<VarBitInit>(BI->getBit(Bit))) {
-    if (const VarInit *VI = dyn_cast<VarInit>(VBI->getBitVar()))
-      if (VI->getName() == VarName)
-        return VBI->getBitNum();
-  } else if (const VarInit *VI = dyn_cast<VarInit>(BI->getBit(Bit))) {
-    if (VI->getName() == VarName)
-      return 0;
-  }
+    if (const VarInit *VI = dyn_cast<VarInit>(VBI->getBitVar()); VI && (VI->getName() == VarName))
+      return VBI->getBitNum();
+  } else if (const VarInit *VI = dyn_cast<VarInit>(BI->getBit(Bit)); VI && (VI->getName() == VarName)) 
+    return 0;
+  
 
   return -1;
 }

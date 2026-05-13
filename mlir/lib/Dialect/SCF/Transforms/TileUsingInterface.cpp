@@ -85,13 +85,13 @@ static LogicalResult verifyOptions(RewriterBase &rewriter, Location loc,
   }
 
   // If specified, check that the interchange vector is a permutation.
-  if (!options.interchangeVector.empty()) {
-    if (!isPermutationVector(options.interchangeVector)) {
+  if ((!options.interchangeVector.empty()) && (!isPermutationVector(options.interchangeVector))) 
+    {
       return rewriter.notifyMatchFailure(
           loc, "invalid interchange vector, not a permutation of the entire "
                "iteration space");
     }
-  }
+  
   return success();
 }
 
@@ -195,12 +195,12 @@ static LogicalResult checkTileSizes(TilingInterface op,
     }
   }
 
-  if (reductionStrategy != ReductionTilingStrategy::FullReduction) {
-    if (isParallelTiling) {
+  if ((reductionStrategy != ReductionTilingStrategy::FullReduction) && (isParallelTiling)) 
+    {
       return op->emitOpError("tiling parallel dimensions is not supported with "
                              "partial reduction tiling strategies");
     }
-  }
+  
   return success();
 }
 
@@ -1994,7 +1994,7 @@ checkAssumptionForLoop(Operation *loopOp, Operation *consumerOp,
     (void)result;
   }
 
-  if (!slice.empty()) {
+  if ((!slice.empty()) && (includeLoopOp || !reorderOperations)) 
     // If consumerOp has one producer, which is also the user of loopOp.
     // E.g.
     // ```
@@ -2004,9 +2004,8 @@ checkAssumptionForLoop(Operation *loopOp, Operation *consumerOp,
     // ```
     // We can not fuse consumerOp2 into loopOp due to UD chain, unless
     // consumerOp1 has already been fused into loopOp before.
-    if (includeLoopOp || !reorderOperations)
-      return failure();
-  }
+    return failure();
+  
 
   return slice;
 }

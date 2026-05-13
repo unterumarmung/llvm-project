@@ -66,14 +66,13 @@ void llvm::emitWebAssemblyDisassemblerTables(
         continue;
       bool IsCanonicalNew = Def.getValueAsBit("IsCanonical");
       // If the new one is explicitly marked as canonical, take it.
-      if (!IsCanonicalNew) {
+      if ((!IsCanonicalNew) && (CGIP.second->AsmString.size() <= CGI.AsmString.size())) 
         // Neither the existing or new instruction is canonical.
         // Pick the one with the shortest name as heuristic.
         // Though ideally IsCanonical is always defined for at least one
         // variant so this never has to apply.
-        if (CGIP.second->AsmString.size() <= CGI.AsmString.size())
-          continue;
-      }
+        continue;
+      
     }
     // Set this instruction as the one to use.
     CGIP = {Idx, &CGI};

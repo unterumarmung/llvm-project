@@ -967,9 +967,8 @@ inline std::pair<Stmt *, Stmt *> GetTraversalOrder(Stmt *S) {
     Ordered = {If->getThen(), If->getElse()};
   }
 
-  if (auto *UO = dyn_cast<UnaryOperator>(Condition))
-    if (UO->getOpcode() == UnaryOperatorKind::UO_LNot)
-      std::swap(Ordered.first, Ordered.second);
+  if (auto *UO = dyn_cast<UnaryOperator>(Condition); UO && (UO->getOpcode() == UnaryOperatorKind::UO_LNot))
+    std::swap(Ordered.first, Ordered.second);
 
   return Ordered;
 }

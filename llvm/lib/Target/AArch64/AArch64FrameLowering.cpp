@@ -956,16 +956,14 @@ bool AArch64FrameLowering::canUseAsPrologue(
       MBB.isLiveIn(AArch64::NZCV))
     return false;
 
-  if (RegInfo->hasStackRealignment(*MF) || TLI->hasInlineStackProbe(*MF))
-    if (findScratchNonCalleeSaveRegister(TmpMBB) == AArch64::NoRegister)
-      return false;
+  if ((RegInfo->hasStackRealignment(*MF) || TLI->hasInlineStackProbe(*MF)) && (findScratchNonCalleeSaveRegister(TmpMBB) == AArch64::NoRegister))
+    return false;
 
   // May need a scratch register (for return value) if require making a special
   // call
-  if (requiresSaveVG(*MF) ||
-      windowsRequiresStackProbe(*MF, std::numeric_limits<uint64_t>::max()))
-    if (findScratchNonCalleeSaveRegister(TmpMBB, true) == AArch64::NoRegister)
-      return false;
+  if ((requiresSaveVG(*MF) ||
+      windowsRequiresStackProbe(*MF, std::numeric_limits<uint64_t>::max())) && (findScratchNonCalleeSaveRegister(TmpMBB, true) == AArch64::NoRegister))
+    return false;
 
   return true;
 }

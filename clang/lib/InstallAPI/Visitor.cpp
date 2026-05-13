@@ -271,10 +271,9 @@ bool InstallAPIVisitor::VisitFunctionDecl(const FunctionDecl *D) {
     break;
   case FunctionDecl::TK_MemberSpecialization:
   case FunctionDecl::TK_FunctionTemplateSpecialization:
-    if (auto *TempInfo = D->getTemplateSpecializationInfo()) {
-      if (!TempInfo->isExplicitInstantiationOrSpecialization())
-        return true;
-    }
+    if (auto *TempInfo = D->getTemplateSpecializationInfo(); TempInfo && (!TempInfo->isExplicitInstantiationOrSpecialization())) 
+      return true;
+    
     break;
   case FunctionDecl::TK_FunctionTemplate:
   case FunctionDecl::TK_DependentFunctionTemplateSpecialization:
@@ -687,10 +686,9 @@ bool InstallAPIVisitor::VisitCXXRecordDecl(const CXXRecordDecl *D) {
     Ctx.Verifier->verify(GR, FA);
   }
 
-  if (auto *Templ = dyn_cast<ClassTemplateSpecializationDecl>(D)) {
-    if (!Templ->isExplicitInstantiationOrSpecialization())
-      return true;
-  }
+  if (auto *Templ = dyn_cast<ClassTemplateSpecializationDecl>(D); Templ && (!Templ->isExplicitInstantiationOrSpecialization())) 
+    return true;
+  
 
   using var_iter = CXXRecordDecl::specific_decl_iterator<VarDecl>;
   using var_range = iterator_range<var_iter>;

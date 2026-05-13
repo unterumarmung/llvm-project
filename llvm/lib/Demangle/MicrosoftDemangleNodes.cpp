@@ -396,10 +396,9 @@ void FunctionSignatureNode::outputPre(OutputBuffer &OB,
   }
 
   if (!(Flags & OF_NoMemberType)) {
-    if (!(FunctionClass & FC_Global)) {
-      if (FunctionClass & FC_Static)
-        OB << "static ";
-    }
+    if ((!(FunctionClass & FC_Global)) && (FunctionClass & FC_Static)) 
+      OB << "static ";
+    
     if (FunctionClass & FC_Virtual)
       OB << "virtual ";
 

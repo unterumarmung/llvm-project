@@ -663,12 +663,11 @@ ItaniumMangleContextImpl::getEffectiveDeclContext(const Decl *D) {
   // not the case: the lambda closure type ends up living in the context
   // where the function itself resides, because the function declaration itself
   // had not yet been created. Fix the context here.
-  if (const CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(D)) {
-    if (RD->isLambda())
-      if (ParmVarDecl *ContextParam =
+  if (const CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(D); RD && (RD->isLambda())) 
+    if (ParmVarDecl *ContextParam =
               dyn_cast_or_null<ParmVarDecl>(RD->getLambdaContextDecl()))
         return ContextParam->getDeclContext();
-  }
+  
 
   // Perform the same check for block literals.
   if (const BlockDecl *BD = dyn_cast<BlockDecl>(D)) {
@@ -1487,11 +1486,10 @@ void CXXNameMangler::mangleUnqualifiedName(
   // Proposed on https://github.com/itanium-cxx-abi/cxx-abi/issues/24.
   auto *FD = dyn_cast<FunctionDecl>(ND);
   auto *FTD = dyn_cast<FunctionTemplateDecl>(ND);
-  if ((FD && FD->isMemberLikeConstrainedFriend()) ||
-      (FTD && FTD->getTemplatedDecl()->isMemberLikeConstrainedFriend())) {
-    if (!isCompatibleWith(LangOptions::ClangABI::Ver17))
-      Out << 'F';
-  }
+  if (((FD && FD->isMemberLikeConstrainedFriend()) ||
+      (FTD && FTD->getTemplatedDecl()->isMemberLikeConstrainedFriend())) && (!isCompatibleWith(LangOptions::ClangABI::Ver17))) 
+    Out << 'F';
+  
 
   unsigned Arity = KnownArity;
   switch (Name.getNameKind()) {
@@ -1574,13 +1572,13 @@ void CXXNameMangler::mangleUnqualifiedName(
     // Otherwise, an anonymous entity.  We must have a declaration.
     assert(ND && "mangling empty name without declaration");
 
-    if (const NamespaceDecl *NS = dyn_cast<NamespaceDecl>(ND)) {
-      if (NS->isAnonymousNamespace()) {
+    if (const NamespaceDecl *NS = dyn_cast<NamespaceDecl>(ND); NS && (NS->isAnonymousNamespace())) 
+      {
         // This is how gcc mangles these names.
         Out << "12_GLOBAL__N_1";
         break;
       }
-    }
+    
 
     if (const VarDecl *VD = dyn_cast<VarDecl>(ND)) {
       // We must have an anonymous union or struct declaration.
@@ -1704,9 +1702,8 @@ void CXXNameMangler::mangleUnqualifiedName(
       Arity = cast<FunctionDecl>(ND)->getNumParams();
 
       // If we have a member function, we need to include the 'this' pointer.
-      if (const auto *MD = dyn_cast<CXXMethodDecl>(ND))
-        if (MD->isImplicitObjectMemberFunction())
-          Arity++;
+      if (const auto *MD = dyn_cast<CXXMethodDecl>(ND); MD && (MD->isImplicitObjectMemberFunction()))
+        Arity++;
     }
     [[fallthrough]];
   case DeclarationName::CXXConversionFunctionName:
@@ -2327,10 +2324,9 @@ const NamedDecl *CXXNameMangler::getClosurePrefix(const Decl *ND) {
   } else if (auto *VD = dyn_cast<VarDecl>(ND)) {
     if (const CXXRecordDecl *Lambda = getLambdaForInitCapture(VD))
       Context = dyn_cast_or_null<NamedDecl>(Lambda->getLambdaContextDecl());
-  } else if (auto *RD = dyn_cast<CXXRecordDecl>(ND)) {
-    if (RD->isLambda())
-      Context = dyn_cast_or_null<NamedDecl>(RD->getLambdaContextDecl());
-  }
+  } else if (auto *RD = dyn_cast<CXXRecordDecl>(ND); RD && (RD->isLambda())) 
+    Context = dyn_cast_or_null<NamedDecl>(RD->getLambdaContextDecl());
+  
   if (!Context)
     return nullptr;
 
@@ -2992,9 +2988,8 @@ static bool isTypeSubstitutable(Qualifiers Quals, const Type *Ty,
   // A placeholder type for class template deduction is substitutable with
   // its corresponding template name; this is handled specially when mangling
   // the type.
-  if (auto *DeducedTST = Ty->getAs<DeducedTemplateSpecializationType>())
-    if (DeducedTST->getDeducedType().isNull())
-      return false;
+  if (auto *DeducedTST = Ty->getAs<DeducedTemplateSpecializationType>(); DeducedTST && (DeducedTST->getDeducedType().isNull()))
+    return false;
   return true;
 }
 
@@ -3039,9 +3034,8 @@ void CXXNameMangler::mangleType(QualType T) {
       // Don't desugar through template specialization types that aren't
       // type aliases. We need to mangle the template arguments as written.
       if (const TemplateSpecializationType *TST
-                                      = dyn_cast<TemplateSpecializationType>(T))
-        if (!TST->isTypeAlias())
-          break;
+                                      = dyn_cast<TemplateSpecializationType>(T); TST && (!TST->isTypeAlias()))
+        break;
 
       // FIXME: We presumably shouldn't strip off ElaboratedTypes with
       // instantation-dependent qualifiers. See
@@ -5620,9 +5614,8 @@ recurse:
     NotPrimaryExpr();
     auto *Sub = cast<ExplicitCastExpr>(E)->getSubExpr()->IgnoreImplicit();
     // FIXME: Add isImplicit to CXXConstructExpr.
-    if (auto *CCE = dyn_cast<CXXConstructExpr>(Sub))
-      if (CCE->getParenOrBraceRange().isInvalid())
-        Sub = CCE->getArg(0)->IgnoreImplicit();
+    if (auto *CCE = dyn_cast<CXXConstructExpr>(Sub); CCE && (CCE->getParenOrBraceRange().isInvalid()))
+      Sub = CCE->getArg(0)->IgnoreImplicit();
     if (auto *StdInitList = dyn_cast<CXXStdInitializerListExpr>(Sub))
       Sub = StdInitList->getSubExpr()->IgnoreImplicit();
     if (auto *IL = dyn_cast<InitListExpr>(Sub)) {

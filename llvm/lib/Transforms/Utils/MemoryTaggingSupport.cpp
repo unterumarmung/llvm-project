@@ -119,11 +119,11 @@ void StackInfoBuilder::visit(OptimizationRemarkEmitter &ORE,
       AddIfInteresting(DVR.getAddress());
   }
 
-  if (CallInst *CI = dyn_cast<CallInst>(&Inst)) {
-    if (CI->canReturnTwice()) {
+  if (CallInst *CI = dyn_cast<CallInst>(&Inst); CI && (CI->canReturnTwice())) 
+    {
       Info.CallsReturnTwice = true;
     }
-  }
+  
   if (AllocaInst *AI = dyn_cast<AllocaInst>(&Inst)) {
     switch (getAllocaInterestingness(*AI)) {
     case AllocaInterestingness::kInteresting:
@@ -301,11 +301,10 @@ void annotateDebugRecords(AllocaInfo &Info, unsigned int Tag) {
       if (DPtr->getVariableLocationOp(LocNo) == Info.AI)
         DPtr->setExpression(
             DIExpression::appendOpsToArg(DPtr->getExpression(), NewOps, LocNo));
-    if (auto *DAI = DynCastToDbgAssign(DPtr)) {
-      if (DAI->getAddress() == Info.AI)
-        DAI->setAddressExpression(
+    if (auto *DAI = DynCastToDbgAssign(DPtr); DAI && (DAI->getAddress() == Info.AI)) 
+      DAI->setAddressExpression(
             DIExpression::prependOpcodes(DAI->getAddressExpression(), NewOps));
-    }
+    
   };
 
   llvm::for_each(Info.DbgVariableRecords, AnnotateDbgRecord);

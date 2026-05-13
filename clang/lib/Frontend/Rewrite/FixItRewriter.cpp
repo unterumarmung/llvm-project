@@ -180,10 +180,9 @@ void FixItRewriter::HandleDiagnostic(DiagnosticsEngine::Level DiagLevel,
       Diag(Info.getLocation(), diag::note_fixit_in_macro);
 
     // If this was an error, refuse to perform any rewriting.
-    if (DiagLevel >= DiagnosticsEngine::Error) {
-      if (++NumFailures == 1)
-        Diag(Info.getLocation(), diag::note_fixit_unfixed_error);
-    }
+    if ((DiagLevel >= DiagnosticsEngine::Error) && (++NumFailures == 1)) 
+      Diag(Info.getLocation(), diag::note_fixit_unfixed_error);
+    
     return;
   }
 

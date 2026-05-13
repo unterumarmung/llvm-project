@@ -1462,19 +1462,19 @@ static void tcSetLeastSignificantBits(APInt::WordType *dst, unsigned parts,
 /* Handle overflow.  Sign is preserved.  We either become infinity or
    the largest finite number.  */
 APFloat::opStatus IEEEFloat::handleOverflow(roundingMode rounding_mode) {
-  if (semantics->nonFiniteBehavior != fltNonfiniteBehavior::FiniteOnly) {
-    /* Infinity?  */
-    if (rounding_mode == rmNearestTiesToEven ||
+  if ((semantics->nonFiniteBehavior != fltNonfiniteBehavior::FiniteOnly) && (rounding_mode == rmNearestTiesToEven ||
         rounding_mode == rmNearestTiesToAway ||
         (rounding_mode == rmTowardPositive && !sign) ||
-        (rounding_mode == rmTowardNegative && sign)) {
+        (rounding_mode == rmTowardNegative && sign))) 
+    /* Infinity?  */
+    {
       if (semantics->nonFiniteBehavior == fltNonfiniteBehavior::NanOnly)
         makeNaN(false, sign);
       else
         category = fcInfinity;
       return static_cast<opStatus>(opOverflow | opInexact);
     }
-  }
+  
 
   /* Otherwise we become the largest finite number.  */
   category = fcNormal;
@@ -2624,11 +2624,10 @@ APFloat::opStatus IEEEFloat::convertToSignExtendedInteger(
   if (truncatedBits) {
     lost_fraction = lostFractionThroughTruncation(src, partCount(),
                                                   truncatedBits);
-    if (lost_fraction != lfExactlyZero &&
-        roundAwayFromZero(rounding_mode, lost_fraction, truncatedBits)) {
-      if (APInt::tcIncrement(parts.data(), dstPartsCount))
-        return opInvalidOp;     /* Overflow.  */
-    }
+    if ((lost_fraction != lfExactlyZero &&
+        roundAwayFromZero(rounding_mode, lost_fraction, truncatedBits)) && (APInt::tcIncrement(parts.data(), dstPartsCount))) 
+      return opInvalidOp;     /* Overflow.  */
+    
   } else {
     lost_fraction = lfExactlyZero;
   }
@@ -3071,10 +3070,9 @@ bool IEEEFloat::convertFromStringSpecials(StringRef str) {
 
   // If we have a 's' (or 'S') prefix, then this is a Signaling NaN.
   bool IsSignaling = str.consume_front_insensitive("s");
-  if (IsSignaling) {
-    if (str.size() < MIN_NAME_SIZE)
-      return false;
-  }
+  if ((IsSignaling) && (str.size() < MIN_NAME_SIZE)) 
+    return false;
+  
 
   if (str.consume_front("nan") || str.consume_front("NaN")) {
     // A NaN without payload.

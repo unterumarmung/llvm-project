@@ -70,11 +70,10 @@ void MapExtDefNamesConsumer::handleDecl(const Decl *D) {
     if (FD->isThisDeclarationADefinition())
       if (const Stmt *Body = FD->getBody())
         addIfInMain(FD, Body->getBeginLoc());
-  } else if (const auto *VD = dyn_cast<VarDecl>(D)) {
-    if (cross_tu::shouldImport(VD, Ctx) && VD->hasInit())
-      if (const Expr *Init = VD->getInit())
+  } else if (const auto *VD = dyn_cast<VarDecl>(D); VD && (cross_tu::shouldImport(VD, Ctx) && VD->hasInit())) 
+    if (const Expr *Init = VD->getInit())
         addIfInMain(VD, Init->getBeginLoc());
-  }
+  
 
   if (const auto *DC = dyn_cast<DeclContext>(D))
     for (const Decl *D : DC->decls())

@@ -91,11 +91,10 @@ public:
         handleExternallyVisibleObjABI(VD->getType().getTypePtr(), M,
                                       /*IsParam*/false);
     }
-    else if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
-      if (FD->isExternallyVisible())
-        handleExternallyVisibleObjABI(FD->getType().getTypePtr(), M,
+    else if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D); FD && (FD->isExternallyVisible())) 
+      handleExternallyVisibleObjABI(FD->getType().getTypePtr(), M,
                                       /*IsParam*/false);
-    }
+    
   }
 
   llvm::Value *testFPKind(llvm::Value *V, unsigned BuiltinID,
@@ -152,9 +151,8 @@ bool SystemZABIInfo::isPromotableIntegerTypeForABI(QualType Ty) const {
   if (ABIInfo::isPromotableIntegerTypeForABI(Ty))
     return true;
 
-  if (const auto *EIT = Ty->getAs<BitIntType>())
-    if (EIT->getNumBits() < 64)
-      return true;
+  if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && (EIT->getNumBits() < 64))
+    return true;
 
   // 32-bit values must also be promoted.
   if (const BuiltinType *BT = Ty->getAs<BuiltinType>())
@@ -213,9 +211,8 @@ QualType SystemZABIInfo::GetSingleElementType(QualType Ty) const {
     QualType Found;
 
     // If this is a C++ record, check the bases first.
-    if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD))
-      if (CXXRD->hasDefinition())
-        for (const auto &I : CXXRD->bases()) {
+    if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD); CXXRD && (CXXRD->hasDefinition()))
+      for (const auto &I : CXXRD->bases()) {
           QualType Base = I.getType();
 
           // Empty bases don't affect things either way.
@@ -523,9 +520,8 @@ bool SystemZTargetCodeGenInfo::isVectorTypeBased(const Type *Ty,
       return true;
 
   if (const auto *RD = Ty->getAsRecordDecl()) {
-    if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD))
-      if (CXXRD->hasDefinition())
-        for (const auto &I : CXXRD->bases())
+    if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD); CXXRD && (CXXRD->hasDefinition()))
+      for (const auto &I : CXXRD->bases())
           if (isVectorTypeBased(I.getType().getTypePtr(), /*IsParam*/false))
             return true;
     for (const auto *FD : RD->fields())
@@ -533,9 +529,8 @@ bool SystemZTargetCodeGenInfo::isVectorTypeBased(const Type *Ty,
         return true;
   }
 
-  if (const auto *FT = Ty->getAs<FunctionType>())
-    if (isVectorTypeBased(FT->getReturnType().getTypePtr(), /*IsParam*/true))
-      return true;
+  if (const auto *FT = Ty->getAs<FunctionType>(); FT && (isVectorTypeBased(FT->getReturnType().getTypePtr(), /*IsParam*/true)))
+    return true;
   if (const FunctionProtoType *Proto = Ty->getAs<FunctionProtoType>())
     for (const auto &ParamType : Proto->getParamTypes())
       if (isVectorTypeBased(ParamType.getTypePtr(), /*IsParam*/true))

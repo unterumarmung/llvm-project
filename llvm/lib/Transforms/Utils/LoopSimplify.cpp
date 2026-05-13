@@ -230,11 +230,11 @@ static Loop *separateNestedLoop(Loop *L, BasicBlock *Preheader,
   // convergent function calls in GVNHoist and JumpThreading.
   for (auto *BB : L->blocks()) {
     for (auto &II : *BB) {
-      if (auto CI = dyn_cast<CallBase>(&II)) {
-        if (CI->isConvergent()) {
+      if (auto CI = dyn_cast<CallBase>(&II); CI && (CI->isConvergent())) 
+        {
           return nullptr;
         }
-      }
+      
     }
   }
 

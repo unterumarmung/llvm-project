@@ -147,12 +147,12 @@ TEST_F(CtxProfAnalysisTest, GetCallsiteIDNegativeTest) {
   CallBase *FirstCall = nullptr;
   for (auto &BB : *F)
     for (auto &I : BB)
-      if (auto *CB = dyn_cast<CallBase>(&I)) {
-        if (CB->isIndirectCall() || !CB->getCalledFunction()->isIntrinsic()) {
+      if (auto *CB = dyn_cast<CallBase>(&I); CB && (CB->isIndirectCall() || !CB->getCalledFunction()->isIntrinsic())) 
+        {
           FirstCall = CB;
           break;
         }
-      }
+      
   ASSERT_NE(FirstCall, nullptr);
   auto *IndIns = CtxProfAnalysis::getCallsiteInstrumentation(*FirstCall);
   EXPECT_EQ(IndIns, nullptr);

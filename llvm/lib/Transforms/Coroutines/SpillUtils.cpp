@@ -236,9 +236,8 @@ struct AllocaUseVisitor : PtrUseVisitor<AllocaUseVisitor> {
           }
           // If we are overriding the memory location, the pointer certainly
           // won't escape.
-          if (auto *S = dyn_cast<StoreInst>(U))
-            if (S->getPointerOperand() == I)
-              continue;
+          if (auto *S = dyn_cast<StoreInst>(U); S && (S->getPointerOperand() == I))
+            continue;
           if (isa<LifetimeIntrinsic>(U))
             continue;
           // BitCastInst creats aliases of the memory location being stored

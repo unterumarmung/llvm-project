@@ -186,10 +186,9 @@ public:
       return;
     }
 
-    if (auto *DRE = dyn_cast<DeclRefExpr>(Arg)) {
-      if (CreateOrCopyOutArguments.contains(DRE->getDecl()))
-        return;
-    }
+    if (auto *DRE = dyn_cast<DeclRefExpr>(Arg); DRE && (CreateOrCopyOutArguments.contains(DRE->getDecl()))) 
+      return;
+    
     if (RTC.isARCEnabled() && isAdoptFnName(FnName))
       reportUseAfterFree(FnName, CE, DeclWithIssue, "when ARC is disabled");
     else

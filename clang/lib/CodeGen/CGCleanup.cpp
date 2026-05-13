@@ -130,8 +130,8 @@ bool EHScopeStack::containsOnlyNoopCleanups(
 bool EHScopeStack::requiresLandingPad() const {
   for (stable_iterator si = getInnermostEHScope(); si != stable_end(); ) {
     // Skip lifetime markers.
-    if (auto *cleanup = dyn_cast<EHCleanupScope>(&*find(si)))
-      if (cleanup->isLifetimeMarker()) {
+    if (auto *cleanup = dyn_cast<EHCleanupScope>(&*find(si)); cleanup && (cleanup->isLifetimeMarker()))
+      {
         si = cleanup->getEnclosingEHScope();
         continue;
       }
@@ -1058,10 +1058,9 @@ void CodeGenFunction::PopCleanupBlock(bool FallthroughIsBranchThrough,
     if (!Personality.isMSVCPersonality()) {
       EHStack.pushTerminate();
       PushedTerminate = true;
-    } else if (IsEHa && getInvokeDest()) {
-      if (!IsSEHFinallyCleanup)
-        EmitSehCppScopeEnd();
-    }
+    } else if ((IsEHa && getInvokeDest()) && (!IsSEHFinallyCleanup)) 
+      EmitSehCppScopeEnd();
+    
 
     // We only actually emit the cleanup code if the cleanup is either
     // active or was used before it was deactivated.

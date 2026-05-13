@@ -38,9 +38,8 @@ void tools::XCore::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   if (Args.hasArg(options::OPT_v))
     CmdArgs.push_back("-v");
 
-  if (Arg *A = Args.getLastArg(options::OPT_g_Group))
-    if (!A->getOption().matches(options::OPT_g0))
-      CmdArgs.push_back("-g");
+  if (Arg *A = Args.getLastArg(options::OPT_g_Group); A && (!A->getOption().matches(options::OPT_g0)))
+    CmdArgs.push_back("-g");
 
   if (Args.hasFlag(options::OPT_fverbose_asm, options::OPT_fno_verbose_asm,
                    false))

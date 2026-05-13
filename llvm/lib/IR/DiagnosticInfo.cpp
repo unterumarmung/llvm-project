@@ -67,12 +67,11 @@ DiagnosticInfoInlineAsm::DiagnosticInfoInlineAsm(const Instruction &I,
                                                  const Twine &MsgStr,
                                                  DiagnosticSeverity Severity)
     : DiagnosticInfo(DK_InlineAsm, Severity), MsgStr(MsgStr), Instr(&I) {
-  if (const MDNode *SrcLoc = I.getMetadata("srcloc")) {
-    if (SrcLoc->getNumOperands() != 0)
-      if (const auto *CI =
+  if (const MDNode *SrcLoc = I.getMetadata("srcloc"); SrcLoc && (SrcLoc->getNumOperands() != 0)) 
+    if (const auto *CI =
               mdconst::dyn_extract<ConstantInt>(SrcLoc->getOperand(0)))
         LocCookie = CI->getZExtValue();
-  }
+  
 }
 
 void DiagnosticInfoInlineAsm::print(DiagnosticPrinter &DP) const {

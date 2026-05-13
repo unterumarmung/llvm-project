@@ -211,12 +211,12 @@ void ROCDLDialect::initialize() {
 LogicalResult ROCDLDialect::verifyOperationAttribute(Operation *op,
                                                      NamedAttribute attr) {
   // Kernel function attribute should be attached to functions.
-  if (kernelAttrName.getName() == attr.getName()) {
-    if (!isa<LLVM::LLVMFuncOp>(op)) {
+  if ((kernelAttrName.getName() == attr.getName()) && (!isa<LLVM::LLVMFuncOp>(op))) 
+    {
       return op->emitError() << "'" << kernelAttrName.getName()
                              << "' attribute attached to unexpected op";
     }
-  }
+  
   return success();
 }
 

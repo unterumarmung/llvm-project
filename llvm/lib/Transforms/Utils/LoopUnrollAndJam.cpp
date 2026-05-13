@@ -144,18 +144,16 @@ static bool processHeaderPhiOperands(BasicBlock *Header, BasicBlock *Latch,
 
     if (AftBlocks.count(I->getParent()))
       for (auto &U : I->operands())
-        if (Instruction *II = dyn_cast<Instruction>(U))
-          if (!ProcessInstr(II))
-            return false;
+        if (Instruction *II = dyn_cast<Instruction>(U); II && (!ProcessInstr(II)))
+          return false;
 
     return Visit(I);
   };
 
   for (auto &Phi : Header->phis()) {
     Value *V = Phi.getIncomingValueForBlock(Latch);
-    if (Instruction *I = dyn_cast<Instruction>(V))
-      if (!ProcessInstr(I))
-        return false;
+    if (Instruction *I = dyn_cast<Instruction>(V); I && (!ProcessInstr(I)))
+      return false;
   }
 
   return true;

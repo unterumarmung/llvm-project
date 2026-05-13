@@ -367,10 +367,9 @@ public:
     for (const MachineInstr &MI :
          make_range(AvailCopy->getReverseIterator(), I.getReverseIterator()))
       for (const MachineOperand &MO : MI.operands())
-        if (MO.isRegMask())
+        if ((MO.isRegMask()) && (MO.clobbersPhysReg(AvailSrc) || MO.clobbersPhysReg(AvailDst)))
           // FIXME: Shall we simultaneously invalidate AvailSrc or AvailDst?
-          if (MO.clobbersPhysReg(AvailSrc) || MO.clobbersPhysReg(AvailDst))
-            return nullptr;
+          return nullptr;
 
     return AvailCopy;
   }
@@ -397,9 +396,8 @@ public:
     for (const MachineInstr &MI :
          make_range(AvailCopy->getIterator(), DestCopy.getIterator()))
       for (const MachineOperand &MO : MI.operands())
-        if (MO.isRegMask())
-          if (MO.clobbersPhysReg(AvailSrc) || MO.clobbersPhysReg(AvailDst))
-            return nullptr;
+        if ((MO.isRegMask()) && (MO.clobbersPhysReg(AvailSrc) || MO.clobbersPhysReg(AvailDst)))
+          return nullptr;
 
     return AvailCopy;
   }
@@ -923,7 +921,7 @@ void MachineCopyPropagation::forwardCopyPropagateBlock(MachineBasicBlock &MBB) {
         isCopyInstr(MI, *TII, UseCopyInstr);
     if (CopyOperands) {
       auto [Dst, Src] = getDstSrcMCRegs(*CopyOperands);
-      if (!TRI->regsOverlap(Dst, Src)) {
+      if ((!TRI->regsOverlap(Dst, Src)) && (eraseIfRedundant(MI, Dst, Src) || eraseIfRedundant(MI, Src, Dst))) 
         // The two copies cancel out and the source of the first copy
         // hasn't been overridden, eliminate the second one. e.g.
         //  %ecx = COPY %eax
@@ -939,9 +937,8 @@ void MachineCopyPropagation::forwardCopyPropagateBlock(MachineBasicBlock &MBB) {
         //  %ecx = COPY %eax
         // =>
         //  %ecx = COPY %eax
-        if (eraseIfRedundant(MI, Dst, Src) || eraseIfRedundant(MI, Src, Dst))
-          continue;
-      }
+        continue;
+      
     }
 
     // Clobber any earlyclobber regs first.
@@ -968,12 +965,11 @@ void MachineCopyPropagation::forwardCopyPropagateBlock(MachineBasicBlock &MBB) {
     CopyOperands = isCopyInstr(MI, *TII, UseCopyInstr);
     if (CopyOperands) {
       auto [Dst, Src] = getDstSrcMCRegs(*CopyOperands);
-      if (!TRI->regsOverlap(Dst, Src)) {
+      if ((!TRI->regsOverlap(Dst, Src)) && (!isNeverRedundant(MI) && !isNeverRedundant(Dst))) 
         // FIXME: Document why this does not consider `RegSrc`, similar to how
         // `backwardCopyPropagateBlock` does.
-        if (!isNeverRedundant(MI) && !isNeverRedundant(Dst))
-          MaybeDeadCopies.insert(&MI);
-      }
+        MaybeDeadCopies.insert(&MI);
+      
     }
 
     SmallVector<Register, 4> Defs;
@@ -1183,16 +1179,16 @@ void MachineCopyPropagation::backwardCopyPropagateBlock(
     if (CopyOperands && MI.getNumImplicitOperands() == 0) {
       auto [Dst, Src] = getDstSrcMCRegs(*CopyOperands);
 
-      if (!TRI->regsOverlap(Dst, Src)) {
+      if ((!TRI->regsOverlap(Dst, Src)) && (isBackwardPropagatableCopy(MI, *CopyOperands))) 
         // Unlike forward cp, we don't invoke propagateDefs here,
         // just let forward cp do COPY-to-COPY propagation.
-        if (isBackwardPropagatableCopy(MI, *CopyOperands)) {
+        {
           Tracker.invalidateRegister(Src, *TRI, *TII, UseCopyInstr);
           Tracker.invalidateRegister(Dst, *TRI, *TII, UseCopyInstr);
           Tracker.trackCopy(&MI, *TRI, *TII, UseCopyInstr);
           continue;
         }
-      }
+      
     }
 
     // Invalidate any earlyclobber regs first.

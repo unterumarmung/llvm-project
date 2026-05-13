@@ -617,9 +617,8 @@ void PHIEliminationImpl::LowerPHINode(MachineBasicBlock &MBB,
                     TII->get(TargetOpcode::IMPLICIT_DEF), IncomingReg);
 
         // Clean up the old implicit-def, if there even was one.
-        if (MachineInstr *DefMI = MRI->getVRegDef(SrcReg))
-          if (DefMI->isImplicitDef())
-            ImpDefs.insert(DefMI);
+        if (MachineInstr *DefMI = MRI->getVRegDef(SrcReg); DefMI && (DefMI->isImplicitDef()))
+          ImpDefs.insert(DefMI);
       } else {
         // Delete the debug location, since the copy is inserted into a
         // different basic block.

@@ -573,9 +573,8 @@ static void printFrameIndex(raw_ostream& OS, int FrameIndex, bool IsFixed,
   StringRef Name;
   if (MFI) {
     IsFixed = MFI->isFixedObjectIndex(FrameIndex);
-    if (const AllocaInst *Alloca = MFI->getObjectAllocation(FrameIndex))
-      if (Alloca->hasName())
-        Name = Alloca->getName();
+    if (const AllocaInst *Alloca = MFI->getObjectAllocation(FrameIndex); Alloca && (Alloca->hasName()))
+      Name = Alloca->getName();
     if (IsFixed)
       FrameIndex -= MFI->getObjectIndexBegin();
   }

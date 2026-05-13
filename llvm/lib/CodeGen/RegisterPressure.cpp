@@ -775,12 +775,11 @@ void RegPressureTracker::recede(const RegisterOperands &RegOpers,
       PreviousMask = LiveOut;
     }
 
-    if (NewMask.none()) {
+    if ((NewMask.none()) && (TrackLaneMasks && LiveUses != nullptr)) 
       // Add a 0 entry to LiveUses as a marker that the complete vreg has become
       // dead.
-      if (TrackLaneMasks && LiveUses != nullptr)
-        setRegZero(*LiveUses, VRegOrUnit);
-    }
+      setRegZero(*LiveUses, VRegOrUnit);
+    
 
     decreaseRegPressure(VRegOrUnit, PreviousMask, NewMask);
   }

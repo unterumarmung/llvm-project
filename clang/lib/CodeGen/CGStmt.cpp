@@ -730,12 +730,12 @@ void CodeGenFunction::EmitLabel(const LabelDecl *D) {
   EmitBlock(Dest.getBlock());
 
   // Emit debug info for labels.
-  if (CGDebugInfo *DI = getDebugInfo()) {
-    if (CGM.getCodeGenOpts().hasReducedDebugInfo()) {
+  if (CGDebugInfo *DI = getDebugInfo(); DI && (CGM.getCodeGenOpts().hasReducedDebugInfo())) 
+    {
       DI->setLocation(D->getLocation());
       DI->EmitLabel(D, Builder);
     }
-  }
+  
 
   incrementProfileCounter(D->getStmt());
 }
@@ -1605,11 +1605,11 @@ void CodeGenFunction::EmitReturnStmt(const ReturnStmt &S) {
   std::optional<llvm::SaveAndRestore<const CallExpr *>> SaveMustTail;
   if (RV && CurFnInfo &&
       CurFnInfo->getASTCallingConvention() == CallingConv::CC_SwiftAsync) {
-    if (auto CE = dyn_cast<CallExpr>(RV)) {
-      if (isSwiftAsyncCallee(CE)) {
+    if (auto CE = dyn_cast<CallExpr>(RV); CE && (isSwiftAsyncCallee(CE))) 
+      {
         SaveMustTail.emplace(MustTailCall, CE);
       }
-    }
+    
   }
 
   // FIXME: Clean this up by using an LValue for ReturnTemp,
@@ -1846,9 +1846,8 @@ void CodeGenFunction::EmitCaseStmt(const CaseStmt &S,
     CE = dyn_cast<ConstantExpr>(S.getLHS());
   if (CE) {
     if (auto DE = dyn_cast<DeclRefExpr>(CE->getSubExpr()))
-      if (CGDebugInfo *Dbg = getDebugInfo())
-        if (CGM.getCodeGenOpts().hasReducedDebugInfo())
-          Dbg->EmitGlobalVariable(DE->getDecl(),
+      if (CGDebugInfo *Dbg = getDebugInfo(); Dbg && (CGM.getCodeGenOpts().hasReducedDebugInfo()))
+        Dbg->EmitGlobalVariable(DE->getDecl(),
               APValue(llvm::APSInt(CaseVal->getValue())));
   }
 
@@ -2563,9 +2562,8 @@ CodeGenFunction::EmitAsmInput(const TargetInfo::ConstraintInfo &Info,
               nullptr};
   }
 
-  if (Info.allowsRegister() || !Info.allowsMemory())
-    if (CodeGenFunction::hasScalarEvaluationKind(InputExpr->getType()))
-      return {EmitScalarExpr(InputExpr), nullptr};
+  if ((Info.allowsRegister() || !Info.allowsMemory()) && (CodeGenFunction::hasScalarEvaluationKind(InputExpr->getType())))
+    return {EmitScalarExpr(InputExpr), nullptr};
   if (InputExpr->getStmtClass() == Expr::CXXThisExprClass)
     return {EmitScalarExpr(InputExpr), nullptr};
   InputExpr = InputExpr->IgnoreParenNoopCasts(getContext());
@@ -3145,8 +3143,8 @@ bool CodeGenFunction::HandleClobbers(const AsmStmt &S,
       }
     }
 
-    if (isa<MSAsmStmt>(&S)) {
-      if (Clobber == "eax" || Clobber == "edx") {
+    if ((isa<MSAsmStmt>(&S)) && (Clobber == "eax" || Clobber == "edx")) 
+      {
         if (Constraints.find("=&A") != std::string::npos)
           continue;
 
@@ -3163,7 +3161,7 @@ bool CodeGenFunction::HandleClobbers(const AsmStmt &S,
           continue;
         }
       }
-    }
+    
 
     if (!Constraints.empty())
       Constraints += ',';

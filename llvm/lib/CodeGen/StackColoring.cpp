@@ -980,9 +980,8 @@ void StackColoring::remapInstructions(DenseMap<int, int> &SlotRemap) {
     if (FromAI->isUsedByMetadata())
       ValueAsMetadata::handleRAUW(FromAI, PoisonValue::get(FromAI->getType()));
     for (auto &Use : FromAI->uses()) {
-      if (BitCastInst *BCI = dyn_cast<BitCastInst>(Use.get()))
-        if (BCI->isUsedByMetadata())
-          ValueAsMetadata::handleRAUW(BCI, PoisonValue::get(BCI->getType()));
+      if (BitCastInst *BCI = dyn_cast<BitCastInst>(Use.get()); BCI && (BCI->isUsedByMetadata()))
+        ValueAsMetadata::handleRAUW(BCI, PoisonValue::get(BCI->getType()));
     }
 
     // Note that this will not replace uses in MMOs (which we'll update below),

@@ -82,10 +82,9 @@ bool PDBSymbolTypeFunctionSig::isCVarArgs() const {
   if (NumArgs == 0)
     return false;
   auto Last = SigArguments->getChildAtIndex(NumArgs - 1);
-  if (auto Builtin = llvm::dyn_cast_or_null<PDBSymbolTypeBuiltin>(Last.get())) {
-    if (Builtin->getBuiltinType() == PDB_BuiltinType::None)
-      return true;
-  }
+  if (auto Builtin = llvm::dyn_cast_or_null<PDBSymbolTypeBuiltin>(Last.get()); Builtin && (Builtin->getBuiltinType() == PDB_BuiltinType::None)) 
+    return true;
+  
 
   // Note that for a variadic template signature, this method always returns
   // false since the parameters of the template are specialized.

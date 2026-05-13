@@ -125,14 +125,14 @@ void DataSharingProcessor::processStep2(mlir::Operation *op, bool isLoop) {
 
 void DataSharingProcessor::insertDeallocs() {
   for (const semantics::Symbol *sym : allPrivatizedSymbols)
-    if (semantics::IsAllocatable(sym->GetUltimate())) {
-      if (!useDelayedPrivatization) {
+    if ((semantics::IsAllocatable(sym->GetUltimate())) && (!useDelayedPrivatization)) 
+      {
         converter.createHostAssociateVarCloneDealloc(*sym);
         continue;
       }
       // For delayed privatization deallocs are created by
       // populateByRefInitAndCleanupRegions
-    }
+    
 }
 
 void DataSharingProcessor::cloneSymbol(const semantics::Symbol *sym) {

@@ -156,17 +156,16 @@ public:
               << Arch;
         } else
           setBranchProtectionFnAttributes(BPI, (*Fn));
-      } else if (CGM.getLangOpts().BranchTargetEnforcement ||
-                 CGM.getLangOpts().hasSignReturnAddress()) {
+      } else if ((CGM.getLangOpts().BranchTargetEnforcement ||
+                 CGM.getLangOpts().hasSignReturnAddress()) && (!CGM.getTarget().isBranchProtectionSupportedArch(Attr.CPU))) 
         // If the Branch Protection attribute is missing, validate the target
         // Architecture attribute against Branch Protection command line
         // settings.
-        if (!CGM.getTarget().isBranchProtectionSupportedArch(Attr.CPU))
-          CGM.getDiags().Report(
+        CGM.getDiags().Report(
               D->getLocation(),
               diag::warn_target_unsupported_branch_protection_attribute)
               << Attr.CPU;
-      }
+      
     } else if (CGM.getTarget().isBranchProtectionSupportedArch(
                    CGM.getTarget().getTargetOpts().CPU)) {
       TargetInfo::BranchProtectionInfo BPI(CGM.getLangOpts());
@@ -314,16 +313,16 @@ ABIArgInfo ARMABIInfo::classifyHomogeneousAggregate(QualType Ty,
                                                     uint64_t Members) const {
   assert(Base && "Base class should be set for homogeneous aggregate");
   // Base can be a floating-point or a vector.
-  if (const VectorType *VT = Base->getAs<VectorType>()) {
+  if (const VectorType *VT = Base->getAs<VectorType>(); VT && (!getTarget().hasFastHalfType() && containsAnyFP16Vectors(Ty))) 
     // FP16 vectors should be converted to integer vectors
-    if (!getTarget().hasFastHalfType() && containsAnyFP16Vectors(Ty)) {
+    {
       uint64_t Size = getContext().getTypeSize(VT);
       auto *NewVecTy = llvm::FixedVectorType::get(
           llvm::Type::getInt32Ty(getVMContext()), Size / 32);
       llvm::Type *Ty = llvm::ArrayType::get(NewVecTy, Members);
       return ABIArgInfo::getDirect(Ty, 0, nullptr, false);
     }
-  }
+  
   unsigned Align = 0;
   if (getABIKind() == ARMABIKind::AAPCS ||
       getABIKind() == ARMABIKind::AAPCS_VFP) {
@@ -386,9 +385,8 @@ ABIArgInfo ARMABIInfo::classifyArgumentType(QualType Ty, bool isVariadic,
       Ty = ED->getIntegerType();
     }
 
-    if (const auto *EIT = Ty->getAs<BitIntType>())
-      if (EIT->getNumBits() > 64)
-        return getNaturalAlignIndirect(
+    if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 64))
+      return getNaturalAlignIndirect(
             Ty, /*AddrSpace=*/getDataLayout().getAllocaAddrSpace(),
             /*ByVal=*/true);
 
@@ -595,9 +593,8 @@ ABIArgInfo ARMABIInfo::classifyReturnType(QualType RetTy, bool isVariadic,
     if (const auto *ED = RetTy->getAsEnumDecl())
       RetTy = ED->getIntegerType();
 
-    if (const auto *EIT = RetTy->getAs<BitIntType>())
-      if (EIT->getNumBits() > 64)
-        return getNaturalAlignIndirect(
+    if (const auto *EIT = RetTy->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 64))
+      return getNaturalAlignIndirect(
             RetTy, /*AddrSpace=*/getDataLayout().getAllocaAddrSpace(),
             /*ByVal=*/false);
 
@@ -720,11 +717,10 @@ bool ARMABIInfo::containsAnyFP16Vectors(QualType Ty) const {
   }
   if (const auto *RD = Ty->getAsRecordDecl()) {
     // If this is a C++ record, check the bases first.
-    if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD))
-      if (llvm::any_of(CXXRD->bases(), [this](const CXXBaseSpecifier &B) {
+    if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD); CXXRD && (llvm::any_of(CXXRD->bases(), [this](const CXXBaseSpecifier &B) {
             return containsAnyFP16Vectors(B.getType());
-          }))
-        return true;
+          })))
+      return true;
 
     if (llvm::any_of(RD->fields(), [this](FieldDecl *FD) {
           return FD && containsAnyFP16Vectors(FD->getType());

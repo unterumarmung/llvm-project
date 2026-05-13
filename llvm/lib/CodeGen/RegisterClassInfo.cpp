@@ -181,9 +181,8 @@ void RegisterClassInfo::compute(const TargetRegisterClass *RC) const {
 
   // Check if RC is a proper sub-class.
   if (const TargetRegisterClass *Super =
-          TRI->getLargestLegalSuperClass(RC, *MF))
-    if (Super != RC && getNumAllocatableRegs(Super) > RCI.NumRegs)
-      RCI.ProperSubClass = true;
+          TRI->getLargestLegalSuperClass(RC, *MF); Super && (Super != RC && getNumAllocatableRegs(Super) > RCI.NumRegs))
+    RCI.ProperSubClass = true;
 
   RCI.MinCost = MinCost;
   RCI.LastCostChange = LastCostChange;

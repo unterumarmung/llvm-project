@@ -231,9 +231,8 @@ bool Commit::canInsert(SourceLocation loc, FileOffset &offs) {
   const SourceManager &SM = SourceMgr;
   loc = SM.getTopMacroCallerLoc(loc);
 
-  if (loc.isMacroID())
-    if (!isAtStartOfMacroExpansion(loc, &loc))
-      return false;
+  if ((loc.isMacroID()) && (!isAtStartOfMacroExpansion(loc, &loc)))
+    return false;
 
   if (SM.isInSystemHeader(loc))
     return false;
@@ -261,9 +260,8 @@ bool Commit::canInsertAfterToken(SourceLocation loc, FileOffset &offs,
   const SourceManager &SM = SourceMgr;
   loc = SM.getTopMacroCallerLoc(loc);
 
-  if (loc.isMacroID())
-    if (!isAtEndOfMacroExpansion(loc, &loc))
-      return false;
+  if ((loc.isMacroID()) && (!isAtEndOfMacroExpansion(loc, &loc)))
+    return false;
 
   if (SM.isInSystemHeader(loc))
     return false;
@@ -281,11 +279,10 @@ bool Commit::canInsertAfterToken(SourceLocation loc, FileOffset &offs,
 
 bool Commit::canInsertInOffset(SourceLocation OrigLoc, FileOffset Offs) {
   for (const auto &act : CachedEdits)
-    if (act.Kind == Act_Remove) {
-      if (act.Offset.getFID() == Offs.getFID() &&
-          Offs > act.Offset && Offs < act.Offset.getWithOffset(act.Length))
-        return false; // position has been removed.
-    }
+    if ((act.Kind == Act_Remove) && (act.Offset.getFID() == Offs.getFID() &&
+          Offs > act.Offset && Offs < act.Offset.getWithOffset(act.Length))) 
+      return false; // position has been removed.
+    
 
   if (!Editor)
     return true;

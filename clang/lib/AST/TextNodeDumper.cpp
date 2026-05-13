@@ -289,9 +289,8 @@ void TextNodeDumper::Visit(const Decl *D) {
     for (Module *M : D->getASTContext().getModulesWithMergedDefinition(
              const_cast<NamedDecl *>(ND)))
       AddChild([=] { OS << "also in " << M->getFullModuleName(); });
-  if (const NamedDecl *ND = dyn_cast<NamedDecl>(D))
-    if (!ND->isUnconditionallyVisible())
-      OS << " hidden";
+  if (const NamedDecl *ND = dyn_cast<NamedDecl>(D); ND && (!ND->isUnconditionallyVisible()))
+    OS << " hidden";
   if (D->isImplicit())
     OS << " implicit";
 
@@ -582,10 +581,9 @@ void TextNodeDumper::Visit(const concepts::Requirement *R) {
 
   dumpPointer(R);
 
-  if (auto *ER = dyn_cast<concepts::ExprRequirement>(R)) {
-    if (ER->hasNoexceptRequirement())
-      OS << " noexcept";
-  }
+  if (auto *ER = dyn_cast<concepts::ExprRequirement>(R); ER && (ER->hasNoexceptRequirement())) 
+    OS << " noexcept";
+  
 
   if (R->isDependent())
     OS << " dependent";
@@ -2419,8 +2417,8 @@ void TextNodeDumper::VisitFunctionDecl(const FunctionDecl *D) {
     }
   }
 
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(D)) {
-    if (MD->size_overridden_methods() != 0) {
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(D); MD && (MD->size_overridden_methods() != 0)) 
+    {
       auto dumpOverride = [=](const CXXMethodDecl *D) {
         SplitQualType T_split = D->getType().split();
         OS << D << " " << D->getParent()->getName() << "::" << D->getDeclName()
@@ -2438,7 +2436,7 @@ void TextNodeDumper::VisitFunctionDecl(const FunctionDecl *D) {
         OS << " ]";
       });
     }
-  }
+  
 
   if (!D->isInlineSpecified() && D->isInlined()) {
     OS << " implicit-inline";

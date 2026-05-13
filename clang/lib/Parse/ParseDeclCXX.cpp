@@ -915,11 +915,10 @@ Decl *Parser::ParseAliasDeclarationAfterDeclarator(
 
 static FixItHint getStaticAssertNoMessageFixIt(const Expr *AssertExpr,
                                                SourceLocation EndExprLoc) {
-  if (const auto *BO = dyn_cast_or_null<BinaryOperator>(AssertExpr)) {
-    if (BO->getOpcode() == BO_LAnd &&
-        isa<StringLiteral>(BO->getRHS()->IgnoreImpCasts()))
-      return FixItHint::CreateReplacement(BO->getOperatorLoc(), ",");
-  }
+  if (const auto *BO = dyn_cast_or_null<BinaryOperator>(AssertExpr); BO && (BO->getOpcode() == BO_LAnd &&
+        isa<StringLiteral>(BO->getRHS()->IgnoreImpCasts()))) 
+    return FixItHint::CreateReplacement(BO->getOperatorLoc(), ",");
+  
   return FixItHint::CreateInsertion(EndExprLoc, ", \"\"");
 }
 
@@ -1720,8 +1719,8 @@ void Parser::ParseClassSpecifier(tok::TokenKind TagTokKind,
       DS.SetTypeSpecError();
       HasValidSpec = false;
     }
-    if (Spec.isSet())
-      if (Tok.isNot(tok::identifier) && Tok.isNot(tok::annot_template_id)) {
+    if ((Spec.isSet()) && (Tok.isNot(tok::identifier) && Tok.isNot(tok::annot_template_id)))
+      {
         Diag(Tok, diag::err_expected) << tok::identifier;
         HasValidSpec = false;
       }
@@ -2227,10 +2226,10 @@ void Parser::ParseClassSpecifier(tok::TokenKind TagTokKind,
   //
   // After a type-specifier, we don't expect a semicolon. This only happens in
   // C, since definitions are not permitted in this context in C++.
-  if (TUK == TagUseKind::Definition &&
+  if ((TUK == TagUseKind::Definition &&
       (getLangOpts().CPlusPlus || !isTypeSpecifier(DSC)) &&
-      (TemplateInfo.Kind != ParsedTemplateKind::NonTemplate || !isValidAfterTypeSpecifier(false))) {
-    if (Tok.isNot(tok::semi)) {
+      (TemplateInfo.Kind != ParsedTemplateKind::NonTemplate || !isValidAfterTypeSpecifier(false))) && (Tok.isNot(tok::semi))) 
+    {
       const PrintingPolicy &PPol = Actions.getASTContext().getPrintingPolicy();
       ExpectAndConsume(tok::semi, diag::err_expected_after,
                        DeclSpec::getSpecifierName(TagType, PPol));
@@ -2240,7 +2239,7 @@ void Parser::ParseClassSpecifier(tok::TokenKind TagTokKind,
       PP.EnterToken(Tok, /*IsReinject=*/true);
       Tok.setKind(tok::semi);
     }
-  }
+  
 }
 
 void Parser::ParseBaseClause(Decl *ClassDecl) {
@@ -4453,11 +4452,10 @@ bool Parser::ParseCXX11AttributeArgs(
       LO.CPlusPlus ? ParsedAttr::Form::CXX11() : ParsedAttr::Form::C23();
 
   // Try parsing microsoft attributes
-  if (getLangOpts().MicrosoftExt || getLangOpts().HLSL) {
-    if (hasAttribute(AttributeCommonInfo::Syntax::AS_Microsoft, ScopeName,
-                     AttrName, getTargetInfo(), getLangOpts()))
-      Form = ParsedAttr::Form::Microsoft();
-  }
+  if ((getLangOpts().MicrosoftExt || getLangOpts().HLSL) && (hasAttribute(AttributeCommonInfo::Syntax::AS_Microsoft, ScopeName,
+                     AttrName, getTargetInfo(), getLangOpts()))) 
+    Form = ParsedAttr::Form::Microsoft();
+  
 
   if (LO.CPlusPlus) {
     TentativeParsingAction TPA(*this);

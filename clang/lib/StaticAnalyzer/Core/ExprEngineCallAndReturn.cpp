@@ -576,10 +576,9 @@ void ExprEngine::inlineCall(WorkList *WList, const CallEvent &Call,
   // Note, during the 1st run, it doesn't matter if we mark the foreign
   // functions as visited (or not) because they can never appear as a top level
   // function in the main TU.
-  if (!isSecondPhaseCTU())
+  if ((!isSecondPhaseCTU()) && (VisitedCallees))
     // Mark the decl as visited.
-    if (VisitedCallees)
-      VisitedCallees->insert(D);
+    VisitedCallees->insert(D);
 }
 
 static ProgramStateRef getInlineFailedState(ProgramStateRef State,
@@ -865,10 +864,9 @@ ExprEngine::mayInlineCallKind(const CallEvent &Call, const ExplodedNode *Pred,
         !Opts.MayInlineCXXAllocator)
       return CIP_DisallowedOnce;
 
-    if (CallOpts.IsArrayCtorOrDtor) {
-      if (!shouldInlineArrayConstruction(Pred->getState(), CtorExpr, CurLC))
-        return CIP_DisallowedOnce;
-    }
+    if ((CallOpts.IsArrayCtorOrDtor) && (!shouldInlineArrayConstruction(Pred->getState(), CtorExpr, CurLC))) 
+      return CIP_DisallowedOnce;
+    
 
     // Inlining constructors requires including initializers in the CFG.
     const AnalysisDeclContext *ADC = CallerSF->getAnalysisDeclContext();
@@ -919,12 +917,12 @@ ExprEngine::mayInlineCallKind(const CallEvent &Call, const ExplodedNode *Pred,
     assert(ADC->getCFGBuildOptions().AddImplicitDtors && "No CFG destructors");
     (void)ADC;
 
-    if (CallOpts.IsArrayCtorOrDtor) {
-      if (!shouldInlineArrayDestruction(getElementCountOfArrayBeingDestructed(
-              Call, Pred->getState(), svalBuilder))) {
+    if ((CallOpts.IsArrayCtorOrDtor) && (!shouldInlineArrayDestruction(getElementCountOfArrayBeingDestructed(
+              Call, Pred->getState(), svalBuilder)))) 
+      {
         return CIP_DisallowedOnce;
       }
-    }
+    
 
     // Allow disabling temporary destructor inlining with a separate option.
     if (CallOpts.IsTemporaryCtorOrDtor &&
@@ -995,9 +993,8 @@ static bool isCXXSharedPtrDtor(const FunctionDecl *FD) {
     return false;
 
   const CXXRecordDecl *RD = Dtor->getParent();
-  if (const IdentifierInfo *II = RD->getDeclName().getAsIdentifierInfo())
-    if (II->isStr("shared_ptr"))
-        return true;
+  if (const IdentifierInfo *II = RD->getDeclName().getAsIdentifierInfo(); II && (II->isStr("shared_ptr")))
+    return true;
 
   return false;
 }
@@ -1018,30 +1015,24 @@ bool ExprEngine::mayInlineDecl(AnalysisDeclContext *CalleeADC) const {
   if (Ctx.getLangOpts().CPlusPlus) {
     if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(CalleeADC->getDecl())) {
       // Conditionally control the inlining of template functions.
-      if (!Opts.MayInlineTemplateFunctions)
-        if (FD->getTemplatedKind() != FunctionDecl::TK_NonTemplate)
-          return false;
+      if ((!Opts.MayInlineTemplateFunctions) && (FD->getTemplatedKind() != FunctionDecl::TK_NonTemplate))
+        return false;
 
       // Conditionally control the inlining of C++ standard library functions.
-      if (!Opts.MayInlineCXXStandardLibrary)
-        if (Ctx.getSourceManager().isInSystemHeader(FD->getLocation()))
-          if (AnalysisDeclContext::isInStdNamespace(FD))
-            return false;
+      if ((!Opts.MayInlineCXXStandardLibrary) && (Ctx.getSourceManager().isInSystemHeader(FD->getLocation())) && (AnalysisDeclContext::isInStdNamespace(FD)))
+        return false;
 
       // Conditionally control the inlining of methods on objects that look
       // like C++ containers.
-      if (!Opts.MayInlineCXXContainerMethods)
-        if (!AMgr.isInCodeFile(FD->getLocation()))
-          if (isContainerMethod(Ctx, FD))
-            return false;
+      if ((!Opts.MayInlineCXXContainerMethods) && (!AMgr.isInCodeFile(FD->getLocation())) && (isContainerMethod(Ctx, FD)))
+        return false;
 
       // Conditionally control the inlining of the destructor of C++ shared_ptr.
       // We don't currently do a good job modeling shared_ptr because we can't
       // see the reference count, so treating as opaque is probably the best
       // idea.
-      if (!Opts.MayInlineCXXSharedPtrDtor)
-        if (isCXXSharedPtrDtor(FD))
-          return false;
+      if ((!Opts.MayInlineCXXSharedPtrDtor) && (isCXXSharedPtrDtor(FD)))
+        return false;
     }
   }
 

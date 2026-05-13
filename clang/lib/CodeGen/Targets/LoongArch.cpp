@@ -149,11 +149,10 @@ bool LoongArchABIInfo::detectFARsEligibleStructHelper(
     QualType EltTy = ATy->getElementType();
     // Non-zero-length arrays of empty records make the struct ineligible to be
     // passed via FARs in C++.
-    if (const auto *RTy = EltTy->getAsCanonical<RecordType>()) {
-      if (ArraySize != 0 && isa<CXXRecordDecl>(RTy->getDecl()) &&
-          isEmptyRecord(getContext(), EltTy, true, true))
-        return false;
-    }
+    if (const auto *RTy = EltTy->getAsCanonical<RecordType>(); RTy && (ArraySize != 0 && isa<CXXRecordDecl>(RTy->getDecl()) &&
+          isEmptyRecord(getContext(), EltTy, true, true))) 
+      return false;
+    
     CharUnits EltSize = getContext().getTypeSizeInChars(EltTy);
     for (uint64_t i = 0; i < ArraySize; ++i) {
       if (!detectFARsEligibleStructHelper(EltTy, CurOff, Field1Ty, Field1Off,

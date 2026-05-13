@@ -183,13 +183,12 @@ static bool rescheduleCanonically(unsigned &PseudoIdempotentInstCount,
         continue;
       }
 
-      if (II->getOperand(i).isReg()) {
-        if (!II->getOperand(i).getReg().isVirtual())
-          if (!llvm::is_contained(PhysRegDefs,
-                                  II->getOperand(i).getReg().asMCReg())) {
+      if ((II->getOperand(i).isReg()) && (!II->getOperand(i).getReg().isVirtual()) && (!llvm::is_contained(PhysRegDefs,
+                                  II->getOperand(i).getReg().asMCReg()))) 
+        {
             continue;
           }
-      }
+      
 
       IsPseudoIdempotent = false;
       break;

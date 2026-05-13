@@ -99,9 +99,8 @@ static void findReturnsToZap(Function &F,
       return;
     }
 
-    if (auto *RI = dyn_cast<ReturnInst>(BB.getTerminator()))
-      if (!isa<UndefValue>(RI->getOperand(0)))
-        ReturnsToZap.push_back(RI);
+    if (auto *RI = dyn_cast<ReturnInst>(BB.getTerminator()); RI && (!isa<UndefValue>(RI->getOperand(0))))
+      ReturnsToZap.push_back(RI);
   }
 }
 

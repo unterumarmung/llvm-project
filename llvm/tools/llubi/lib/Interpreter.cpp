@@ -168,12 +168,11 @@ class InstExecutor : public InstVisitor<InstExecutor, void>,
                          bool IsInput) {
     if (!Val.isDenormal())
       return Val;
-    if (IsInput) {
+    if ((IsInput) && (Ctx.getRandomBool())) 
       // Non-deterministically choose between flushing or preserving the
       // denormal value.
-      if (Ctx.getRandomBool())
-        return Val;
-    }
+      return Val;
+    
     if (Mode == DenormalMode::PositiveZero)
       return APFloat::getZero(Val.getSemantics(), false);
     if (Mode == DenormalMode::PreserveSign)
@@ -709,15 +708,14 @@ class InstExecutor : public InstVisitor<InstExecutor, void>,
                               Flags.hasNoUnsignedWrap());
     if (NewIndex.isPoison())
       return AnyValue::poison();
-    if (Flags.hasNoUnsignedSignedWrap()) {
+    if ((Flags.hasNoUnsignedSignedWrap()) && (Offset.isNonNegative() ? NewIndex.asInteger().ult(IndexBits)
+                                 : NewIndex.asInteger().ugt(IndexBits))) 
       // The successive addition of the current address, truncated to the
       // pointer index type and interpreted as an unsigned number, and each
       // offset, interpreted as a signed number, does not wrap the pointer index
       // type.
-      if (Offset.isNonNegative() ? NewIndex.asInteger().ult(IndexBits)
-                                 : NewIndex.asInteger().ugt(IndexBits))
-        return AnyValue::poison();
-    }
+      return AnyValue::poison();
+    
     APInt NewAddr = Ptr.address();
     NewAddr.insertBits(NewIndex.asInteger(), 0);
 
@@ -1659,11 +1657,10 @@ public:
           CRAttr.isValid())
         applyNoFPClassAttr(V, CRAttr.getNoFPClass());
     }
-    if (Ty->isPointerTy()) {
-      if (AttrsAtCallSite.hasAttribute(Attribute::NonNull) ||
-          AttrsAtCallee.hasAttribute(Attribute::NonNull))
-        applyNonNullAttr(V, Ty->getPointerAddressSpace(), DL);
-    }
+    if ((Ty->isPointerTy()) && (AttrsAtCallSite.hasAttribute(Attribute::NonNull) ||
+          AttrsAtCallee.hasAttribute(Attribute::NonNull))) 
+      applyNonNullAttr(V, Ty->getPointerAddressSpace(), DL);
+    
     if (Ty->isPtrOrPtrVectorTy()) {
       if (MaybeAlign Align = AttrsAtCallSite.getAlignment())
         applyAlignAttr(V, *Align);
@@ -1689,14 +1686,13 @@ public:
               << DereferenceableBytes << ") attribute.";
       } else if (uint64_t DereferenceableOrNullBytes =
                      std::max(AttrsAtCallSite.getDereferenceableOrNullBytes(),
-                              AttrsAtCallee.getDereferenceableOrNullBytes())) {
-        if (violatesDereferenceableBytesAttr(V, DereferenceableOrNullBytes,
-                                             /*OrNull=*/true, AS, DL))
-          reportImmediateUB() << "The value " << V
+                              AttrsAtCallee.getDereferenceableOrNullBytes()); DereferenceableOrNullBytes && (violatesDereferenceableBytesAttr(V, DereferenceableOrNullBytes,
+                                             /*OrNull=*/true, AS, DL))) 
+        reportImmediateUB() << "The value " << V
                               << " violates "
                                  "dereferenceable_or_null("
                               << DereferenceableOrNullBytes << ") attribute.";
-      }
+      
     }
   }
 
@@ -2378,10 +2374,9 @@ public:
       Value *V = GTI.getOperand();
 
       // Fast path for zero offsets.
-      if (auto *CI = dyn_cast<ConstantInt>(V)) {
-        if (CI->isZero())
-          continue;
-      }
+      if (auto *CI = dyn_cast<ConstantInt>(V); CI && (CI->isZero())) 
+        continue;
+      
       if (isa<ConstantAggregateZero>(V))
         continue;
 

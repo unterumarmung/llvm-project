@@ -31,9 +31,9 @@ static bool checkHeaderSearchPaths(const HeaderSearchOptions &HSOpts,
                                    const HeaderSearchOptions &ExistingHSOpts,
                                    DiagnosticsEngine *Diags,
                                    const LangOptions &LangOpts) {
-  if (LangOpts.Modules) {
-    if (HSOpts.VFSOverlayFiles != ExistingHSOpts.VFSOverlayFiles) {
-      if (Diags) {
+  if ((LangOpts.Modules) && (HSOpts.VFSOverlayFiles != ExistingHSOpts.VFSOverlayFiles) && (Diags)) 
+    
+      {
         Diags->Report(diag::warn_pch_vfsoverlay_mismatch);
         auto VFSNote = [&](int Type, ArrayRef<std::string> VFSOverlays) {
           if (VFSOverlays.empty()) {
@@ -46,8 +46,8 @@ static bool checkHeaderSearchPaths(const HeaderSearchOptions &HSOpts,
         VFSNote(0, HSOpts.VFSOverlayFiles);
         VFSNote(1, ExistingHSOpts.VFSOverlayFiles);
       }
-    }
-  }
+    
+  
   return false;
 }
 
@@ -478,12 +478,11 @@ dependencies::computePrebuiltModulesASTMap(
   // instead.
   PrebuiltModulesAttrsMap PrebuiltModulesASTMap;
 
-  if (!ScanInstance.getPreprocessorOpts().ImplicitPCHInclude.empty())
-    if (visitPrebuiltModule(
+  if ((!ScanInstance.getPreprocessorOpts().ImplicitPCHInclude.empty()) && (visitPrebuiltModule(
             ScanInstance.getPreprocessorOpts().ImplicitPCHInclude, ScanInstance,
             ScanInstance.getHeaderSearchOpts().PrebuiltModuleFiles,
-            PrebuiltModulesASTMap, ScanInstance.getDiagnostics(), StableDirs))
-      return {};
+            PrebuiltModulesASTMap, ScanInstance.getDiagnostics(), StableDirs)))
+    return {};
 
   return PrebuiltModulesASTMap;
 }

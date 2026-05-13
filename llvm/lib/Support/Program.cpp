@@ -64,10 +64,9 @@ ProcessInfo sys::ExecuteNoWait(StringRef Program, ArrayRef<StringRef> Args,
   ProcessInfo PI;
   if (ExecutionFailed)
     *ExecutionFailed = false;
-  if (!Execute(PI, Program, Args, Env, Redirects, MemoryLimit, ErrMsg,
-               AffinityMask, DetachProcess))
-    if (ExecutionFailed)
-      *ExecutionFailed = true;
+  if ((!Execute(PI, Program, Args, Env, Redirects, MemoryLimit, ErrMsg,
+               AffinityMask, DetachProcess)) && (ExecutionFailed))
+    *ExecutionFailed = true;
 
   return PI;
 }

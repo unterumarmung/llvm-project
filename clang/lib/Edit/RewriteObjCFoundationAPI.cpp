@@ -39,15 +39,15 @@ static bool checkForLiteralCreation(const ObjCMessageExpr *Msg,
 
   // When in ARC mode we also convert "[[.. alloc] init]" messages to literals,
   // since the change from +1 to +0 will be handled fine by ARC.
-  if (LangOpts.ObjCAutoRefCount) {
-    if (Msg->getReceiverKind() == ObjCMessageExpr::Instance) {
+  if ((LangOpts.ObjCAutoRefCount) && (Msg->getReceiverKind() == ObjCMessageExpr::Instance)) 
+    {
       if (const ObjCMessageExpr *Rec = dyn_cast<ObjCMessageExpr>(
                            Msg->getInstanceReceiver()->IgnoreParenImpCasts())) {
         if (Rec->getMethodFamily() == OMF_alloc)
           return true;
       }
     }
-  }
+  
 
   return false;
 }
@@ -162,10 +162,9 @@ static bool canRewriteToSubscriptSyntax(const ObjCInterfaceDecl *&IFace,
     return false;
   IFace = maybeAdjustInterfaceForSubscriptingCheck(IFace, Rec, Ctx);
 
-  if (const ObjCMethodDecl *MD = IFace->lookupInstanceMethod(subscriptSel)) {
-    if (!MD->isUnavailable())
-      return true;
-  }
+  if (const ObjCMethodDecl *MD = IFace->lookupInstanceMethod(subscriptSel); MD && (!MD->isUnavailable())) 
+    return true;
+  
   return false;
 }
 
@@ -760,10 +759,9 @@ static bool rewriteToNumberLiteral(const ObjCMessageExpr *Msg,
     return rewriteToBoolLiteral(Msg, BE, NS, commit);
 
   const Expr *literalE = Arg;
-  if (const UnaryOperator *UOE = dyn_cast<UnaryOperator>(literalE)) {
-    if (UOE->getOpcode() == UO_Plus || UOE->getOpcode() == UO_Minus)
-      literalE = UOE->getSubExpr();
-  }
+  if (const UnaryOperator *UOE = dyn_cast<UnaryOperator>(literalE); UOE && (UOE->getOpcode() == UO_Plus || UOE->getOpcode() == UO_Minus)) 
+    literalE = UOE->getSubExpr();
+  
 
   // Only integer and floating literals, otherwise try to rewrite to boxed
   // expression.

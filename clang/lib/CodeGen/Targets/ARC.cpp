@@ -130,9 +130,8 @@ ABIArgInfo ARCABIInfo::classifyArgumentType(QualType Ty,
         ABIArgInfo::getDirect(Result, 0, nullptr, false);
   }
 
-  if (const auto *EIT = Ty->getAs<BitIntType>())
-    if (EIT->getNumBits() > 64)
-      return getIndirectByValue(Ty);
+  if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 64))
+    return getIndirectByValue(Ty);
 
   return isPromotableIntegerTypeForABI(Ty)
              ? (FreeRegs >= SizeInRegs ? ABIArgInfo::getExtendInReg(Ty)

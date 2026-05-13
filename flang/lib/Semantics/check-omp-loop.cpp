@@ -186,12 +186,12 @@ void OmpStructureChecker::CheckSIMDNest(const parser::OpenMPConstruct &c) {
           // Allow `!$OMP ORDERED SIMD`
           [&](const parser::OmpBlockConstruct &c) {
             const parser::OmpDirectiveSpecification &beginSpec{c.BeginDir()};
-            if (beginSpec.DirId() == llvm::omp::Directive::OMPD_ordered) {
-              if (parser::omp::FindClause(
-                      beginSpec, llvm::omp::Clause::OMPC_simd)) {
+            if ((beginSpec.DirId() == llvm::omp::Directive::OMPD_ordered) && (parser::omp::FindClause(
+                      beginSpec, llvm::omp::Clause::OMPC_simd))) 
+              {
                 eligibleSIMD = true;
               }
-            }
+            
           },
           [&](const parser::OpenMPStandaloneConstruct &c) {
             if (auto *ssc{std::get_if<parser::OpenMPSimpleStandaloneConstruct>(
@@ -642,14 +642,14 @@ void OmpStructureChecker::CheckScanModifier(
   using ReductionModifier = parser::OmpReductionModifier;
 
   auto checkReductionSymbolInScan{[&](const parser::Name &name) {
-    if (auto *symbol{name.symbol}) {
-      if (!symbol->test(Symbol::Flag::OmpInclusiveScan) &&
-          !symbol->test(Symbol::Flag::OmpExclusiveScan)) {
+    if (auto *symbol{name.symbol}; symbol && (!symbol->test(Symbol::Flag::OmpInclusiveScan) &&
+          !symbol->test(Symbol::Flag::OmpExclusiveScan))) 
+      {
         context_.Say(name.source,
             "List item %s must appear in EXCLUSIVE or INCLUSIVE clause of an enclosed SCAN directive"_err_en_US,
             name.ToString());
       }
-    }
+    
   }};
 
   auto &modifiers{OmpGetModifiers(x.v)};
@@ -752,15 +752,15 @@ void OmpStructureChecker::Enter(const parser::OmpClause::Linear &x) {
           valid = false;
         }
       } else {
-        if (linearMod->v == parser::OmpLinearModifier::Value::Ref ||
-            linearMod->v == parser::OmpLinearModifier::Value::Uval) {
-          if (dir != llvm::omp::Directive::OMPD_declare_simd) {
+        if ((linearMod->v == parser::OmpLinearModifier::Value::Ref ||
+            linearMod->v == parser::OmpLinearModifier::Value::Uval) && (dir != llvm::omp::Directive::OMPD_declare_simd)) 
+          {
             context_.Say(modSource,
                 "A REF or UVAL '%s' may not be specified in a LINEAR clause on the %s directive"_err_en_US,
                 desc.name.str(), parser::omp::GetUpperName(dir, version));
             valid = false;
           }
-        }
+        
         if (!std::get</*PostModified=*/bool>(x.v.t)) {
           context_.Say(modSource,
               "The 'modifier(<list>)' syntax is deprecated in %s, use '<list> : modifier' instead"_warn_en_US,
@@ -780,14 +780,14 @@ void OmpStructureChecker::Enter(const parser::OmpClause::Linear &x) {
                   symbol->name(), desc.name.str());
             }
           }
-          if (linearMod->v == parser::OmpLinearModifier::Value::Ref ||
-              linearMod->v == parser::OmpLinearModifier::Value::Uval) {
-            if (!IsDummy(*symbol) || IsValue(*symbol)) {
+          if ((linearMod->v == parser::OmpLinearModifier::Value::Ref ||
+              linearMod->v == parser::OmpLinearModifier::Value::Uval) && (!IsDummy(*symbol) || IsValue(*symbol))) 
+            {
               context_.Say(source,
                   "If the `%s` is REF or UVAL, the list item '%s' must be a dummy argument without the VALUE attribute"_err_en_US,
                   desc.name.str(), symbol->name());
             }
-          }
+          
         } // for (symbol, source)
       }
     }

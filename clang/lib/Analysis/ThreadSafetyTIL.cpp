@@ -80,18 +80,18 @@ void BasicBlock::reservePredecessors(unsigned NumPreds) {
 // Phi nodes to find the canonical definition.
 const SExpr *til::getCanonicalVal(const SExpr *E) {
   while (true) {
-    if (const auto *V = dyn_cast<Variable>(E)) {
-      if (V->kind() == Variable::VK_Let) {
+    if (const auto *V = dyn_cast<Variable>(E); V && (V->kind() == Variable::VK_Let)) 
+      {
         E = V->definition();
         continue;
       }
-    }
-    if (const auto *Ph = dyn_cast<Phi>(E)) {
-      if (Ph->status() == Phi::PH_SingleVal) {
+    
+    if (const auto *Ph = dyn_cast<Phi>(E); Ph && (Ph->status() == Phi::PH_SingleVal)) 
+      {
         E = Ph->values()[0];
         continue;
       }
-    }
+    
     break;
   }
   return E;

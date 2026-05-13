@@ -173,9 +173,8 @@ BasicBlock::iterator ConstantHoistingPass::findMatInsertPt(Instruction *Inst,
   // constant before the cast instruction.
   if (Idx != ~0U) {
     Value *Opnd = Inst->getOperand(Idx);
-    if (auto CastInst = dyn_cast<Instruction>(Opnd))
-      if (CastInst->isCast())
-        return CastInst->getIterator();
+    if (auto CastInst = dyn_cast<Instruction>(Opnd); CastInst && (CastInst->isCast()))
+      return CastInst->getIterator();
   }
 
   // The simple and common case. This also includes constant expressions.
@@ -665,13 +664,13 @@ void ConstantHoistingPass::findBaseConstants(GlobalVariable *BaseGV) {
         if (LoadInst *LI = dyn_cast<LoadInst>(UI)) {
           MemUseValTy = LI->getType();
           break;
-        } else if (StoreInst *SI = dyn_cast<StoreInst>(UI)) {
+        } else if (StoreInst *SI = dyn_cast<StoreInst>(UI); SI && (SI->getPointerOperand() == SI->getOperand(U.OpndIdx))) 
           // Make sure the constant is used as pointer operand of the StoreInst.
-          if (SI->getPointerOperand() == SI->getOperand(U.OpndIdx)) {
+          {
             MemUseValTy = SI->getValueOperand()->getType();
             break;
           }
-        }
+        
       }
 
       // Check if the constant is in range of an add with immediate.

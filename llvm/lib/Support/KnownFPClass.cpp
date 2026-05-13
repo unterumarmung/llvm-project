@@ -144,11 +144,10 @@ KnownFPClass KnownFPClass::minMaxLike(const KnownFPClass &LHS_,
   // subtargets on AMDGPU the min/max instructions would not flush the
   // output and return the original value.
   //
-  if ((Known.KnownFPClasses & fcZero) != fcNone &&
-      !Known.isKnownNeverSubnormal()) {
-    if (Mode != DenormalMode::getIEEE())
-      Known.KnownFPClasses |= fcZero;
-  }
+  if (((Known.KnownFPClasses & fcZero) != fcNone &&
+      !Known.isKnownNeverSubnormal()) && (Mode != DenormalMode::getIEEE())) 
+    Known.KnownFPClasses |= fcZero;
+  
 
   if (Known.isKnownNeverNaN()) {
     if (KnownLHS.SignBit && KnownRHS.SignBit &&

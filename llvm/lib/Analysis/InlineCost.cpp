@@ -1505,10 +1505,9 @@ void InlineCostAnnotationWriter::emitInstructionAnnot(
     if (auto *VI = dyn_cast<Instruction>(V)) {
       if (VI->getFunction() != I->getFunction())
         OS << " (caller instruction)";
-    } else if (auto *VArg = dyn_cast<Argument>(V)) {
-      if (VArg->getParent() != I->getFunction())
-        OS << " (caller argument)";
-    }
+    } else if (auto *VArg = dyn_cast<Argument>(V); VArg && (VArg->getParent() != I->getFunction())) 
+      OS << " (caller argument)";
+    
   }
   OS << "\n";
 }
@@ -1807,15 +1806,15 @@ bool CallAnalyzer::simplifyCmpInstForRecCall(CmpInst &Cmp) {
   CC.AffectedValues.insert(FuncArg);
   Value *SimplifiedInstruction = llvm::simplifyInstructionWithOperands(
       cast<CmpInst>(&Cmp), {CallArg, Cmp.getOperand(1)}, SQ);
-  if (auto *ConstVal = dyn_cast_or_null<ConstantInt>(SimplifiedInstruction)) {
+  if (auto *ConstVal = dyn_cast_or_null<ConstantInt>(SimplifiedInstruction); ConstVal && ((ConstVal->isOne() && CC.Invert) ||
+        (ConstVal->isZero() && !CC.Invert))) 
     // Make sure that the BB of the recursive call is NOT the true successor
     // of the icmp. In other words, make sure that the recursion depth is 1.
-    if ((ConstVal->isOne() && CC.Invert) ||
-        (ConstVal->isZero() && !CC.Invert)) {
+    {
       SimplifiedValues[&Cmp] = ConstVal;
       return true;
     }
-  }
+  
   return false;
 }
 
@@ -1980,9 +1979,8 @@ bool CallAnalyzer::isKnownNonNullInCallee(Value *V) {
   // caller. This will also trip if the callee function has a non-null
   // parameter attribute, but that's a less interesting case because hopefully
   // the callee would already have been simplified based on that.
-  if (Argument *A = dyn_cast<Argument>(V))
-    if (paramHasAttr(A, Attribute::NonNull))
-      return true;
+  if (Argument *A = dyn_cast<Argument>(V); A && (paramHasAttr(A, Attribute::NonNull)))
+    return true;
 
   // Is this an alloca in the caller?  This is distinct from the attribute case
   // above because attributes aren't updated within the inliner itself and we
@@ -2233,9 +2231,8 @@ bool CallAnalyzer::visitCmpInst(CmpInst &I) {
 
   auto isImplicitNullCheckCmp = [](const CmpInst &I) {
     for (auto *User : I.users())
-      if (auto *Instr = dyn_cast<Instruction>(User))
-        if (!Instr->getMetadata(LLVMContext::MD_make_implicit))
-          return false;
+      if (auto *Instr = dyn_cast<Instruction>(User); Instr && (!Instr->getMetadata(LLVMContext::MD_make_implicit)))
+        return false;
     return true;
   };
 

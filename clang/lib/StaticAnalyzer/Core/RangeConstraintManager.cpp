@@ -1659,11 +1659,10 @@ RangeSet SymbolicRangeInferrer::VisitBinaryOperator<BO_NE>(RangeSet LHS,
             LHS.getAPSIntType().convert(RHS.getMaxValue()) < LHS.getMinValue())
           return getTrueRange(T);
 
-      } else if (RHS.isUnsigned() && (LHS.getBitWidth() <= RHS.getBitWidth())) {
-        if (LHS.getMaxValue().isNegative() ||
-            RHS.getAPSIntType().convert(LHS.getMaxValue()) < RHS.getMinValue())
-          return getTrueRange(T);
-      }
+      } else if ((RHS.isUnsigned() && (LHS.getBitWidth() <= RHS.getBitWidth())) && (LHS.getMaxValue().isNegative() ||
+            RHS.getAPSIntType().convert(LHS.getMaxValue()) < RHS.getMinValue())) 
+        return getTrueRange(T);
+      
     }
 
     // Both RangeSets should be casted to bigger unsigned type.
@@ -2834,19 +2833,19 @@ bool RangeConstraintManager::canReasonAbout(SVal X) const {
       }
     }
 
-    if (const SymSymExpr *SSE = dyn_cast<SymSymExpr>(SE)) {
+    if (const SymSymExpr *SSE = dyn_cast<SymSymExpr>(SE); SSE && (BinaryOperator::isEqualityOp(SSE->getOpcode()) ||
+          BinaryOperator::isRelationalOp(SSE->getOpcode())) && (Loc::isLocType(SSE->getLHS()->getType()))) 
       // FIXME: Handle <=> here.
-      if (BinaryOperator::isEqualityOp(SSE->getOpcode()) ||
-          BinaryOperator::isRelationalOp(SSE->getOpcode())) {
+      
         // We handle Loc <> Loc comparisons, but not (yet) NonLoc <> NonLoc.
         // We've recently started producing Loc <> NonLoc comparisons (that
         // result from casts of one of the operands between eg. intptr_t and
         // void *), but we can't reason about them yet.
-        if (Loc::isLocType(SSE->getLHS()->getType())) {
+        {
           return Loc::isLocType(SSE->getRHS()->getType());
         }
-      }
-    }
+      
+    
 
     return false;
   }

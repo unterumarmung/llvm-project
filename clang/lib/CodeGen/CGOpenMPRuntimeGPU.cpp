@@ -249,14 +249,14 @@ class CheckVarsEscapingDeclContext final
   void VisitValueDecl(const ValueDecl *VD) {
     if (VD->getType()->isLValueReferenceType())
       markAsEscaped(VD);
-    if (const auto *VarD = dyn_cast<VarDecl>(VD)) {
-      if (!isa<ParmVarDecl>(VarD) && VarD->hasInit()) {
+    if (const auto *VarD = dyn_cast<VarDecl>(VD); VarD && (!isa<ParmVarDecl>(VarD) && VarD->hasInit())) 
+      {
         const bool SavedAllEscaped = AllEscaped;
         AllEscaped = VD->getType()->isLValueReferenceType();
         Visit(VarD->getInit());
         AllEscaped = SavedAllEscaped;
       }
-    }
+    
   }
   void VisitOpenMPCapturedStmt(const CapturedStmt *S,
                                ArrayRef<OMPClause *> Clauses,
@@ -368,14 +368,14 @@ public:
     if (!E)
       return;
     for (const LambdaCapture &C : E->captures()) {
-      if (C.capturesVariable()) {
-        if (C.getCaptureKind() == LCK_ByRef) {
+      if ((C.capturesVariable()) && (C.getCaptureKind() == LCK_ByRef)) 
+        {
           const ValueDecl *VD = C.getCapturedVar();
           markAsEscaped(VD);
           if (E->isInitCapture(&C) || isa<OMPCapturedExprDecl>(VD))
             VisitValueDecl(VD);
         }
-      }
+      
     }
   }
   void VisitBlockExpr(const BlockExpr *E) {
@@ -1808,12 +1808,12 @@ CGOpenMPRuntimeGPU::translateParameter(const FieldDecl *FD,
   QualifierCollector QC;
   const Type *NonQualTy = QC.strip(ArgType);
   QualType PointeeTy = cast<ReferenceType>(NonQualTy)->getPointeeType();
-  if (const auto *Attr = FD->getAttr<OMPCaptureKindAttr>()) {
-    if (Attr->getCaptureKind() == OMPC_map) {
+  if (const auto *Attr = FD->getAttr<OMPCaptureKindAttr>(); Attr && (Attr->getCaptureKind() == OMPC_map)) 
+    {
       PointeeTy = CGM.getContext().getAddrSpaceQualType(PointeeTy,
                                                         LangAS::opencl_global);
     }
-  }
+  
   ArgType = CGM.getContext().getPointerType(PointeeTy);
   QC.addRestrict();
   ArgType = QC.apply(CGM.getContext(), ArgType);

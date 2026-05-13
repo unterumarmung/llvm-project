@@ -49,15 +49,15 @@ public:
       LHS = BO->getLHS();
       RHS = BO->getRHS();
       Loc = BO->getExprLoc();
-    } else if (auto *OO = dyn_cast<CXXOperatorCallExpr>(E)) {
+    } else if (auto *OO = dyn_cast<CXXOperatorCallExpr>(E); OO && (OO->getNumArgs() == 2)) 
       // If OO is not || or && it might not have exactly 2 arguments.
-      if (OO->getNumArgs() == 2) {
+      {
         Op = OO->getOperator();
         LHS = OO->getArg(0);
         RHS = OO->getArg(1);
         Loc = OO->getOperatorLoc();
       }
-    }
+    
   }
 
   bool isAnd() const { return Op == OO_AmpAmp; }
@@ -1366,11 +1366,10 @@ bool Sema::SetupConstraintScope(
     // If this is a member function, make sure we get the parameters that
     // reference the original primary template.
     if (FunctionTemplateDecl *FromMemTempl =
-            PrimaryTemplate->getInstantiatedFromMemberTemplate()) {
-      if (addInstantiatedParametersToScope(FD, FromMemTempl->getTemplatedDecl(),
-                                           Scope, MLTAL))
-        return true;
-    }
+            PrimaryTemplate->getInstantiatedFromMemberTemplate(); FromMemTempl && (addInstantiatedParametersToScope(FD, FromMemTempl->getTemplatedDecl(),
+                                           Scope, MLTAL))) 
+      return true;
+    
 
     return false;
   }

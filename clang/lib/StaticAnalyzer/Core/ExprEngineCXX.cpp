@@ -755,12 +755,12 @@ void ExprEngine::handleConstructor(const Expr *E,
   ExplodedNodeSet DstEvaluatedPostProcessed;
   NodeBuilder Bldr(DstEvaluated, DstEvaluatedPostProcessed, *currBldrCtx);
   const AnalysisDeclContext *ADC = LCtx->getAnalysisDeclContext();
-  if (!ADC->getCFGBuildOptions().AddTemporaryDtors) {
-    if (llvm::isa_and_nonnull<CXXTempObjectRegion,
+  if ((!ADC->getCFGBuildOptions().AddTemporaryDtors) && (llvm::isa_and_nonnull<CXXTempObjectRegion,
                               CXXLifetimeExtendedObjectRegion>(TargetRegion) &&
         cast<CXXConstructorDecl>(Call->getDecl())
             ->getParent()
-            ->isAnyDestructorNoReturn()) {
+            ->isAnyDestructorNoReturn())) 
+    {
 
       // If we've inlined the constructor, then DstEvaluated would be empty.
       // In this case we still want a sink, which could be implemented
@@ -781,7 +781,7 @@ void ExprEngine::handleConstructor(const Expr *E,
       // frontier.
       return;
     }
-  }
+  
 
   ExplodedNodeSet DstPostArgumentCleanup;
   for (ExplodedNode *I : DstEvaluatedPostProcessed)
@@ -937,9 +937,8 @@ void ExprEngine::VisitCXXNewAllocatorCall(const CXXNewExpr *CNE,
     // C++11 [basic.stc.dynamic.allocation]p3.
     if (const FunctionDecl *FD = CNE->getOperatorNew()) {
       QualType Ty = FD->getType();
-      if (const auto *ProtoType = Ty->getAs<FunctionProtoType>())
-        if (!ProtoType->isNothrow())
-          State = State->assume(RetVal.castAs<DefinedOrUnknownSVal>(), true);
+      if (const auto *ProtoType = Ty->getAs<FunctionProtoType>(); ProtoType && (!ProtoType->isNothrow()))
+        State = State->assume(RetVal.castAs<DefinedOrUnknownSVal>(), true);
     }
 
     ValueBldr.generateNode(
@@ -1009,9 +1008,8 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
     // where new can return NULL. If we end up supporting that option, we can
     // consider adding a check for it here.
     // C++11 [basic.stc.dynamic.allocation]p3.
-    if (const auto *ProtoType = FD->getType()->getAs<FunctionProtoType>())
-      if (!ProtoType->isNothrow())
-        if (auto dSymVal = symVal.getAs<DefinedOrUnknownSVal>())
+    if (const auto *ProtoType = FD->getType()->getAs<FunctionProtoType>(); ProtoType && (!ProtoType->isNothrow()))
+      if (auto dSymVal = symVal.getAs<DefinedOrUnknownSVal>())
           State = State->assume(*dSymVal, true);
   }
 
@@ -1078,14 +1076,14 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
 
   // If the type is not a record, we won't have a CXXConstructExpr as an
   // initializer. Copy the value over.
-  if (const Expr *Init = CNE->getInitializer()) {
-    if (!isa<CXXConstructExpr>(Init)) {
+  if (const Expr *Init = CNE->getInitializer(); Init && (!isa<CXXConstructExpr>(Init))) 
+    {
       assert(Bldr.getResults().size() == 1);
       Bldr.takeNodes(NewN);
       evalBind(Dst, CNE, NewN, Result, State->getSVal(Init, LCtx),
                /*FirstInit=*/IsStandardGlobalOpNewFunction);
     }
-  }
+  
 }
 
 void ExprEngine::VisitCXXDeleteExpr(const CXXDeleteExpr *CDE,

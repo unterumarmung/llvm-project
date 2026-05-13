@@ -1827,16 +1827,16 @@ bool ODRDiagsEmitter::diagnoseMismatch(const EnumDecl *FirstEnum,
     return true;
   }
 
-  if (FirstEnum->isScoped() && SecondEnum->isScoped()) {
-    if (FirstEnum->isScopedUsingClassTag() !=
-        SecondEnum->isScopedUsingClassTag()) {
+  if ((FirstEnum->isScoped() && SecondEnum->isScoped()) && (FirstEnum->isScopedUsingClassTag() !=
+        SecondEnum->isScopedUsingClassTag())) 
+    {
       DiagError(FirstEnum, EnumTagKeywordMismatch)
           << FirstEnum->isScopedUsingClassTag();
       DiagNote(SecondEnum, EnumTagKeywordMismatch)
           << SecondEnum->isScopedUsingClassTag();
       return true;
     }
-  }
+  
 
   QualType FirstUnderlyingType =
       FirstEnum->getIntegerTypeSourceInfo()
@@ -1852,14 +1852,14 @@ bool ODRDiagsEmitter::diagnoseMismatch(const EnumDecl *FirstEnum,
     return true;
   }
 
-  if (!FirstUnderlyingType.isNull() && !SecondUnderlyingType.isNull()) {
-    if (computeODRHash(FirstUnderlyingType) !=
-        computeODRHash(SecondUnderlyingType)) {
+  if ((!FirstUnderlyingType.isNull() && !SecondUnderlyingType.isNull()) && (computeODRHash(FirstUnderlyingType) !=
+        computeODRHash(SecondUnderlyingType))) 
+    {
       DiagError(FirstEnum, DifferentSpecifiedTypes) << FirstUnderlyingType;
       DiagNote(SecondEnum, DifferentSpecifiedTypes) << SecondUnderlyingType;
       return true;
     }
-  }
+  
 
   // Compare enum constants.
   using DeclHashes =

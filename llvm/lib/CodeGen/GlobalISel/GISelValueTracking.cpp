@@ -782,14 +782,13 @@ void GISelValueTracking::computeKnownBitsImpl(Register R, KnownBits &Known,
   case TargetOpcode::G_SSUBE:
   case TargetOpcode::G_UMULO:
   case TargetOpcode::G_SMULO: {
-    if (MI.getOperand(1).getReg() == R) {
+    if ((MI.getOperand(1).getReg() == R) && (TL.getBooleanContents(DstTy.isVector(), false) ==
+              TargetLowering::ZeroOrOneBooleanContent &&
+          BitWidth > 1)) 
       // If we know the result of a compare has the top bits zero, use this
       // info.
-      if (TL.getBooleanContents(DstTy.isVector(), false) ==
-              TargetLowering::ZeroOrOneBooleanContent &&
-          BitWidth > 1)
-        Known.Zero.setBitsFrom(1);
-    }
+      Known.Zero.setBitsFrom(1);
+    
     break;
   }
   case TargetOpcode::G_CTTZ:
@@ -2248,11 +2247,10 @@ unsigned GISelValueTracking::computeNumSignBits(Register R,
     // If compares returns 0/-1, all bits are sign bits.
     // We know that we have an integer-based boolean since these operations
     // are only available for integer.
-    if (MI.getOperand(1).getReg() == R) {
-      if (TL.getBooleanContents(DstTy.isVector(), false) ==
-          TargetLowering::ZeroOrNegativeOneBooleanContent)
-        return TyBits;
-    }
+    if ((MI.getOperand(1).getReg() == R) && (TL.getBooleanContents(DstTy.isVector(), false) ==
+          TargetLowering::ZeroOrNegativeOneBooleanContent)) 
+      return TyBits;
+    
 
     break;
   }

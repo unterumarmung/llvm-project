@@ -1296,9 +1296,8 @@ MachOPlatform::MachOPlatformPlugin::findUnwindSectionInfo(
   if (Section *EHFrameSec = G.findSectionByName(MachOEHFrameSectionName)) {
     ScanUnwindInfoSection(*EHFrameSec, US.DwarfSection, [&](Block &B) {
       if (auto *Fn = jitlink::EHFrameCFIBlockInspector::FromEdgeScan(B)
-                         .getPCBeginEdge())
-        if (Fn->getTarget().isDefined())
-          CodeBlocks.push_back(&Fn->getTarget().getBlock());
+                         .getPCBeginEdge(); Fn && (Fn->getTarget().isDefined()))
+        CodeBlocks.push_back(&Fn->getTarget().getBlock());
     });
   }
 

@@ -177,9 +177,8 @@ static bool simplifyCommonValuePhi(PHINode *P, LazyValueInfo *LVI,
 
   // The common value must be valid in all incoming blocks.
   BasicBlock *ToBB = P->getParent();
-  if (auto *CommonInst = dyn_cast<Instruction>(CommonValue))
-    if (!DT->dominates(CommonInst, ToBB))
-      return false;
+  if (auto *CommonInst = dyn_cast<Instruction>(CommonValue); CommonInst && (!DT->dominates(CommonInst, ToBB)))
+    return false;
 
   // We have a phi with exactly 1 variable incoming value and 1 or more constant
   // incoming values. See if all constant incoming values can be mapped back to
@@ -350,9 +349,8 @@ static bool processCmp(CmpInst *Cmp, LazyValueInfo *LVI) {
   if (constantFoldCmp(Cmp, LVI))
     return true;
 
-  if (auto *ICmp = dyn_cast<ICmpInst>(Cmp))
-    if (processICmp(ICmp, LVI))
-      return true;
+  if (auto *ICmp = dyn_cast<ICmpInst>(Cmp); ICmp && (processICmp(ICmp, LVI)))
+    return true;
 
   return false;
 }
@@ -695,15 +693,13 @@ static bool processCallSite(CallBase &CB, LazyValueInfo *LVI) {
     return processMinMaxIntrinsic(MM, LVI);
   }
 
-  if (auto *WO = dyn_cast<WithOverflowInst>(&CB)) {
-    if (willNotOverflow(WO, LVI))
-      return processOverflowIntrinsic(WO, LVI);
-  }
+  if (auto *WO = dyn_cast<WithOverflowInst>(&CB); WO && (willNotOverflow(WO, LVI))) 
+    return processOverflowIntrinsic(WO, LVI);
+  
 
-  if (auto *SI = dyn_cast<SaturatingInst>(&CB)) {
-    if (willNotOverflow(SI, LVI))
-      return processSaturatingInst(SI, LVI);
-  }
+  if (auto *SI = dyn_cast<SaturatingInst>(&CB); SI && (willNotOverflow(SI, LVI))) 
+    return processSaturatingInst(SI, LVI);
+  
 
   bool Changed = false;
 
@@ -810,9 +806,8 @@ static bool narrowSDivOrSRem(BinaryOperator *Instr, const ConstantRange &LCR,
                                      Instr->getName() + ".rhs.trunc");
   auto *BO = B.CreateBinOp(Instr->getOpcode(), LHS, RHS, Instr->getName());
   auto *Sext = B.CreateSExt(BO, Instr->getType(), Instr->getName() + ".sext");
-  if (auto *BinOp = dyn_cast<BinaryOperator>(BO))
-    if (BinOp->getOpcode() == Instruction::SDiv)
-      BinOp->setIsExact(Instr->isExact());
+  if (auto *BinOp = dyn_cast<BinaryOperator>(BO); BinOp && (BinOp->getOpcode() == Instruction::SDiv))
+    BinOp->setIsExact(Instr->isExact());
 
   Instr->replaceAllUsesWith(Sext);
   Instr->eraseFromParent();
@@ -929,9 +924,8 @@ static bool narrowUDivOrURem(BinaryOperator *Instr, const ConstantRange &XCR,
                                      Instr->getName() + ".rhs.trunc");
   auto *BO = B.CreateBinOp(Instr->getOpcode(), LHS, RHS, Instr->getName());
   auto *Zext = B.CreateZExt(BO, Instr->getType(), Instr->getName() + ".zext");
-  if (auto *BinOp = dyn_cast<BinaryOperator>(BO))
-    if (BinOp->getOpcode() == Instruction::UDiv)
-      BinOp->setIsExact(Instr->isExact());
+  if (auto *BinOp = dyn_cast<BinaryOperator>(BO); BinOp && (BinOp->getOpcode() == Instruction::UDiv))
+    BinOp->setIsExact(Instr->isExact());
 
   Instr->replaceAllUsesWith(Zext);
   Instr->eraseFromParent();
@@ -1076,14 +1070,12 @@ static bool processSDivOrSRem(BinaryOperator *Instr, LazyValueInfo *LVI) {
   // Allow undef for RHS, as we can assume it is division by zero UB.
   ConstantRange RCR =
       LVI->getConstantRangeAtUse(Instr->getOperandUse(1), /*AlloweUndef*/ true);
-  if (Instr->getOpcode() == Instruction::SDiv)
-    if (processSDiv(Instr, LCR, RCR, LVI))
-      return true;
+  if ((Instr->getOpcode() == Instruction::SDiv) && (processSDiv(Instr, LCR, RCR, LVI)))
+    return true;
 
-  if (Instr->getOpcode() == Instruction::SRem) {
-    if (processSRem(Instr, LCR, RCR, LVI))
-      return true;
-  }
+  if ((Instr->getOpcode() == Instruction::SRem) && (processSRem(Instr, LCR, RCR, LVI))) 
+    return true;
+  
 
   return narrowSDivOrSRem(Instr, LCR, RCR);
 }
@@ -1242,21 +1234,21 @@ static bool processTrunc(TruncInst *TI, LazyValueInfo *LVI) {
   uint64_t DestWidth = TI->getDestTy()->getScalarSizeInBits();
   bool Changed = false;
 
-  if (!TI->hasNoUnsignedWrap()) {
-    if (Range.getActiveBits() <= DestWidth) {
+  if ((!TI->hasNoUnsignedWrap()) && (Range.getActiveBits() <= DestWidth)) 
+    {
       TI->setHasNoUnsignedWrap(true);
       ++NumNUW;
       Changed = true;
     }
-  }
+  
 
-  if (!TI->hasNoSignedWrap()) {
-    if (Range.getMinSignedBits() <= DestWidth) {
+  if ((!TI->hasNoSignedWrap()) && (Range.getMinSignedBits() <= DestWidth)) 
+    {
       TI->setHasNoSignedWrap(true);
       ++NumNSW;
       Changed = true;
     }
-  }
+  
 
   return Changed;
 }

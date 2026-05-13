@@ -316,13 +316,13 @@ CXString clang_formatDiagnostic(CXDiagnostic Diagnostic, unsigned Options) {
 
     if (Options & CXDiagnostic_DisplayOption) {
       CXString OptionName = clang_getDiagnosticOption(Diagnostic, nullptr);
-      if (const char *OptionText = clang_getCString(OptionName)) {
-        if (OptionText[0]) {
+      if (const char *OptionText = clang_getCString(OptionName); OptionText && (OptionText[0])) 
+        {
           Out << " [" << OptionText;
           NeedBracket = false;
           NeedComma = true;
         }
-      }
+      
       clang_disposeString(OptionName);
     }
     
@@ -442,17 +442,15 @@ CXString clang_getDiagnosticFixIt(CXDiagnostic Diag, unsigned FixIt,
 }
 
 void clang_disposeDiagnosticSet(CXDiagnosticSet Diags) {
-  if (CXDiagnosticSetImpl *D = static_cast<CXDiagnosticSetImpl *>(Diags)) {
-    if (D->isExternallyManaged())
-      delete D;
-  }
+  if (CXDiagnosticSetImpl *D = static_cast<CXDiagnosticSetImpl *>(Diags); D && (D->isExternallyManaged())) 
+    delete D;
+  
 }
   
 CXDiagnostic clang_getDiagnosticInSet(CXDiagnosticSet Diags,
                                       unsigned Index) {
-  if (CXDiagnosticSetImpl *D = static_cast<CXDiagnosticSetImpl*>(Diags))
-    if (Index < D->getNumDiagnostics())
-      return D->getDiagnostic(Index);
+  if (CXDiagnosticSetImpl *D = static_cast<CXDiagnosticSetImpl*>(Diags); D && (Index < D->getNumDiagnostics()))
+    return D->getDiagnostic(Index);
   return nullptr;
 }
   

@@ -73,9 +73,8 @@ static LogicalResult walkReferenceCountedValues(
   // Add reference counting to block arguments.
   WalkResult blockWalk = op->walk([&](Block *block) -> WalkResult {
     for (BlockArgument arg : block->getArguments())
-      if (isRefCounted(arg.getType()))
-        if (failed(addRefCounting(arg)))
-          return WalkResult::interrupt();
+      if ((isRefCounted(arg.getType())) && (failed(addRefCounting(arg))))
+        return WalkResult::interrupt();
 
     return WalkResult::advance();
   });
@@ -86,9 +85,8 @@ static LogicalResult walkReferenceCountedValues(
   // Add reference counting to operation results.
   WalkResult opWalk = op->walk([&](Operation *op) -> WalkResult {
     for (unsigned i = 0; i < op->getNumResults(); ++i)
-      if (isRefCounted(op->getResultTypes()[i]))
-        if (failed(addRefCounting(op->getResult(i))))
-          return WalkResult::interrupt();
+      if ((isRefCounted(op->getResultTypes()[i])) && (failed(addRefCounting(op->getResult(i)))))
+        return WalkResult::interrupt();
 
     return WalkResult::advance();
   });

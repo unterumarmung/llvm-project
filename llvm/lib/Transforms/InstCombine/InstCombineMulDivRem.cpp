@@ -1450,10 +1450,9 @@ Instruction *InstCombinerImpl::commonIDivTransforms(BinaryOperator &I) {
 
   // (X - (X rem Y)) / Y -> X / Y; usually originates as ((X / Y) * Y) / Y
   Value *X, *Z;
-  if (match(Op0, m_Sub(m_Value(X), m_Value(Z)))) // (X - Z) / Y; Y = Op1
-    if ((IsSigned && match(Z, m_SRem(m_Specific(X), m_Specific(Op1)))) ||
-        (!IsSigned && match(Z, m_URem(m_Specific(X), m_Specific(Op1)))))
-      return BinaryOperator::Create(I.getOpcode(), X, Op1);
+  if ((match(Op0, m_Sub(m_Value(X), m_Value(Z)))) && ((IsSigned && match(Z, m_SRem(m_Specific(X), m_Specific(Op1)))) ||
+        (!IsSigned && match(Z, m_URem(m_Specific(X), m_Specific(Op1)))))) // (X - Z) / Y; Y = Op1
+    return BinaryOperator::Create(I.getOpcode(), X, Op1);
 
   // (X << Y) / X -> 1 << Y
   Value *Y;
@@ -1475,10 +1474,10 @@ Instruction *InstCombinerImpl::commonIDivTransforms(BinaryOperator &I) {
 
   // (X << Z) / (X * Y) -> (1 << Z) / Y
   // TODO: Handle sdiv.
-  if (!IsSigned && Op1->hasOneUse() &&
+  if ((!IsSigned && Op1->hasOneUse() &&
       match(Op0, m_NUWShl(m_Value(X), m_Value(Z))) &&
-      match(Op1, m_c_Mul(m_Specific(X), m_Value(Y))))
-    if (cast<OverflowingBinaryOperator>(Op1)->hasNoUnsignedWrap()) {
+      match(Op1, m_c_Mul(m_Specific(X), m_Value(Y)))) && (cast<OverflowingBinaryOperator>(Op1)->hasNoUnsignedWrap()))
+    {
       Instruction *NewDiv = BinaryOperator::CreateUDiv(
           Builder.CreateShl(ConstantInt::get(Ty, 1), Z, "", /*NUW*/ true), Y);
       NewDiv->setIsExact(I.isExact());
@@ -1518,10 +1517,9 @@ Instruction *InstCombinerImpl::commonIDivTransforms(BinaryOperator &I) {
       auto OB1HasNUW =
           cast<OverflowingBinaryOperator>(Op1)->hasNoUnsignedWrap();
       const APInt *C1, *C2;
-      if (IsSigned && OB0HasNSW) {
-        if (OB1HasNSW && match(B, m_APInt(C1)) && !C1->isAllOnes())
-          return BinaryOperator::CreateSDiv(A, B);
-      }
+      if ((IsSigned && OB0HasNSW) && (OB1HasNSW && match(B, m_APInt(C1)) && !C1->isAllOnes())) 
+        return BinaryOperator::CreateSDiv(A, B);
+      
       if (!IsSigned && OB0HasNUW) {
         if (OB1HasNUW)
           return BinaryOperator::CreateUDiv(A, B);
@@ -2545,19 +2543,17 @@ Instruction *InstCombinerImpl::visitSRem(BinaryOperator &I) {
         break;
       }
 
-      if (ConstantInt *RHS = dyn_cast<ConstantInt>(Elt))
-        if (RHS->isNegative())
-          hasNegative = true;
+      if (ConstantInt *RHS = dyn_cast<ConstantInt>(Elt); RHS && (RHS->isNegative()))
+        hasNegative = true;
     }
 
     if (hasNegative && !hasMissing) {
       SmallVector<Constant *, 16> Elts(VWidth);
       for (unsigned i = 0; i != VWidth; ++i) {
         Elts[i] = C->getAggregateElement(i);  // Handle undef, etc.
-        if (ConstantInt *RHS = dyn_cast<ConstantInt>(Elts[i])) {
-          if (RHS->isNegative())
-            Elts[i] = cast<ConstantInt>(ConstantExpr::getNeg(RHS));
-        }
+        if (ConstantInt *RHS = dyn_cast<ConstantInt>(Elts[i]); RHS && (RHS->isNegative())) 
+          Elts[i] = cast<ConstantInt>(ConstantExpr::getNeg(RHS));
+        
       }
 
       Constant *NewRHSV = ConstantVector::get(Elts);

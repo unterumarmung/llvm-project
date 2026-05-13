@@ -261,9 +261,8 @@ LoopStructure::parseLoopStructure(ScalarEvolution &SE, Loop &L,
 
   // If RightValue resides within loop (but still being loop invariant),
   // regenerate it as preheader.
-  if (auto *I = dyn_cast<Instruction>(RightValue))
-    if (L.contains(I->getParent()))
-      FixedRightSCEV = RightSCEV;
+  if (auto *I = dyn_cast<Instruction>(RightValue); I && (L.contains(I->getParent())))
+    FixedRightSCEV = RightSCEV;
 
   if (IsIncreasing) {
     bool DecreasedRightValueByOne = false;
@@ -896,9 +895,8 @@ bool LoopConstrainer::run() {
   /// - Max latch taken count of the loop is limited.
   /// It guarantees that induction variable will not overflow iterating in the
   /// "main loop".
-  if (isa<OverflowingBinaryOperator>(MainLoopStructure.IndVarBase))
-    if (IsSignedPredicate)
-      cast<BinaryOperator>(MainLoopStructure.IndVarBase)
+  if ((isa<OverflowingBinaryOperator>(MainLoopStructure.IndVarBase)) && (IsSignedPredicate))
+    cast<BinaryOperator>(MainLoopStructure.IndVarBase)
           ->setHasNoSignedWrap(true);
   /// TODO: support unsigned predicate.
   /// To add NUW flag we need to prove that both operands of BO are

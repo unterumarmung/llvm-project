@@ -48,8 +48,8 @@ static void removeLValueToRValueCast(Expr *E) {
     else
       return;
 
-    if (auto *CastE = dyn_cast<CastExpr>(Child))
-      if (CastE->getCastKind() == CK_LValueToRValue) {
+    if (auto *CastE = dyn_cast<CastExpr>(Child); CastE && (CastE->getCastKind() == CK_LValueToRValue))
+      {
         ExprUnderCast = CastE->getSubExpr();
         // LValueToRValue cast inside GCCAsmStmt requires an explicit cast.
         ParentCast->setSubExpr(ExprUnderCast);
@@ -137,13 +137,13 @@ static bool CheckNakedParmReference(Expr *E, Sema &S) {
       S.Diag(Func->getAttr<NakedAttr>()->getLocation(), diag::note_attribute);
       return true;
     }
-    if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E)) {
-      if (isa<ParmVarDecl>(DRE->getDecl())) {
+    if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E); DRE && (isa<ParmVarDecl>(DRE->getDecl()))) 
+      {
         S.Diag(DRE->getBeginLoc(), diag::err_asm_naked_parm_ref);
         S.Diag(Func->getAttr<NakedAttr>()->getLocation(), diag::note_attribute);
         return true;
       }
-    }
+    
     for (Stmt *Child : E->children()) {
       if (Expr *E = dyn_cast_or_null<Expr>(Child))
         WorkList.push_back(E);
@@ -192,9 +192,8 @@ static StringRef extractRegisterName(const Expr *Expression,
     // Handle cases where the expression is a variable
     const VarDecl *Variable = dyn_cast<VarDecl>(AsmDeclRef->getDecl());
     if (Variable && Variable->getStorageClass() == SC_Register) {
-      if (AsmLabelAttr *Attr = Variable->getAttr<AsmLabelAttr>())
-        if (Target.isValidGCCRegisterName(Attr->getLabel()))
-          return Target.getNormalizedGCCRegisterName(Attr->getLabel(), true);
+      if (AsmLabelAttr *Attr = Variable->getAttr<AsmLabelAttr>(); Attr && (Target.isValidGCCRegisterName(Attr->getLabel())))
+        return Target.getNormalizedGCCRegisterName(Attr->getLabel(), true);
     }
   }
   return "";
@@ -440,34 +439,33 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
 
       InputExpr = Exprs[i] = Result.get();
 
-      if (Info.requiresImmediateConstant() && !Info.allowsRegister()) {
-        if (!InputExpr->isValueDependent()) {
+      if ((Info.requiresImmediateConstant() && !Info.allowsRegister()) && (!InputExpr->isValueDependent())) 
+        {
           Expr::EvalResult EVResult;
           if (InputExpr->EvaluateAsRValue(EVResult, Context, true)) {
             // For compatibility with GCC, we also allow pointers that would be
             // integral constant expressions if they were cast to int.
             llvm::APSInt IntResult;
-            if (EVResult.Val.toIntegralConstant(IntResult, InputExpr->getType(),
-                                                Context))
-              if (!Info.isValidAsmImmediate(IntResult))
-                return StmtError(
+            if ((EVResult.Val.toIntegralConstant(IntResult, InputExpr->getType(),
+                                                Context)) && (!Info.isValidAsmImmediate(IntResult)))
+              return StmtError(
                     Diag(InputExpr->getBeginLoc(),
                          diag::err_invalid_asm_value_for_constraint)
                     << toString(IntResult, 10) << Info.getConstraintStr()
                     << InputExpr->getSourceRange());
           }
         }
-      }
+      
     }
 
-    if (Info.allowsRegister()) {
-      if (InputExpr->getType()->isVoidType()) {
+    if ((Info.allowsRegister()) && (InputExpr->getType()->isVoidType())) 
+      {
         return StmtError(
             Diag(InputExpr->getBeginLoc(), diag::err_asm_invalid_type_in_input)
             << InputExpr->getType() << Info.getConstraintStr()
             << InputExpr->getSourceRange());
       }
-    }
+    
 
     if (InputExpr->getType()->isBitIntType())
       return StmtError(
@@ -481,10 +479,9 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     if (Ty->isDependentType())
       continue;
 
-    if (!Ty->isVoidType() || !Info.allowsMemory())
-      if (RequireCompleteType(InputExpr->getBeginLoc(), Exprs[i]->getType(),
-                              diag::err_dereference_incomplete_type))
-        return StmtError();
+    if ((!Ty->isVoidType() || !Info.allowsMemory()) && (RequireCompleteType(InputExpr->getBeginLoc(), Exprs[i]->getType(),
+                              diag::err_dereference_incomplete_type)))
+      return StmtError();
 
     unsigned Size = Context.getTypeSize(Ty);
     if (!Context.getTargetInfo().validateInputSize(FeatureMap, ConstraintStr,
@@ -795,9 +792,8 @@ void Sema::FillInlineAsmIdentifierInfo(Expr *Res,
     return Info.setLabel(Res);
   if (Res->isPRValue()) {
     bool IsEnum = isa<clang::EnumType>(T);
-    if (DeclRefExpr *DRE = dyn_cast<clang::DeclRefExpr>(Res))
-      if (DRE->getDecl()->getKind() == Decl::EnumConstant)
-        IsEnum = true;
+    if (DeclRefExpr *DRE = dyn_cast<clang::DeclRefExpr>(Res); DRE && (DRE->getDecl()->getKind() == Decl::EnumConstant))
+      IsEnum = true;
     if (IsEnum && Res->EvaluateAsRValue(Eval, Context))
       return Info.setEnum(Eval.Val.getInt().getSExtValue());
 

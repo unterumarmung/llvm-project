@@ -1320,10 +1320,9 @@ static bool isVectorSubscript(const evaluate::Expr<T> &expr) {
   if (std::optional<evaluate::DataRef> dataRef{evaluate::ExtractDataRef(expr)})
     if (const auto *arrayRef = std::get_if<evaluate::ArrayRef>(&dataRef->u))
       for (const evaluate::Subscript &subscript : arrayRef->subscript())
-        if (std::holds_alternative<evaluate::IndirectSubscriptIntegerExpr>(
-                subscript.u))
-          if (subscript.Rank() > 0)
-            return true;
+        if ((std::holds_alternative<evaluate::IndirectSubscriptIntegerExpr>(
+                subscript.u)) && (subscript.Rank() > 0))
+          return true;
   return false;
 }
 
@@ -1666,9 +1665,8 @@ bool ClauseProcessor::processLinear(mlir::omp::LinearClauseOps &result,
         if (semantics::IsPointer(ultimate))
           return mlir::omp::LinearModifier::ref;
         if (const auto *obj =
-                ultimate.detailsIf<semantics::ObjectEntityDetails>())
-          if (obj->isDummy() && !semantics::IsValue(ultimate))
-            return mlir::omp::LinearModifier::ref;
+                ultimate.detailsIf<semantics::ObjectEntityDetails>(); obj && (obj->isDummy() && !semantics::IsValue(ultimate)))
+          return mlir::omp::LinearModifier::ref;
         return mlir::omp::LinearModifier::val;
       };
 

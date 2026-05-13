@@ -325,9 +325,8 @@ Error OnDiskOutputFile::initializeFile(std::optional<int> &FD) {
 
   // If (still) using a temporary file, try to create it (and return success if
   // that works).
-  if (Config.getAtomicWrite())
-    if (!errorToBool(tryToCreateTemporary(FD)))
-      return Error::success();
+  if ((Config.getAtomicWrite()) && (!errorToBool(tryToCreateTemporary(FD))))
+    return Error::success();
 
   // Not using a temporary file. Open the final output file.
   return createDirectoriesOnDemand(OutputPath, Config, [&]() -> Error {

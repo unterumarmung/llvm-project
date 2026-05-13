@@ -120,13 +120,12 @@ static bool isOpLoopInvariant(Operation &op, AffineForOp loop,
     if (llvm::is_contained(iterArgs, op.getOperand(i)))
       return false;
 
-    if (operandSrc) {
+    if ((operandSrc) && (opsWithUsers.count(operandSrc) && opsToHoist.count(operandSrc) == 0)) 
       // If the value was defined in the loop (outside of the if/else region),
       // and that operation itself wasn't meant to be hoisted, then mark this
       // operation loop dependent.
-      if (opsWithUsers.count(operandSrc) && opsToHoist.count(operandSrc) == 0)
-        return false;
-    }
+      return false;
+    
   }
 
   // If no operand was loop variant, mark this op for motion.

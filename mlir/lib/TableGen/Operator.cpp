@@ -262,10 +262,9 @@ const Trait *Operator::getTrait(StringRef trait) const {
     } else if (const auto *traitDef = dyn_cast<InternalTrait>(&t)) {
       if (traitDef->getFullyQualifiedTraitName() == trait)
         return traitDef;
-    } else if (const auto *traitDef = dyn_cast<InterfaceTrait>(&t)) {
-      if (traitDef->getFullyQualifiedTraitName() == trait)
-        return traitDef;
-    }
+    } else if (const auto *traitDef = dyn_cast<InterfaceTrait>(&t); traitDef && (traitDef->getFullyQualifiedTraitName() == trait)) 
+      return traitDef;
+    
   }
   return nullptr;
 }
@@ -440,9 +439,8 @@ void Operator::populateTypeInferenceInfo(
     if (def.isSubClassOf(
             llvm::formatv("{0}::Trait", inferTypeOpInterface).str()))
       return;
-    if (const auto *traitDef = dyn_cast<InterfaceTrait>(&trait))
-      if (&traitDef->getDef() == inferTrait)
-        return;
+    if (const auto *traitDef = dyn_cast<InterfaceTrait>(&trait); traitDef && (&traitDef->getDef() == inferTrait))
+      return;
 
     // The `TypesMatchWith` trait represents a 1 -> 1 type inference edge with a
     // type transformer.

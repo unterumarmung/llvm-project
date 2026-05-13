@@ -1919,12 +1919,12 @@ void SemaHLSL::diagnoseSystemSemanticAttr(Decl *D, const ParsedAttr &AL,
     ValueType = FD->getReturnType();
 
   bool IsOutput = false;
-  if (HLSLParamModifierAttr *MA = D->getAttr<HLSLParamModifierAttr>()) {
-    if (MA->isOut()) {
+  if (HLSLParamModifierAttr *MA = D->getAttr<HLSLParamModifierAttr>(); MA && (MA->isOut())) 
+    {
       IsOutput = true;
       ValueType = cast<ReferenceType>(ValueType)->getPointeeType();
     }
-  }
+  
 
   if (SemanticName == "SV_DISPATCHTHREADID") {
     diagnoseInputIDType(ValueType, AL);
@@ -2676,10 +2676,9 @@ void SemaHLSL::handleResourceBindingAttr(Decl *TheDecl, const ParsedAttr &AL) {
   }
 
   // If we have slot, diagnose it is the right register type for the decl
-  if (SlotNum.has_value())
-    if (!DiagnoseHLSLRegisterAttribute(SemaRef, SlotLoc, TheDecl, RegType,
-                                       !SpaceLoc.isInvalid()))
-      return;
+  if ((SlotNum.has_value()) && (!DiagnoseHLSLRegisterAttribute(SemaRef, SlotLoc, TheDecl, RegType,
+                                       !SpaceLoc.isInvalid())))
+    return;
 
   HLSLResourceBindingAttr *NewAttr =
       HLSLResourceBindingAttr::Create(getASTContext(), Slot, Space, AL);
@@ -3361,9 +3360,8 @@ static bool CheckFloatingOrIntRepresentation(Sema *S, SourceLocation Loc,
 static bool CheckUnsignedIntVecRepresentation(Sema *S, SourceLocation Loc,
                                               int ArgOrdinal,
                                               clang::QualType PassedType) {
-  if (auto *VecTy = PassedType->getAs<VectorType>())
-    if (VecTy->getElementType()->isUnsignedIntegerType())
-      return false;
+  if (auto *VecTy = PassedType->getAs<VectorType>(); VecTy && (VecTy->getElementType()->isUnsignedIntegerType()))
+    return false;
 
   return S->Diag(Loc, diag::err_builtin_invalid_arg_type)
          << ArgOrdinal << /* vector of */ 4 << /* uint */ 3 << /* no fp */ 0
@@ -3437,16 +3435,14 @@ static bool CheckScalarOrVectorOrMatrix(Sema *S, CallExpr *TheCall,
     return false;
 
   // Vector: vector<T>
-  if (const auto *VTy = ArgType->getAs<VectorType>()) {
-    if (S->Context.hasSameUnqualifiedType(VTy->getElementType(), Scalar))
-      return false;
-  }
+  if (const auto *VTy = ArgType->getAs<VectorType>(); VTy && (S->Context.hasSameUnqualifiedType(VTy->getElementType(), Scalar))) 
+    return false;
+  
 
   // Matrix: ConstantMatrixType with element type T
-  if (const auto *MTy = ArgType->getAs<ConstantMatrixType>()) {
-    if (S->Context.hasSameUnqualifiedType(MTy->getElementType(), Scalar))
-      return false;
-  }
+  if (const auto *MTy = ArgType->getAs<ConstantMatrixType>(); MTy && (S->Context.hasSameUnqualifiedType(MTy->getElementType(), Scalar))) 
+    return false;
+  
 
   // Not a scalar/vector/matrix-of-scalar
   S->Diag(Arg->getBeginLoc(),
@@ -3757,12 +3753,12 @@ static bool CheckGatherBuiltin(Sema &S, CallExpr *TheCall, bool IsCmp) {
          "attribute.");
   QualType ReturnType = ResourceTy->getContainedType();
 
-  if (IsCmp) {
-    if (!ReturnType->hasFloatingRepresentation()) {
+  if ((IsCmp) && (!ReturnType->hasFloatingRepresentation())) 
+    {
       S.Diag(TheCall->getBeginLoc(), diag::err_hlsl_samplecmp_requires_float);
       return true;
     }
-  }
+  
 
   if (const auto *VecTy = ReturnType->getAs<VectorType>())
     ReturnType = VecTy->getElementType();
@@ -5048,9 +5044,8 @@ static bool hasConstantBufferLayout(QualType QT) {
   }
 
   if (const auto *AT = dyn_cast<ArrayType>(Ty)) {
-    if (const auto *CAT = dyn_cast<ConstantArrayType>(AT))
-      if (isZeroSizedArray(CAT))
-        return false;
+    if (const auto *CAT = dyn_cast<ConstantArrayType>(AT); CAT && (isZeroSizedArray(CAT)))
+      return false;
     return hasConstantBufferLayout(AT->getElementType());
   }
 
@@ -5444,12 +5439,12 @@ void SemaHLSL::ActOnVariableDeclarator(VarDecl *VD) {
       QualType Ty = getASTContext().getBaseElementType(VD->getType());
 
       const CXXRecordDecl *RD = Ty->getAsCXXRecordDecl();
-      if (hasCounterHandle(RD)) {
-        if (!Binding.hasCounterImplicitOrderID()) {
+      if ((hasCounterHandle(RD)) && (!Binding.hasCounterImplicitOrderID())) 
+        {
           uint32_t OrderID = getNextImplicitBindingOrderID();
           Binding.setCounterImplicitOrderID(OrderID);
         }
-      }
+      
     }
 
     // Process resources in user-defined structs, or arrays of such structs.
@@ -6423,12 +6418,12 @@ QualType SemaHLSL::ActOnTemplateShorthand(TemplateDecl *Template,
         TemplateArgs.addArgument(NTTP->getDefaultArgument());
         continue;
       }
-    } else if (auto *TTPD = dyn_cast<TemplateTemplateParmDecl>(P)) {
-      if (TTPD->hasDefaultArgument()) {
+    } else if (auto *TTPD = dyn_cast<TemplateTemplateParmDecl>(P); TTPD && (TTPD->hasDefaultArgument())) 
+      {
         TemplateArgs.addArgument(TTPD->getDefaultArgument());
         continue;
       }
-    }
+    
     return QualType();
   }
 

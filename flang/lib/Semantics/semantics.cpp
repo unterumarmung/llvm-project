@@ -362,13 +362,13 @@ private:
     for (const Fortran::semantics::EquivalenceSet &set :
         common.owner().equivalenceSets()) {
       for (const Fortran::semantics::EquivalenceObject &obj : set) {
-        if (!obj.symbol.test(
-                Fortran::semantics::Symbol::Flag::CompilerCreated)) {
-          if (FindCommonBlockContaining(obj.symbol) == &common &&
-              IsInitialized(obj.symbol)) {
+        if ((!obj.symbol.test(
+                Fortran::semantics::Symbol::Flag::CompilerCreated)) && (FindCommonBlockContaining(obj.symbol) == &common &&
+              IsInitialized(obj.symbol))) 
+          {
             return &obj.symbol;
           }
-        }
+        
       }
     }
     return nullptr;

@@ -569,10 +569,9 @@ bool MSVCToolChain::getWindowsSDKLibraryPath(const ArgList &Args,
 
   llvm::SmallString<128> libPath(sdkPath);
   llvm::sys::path::append(libPath, "Lib");
-  if (sdkMajor >= 10)
-    if (!(WinSdkDir.has_value() || WinSysRoot.has_value()) &&
-        WinSdkVersion.has_value())
-      windowsSDKLibVersion = *WinSdkVersion;
+  if ((sdkMajor >= 10) && (!(WinSdkDir.has_value() || WinSysRoot.has_value()) &&
+        WinSdkVersion.has_value()))
+    windowsSDKLibVersion = *WinSdkVersion;
   if (sdkMajor >= 8)
     llvm::sys::path::append(libPath, windowsSDKLibVersion, "um");
   return llvm::appendArchToWindowsSDKLibPath(sdkMajor, libPath, getArch(),
@@ -745,10 +744,9 @@ void MSVCToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
     if (llvm::getWindowsSDKDir(getVFS(), WinSdkDir, WinSdkVersion, WinSysRoot,
                                WindowsSDKDir, major, windowsSDKIncludeVersion,
                                windowsSDKLibVersion)) {
-      if (major >= 10)
-        if (!(WinSdkDir.has_value() || WinSysRoot.has_value()) &&
-            WinSdkVersion.has_value())
-          windowsSDKIncludeVersion = windowsSDKLibVersion = *WinSdkVersion;
+      if ((major >= 10) && (!(WinSdkDir.has_value() || WinSysRoot.has_value()) &&
+            WinSdkVersion.has_value()))
+        windowsSDKIncludeVersion = windowsSDKLibVersion = *WinSdkVersion;
       if (major >= 8) {
         // Note: windowsSDKIncludeVersion is empty for SDKs prior to v10.
         // Anyway, llvm::sys::path::append is able to manage it.

@@ -104,9 +104,9 @@ static void diagnoseBadTypeAttribute(Sema &S, const ParsedAttr &attr,
   if (useExpansionLoc && loc.isMacroID() && II) {
     if (II->isStr("strong")) {
       if (S.findMacroSpelling(loc, "__strong")) name = "__strong";
-    } else if (II->isStr("weak")) {
-      if (S.findMacroSpelling(loc, "__weak")) name = "__weak";
-    }
+    } else if ((II->isStr("weak")) && (S.findMacroSpelling(loc, "__weak"))) 
+      name = "__weak";
+    
   }
 
   S.Diag(loc, attr.isRegularKeywordAttribute()
@@ -591,8 +591,8 @@ static void distributeObjCPointerTypeAttrFromDeclarator(
 
   // That might actually be the decl spec if we weren't blocked by
   // anything in the declarator.
-  if (considerDeclSpec) {
-    if (handleObjCPointerTypeAttr(state, attr, declSpecType)) {
+  if ((considerDeclSpec) && (handleObjCPointerTypeAttr(state, attr, declSpecType))) 
+    {
       // Splice the attribute into the decl spec.  Prevents the
       // attribute from being applied multiple times and gives
       // the source-location-filler something to work with.
@@ -601,7 +601,7 @@ static void distributeObjCPointerTypeAttrFromDeclarator(
           declarator.getAttributes(), &attr);
       return;
     }
-  }
+  
 
   // Otherwise, if we found an appropriate chunk, splice the attribute
   // into it.
@@ -832,12 +832,11 @@ static void diagnoseAndRemoveTypeQualifiers(Sema &S, const DeclSpec &DS,
     if (!(RemoveTQs & Qual.first))
       continue;
 
-    if (!S.inTemplateInstantiation()) {
-      if (TypeQuals & Qual.first)
-        S.Diag(Qual.second, DiagID)
+    if ((!S.inTemplateInstantiation()) && (TypeQuals & Qual.first)) 
+      S.Diag(Qual.second, DiagID)
           << DeclSpec::getSpecifierName(Qual.first) << TypeSoFar
           << FixItHint::CreateRemoval(Qual.second);
-    }
+    
 
     TypeQuals &= ~Qual.first;
   }
@@ -2122,9 +2121,8 @@ QualType Sema::BuildArrayType(QualType T, ArraySizeModifier ASM,
     // Mentioning a member pointer type for an array type causes us to lock in
     // an inheritance model, even if it's inside an unused typedef.
     if (Context.getTargetInfo().getCXXABI().isMicrosoft())
-      if (const MemberPointerType *MPTy = T->getAs<MemberPointerType>())
-        if (!MPTy->getQualifier().isDependent())
-          (void)isCompleteType(Loc, T);
+      if (const MemberPointerType *MPTy = T->getAs<MemberPointerType>(); MPTy && (!MPTy->getQualifier().isDependent()))
+        (void)isCompleteType(Loc, T);
 
   } else {
     // C99 6.7.5.2p1: If the element type is an incomplete or function type,
@@ -4017,23 +4015,22 @@ classifyPointerDeclarator(Sema &S, QualType type, Declarator &declarator,
       ++numTypeSpecifierPointers;
 
       // If this is NSError**, report that.
-      if (auto objcClassDecl = objcObjectPtr->getInterfaceDecl()) {
-        if (objcClassDecl->getIdentifier() == S.ObjC().getNSErrorIdent() &&
-            numNormalPointers == 2 && numTypeSpecifierPointers < 2) {
+      if (auto objcClassDecl = objcObjectPtr->getInterfaceDecl(); objcClassDecl && (objcClassDecl->getIdentifier() == S.ObjC().getNSErrorIdent() &&
+            numNormalPointers == 2 && numTypeSpecifierPointers < 2)) 
+        {
           return PointerDeclaratorKind::NSErrorPointerPointer;
         }
-      }
+      
 
       break;
     }
 
     // Look at Objective-C class types.
     if (auto objcClass = type->getAs<ObjCInterfaceType>()) {
-      if (objcClass->getInterface()->getIdentifier() ==
-          S.ObjC().getNSErrorIdent()) {
-        if (numNormalPointers == 2 && numTypeSpecifierPointers < 2)
-          return PointerDeclaratorKind::NSErrorPointerPointer;
-      }
+      if ((objcClass->getInterface()->getIdentifier() ==
+          S.ObjC().getNSErrorIdent()) && (numNormalPointers == 2 && numTypeSpecifierPointers < 2)) 
+        return PointerDeclaratorKind::NSErrorPointerPointer;
+      
 
       break;
     }
@@ -4543,15 +4540,15 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
             return AttrList.hasAttribute(ParsedAttr::AT_CFReturnsRetained) ||
                    AttrList.hasAttribute(ParsedAttr::AT_CFReturnsNotRetained);
           };
-          if (const auto *InnermostChunk = D.getInnermostNonParenChunk()) {
-            if (hasCFReturnsAttr(D.getDeclarationAttributes()) ||
+          if (const auto *InnermostChunk = D.getInnermostNonParenChunk(); InnermostChunk && (hasCFReturnsAttr(D.getDeclarationAttributes()) ||
                 hasCFReturnsAttr(D.getAttributes()) ||
                 hasCFReturnsAttr(InnermostChunk->getAttrs()) ||
-                hasCFReturnsAttr(D.getDeclSpec().getAttributes())) {
+                hasCFReturnsAttr(D.getDeclSpec().getAttributes()))) 
+            {
               inferNullability = NullabilityKind::Nullable;
               inferNullabilityInnerOnly = true;
             }
-          }
+          
         }
         break;
       }
@@ -4595,9 +4592,8 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
     do {
       if (typedefTy->getDecl() == vaListTypedef)
         return true;
-      if (auto *name = typedefTy->getDecl()->getIdentifier())
-        if (name->isStr("va_list"))
-          return true;
+      if (auto *name = typedefTy->getDecl()->getIdentifier(); name && (name->isStr("va_list")))
+        return true;
       typedefTy = typedefTy->desugar()->getAs<TypedefType>();
     } while (typedefTy);
     return false;
@@ -4766,13 +4762,13 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       // OpenCL v2.0 s6.9b - Pointer to image/sampler cannot be used.
       // OpenCL v2.0 s6.13.16.1 - Pointer to pipe cannot be used.
       // OpenCL v2.0 s6.12.5 - Pointers to Blocks are not allowed.
-      if (LangOpts.OpenCL) {
-        if (T->isImageType() || T->isSamplerT() || T->isPipeType() ||
-            T->isBlockPointerType()) {
+      if ((LangOpts.OpenCL) && (T->isImageType() || T->isSamplerT() || T->isPipeType() ||
+            T->isBlockPointerType())) 
+        {
           S.Diag(D.getIdentifierLoc(), diag::err_opencl_pointer_to_type) << T;
           D.setInvalidType(true);
         }
-      }
+      
 
       T = S.BuildPointerType(T, DeclType.Loc, Name);
       if (DeclType.Ptr.TypeQuals)
@@ -5329,12 +5325,12 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
             if (Context.isPromotableIntegerType(ParamTy)) {
               ParamTy = Context.getPromotedIntegerType(ParamTy);
               Param->setKNRPromoted(true);
-            } else if (const BuiltinType *BTy = ParamTy->getAs<BuiltinType>()) {
-              if (BTy->getKind() == BuiltinType::Float) {
+            } else if (const BuiltinType *BTy = ParamTy->getAs<BuiltinType>(); BTy && (BTy->getKind() == BuiltinType::Float)) 
+              {
                 ParamTy = Context.DoubleTy;
                 Param->setKNRPromoted(true);
               }
-            }
+            
           } else if (S.getLangOpts().OpenCL && ParamTy->isBlockPointerType()) {
             // OpenCL 2.0 s6.12.5: A block cannot be a parameter of a function.
             S.Diag(Param->getLocation(), diag::err_opencl_invalid_param)
@@ -6986,13 +6982,13 @@ static bool handleObjCOwnershipTypeAttr(TypeProcessingState &state,
   if (lifetime == Qualifiers::OCL_Weak) {
     if (const ObjCObjectPointerType *ObjT =
           type->getAs<ObjCObjectPointerType>()) {
-      if (ObjCInterfaceDecl *Class = ObjT->getInterfaceDecl()) {
-        if (Class->isArcWeakrefUnavailable()) {
+      if (ObjCInterfaceDecl *Class = ObjT->getInterfaceDecl(); Class && (Class->isArcWeakrefUnavailable())) 
+        {
           S.Diag(AttrLoc, diag::err_arc_unsupported_weak_class);
           S.Diag(ObjT->getInterfaceDecl()->getLocation(),
                  diag::note_class_declared);
         }
-      }
+      
     }
   }
 
@@ -8226,10 +8222,9 @@ static bool handleFunctionTypeAttr(TypeProcessingState &state, ParsedAttr &attr,
     if (S.CheckAttrTarget(attr))
       return true;
 
-    if (attr.getKind() == ParsedAttr::AT_ArmStreaming ||
-        attr.getKind() == ParsedAttr::AT_ArmStreamingCompatible)
-      if (S.CheckAttrNoArgs(attr))
-        return true;
+    if ((attr.getKind() == ParsedAttr::AT_ArmStreaming ||
+        attr.getKind() == ParsedAttr::AT_ArmStreamingCompatible) && (S.CheckAttrNoArgs(attr)))
+      return true;
 
     if (!unwrapped.isFunctionType())
       return false;
@@ -8358,10 +8353,10 @@ static bool handleFunctionTypeAttr(TypeProcessingState &state, ParsedAttr &attr,
   CallingConv CCOld = fn->getCallConv();
   Attr *CCAttr = getCCTypeAttr(S.Context, attr);
 
-  if (CCOld != CC) {
+  if ((CCOld != CC) && (S.getCallingConvAttributedType(type))) 
     // Error out on when there's already an attribute on the type
     // and the CCs don't match.
-    if (S.getCallingConvAttributedType(type)) {
+    {
       S.Diag(attr.getLoc(), diag::err_attributes_are_not_compatible)
           << FunctionType::getNameForCallConv(CC)
           << FunctionType::getNameForCallConv(CCOld)
@@ -8369,7 +8364,7 @@ static bool handleFunctionTypeAttr(TypeProcessingState &state, ParsedAttr &attr,
       attr.setInvalid();
       return true;
     }
-  }
+  
 
   // Diagnose use of variadic functions with calling conventions that
   // don't support them (e.g. because they're callee-cleanup).
@@ -8921,12 +8916,12 @@ static void HandleOpenCLAccessAttr(QualType &CurType, const ParsedAttr &Attr,
 
     S.Diag(TypedefTy->getDecl()->getBeginLoc(),
            diag::note_opencl_typedef_access_qualifier) << PrevAccessQual;
-  } else if (CurType->isPipeType()) {
-    if (Attr.getSemanticSpelling() == OpenCLAccessAttr::Keyword_write_only) {
+  } else if ((CurType->isPipeType()) && (Attr.getSemanticSpelling() == OpenCLAccessAttr::Keyword_write_only)) 
+    {
       QualType ElemType = CurType->castAs<PipeType>()->getElementType();
       CurType = S.Context.getWritePipeType(ElemType);
     }
-  }
+  
 }
 
 /// HandleMatrixTypeAttr - "matrix_type" attribute, like ext_vector_type
@@ -9117,16 +9112,15 @@ static void processTypeAttrs(TypeProcessingState &state, QualType &type,
       break;
     case ParsedAttr::AT_HLSLGroupSharedAddressSpace:
       HandleAddressSpaceTypeAttribute(type, attr, state);
-      if (state.getDeclarator().getContext() == DeclaratorContext::Prototype) {
-        if (state.getSema().getLangOpts().getHLSLVersion() <
-            LangOptions::HLSL_202x)
-          state.getSema().Diag(attr.getLoc(), diag::warn_hlsl_groupshared_202x);
+      if ((state.getDeclarator().getContext() == DeclaratorContext::Prototype) && (state.getSema().getLangOpts().getHLSLVersion() <
+            LangOptions::HLSL_202x)) 
+        state.getSema().Diag(attr.getLoc(), diag::warn_hlsl_groupshared_202x);
 
         // Note: we don't check for the usage of HLSLParamModifiers in/out/inout
         // here because the check in the AT_HLSLParamModifier case is sufficient
         // regardless of the order of groupshared or in/out/inout specified in
         // the parameter. And checking there produces a better error message.
-      }
+      
       attr.setUsedAsTypeAttr();
       break;
     OBJC_POINTER_TYPE_ATTRS_CASELIST:
@@ -9373,8 +9367,8 @@ static void processTypeAttrs(TypeProcessingState &state, QualType &type,
 
 void Sema::completeExprArrayBound(Expr *E) {
   if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E->IgnoreParens())) {
-    if (VarDecl *Var = dyn_cast<VarDecl>(DRE->getDecl())) {
-      if (isTemplateInstantiation(Var->getTemplateSpecializationKind())) {
+    if (VarDecl *Var = dyn_cast<VarDecl>(DRE->getDecl()); Var && (isTemplateInstantiation(Var->getTemplateSpecializationKind()))) 
+      {
         auto *Def = Var->getDefinition();
         if (!Def) {
           SourceLocation PointOfInstantiation = E->getExprLoc();
@@ -9411,7 +9405,7 @@ void Sema::completeExprArrayBound(Expr *E) {
         // may also require instantiations or diagnostics if it remains
         // incomplete.
       }
-    }
+    
   }
   if (const auto CastE = dyn_cast<ExplicitCastExpr>(E)) {
     QualType DestType = CastE->getTypeAsWritten();
@@ -10030,9 +10024,8 @@ QualType Sema::getDecltypeForExpr(Expr *E) {
     return isa<TemplateParamObjectDecl>(VD) ? T.getUnqualifiedType() : T;
   }
   if (const auto *ME = dyn_cast<MemberExpr>(IDExpr)) {
-    if (const auto *VD = ME->getMemberDecl())
-      if (isa<FieldDecl>(VD) || isa<VarDecl>(VD))
-        return VD->getType();
+    if (const auto *VD = ME->getMemberDecl(); VD && (isa<FieldDecl>(VD) || isa<VarDecl>(VD)))
+      return VD->getType();
   } else if (const auto *IR = dyn_cast<ObjCIvarRefExpr>(IDExpr)) {
     return IR->getDecl()->getType();
   } else if (const auto *PR = dyn_cast<ObjCPropertyRefExpr>(IDExpr)) {

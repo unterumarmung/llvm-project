@@ -193,8 +193,8 @@ Decl *SemaObjC::ActOnProperty(Scope *S, SourceLocation AtLoc,
   // Proceed with constructing the ObjCPropertyDecls.
   ObjCContainerDecl *ClassDecl = cast<ObjCContainerDecl>(SemaRef.CurContext);
   ObjCPropertyDecl *Res = nullptr;
-  if (ObjCCategoryDecl *CDecl = dyn_cast<ObjCCategoryDecl>(ClassDecl)) {
-    if (CDecl->IsClassExtension()) {
+  if (ObjCCategoryDecl *CDecl = dyn_cast<ObjCCategoryDecl>(ClassDecl); CDecl && (CDecl->IsClassExtension())) 
+    {
       Res = HandlePropertyInClassExtension(S, AtLoc, LParenLoc,
                                            FD,
                                            GetterSel, ODS.getGetterNameLoc(),
@@ -205,7 +205,7 @@ Decl *SemaObjC::ActOnProperty(Scope *S, SourceLocation AtLoc,
       if (!Res)
         return nullptr;
     }
-  }
+  
 
   if (!Res) {
     Res = CreatePropertyDecl(S, ClassDecl, AtLoc, LParenLoc, FD,
@@ -546,9 +546,8 @@ ObjCPropertyDecl *SemaObjC::CreatePropertyDecl(
       ObjCInterfaceDecl *IDecl = ObjPtrTy->getObjectType()->getInterface();
       if (IDecl)
         if (ObjCProtocolDecl* PNSCopying =
-            LookupProtocol(&Context.Idents.get("NSCopying"), AtLoc))
-          if (IDecl->ClassImplementsProtocol(PNSCopying, true))
-            Diag(AtLoc, diag::warn_implements_nscopying) << PropertyId;
+            LookupProtocol(&Context.Idents.get("NSCopying"), AtLoc); PNSCopying && (IDecl->ClassImplementsProtocol(PNSCopying, true)))
+          Diag(AtLoc, diag::warn_implements_nscopying) << PropertyId;
     }
   }
 
@@ -1076,13 +1075,13 @@ Decl *SemaObjC::ActOnPropertyImplDecl(
     }
 
     if (const ObjCCategoryDecl *CD =
-        dyn_cast<ObjCCategoryDecl>(property->getDeclContext())) {
-      if (!CD->IsClassExtension()) {
+        dyn_cast<ObjCCategoryDecl>(property->getDeclContext()); CD && (!CD->IsClassExtension())) 
+      {
         Diag(PropertyLoc, diag::err_category_property) << CD->getDeclName();
         Diag(property->getLocation(), diag::note_property_declare);
         return nullptr;
       }
-    }
+    
     if (Synthesize && (PIkind & ObjCPropertyAttribute::kind_readonly) &&
         property->hasAttr<IBOutletAttr>() && !AtLoc.isValid()) {
       bool ReadWriteProperty = false;
@@ -1493,9 +1492,8 @@ Decl *SemaObjC::ActOnPropertyImplDecl(
         Expr *callExpr = Res.getAs<Expr>();
         if (const CXXOperatorCallExpr *CXXCE =
               dyn_cast_or_null<CXXOperatorCallExpr>(callExpr))
-          if (const FunctionDecl *FuncDecl = CXXCE->getDirectCallee())
-            if (!FuncDecl->isTrivial())
-              if (property->getType()->isReferenceType()) {
+          if (const FunctionDecl *FuncDecl = CXXCE->getDirectCallee(); FuncDecl && (!FuncDecl->isTrivial()) && (property->getType()->isReferenceType()))
+            {
                 Diag(PropertyDiagLoc,
                      diag::err_atomic_property_nontrivial_assign_op)
                     << property->getType();
@@ -1942,9 +1940,8 @@ void SemaObjC::DefaultSynthesizeProperties(Scope *S, Decl *D,
   ObjCImplementationDecl *IC=dyn_cast_or_null<ObjCImplementationDecl>(D);
   if (!IC)
     return;
-  if (ObjCInterfaceDecl* IDecl = IC->getClassInterface())
-    if (!IDecl->isObjCRequiresPropertyDefs())
-      DefaultSynthesizeProperties(S, IC, IDecl, AtEnd);
+  if (ObjCInterfaceDecl* IDecl = IC->getClassInterface(); IDecl && (!IDecl->isObjCRequiresPropertyDefs()))
+    DefaultSynthesizeProperties(S, IC, IDecl, AtEnd);
 }
 
 static void DiagnoseUnimplementedAccessor(
@@ -1996,14 +1993,14 @@ void SemaObjC::DiagnoseUnimplementedProperties(Scope *S, ObjCImplDecl *IMPDecl,
   // Gather properties which need not be implemented in this class
   // or category.
   if (!IDecl)
-    if (ObjCCategoryDecl *C = dyn_cast<ObjCCategoryDecl>(CDecl)) {
+    if (ObjCCategoryDecl *C = dyn_cast<ObjCCategoryDecl>(CDecl); C && ((IDecl = C->getClassInterface()))) 
       // For categories, no need to implement properties declared in
       // its primary class (and its super classes) if property is
       // declared in one of those containers.
-      if ((IDecl = C->getClassInterface())) {
+      {
         IDecl->collectPropertiesToImplement(NoNeedToImplPropMap);
       }
-    }
+    
   if (IDecl)
     CollectSuperClassPropertyImplementations(IDecl, NoNeedToImplPropMap);
 
@@ -2342,9 +2339,8 @@ void SemaObjC::ProcessPropertyDecl(ObjCPropertyDecl *property) {
   // if setter or getter is not found in class extension, it might be
   // in the primary class.
   if (!GetterMethod)
-    if (const ObjCCategoryDecl *CatDecl = dyn_cast<ObjCCategoryDecl>(CD))
-      if (CatDecl->IsClassExtension())
-        GetterMethod = IsClassProperty ? CatDecl->getClassInterface()->
+    if (const ObjCCategoryDecl *CatDecl = dyn_cast<ObjCCategoryDecl>(CD); CatDecl && (CatDecl->IsClassExtension()))
+      GetterMethod = IsClassProperty ? CatDecl->getClassInterface()->
                          getClassMethod(property->getGetterName()) :
                        CatDecl->getClassInterface()->
                          getInstanceMethod(property->getGetterName());
@@ -2353,9 +2349,8 @@ void SemaObjC::ProcessPropertyDecl(ObjCPropertyDecl *property) {
                  CD->getClassMethod(property->getSetterName()) :
                  CD->getInstanceMethod(property->getSetterName());
   if (!SetterMethod)
-    if (const ObjCCategoryDecl *CatDecl = dyn_cast<ObjCCategoryDecl>(CD))
-      if (CatDecl->IsClassExtension())
-        SetterMethod = IsClassProperty ? CatDecl->getClassInterface()->
+    if (const ObjCCategoryDecl *CatDecl = dyn_cast<ObjCCategoryDecl>(CD); CatDecl && (CatDecl->IsClassExtension()))
+      SetterMethod = IsClassProperty ? CatDecl->getClassInterface()->
                           getClassMethod(property->getSetterName()) :
                        CatDecl->getClassInterface()->
                           getInstanceMethod(property->getSetterName());
@@ -2368,15 +2363,15 @@ void SemaObjC::ProcessPropertyDecl(ObjCPropertyDecl *property) {
     if (const ObjCCategoryDecl *CatDecl = dyn_cast<ObjCCategoryDecl>(CD)) {
       auto *ExistingGetter = CatDecl->getClassInterface()->lookupMethod(
           property->getGetterName(), !IsClassProperty, true, false, CatDecl);
-      if (ExistingGetter) {
-        if (ExistingGetter->isDirectMethod() || property->isDirectProperty()) {
+      if ((ExistingGetter) && (ExistingGetter->isDirectMethod() || property->isDirectProperty())) 
+        {
           Diag(property->getLocation(), diag::err_objc_direct_duplicate_decl)
               << property->isDirectProperty() << 1 /* property */
               << ExistingGetter->isDirectMethod()
               << ExistingGetter->getDeclName();
           Diag(ExistingGetter->getLocation(), diag::note_previous_declaration);
         }
-      }
+      
     }
   }
 
@@ -2384,15 +2379,15 @@ void SemaObjC::ProcessPropertyDecl(ObjCPropertyDecl *property) {
     if (const ObjCCategoryDecl *CatDecl = dyn_cast<ObjCCategoryDecl>(CD)) {
       auto *ExistingSetter = CatDecl->getClassInterface()->lookupMethod(
           property->getSetterName(), !IsClassProperty, true, false, CatDecl);
-      if (ExistingSetter) {
-        if (ExistingSetter->isDirectMethod() || property->isDirectProperty()) {
+      if ((ExistingSetter) && (ExistingSetter->isDirectMethod() || property->isDirectProperty())) 
+        {
           Diag(property->getLocation(), diag::err_objc_direct_duplicate_decl)
               << property->isDirectProperty() << 1 /* property */
               << ExistingSetter->isDirectMethod()
               << ExistingSetter->getDeclName();
           Diag(ExistingSetter->getLocation(), diag::note_previous_declaration);
         }
-      }
+      
     }
   }
 

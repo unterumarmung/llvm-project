@@ -49,16 +49,15 @@ void AliasSet::mergeSetIn(AliasSet &AS, AliasSetTracker &AST,
   Access |= AS.Access;
   Alias  |= AS.Alias;
 
-  if (Alias == SetMustAlias) {
-    // Check that these two merged sets really are must aliases. If we cannot
-    // find a must-alias pair between them, this set becomes a may alias.
-    if (!any_of(MemoryLocs, [&](const MemoryLocation &MemLoc) {
+  if ((Alias == SetMustAlias) && (!any_of(MemoryLocs, [&](const MemoryLocation &MemLoc) {
           return any_of(AS.MemoryLocs, [&](const MemoryLocation &ASMemLoc) {
             return BatchAA.isMustAlias(MemLoc, ASMemLoc);
           });
-        }))
-      Alias = SetMayAlias;
-  }
+        }))) 
+    // Check that these two merged sets really are must aliases. If we cannot
+    // find a must-alias pair between them, this set becomes a may alias.
+    Alias = SetMayAlias;
+  
 
   // Merge the list of constituent memory locations...
   if (MemoryLocs.empty()) {
@@ -110,14 +109,13 @@ void AliasSet::removeFromTracker(AliasSetTracker &AST) {
 void AliasSet::addMemoryLocation(AliasSetTracker &AST,
                                  const MemoryLocation &MemLoc,
                                  bool KnownMustAlias) {
-  if (isMustAlias() && !KnownMustAlias) {
+  if ((isMustAlias() && !KnownMustAlias) && (!any_of(MemoryLocs, [&](const MemoryLocation &ASMemLoc) {
+          return AST.getAliasAnalysis().isMustAlias(MemLoc, ASMemLoc);
+        }))) 
     // If we cannot find a must-alias with any of the existing MemoryLocs, we
     // must downgrade to may-alias.
-    if (!any_of(MemoryLocs, [&](const MemoryLocation &ASMemLoc) {
-          return AST.getAliasAnalysis().isMustAlias(MemLoc, ASMemLoc);
-        }))
-      Alias = SetMayAlias;
-  }
+    Alias = SetMayAlias;
+  
 
   // Add it to the end of the list...
   MemoryLocs.push_back(MemLoc);
@@ -384,8 +382,8 @@ void AliasSetTracker::add(Instruction *I) {
     return add(MTI);
 
   // Handle all calls with known mod/ref sets genericall
-  if (auto *Call = dyn_cast<CallBase>(I))
-    if (Call->onlyAccessesArgMemory()) {
+  if (auto *Call = dyn_cast<CallBase>(I); Call && (Call->onlyAccessesArgMemory()))
+    {
       auto getAccessFromModRef = [](ModRefInfo MRI) {
         if (isRefSet(MRI) && isModSet(MRI))
           return AliasSet::ModRefAccess;

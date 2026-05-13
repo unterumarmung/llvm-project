@@ -2670,9 +2670,8 @@ BugPathGetter::BugPathGetter(const ExplodedGraph *OriginalGraph,
       continue;
     }
 
-    if (RemainingNodes.erase(Node))
-      if (RemainingNodes.empty())
-        break;
+    if ((RemainingNodes.erase(Node)) && (RemainingNodes.empty()))
+      break;
 
     for (const ExplodedNode *Succ : Node->succs())
       WS.push(Succ);
@@ -3086,9 +3085,8 @@ BugReport *PathSensitiveBugReporter::findReportInEquivalenceClass(
     // to being post-dominated by a sink. This works better when the analysis
     // is incomplete and we have never reached the no-return function call(s)
     // that we'd inevitably bump into on this path.
-    if (const CFGBlock *ErrorB = errorNode->getCFGBlock())
-      if (ErrorB->isInevitablySinking())
-        continue;
+    if (const CFGBlock *ErrorB = errorNode->getCFGBlock(); ErrorB && (ErrorB->isInevitablySinking()))
+      continue;
 
     // At this point we know that 'N' is not a sink and it has at least one
     // successor.  Use a DFS worklist to find a non-sink end-of-path node.

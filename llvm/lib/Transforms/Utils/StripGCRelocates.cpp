@@ -29,9 +29,8 @@ static bool stripGCRelocates(Function &F) {
   // TODO: We currently do not handle gc.relocates that are in landing pads,
   // i.e. not bound to a single statepoint token.
   for (Instruction &I : instructions(F)) {
-    if (auto *GCR = dyn_cast<GCRelocateInst>(&I))
-      if (isa<GCStatepointInst>(GCR->getOperand(0)))
-        GCRelocates.push_back(GCR);
+    if (auto *GCR = dyn_cast<GCRelocateInst>(&I); GCR && (isa<GCStatepointInst>(GCR->getOperand(0))))
+      GCRelocates.push_back(GCR);
   }
   // All gc.relocates are bound to a single statepoint token. The order of
   // visiting gc.relocates for deletion does not matter.

@@ -74,8 +74,8 @@ void SemaSYCL::deepTypeCheckForDevice(SourceLocation UsedAt,
       ErrorFound = true;
     }
     // Checks for other types can also be done here.
-    if (ErrorFound) {
-      if (NeedToEmitNotes) {
+    if ((ErrorFound) && (NeedToEmitNotes)) 
+      {
         if (auto *FD = dyn_cast<FieldDecl>(D))
           DiagIfDeviceCode(FD->getLocation(),
                            diag::note_illegal_field_declared_here)
@@ -83,7 +83,7 @@ void SemaSYCL::deepTypeCheckForDevice(SourceLocation UsedAt,
         else
           DiagIfDeviceCode(D->getLocation(), diag::note_declared_at);
       }
-    }
+    
 
     return ErrorFound;
   };
@@ -228,13 +228,13 @@ void SemaSYCL::CheckDeviceUseOfDecl(NamedDecl *ND, SourceLocation Loc) {
   // Function declarations with the sycl_kernel_entry_point attribute cannot
   // be ODR-used in a potentially evaluated context.
   if (FunctionDecl *FD = dyn_cast<FunctionDecl>(ND)) {
-    if (const auto *SKEPAttr = FD->getAttr<SYCLKernelEntryPointAttr>()) {
-      if (SemaRef.currentEvaluationContext().isPotentiallyEvaluated()) {
+    if (const auto *SKEPAttr = FD->getAttr<SYCLKernelEntryPointAttr>(); SKEPAttr && (SemaRef.currentEvaluationContext().isPotentiallyEvaluated())) 
+      {
         DiagIfDeviceCode(Loc, diag::err_sycl_entry_point_device_use)
             << FD << SKEPAttr;
         DiagIfDeviceCode(SKEPAttr->getLocation(), diag::note_attribute) << FD;
       }
-    }
+    
   }
 }
 
@@ -280,13 +280,11 @@ static bool CheckSYCLKernelName(Sema &S, SourceLocation Loc,
 void SemaSYCL::CheckSYCLExternalFunctionDecl(FunctionDecl *FD) {
   const auto *SEAttr = FD->getAttr<SYCLExternalAttr>();
   assert(SEAttr && "Missing sycl_external attribute");
-  if (!FD->isInvalidDecl() && !FD->isTemplated()) {
-    if (!FD->isExternallyVisible())
-      if (!FD->isFunctionTemplateSpecialization() ||
-          FD->getTemplateSpecializationInfo()->isExplicitSpecialization())
-        Diag(SEAttr->getLocation(), diag::err_sycl_external_invalid_linkage)
+  if ((!FD->isInvalidDecl() && !FD->isTemplated()) && (!FD->isExternallyVisible()) && (!FD->isFunctionTemplateSpecialization() ||
+          FD->getTemplateSpecializationInfo()->isExplicitSpecialization())) 
+    Diag(SEAttr->getLocation(), diag::err_sycl_external_invalid_linkage)
             << SEAttr;
-  }
+  
   if (FD->isDeletedAsWritten()) {
     Diag(SEAttr->getLocation(),
          diag::err_sycl_external_invalid_deleted_function)
@@ -329,9 +327,9 @@ void SemaSYCL::CheckSYCLEntryPointFunctionDecl(FunctionDecl *FD) {
   FunctionDecl *PrevFD = FD->getPreviousDecl();
   if (PrevFD && !PrevFD->isInvalidDecl()) {
     const auto *PrevSKEPAttr = PrevFD->getAttr<SYCLKernelEntryPointAttr>();
-    if (PrevSKEPAttr && !PrevSKEPAttr->isInvalidAttr()) {
-      if (!getASTContext().hasSameType(SKEPAttr->getKernelName(),
-                                       PrevSKEPAttr->getKernelName())) {
+    if ((PrevSKEPAttr && !PrevSKEPAttr->isInvalidAttr()) && (!getASTContext().hasSameType(SKEPAttr->getKernelName(),
+                                       PrevSKEPAttr->getKernelName()))) 
+      {
         Diag(SKEPAttr->getLocation(),
              diag::err_sycl_entry_point_invalid_redeclaration)
             << SKEPAttr << SKEPAttr->getKernelName()
@@ -339,7 +337,7 @@ void SemaSYCL::CheckSYCLEntryPointFunctionDecl(FunctionDecl *FD) {
         Diag(PrevSKEPAttr->getLocation(), diag::note_previous_decl) << PrevFD;
         SKEPAttr->setInvalidAttr();
       }
-    }
+    
   }
 
   if (isa<CXXConstructorDecl>(FD)) {
@@ -352,13 +350,13 @@ void SemaSYCL::CheckSYCLEntryPointFunctionDecl(FunctionDecl *FD) {
         << SKEPAttr << diag::InvalidSKEPReason::Destructor;
     SKEPAttr->setInvalidAttr();
   }
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(FD)) {
-    if (MD->isExplicitObjectMemberFunction()) {
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(FD); MD && (MD->isExplicitObjectMemberFunction())) 
+    {
       Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_invalid)
           << SKEPAttr << diag::InvalidSKEPReason::ExplicitObjectFn;
       SKEPAttr->setInvalidAttr();
     }
-  }
+  
 
   if (FD->isVariadic()) {
     Diag(SKEPAttr->getLocation(), diag::err_sycl_entry_point_invalid)

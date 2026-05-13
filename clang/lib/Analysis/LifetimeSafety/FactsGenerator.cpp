@@ -724,14 +724,14 @@ void FactsGenerator::handleExitBlock() {
       // Create FieldEscapeFacts for all field origins that remain live at exit.
       EscapesInCurrentBlock.push_back(
           FactMgr.createFact<FieldEscapeFact>(O.ID, FD));
-    else if (auto *VD = dyn_cast_if_present<VarDecl>(O.getDecl())) {
+    else if (auto *VD = dyn_cast_if_present<VarDecl>(O.getDecl()); VD && (VD->hasGlobalStorage())) 
       // Create GlobalEscapeFacts for all origins with global-storage that
       // remain live at exit.
-      if (VD->hasGlobalStorage()) {
+      {
         EscapesInCurrentBlock.push_back(
             FactMgr.createFact<GlobalEscapeFact>(O.ID, VD));
       }
-    }
+    
 }
 
 void FactsGenerator::handleGSLPointerConstruction(const CXXConstructExpr *CCE) {

@@ -250,10 +250,9 @@ const CallInst *BasicBlock::getTerminatingMustTailCall() const {
     }
   }
 
-  if (auto *CI = dyn_cast<CallInst>(Prev)) {
-    if (CI->isMustTailCall())
-      return CI;
-  }
+  if (auto *CI = dyn_cast<CallInst>(Prev); CI && (CI->isMustTailCall())) 
+    return CI;
+  
   return nullptr;
 }
 
@@ -265,9 +264,8 @@ const CallInst *BasicBlock::getTerminatingDeoptimizeCall() const {
     return nullptr;
 
   if (auto *CI = dyn_cast_or_null<CallInst>(RI->getPrevNode()))
-    if (Function *F = CI->getCalledFunction())
-      if (F->getIntrinsicID() == Intrinsic::experimental_deoptimize)
-        return CI;
+    if (Function *F = CI->getCalledFunction(); F && (F->getIntrinsicID() == Intrinsic::experimental_deoptimize))
+      return CI;
 
   return nullptr;
 }
@@ -389,10 +387,9 @@ BasicBlock::const_iterator BasicBlock::getFirstNonPHIOrDbgOrAlloca() const {
     while (InsertPt != End &&
            (isa<AllocaInst>(*InsertPt) || isa<DbgInfoIntrinsic>(*InsertPt) ||
             isa<PseudoProbeInst>(*InsertPt))) {
-      if (const AllocaInst *AI = dyn_cast<AllocaInst>(&*InsertPt)) {
-        if (!AI->isStaticAlloca())
-          break;
-      }
+      if (const AllocaInst *AI = dyn_cast<AllocaInst>(&*InsertPt); AI && (!AI->isStaticAlloca())) 
+        break;
+      
       ++InsertPt;
     }
   }

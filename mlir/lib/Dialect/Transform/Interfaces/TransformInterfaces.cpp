@@ -1712,13 +1712,13 @@ transform::detail::verifyPossibleTopLevelTransformOpTrait(Operation *op) {
               "implementing TransformHandleTypeInterface";
   }
   BlockArgument arg = body->getArgument(0);
-  if (op->getNumOperands() != 0) {
-    if (arg.getType() != op->getOperand(0).getType()) {
+  if ((op->getNumOperands() != 0) && (arg.getType() != op->getOperand(0).getType())) 
+    {
       return op->emitOpError()
              << "expects the type of the block argument to match "
                 "the type of the operand";
     }
-  }
+  
   for (BlockArgument arg : body->getArguments().drop_front()) {
     if (llvm::isa<TransformHandleTypeInterface, TransformParamTypeInterface,
                   TransformValueHandleTypeInterface>(arg.getType()))
@@ -1734,8 +1734,8 @@ transform::detail::verifyPossibleTopLevelTransformOpTrait(Operation *op) {
   }
 
   if (auto *parent =
-          op->getParentWithTrait<PossibleTopLevelTransformOpTrait>()) {
-    if (op->getNumOperands() != body->getNumArguments()) {
+          op->getParentWithTrait<PossibleTopLevelTransformOpTrait>(); parent && (op->getNumOperands() != body->getNumArguments())) 
+    {
       InFlightDiagnostic diag =
           op->emitOpError()
           << "expects operands to be provided for a nested op";
@@ -1743,7 +1743,7 @@ transform::detail::verifyPossibleTopLevelTransformOpTrait(Operation *op) {
           << "nested in another possible top-level op";
       return diag;
     }
-  }
+  
 
   return success();
 }

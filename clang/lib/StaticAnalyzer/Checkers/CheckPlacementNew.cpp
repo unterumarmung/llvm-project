@@ -219,8 +219,8 @@ void PlacementNewChecker::checkFieldRegionAlign(
   if (!BaseRegion)
     return;
 
-  if (const VarRegion *TheVarRegion = BaseRegion->getAs<VarRegion>()) {
-    if (isVarRegionAlignedProperly(TheVarRegion, C, P, AllocatedTAlign)) {
+  if (const VarRegion *TheVarRegion = BaseRegion->getAs<VarRegion>(); TheVarRegion && (isVarRegionAlignedProperly(TheVarRegion, C, P, AllocatedTAlign))) 
+    {
       // We've checked type align but, unless FieldRegion
       // offset is zero, we also need to check its own
       // align.
@@ -234,7 +234,7 @@ void PlacementNewChecker::checkFieldRegionAlign(
       if (AddressAlign != 0)
         emitBadAlignReport(P, C, AllocatedTAlign, AddressAlign);
     }
-  }
+  
 }
 
 bool PlacementNewChecker::isVarRegionAlignedProperly(

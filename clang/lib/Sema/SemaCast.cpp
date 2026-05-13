@@ -225,15 +225,15 @@ namespace {
 
   void CheckNoDeref(Sema &S, const QualType FromType, const QualType ToType,
                     SourceLocation OpLoc) {
-    if (const auto *PtrType = dyn_cast<PointerType>(FromType)) {
-      if (PtrType->getPointeeType()->hasAttr(attr::NoDeref)) {
+    if (const auto *PtrType = dyn_cast<PointerType>(FromType); PtrType && (PtrType->getPointeeType()->hasAttr(attr::NoDeref))) 
+      {
         if (const auto *DestType = dyn_cast<PointerType>(ToType)) {
           if (!DestType->getPointeeType()->hasAttr(attr::NoDeref)) {
             S.Diag(OpLoc, diag::warn_noderef_to_dereferenceable_pointer);
           }
         }
       }
-    }
+    
   }
 
   struct CheckNoDerefRAII {
@@ -1140,11 +1140,10 @@ static bool argTypeIsABIEquivalent(QualType SrcType, QualType DestType,
     return true;
 
   // Allow integral type mismatch if their size are equal.
-  if ((SrcType->isIntegralType(Context) || SrcType->isEnumeralType()) &&
-      (DestType->isIntegralType(Context) || DestType->isEnumeralType()))
-    if (Context.getTypeSizeInChars(SrcType) ==
-        Context.getTypeSizeInChars(DestType))
-      return true;
+  if (((SrcType->isIntegralType(Context) || SrcType->isEnumeralType()) &&
+      (DestType->isIntegralType(Context) || DestType->isEnumeralType())) && (Context.getTypeSizeInChars(SrcType) ==
+        Context.getTypeSizeInChars(DestType)))
+    return true;
 
   return Context.hasSameUnqualifiedType(SrcType, DestType);
 }
@@ -1244,10 +1243,9 @@ static unsigned int checkCastFunctionType(Sema &Self, const ExprResult &SrcExpr,
     if (!DstFPTy->isVariadic())
       return DiagID;
     NumParams = DstNumParams;
-  } else if (NumParams < DstNumParams) {
-    if (!SrcFPTy->isVariadic())
-      return DiagID;
-  }
+  } else if ((NumParams < DstNumParams) && (!SrcFPTy->isVariadic())) 
+    return DiagID;
+  
 
   for (unsigned i = 0; i < NumParams; ++i)
     if (!argTypeIsABIEquivalent(SrcFPTy->getParamType(i),
@@ -1453,8 +1451,8 @@ static TryCastResult TryStaticCast(Sema &Self, ExprResult &SrcExpr,
   // C++0x 5.2.9p9: A value of a scoped enumeration type can be explicitly
   // converted to an integral type. [...] A value of a scoped enumeration type
   // can also be explicitly converted to a floating-point type [...].
-  if (const EnumType *Enum = dyn_cast<EnumType>(SrcType)) {
-    if (Enum->getDecl()->isScoped()) {
+  if (const EnumType *Enum = dyn_cast<EnumType>(SrcType); Enum && (Enum->getDecl()->isScoped())) 
+    {
       if (DestType->isBooleanType()) {
         Kind = CK_IntegralToBoolean;
         return TC_Success;
@@ -1466,7 +1464,7 @@ static TryCastResult TryStaticCast(Sema &Self, ExprResult &SrcExpr,
         return TC_Success;
       }
     }
-  }
+  
 
   // Reverse integral promotion/conversion. All such conversions are themselves
   // again integral promotions or conversions and are thus already handled by
@@ -1580,10 +1578,9 @@ static TryCastResult TryStaticCast(Sema &Self, ExprResult &SrcExpr,
   // See if it looks like the user is trying to convert between
   // related record types, and select a better diagnostic if so.
   if (const auto *SrcPointer = SrcType->getAs<PointerType>())
-    if (const auto *DestPointer = DestType->getAs<PointerType>())
-      if (SrcPointer->getPointeeType()->isRecordType() &&
-          DestPointer->getPointeeType()->isRecordType())
-        msg = diag::err_bad_cxx_cast_unrelated_class;
+    if (const auto *DestPointer = DestType->getAs<PointerType>(); DestPointer && (SrcPointer->getPointeeType()->isRecordType() &&
+          DestPointer->getPointeeType()->isRecordType()))
+      msg = diag::err_bad_cxx_cast_unrelated_class;
 
   if (SrcType->isMatrixType() && DestType->isMatrixType()) {
     if (Self.CheckMatrixCast(OpRange, DestType, SrcType, Kind)) {
@@ -1917,15 +1914,15 @@ TryCastResult TryStaticImplicitCast(Sema &Self, ExprResult &SrcExpr,
                                     CastOperation::OpRangeType OpRange,
                                     unsigned &msg, CastKind &Kind,
                                     bool ListInitialization) {
-  if (DestType->isRecordType()) {
-    if (Self.RequireCompleteType(OpRange.getBegin(), DestType,
+  if ((DestType->isRecordType()) && (Self.RequireCompleteType(OpRange.getBegin(), DestType,
                                  diag::err_bad_cast_incomplete) ||
         Self.RequireNonAbstractType(OpRange.getBegin(), DestType,
-                                    diag::err_allocation_of_abstract_type)) {
+                                    diag::err_allocation_of_abstract_type))) 
+    {
       msg = 0;
       return TC_Failed;
     }
-  }
+  
 
   InitializedEntity Entity = InitializedEntity::InitializeTemporary(DestType);
   InitializationKind InitKind =
@@ -2112,12 +2109,12 @@ void Sema::CheckCompatibleReinterpretCast(QualType SrcType, QualType DestType,
     return;
 
   // FIXME: Scoped enums?
-  if ((SrcTy->isUnsignedIntegerType() && DestTy->isSignedIntegerType()) ||
-      (SrcTy->isSignedIntegerType() && DestTy->isUnsignedIntegerType())) {
-    if (Context.getTypeSize(DestTy) == Context.getTypeSize(SrcTy)) {
+  if (((SrcTy->isUnsignedIntegerType() && DestTy->isSignedIntegerType()) ||
+      (SrcTy->isSignedIntegerType() && DestTy->isUnsignedIntegerType())) && (Context.getTypeSize(DestTy) == Context.getTypeSize(SrcTy))) 
+    {
       return;
     }
-  }
+  
 
   if (SrcTy->isDependentType() || DestTy->isDependentType()) {
     return;
@@ -2131,8 +2128,8 @@ static void DiagnoseCastOfObjCSEL(Sema &Self, const ExprResult &SrcExpr,
   QualType SrcType = SrcExpr.get()->getType();
   if (Self.Context.hasSameType(SrcType, DestType))
     return;
-  if (const PointerType *SrcPtrTy = SrcType->getAs<PointerType>())
-    if (SrcPtrTy->isObjCSelType()) {
+  if (const PointerType *SrcPtrTy = SrcType->getAs<PointerType>(); SrcPtrTy && (SrcPtrTy->isObjCSelType()))
+    {
       QualType DT = DestType;
       if (isa<PointerType>(DestType))
         DT = DestType->getPointeeType();
@@ -2166,9 +2163,8 @@ static void DiagnoseCallingConvCast(Sema &Self, const ExprResult &SrcExpr,
   // We have a calling convention cast. Check if the source is a pointer to a
   // known, specific function that has already been defined.
   Expr *Src = SrcExpr.get()->IgnoreParenImpCasts();
-  if (auto *UO = dyn_cast<UnaryOperator>(Src))
-    if (UO->getOpcode() == UO_AddrOf)
-      Src = UO->getSubExpr()->IgnoreParenImpCasts();
+  if (auto *UO = dyn_cast<UnaryOperator>(Src); UO && (UO->getOpcode() == UO_AddrOf))
+    Src = UO->getSubExpr()->IgnoreParenImpCasts();
   auto *DRE = dyn_cast<DeclRefExpr>(Src);
   if (!DRE)
     return;
@@ -2446,15 +2442,15 @@ static TryCastResult TryReinterpretCast(Sema &Self, ExprResult &SrcExpr,
       return TC_Success;
     }
 
-    if (Self.LangOpts.OpenCL && !CStyle) {
-      if (DestType->isExtVectorType() || SrcType->isExtVectorType()) {
+    if ((Self.LangOpts.OpenCL && !CStyle) && (DestType->isExtVectorType() || SrcType->isExtVectorType()) && (Self.areVectorTypesSameSize(SrcType, DestType))) 
+      
         // FIXME: Allow for reinterpret cast between 3 and 4 element vectors
-        if (Self.areVectorTypesSameSize(SrcType, DestType)) {
+        {
           Kind = CK_BitCast;
           return TC_Success;
         }
-      }
-    }
+      
+    
 
     // Otherwise, pick a reasonable diagnostic.
     if (!destIsVector)
@@ -2800,10 +2796,9 @@ void CastOperation::CheckCXXCStyleCast(bool FunctionalStyle,
   CheckedConversionKind CCK = FunctionalStyle
                                   ? CheckedConversionKind::FunctionalCast
                                   : CheckedConversionKind::CStyleCast;
-  if (Self.getLangOpts().HLSL) {
-    if (CheckHLSLCStyleCast(CCK))
-      return;
-  }
+  if ((Self.getLangOpts().HLSL) && (CheckHLSLCStyleCast(CCK))) 
+    return;
+  
 
   if (ValueKind == VK_PRValue && !DestType->isRecordType() &&
       !isPlaceholder(BuiltinType::Overload)) {
@@ -3303,15 +3298,15 @@ void CastOperation::CheckCStyleCast() {
     }
   }
 
-  if (Self.getLangOpts().OpenCL && !Self.getOpenCLOptions().isAvailableOption(
-                                       "cl_khr_fp16", Self.getLangOpts())) {
-    if (DestType->isHalfType()) {
+  if ((Self.getLangOpts().OpenCL && !Self.getOpenCLOptions().isAvailableOption(
+                                       "cl_khr_fp16", Self.getLangOpts())) && (DestType->isHalfType())) 
+    {
       Self.Diag(SrcExpr.get()->getBeginLoc(), diag::err_opencl_cast_to_half)
           << DestType << SrcExpr.get()->getSourceRange();
       SrcExpr = ExprError();
       return;
     }
-  }
+  
 
   // ARC imposes extra restrictions on casts.
   if (Self.getLangOpts().allowsNonTrivialObjCLifetimeQualifiers()) {

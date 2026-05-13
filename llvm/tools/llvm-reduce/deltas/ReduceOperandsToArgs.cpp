@@ -46,9 +46,8 @@ static bool canReduceUse(Use &Op) {
     return false;
 
   // Do not convert direct function calls to indirect calls.
-  if (auto *CI = dyn_cast<CallBase>(Op.getUser()))
-    if (&CI->getCalledOperandUse() == &Op)
-      return false;
+  if (auto *CI = dyn_cast<CallBase>(Op.getUser()); CI && (&CI->getCalledOperandUse() == &Op))
+    return false;
 
   // lifetime.start/lifetime.end require alloca argument.
   if (isa<LifetimeIntrinsic>(Op.getUser()))

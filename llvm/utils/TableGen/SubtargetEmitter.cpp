@@ -1062,10 +1062,9 @@ void SubtargetEmitter::genSchedClassTables(const CodeGenProcModel &ProcModel,
     // not don't try to locate the processor resources, it will fail.
     // If ProcIndices contains 0, this class applies to all processors.
     assert(!SC.ProcIndices.empty() && "expect at least one procidx");
-    if (SC.ProcIndices[0] != 0) {
-      if (!is_contained(SC.ProcIndices, ProcModel.Index))
-        continue;
-    }
+    if ((SC.ProcIndices[0] != 0) && (!is_contained(SC.ProcIndices, ProcModel.Index))) 
+      continue;
+    
     IdxVec Writes = SC.Writes;
     IdxVec Reads = SC.Reads;
     if (!SC.InstRWs.empty()) {
@@ -1694,12 +1693,11 @@ static void collectVariantClasses(const CodeGenSchedModels &SchedModels,
     if (SC.Transitions.empty())
       continue;
 
-    if (OnlyExpandMCInstPredicates) {
+    if ((OnlyExpandMCInstPredicates) && (llvm::none_of(SC.Transitions, hasMCSchedPredicates))) 
       // Ignore this variant scheduling class no transitions use any meaningful
       // MCSchedPredicate definitions.
-      if (llvm::none_of(SC.Transitions, hasMCSchedPredicates))
-        continue;
-    }
+      continue;
+    
 
     VariantClasses.push_back(SC.Index);
   }

@@ -133,14 +133,14 @@ private:
     }
     if (!selectorType_.IsUnlimitedPolymorphic()) { // F'2023 C1167
       if (const auto *selDerivedTypeSpec{
-              evaluate::GetDerivedTypeSpec(selectorType_)}) {
-        if (!derived.MatchesOrExtends(*selDerivedTypeSpec)) {
+              evaluate::GetDerivedTypeSpec(selectorType_)}; selDerivedTypeSpec && (!derived.MatchesOrExtends(*selDerivedTypeSpec))) 
+        {
           context_.Say(sourceLoc,
               "Type specification '%s' must be an extension of TYPE '%s'"_err_en_US,
               derived.AsFortran(), selDerivedTypeSpec->AsFortran());
           return false;
         }
-      }
+      
     }
     return true;
   }

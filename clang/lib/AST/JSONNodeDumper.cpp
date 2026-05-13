@@ -1026,10 +1026,9 @@ void JSONNodeDumper::VisitRecordDecl(const RecordDecl *RD) {
 void JSONNodeDumper::VisitCXXRecordDecl(const CXXRecordDecl *RD) {
   VisitRecordDecl(RD);
 
-  if (const auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(RD)) {
-    if (CTSD->hasStrictPackMatch())
-      JOS.attribute("strict-pack-match", true);
-  }
+  if (const auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(RD); CTSD && (CTSD->hasStrictPackMatch())) 
+    JOS.attribute("strict-pack-match", true);
+  
 
   if (const auto *Instance = RD->getTemplateInstantiationPattern())
     JOS.attribute("TemplateInstantiationPattern",

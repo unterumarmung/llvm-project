@@ -2897,9 +2897,8 @@ genTargetOp(lower::AbstractConverter &converter, lower::SymMap &symTable,
     // if the symbol is part of an already mapped common block, do not make a
     // map for it.
     if (const Fortran::semantics::Symbol *common =
-            Fortran::semantics::FindCommonBlockContaining(sym.GetUltimate()))
-      if (llvm::is_contained(mapSyms, common))
-        return;
+            Fortran::semantics::FindCommonBlockContaining(sym.GetUltimate()); common && (llvm::is_contained(mapSyms, common)))
+      return;
 
     // If we come across a symbol without a symbol address, we
     // return as we cannot process it, this is intended as a

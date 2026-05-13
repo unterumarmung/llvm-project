@@ -571,8 +571,8 @@ static void DoInitialMatch(const SCEV *S, Loop *L,
   }
 
   // Handle a multiplication by -1 (negation) if it didn't fold.
-  if (const SCEVMulExpr *Mul = dyn_cast<SCEVMulExpr>(S))
-    if (Mul->getOperand(0)->isAllOnesValue()) {
+  if (const SCEVMulExpr *Mul = dyn_cast<SCEVMulExpr>(S); Mul && (Mul->getOperand(0)->isAllOnesValue()))
+    {
       SmallVector<SCEVUse, 4> Ops(drop_begin(Mul->operands()));
       const SCEV *NewMul = SE.getMulExpr(Ops);
 
@@ -748,9 +748,8 @@ bool Formula::referencesReg(const SCEV *S) const {
 /// the use with the given index.
 bool Formula::hasRegsUsedByUsesOtherThan(size_t LUIdx,
                                          const RegUseTracker &RegUses) const {
-  if (ScaledReg)
-    if (RegUses.isRegUsedByUsesOtherThan(ScaledReg, LUIdx))
-      return true;
+  if ((ScaledReg) && (RegUses.isRegUsedByUsesOtherThan(ScaledReg, LUIdx)))
+    return true;
   for (const SCEV *BaseReg : BaseRegs)
     if (RegUses.isRegUsedByUsesOtherThan(BaseReg, LUIdx))
       return true;
@@ -891,8 +890,8 @@ static const SCEV *getExactSDiv(const SCEV *LHS, const SCEV *RHS,
   if (const SCEVMulExpr *Mul = dyn_cast<SCEVMulExpr>(LHS)) {
     if (IgnoreSignificantBits || isMulSExtable(Mul, SE)) {
       // Handle special case C1*X*Y /s C2*X*Y.
-      if (const SCEVMulExpr *MulRHS = dyn_cast<SCEVMulExpr>(RHS)) {
-        if (IgnoreSignificantBits || isMulSExtable(MulRHS, SE)) {
+      if (const SCEVMulExpr *MulRHS = dyn_cast<SCEVMulExpr>(RHS); MulRHS && (IgnoreSignificantBits || isMulSExtable(MulRHS, SE))) 
+        {
           const SCEVConstant *LC = dyn_cast<SCEVConstant>(Mul->getOperand(0));
           const SCEVConstant *RC =
               dyn_cast<SCEVConstant>(MulRHS->getOperand(0));
@@ -903,7 +902,7 @@ static const SCEV *getExactSDiv(const SCEV *LHS, const SCEV *RHS,
               return getExactSDiv(LC, RC, SE, IgnoreSignificantBits);
           }
         }
-      }
+      
 
       SmallVector<SCEVUse, 4> Ops;
       bool Found = false;
@@ -1012,19 +1011,17 @@ static bool isAddressUse(const TargetTransformInfo &TTI,
       break;
     default: {
       MemIntrinsicInfo IntrInfo;
-      if (TTI.getTgtMemIntrinsic(II, IntrInfo)) {
-        if (IntrInfo.PtrVal == OperandVal)
-          isAddress = true;
-      }
+      if ((TTI.getTgtMemIntrinsic(II, IntrInfo)) && (IntrInfo.PtrVal == OperandVal)) 
+        isAddress = true;
+      
     }
     }
   } else if (AtomicRMWInst *RMW = dyn_cast<AtomicRMWInst>(Inst)) {
     if (RMW->getPointerOperand() == OperandVal)
       isAddress = true;
-  } else if (AtomicCmpXchgInst *CmpX = dyn_cast<AtomicCmpXchgInst>(Inst)) {
-    if (CmpX->getPointerOperand() == OperandVal)
-      isAddress = true;
-  }
+  } else if (AtomicCmpXchgInst *CmpX = dyn_cast<AtomicCmpXchgInst>(Inst); CmpX && (CmpX->getPointerOperand() == OperandVal)) 
+    isAddress = true;
+  
   return isAddress;
 }
 
@@ -1156,10 +1153,9 @@ static bool isHighCostExpansion(const SCEV *S,
     }
   }
 
-  if (const SCEVAddRecExpr *AR = dyn_cast<SCEVAddRecExpr>(S)) {
-    if (isExistingPhi(AR, SE))
-      return false;
-  }
+  if (const SCEVAddRecExpr *AR = dyn_cast<SCEVAddRecExpr>(S); AR && (isExistingPhi(AR, SE))) 
+    return false;
+  
 
   // Fow now, consider any other type of expression (div/mul/min/max) high cost.
   return true;
@@ -2554,13 +2550,11 @@ Instruction *LSRInstance::OptimizeMax(ICmpInst *Cond, IVStrideUse *&CondUse) {
   if (ICmpInst::isTrueWhenEqual(Pred)) {
     // Look for n+1, and grab n.
     if (AddOperator *BO = dyn_cast<AddOperator>(Sel->getOperand(1)))
-      if (ConstantInt *BO1 = dyn_cast<ConstantInt>(BO->getOperand(1)))
-         if (BO1->isOne() && SE.getSCEV(BO->getOperand(0)) == MaxRHS)
-           NewRHS = BO->getOperand(0);
+      if (ConstantInt *BO1 = dyn_cast<ConstantInt>(BO->getOperand(1)); BO1 && (BO1->isOne() && SE.getSCEV(BO->getOperand(0)) == MaxRHS))
+         NewRHS = BO->getOperand(0);
     if (AddOperator *BO = dyn_cast<AddOperator>(Sel->getOperand(2)))
-      if (ConstantInt *BO1 = dyn_cast<ConstantInt>(BO->getOperand(1)))
-        if (BO1->isOne() && SE.getSCEV(BO->getOperand(0)) == MaxRHS)
-          NewRHS = BO->getOperand(0);
+      if (ConstantInt *BO1 = dyn_cast<ConstantInt>(BO->getOperand(1)); BO1 && (BO1->isOne() && SE.getSCEV(BO->getOperand(0)) == MaxRHS))
+        NewRHS = BO->getOperand(0);
     if (!NewRHS)
       return Cond;
   } else if (SE.getSCEV(Sel->getOperand(1)) == MaxRHS)
@@ -2775,12 +2769,12 @@ bool LSRInstance::reconcileNewOffset(LSRUse &LU, Immediate NewOffset,
   // Check for a mismatched access type, and fall back conservatively as needed.
   // TODO: Be less conservative when the type is similar and can use the same
   // addressing modes.
-  if (Kind == LSRUse::Address) {
-    if (AccessTy.MemTy != LU.AccessTy.MemTy) {
+  if ((Kind == LSRUse::Address) && (AccessTy.MemTy != LU.AccessTy.MemTy)) 
+    {
       NewAccessTy = MemAccessTy::getUnknown(AccessTy.MemTy->getContext(),
                                             AccessTy.AddrSpace);
     }
-  }
+  
 
   // Conservatively assume HasBaseReg is true for now.
   if (Immediate::isKnownLT(NewOffset, LU.MinOffset)) {
@@ -2949,10 +2943,9 @@ void LSRInstance::CollectInterestingTypesAndFactors() {
       } else if (const SCEVConstant *Factor =
                    dyn_cast_or_null<SCEVConstant>(getExactSDiv(OldStride,
                                                                NewStride,
-                                                               SE, true))) {
-        if (Factor->getAPInt().getSignificantBits() <= 64 && !Factor->isZero())
-          Factors.insert(Factor->getAPInt().getSExtValue());
-      }
+                                                               SE, true)); Factor && (Factor->getAPInt().getSignificantBits() <= 64 && !Factor->isZero())) 
+        Factors.insert(Factor->getAPInt().getSExtValue());
+      
     }
 
   // If all uses use the same type, don't bother looking for truncation-based
@@ -2975,10 +2968,9 @@ findIVOperand(User::op_iterator OI, User::op_iterator OE,
         continue;
 
       if (const SCEVAddRecExpr *AR =
-          dyn_cast<SCEVAddRecExpr>(SE.getSCEV(Oper))) {
-        if (AR->getLoop() == L)
-          break;
-      }
+          dyn_cast<SCEVAddRecExpr>(SE.getSCEV(Oper)); AR && (AR->getLoop() == L)) 
+        break;
+      
     }
   }
   return OI;
@@ -3780,12 +3772,12 @@ LSRInstance::CollectLoopInvariantFixupsAndFormulae() {
           bool HasIncompatibleEHPTerminatedBlock = false;
           llvm::Value *ExpectedValue = U;
           for (unsigned int I = 0; I < PhiNode->getNumIncomingValues(); I++) {
-            if (PhiNode->getIncomingValue(I) == ExpectedValue) {
-              if (PhiNode->getIncomingBlock(I)->getTerminator()->isEHPad()) {
+            if ((PhiNode->getIncomingValue(I) == ExpectedValue) && (PhiNode->getIncomingBlock(I)->getTerminator()->isEHPad())) 
+              {
                 HasIncompatibleEHPTerminatedBlock = true;
                 break;
               }
-            }
+            
           }
           if (HasIncompatibleEHPTerminatedBlock) {
             continue;
@@ -3910,11 +3902,10 @@ static bool mayUsePostIncMode(const TargetTransformInfo &TTI,
   if (!match(S, m_scev_AffineAddRec(m_SCEV(Start), m_SCEVConstant())))
     return false;
   // Check if a post-indexed load/store can be used.
-  if (TTI.isIndexedLoadLegal(TTI.MIM_PostInc, S->getType()) ||
-      TTI.isIndexedStoreLegal(TTI.MIM_PostInc, S->getType())) {
-    if (!isa<SCEVConstant>(Start) && SE.isLoopInvariant(Start, L))
-      return true;
-  }
+  if ((TTI.isIndexedLoadLegal(TTI.MIM_PostInc, S->getType()) ||
+      TTI.isIndexedStoreLegal(TTI.MIM_PostInc, S->getType())) && (!isa<SCEVConstant>(Start) && SE.isLoopInvariant(Start, L))) 
+    return true;
+  
   return false;
 }
 
@@ -4369,8 +4360,8 @@ void LSRInstance::GenerateScales(LSRUse &LU, unsigned LUIdx, Formula Base) {
           continue;
         // Divide out the factor, ignoring high bits, since we'll be
         // scaling the value back up in the end.
-        if (const SCEV *Quotient = getExactSDiv(AR, FactorS, SE, true))
-          if (!Quotient->isZero()) {
+        if (const SCEV *Quotient = getExactSDiv(AR, FactorS, SE, true); Quotient && (!Quotient->isZero()))
+          {
             // TODO: This could be optimized to avoid all the copying.
             Formula F = Base;
             F.ScaledReg = Quotient;
@@ -4908,8 +4899,8 @@ void LSRInstance::NarrowSearchSpaceByDetectingSupersets() {
               break;
             }
           } else if (const SCEVUnknown *U = dyn_cast<SCEVUnknown>(*I)) {
-            if (GlobalValue *GV = dyn_cast<GlobalValue>(U->getValue()))
-              if (!F.BaseGV) {
+            if (GlobalValue *GV = dyn_cast<GlobalValue>(U->getValue()); GV && (!F.BaseGV))
+              {
                 Formula NewF = F;
                 NewF.BaseGV = GV;
                 NewF.BaseRegs.erase(NewF.BaseRegs.begin() +
@@ -5276,15 +5267,15 @@ void LSRInstance::NarrowSearchSpaceByDeletingCostlyFormulas() {
           FARegNum +=
               RegNumMap[BaseReg] / LU.getNotSelectedProbability(BaseReg);
       }
-      if (const SCEV *ScaledReg = F.ScaledReg) {
-        if (!UniqRegs.count(ScaledReg)) {
+      if (const SCEV *ScaledReg = F.ScaledReg; ScaledReg && (!UniqRegs.count(ScaledReg))) 
+        {
           FRegNum +=
               RegNumMap[ScaledReg] / LU.getNotSelectedProbability(ScaledReg);
           if (isa<SCEVAddRecExpr>(ScaledReg))
             FARegNum +=
                 RegNumMap[ScaledReg] / LU.getNotSelectedProbability(ScaledReg);
         }
-      }
+      
       if (FMinRegNum > FRegNum ||
           (FMinRegNum == FRegNum && FMinARegNum > FARegNum)) {
         FMinRegNum = FRegNum;
@@ -5954,9 +5945,8 @@ void LSRInstance::RewriteForPHI(PHINode *PN, const LSRUse &LU,
         // If the incoming block for this value is not in the loop, it means the
         // current PHI is not in a loop exit, so we must create a LCSSA PHI for
         // the inserted value.
-        if (auto *I = dyn_cast<Instruction>(FullV))
-          if (L->contains(I) && !L->contains(BB))
-            InsertedNonLCSSAInsts.insert(I);
+        if (auto *I = dyn_cast<Instruction>(FullV); I && (L->contains(I) && !L->contains(BB)))
+          InsertedNonLCSSAInsts.insert(I);
 
         PN->setIncomingValue(i, FullV);
         Pair.first->second = FullV;

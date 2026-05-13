@@ -1488,9 +1488,9 @@ static void ARM64EmitUnwindInfoForSegment(MCStreamer &streamer,
   // 1. Enable packed unwind info (.pdata only) for multi-segment functions.
   // 2. Emit packed unwind info (.pdata only) for segments that have neithor
   //    prolog nor epilog.
-  if (info->Segments.size() == 1 && PackedEpilogOffset >= 0 &&
+  if ((info->Segments.size() == 1 && PackedEpilogOffset >= 0 &&
       uint32_t(PackedEpilogOffset) < PrologCodeBytes &&
-      !info->HandlesExceptions && SegLength <= 0x7ff && TryPacked) {
+      !info->HandlesExceptions && SegLength <= 0x7ff && TryPacked) && (tryARM64PackedUnwind(info, SegLength, PackedEpilogOffset))) 
     // Matching prolog/epilog and no exception handlers; check if the
     // prolog matches the patterns that can be described by the packed
     // format.
@@ -1498,9 +1498,8 @@ static void ARM64EmitUnwindInfoForSegment(MCStreamer &streamer,
     // info->Symbol was already set even if we didn't actually write any
     // unwind info there. Keep using that as indicator that this unwind
     // info has been generated already.
-    if (tryARM64PackedUnwind(info, SegLength, PackedEpilogOffset))
-      return;
-  }
+    return;
+  
 
   // If the prolog is not in this segment, we need to emit an end_c, which takes
   // 1 byte, before prolog unwind ops.
@@ -2397,10 +2396,9 @@ static bool tryARMPackedUnwind(MCStreamer &streamer, WinEH::FrameInfo *info,
         int Regs;
         if (!parseRegMask(Inst.Register, CurHasLR, CurHasR11, EF, Regs))
           return false;
-        if (EF > 0) {
-          if (EF != PF && EF != StackAdjust)
-            return false;
-        }
+        if ((EF > 0) && (EF != PF && EF != StackAdjust)) 
+          return false;
+        
         if (Homing && HasLR) {
           // If homing and LR is backed up, we can either restore LR here
           // and return with Ret == 1 or 2, or return with SaveLR below

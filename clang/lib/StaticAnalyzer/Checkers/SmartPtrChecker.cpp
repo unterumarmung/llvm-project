@@ -66,10 +66,9 @@ void SmartPtrChecker::checkPreCall(const CallEvent &Call,
     return;
 
   OverloadedOperatorKind OOK = OC->getOverloadedOperator();
-  if (OOK == OO_Star || OOK == OO_Arrow) {
-    if (smartptr::isNullSmartPtr(State, ThisRegion))
-      reportBug(C, ThisRegion, Call);
-  }
+  if ((OOK == OO_Star || OOK == OO_Arrow) && (smartptr::isNullSmartPtr(State, ThisRegion))) 
+    reportBug(C, ThisRegion, Call);
+  
 }
 
 void SmartPtrChecker::reportBug(CheckerContext &C, const MemRegion *DerefRegion,

@@ -66,10 +66,9 @@ BasicBlock::iterator llvm::PrepareToSplitEntryBlock(BasicBlock &BB,
     if (auto *AI = dyn_cast<AllocaInst>(I)) {
       if (AI->isStaticAlloca())
         KeepInEntry = true;
-    } else if (auto *II = dyn_cast<IntrinsicInst>(I)) {
-      if (II->getIntrinsicID() == llvm::Intrinsic::localescape)
-        KeepInEntry = true;
-    }
+    } else if (auto *II = dyn_cast<IntrinsicInst>(I); II && (II->getIntrinsicID() == llvm::Intrinsic::localescape)) 
+      KeepInEntry = true;
+    
     if (KeepInEntry)
       IP = moveBeforeInsertPoint(I, IP);
   }

@@ -148,10 +148,9 @@ DependencyGraph::getRoughDepType(Instruction *FromI, Instruction *ToI) {
       return DependencyType::ReadAfterWrite;
     if (ToI->mayWriteToMemory())
       return DependencyType::WriteAfterWrite;
-  } else if (FromI->mayReadFromMemory()) {
-    if (ToI->mayWriteToMemory())
-      return DependencyType::WriteAfterRead;
-  }
+  } else if ((FromI->mayReadFromMemory()) && (ToI->mayWriteToMemory())) 
+    return DependencyType::WriteAfterRead;
+  
   if (isa<sandboxir::PHINode>(FromI) || isa<sandboxir::PHINode>(ToI))
     return DependencyType::Control;
   if (ToI->isTerminator())
@@ -543,18 +542,16 @@ void DependencyGraph::notifySetUse(const Use &U, Value *NewSrc) {
   // Update the UnscheduledSuccs counter for both the current source and
   // NewSrc if needed.
   if (auto *CurrSrcI = dyn_cast<Instruction>(U.get())) {
-    if (auto *CurrSrcN = getNode(CurrSrcI)) {
+    if (auto *CurrSrcN = getNode(CurrSrcI); CurrSrcN && (!CurrSrcN->scheduled())) 
       // If CurrSrcN is scheduled there is no point in updating UnscheduleSuccs.
-      if (!CurrSrcN->scheduled())
-        CurrSrcN->decrUnscheduledSuccs();
-    }
+      CurrSrcN->decrUnscheduledSuccs();
+    
   }
   if (auto *NewSrcI = dyn_cast<Instruction>(NewSrc)) {
-    if (auto *NewSrcN = getNode(NewSrcI)) {
+    if (auto *NewSrcN = getNode(NewSrcI); NewSrcN && (!NewSrcN->scheduled())) 
       // If CurrSrcN is scheduled there is no point in updating UnscheduleSuccs.
-      if (!NewSrcN->scheduled())
-        NewSrcN->incrUnscheduledSuccs();
-    }
+      NewSrcN->incrUnscheduledSuccs();
+    
   }
 }
 

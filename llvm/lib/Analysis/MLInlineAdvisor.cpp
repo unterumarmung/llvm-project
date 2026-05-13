@@ -136,11 +136,11 @@ const char *const llvm::RewardName = "delta_size";
 
 CallBase *getInlinableCS(Instruction &I) {
   if (auto *CS = dyn_cast<CallBase>(&I))
-    if (Function *Callee = CS->getCalledFunction()) {
-      if (!Callee->isDeclaration()) {
+    if (Function *Callee = CS->getCalledFunction(); Callee && (!Callee->isDeclaration())) 
+      {
         return CS;
       }
-    }
+    
   return nullptr;
 }
 

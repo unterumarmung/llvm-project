@@ -33,9 +33,8 @@ static bool isMinOrMaxWithDynamicallyOptionalArg(
     return false;
   for (std::size_t i = 2; i < argSize; ++i) {
     if (auto *expr =
-            Fortran::evaluate::UnwrapExpr<Fortran::lower::SomeExpr>(args[i]))
-      if (Fortran::evaluate::MayBePassedAsAbsentOptional(*expr))
-        return true;
+            Fortran::evaluate::UnwrapExpr<Fortran::lower::SomeExpr>(args[i]); expr && (Fortran::evaluate::MayBePassedAsAbsentOptional(*expr)))
+      return true;
   }
   return false;
 }

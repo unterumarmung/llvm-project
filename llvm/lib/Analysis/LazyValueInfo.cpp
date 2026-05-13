@@ -612,8 +612,8 @@ static ValueLatticeElement getFromRangeMetadata(Instruction *BBI) {
       return ValueLatticeElement::getRange(*Range);
     [[fallthrough]];
   case Instruction::Load:
-    if (MDNode *Ranges = BBI->getMetadata(LLVMContext::MD_range))
-      if (isa<IntegerType>(BBI->getType())) {
+    if (MDNode *Ranges = BBI->getMetadata(LLVMContext::MD_range); Ranges && (isa<IntegerType>(BBI->getType())))
+      {
         return ValueLatticeElement::getRange(
             getConstantRangeFromMetadata(*Ranges));
       }
@@ -1258,9 +1258,8 @@ LazyValueInfoImpl::solveBlockValueInsertElement(InsertElementInst *IEI,
 std::optional<ValueLatticeElement>
 LazyValueInfoImpl::solveBlockValueExtractValue(ExtractValueInst *EVI,
                                                BasicBlock *BB) {
-  if (auto *WO = dyn_cast<WithOverflowInst>(EVI->getAggregateOperand()))
-    if (EVI->getNumIndices() == 1 && *EVI->idx_begin() == 0)
-      return solveBlockValueOverflowIntrinsic(WO, BB);
+  if (auto *WO = dyn_cast<WithOverflowInst>(EVI->getAggregateOperand()); WO && (EVI->getNumIndices() == 1 && *EVI->idx_begin() == 0))
+    return solveBlockValueOverflowIntrinsic(WO, BB);
 
   // Handle extractvalue of insertvalue to allow further simplification
   // based on replaced with.overflow intrinsics.
@@ -1381,14 +1380,14 @@ std::optional<ValueLatticeElement> LazyValueInfoImpl::getValueFromICmpCondition(
   CmpInst::Predicate EdgePred =
       isTrueDest ? ICI->getPredicate() : ICI->getInversePredicate();
 
-  if (isa<Constant>(RHS)) {
-    if (ICI->isEquality() && LHS == Val) {
+  if ((isa<Constant>(RHS)) && (ICI->isEquality() && LHS == Val)) 
+    {
       if (EdgePred == ICmpInst::ICMP_EQ)
         return ValueLatticeElement::get(cast<Constant>(RHS));
       else if (!isa<UndefValue>(RHS))
         return ValueLatticeElement::getNot(cast<Constant>(RHS));
     }
-  }
+  
 
   Type *Ty = Val->getType();
   if (!Ty->isIntOrIntVectorTy())
@@ -1529,9 +1528,8 @@ LazyValueInfoImpl::getValueFromCondition(Value *Val, Value *Cond,
     return getValueFromTrunc(Val, Trunc, IsTrueDest);
 
   if (auto *EVI = dyn_cast<ExtractValueInst>(Cond))
-    if (auto *WO = dyn_cast<WithOverflowInst>(EVI->getAggregateOperand()))
-      if (EVI->getNumIndices() == 1 && *EVI->idx_begin() == 1)
-        return getValueFromOverflowCondition(Val, WO, IsTrueDest);
+    if (auto *WO = dyn_cast<WithOverflowInst>(EVI->getAggregateOperand()); WO && (EVI->getNumIndices() == 1 && *EVI->idx_begin() == 1))
+      return getValueFromOverflowCondition(Val, WO, IsTrueDest);
 
   if (++Depth == MaxAnalysisRecursionDepth)
     return ValueLatticeElement::getOverdefined();
@@ -1624,10 +1622,10 @@ LazyValueInfoImpl::getEdgeValueLocal(Value *Val, BasicBlock *BBFrom,
                                      BasicBlock *BBTo, bool UseBlockValue) {
   // TODO: Handle more complex conditionals. If (v == 0 || v2 < 1) is false, we
   // know that v != 0.
-  if (CondBrInst *BI = dyn_cast<CondBrInst>(BBFrom->getTerminator())) {
+  if (CondBrInst *BI = dyn_cast<CondBrInst>(BBFrom->getTerminator()); BI && (BI->getSuccessor(0) != BI->getSuccessor(1))) 
     // If this is a conditional branch and only one successor goes to BBTo, then
     // we may be able to infer something from the condition.
-    if (BI->getSuccessor(0) != BI->getSuccessor(1)) {
+    {
       bool isTrueDest = BI->getSuccessor(0) == BBTo;
       assert(BI->getSuccessor(!isTrueDest) == BBTo &&
              "BBTo isn't a successor of BBFrom");
@@ -1715,7 +1713,7 @@ LazyValueInfoImpl::getEdgeValueLocal(Value *Val, BasicBlock *BBFrom,
       if (!Result->isOverdefined())
         return Result;
     }
-  }
+  
 
   // If the edge was formed by a switch on the value, then we may know exactly
   // what it is.
@@ -2166,8 +2164,8 @@ Constant *LazyValueInfo::getPredicateAt(CmpInst::Predicate Pred, Value *V,
   // questions about the predicate as applied to the incoming value along
   // each edge. This is useful for eliminating cases where the predicate is
   // known along all incoming edges.
-  if (auto *PHI = dyn_cast<PHINode>(V))
-    if (PHI->getParent() == BB) {
+  if (auto *PHI = dyn_cast<PHINode>(V); PHI && (PHI->getParent() == BB))
+    {
       Constant *Baseline = nullptr;
       for (unsigned i = 0, e = PHI->getNumIncomingValues(); i < e; i++) {
         Value *Incoming = PHI->getIncomingValue(i);
@@ -2312,9 +2310,8 @@ void LazyValueInfoAnnotatedWriter::emitInstructionAnnot(
 
   // Print LVI in blocks where `I` is used.
   for (const auto *U : I->users())
-    if (auto *UseI = dyn_cast<Instruction>(U))
-      if (!isa<PHINode>(UseI) || DT.dominates(ParentBB, UseI->getParent()))
-        printResult(UseI->getParent());
+    if (auto *UseI = dyn_cast<Instruction>(U); UseI && (!isa<PHINode>(UseI) || DT.dominates(ParentBB, UseI->getParent())))
+      printResult(UseI->getParent());
 
 }
 

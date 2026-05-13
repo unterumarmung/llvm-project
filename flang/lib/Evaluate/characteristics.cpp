@@ -393,20 +393,20 @@ bool DummyDataObject::IsCompatibleWith(const DummyDataObject &actual,
     }
     return false;
   }
-  if (ignoreTKR != actual.ignoreTKR) {
-    if (whyNot) {
+  if ((ignoreTKR != actual.ignoreTKR) && (whyNot)) 
+    {
       *whyNot = "incompatible !DIR$ IGNORE_TKR directives";
     }
-  }
-  if (!attrs.test(Attr::Value) &&
+  
+  if ((!attrs.test(Attr::Value) &&
       !common::AreCompatibleCUDADataAttrs(cudaDataAttr, actual.cudaDataAttr,
           ignoreTKR,
           /*allowUnifiedMatchingRule=*/false,
-          /*=isHostDeviceProcedure*/ false)) {
-    if (whyNot) {
+          /*=isHostDeviceProcedure*/ false)) && (whyNot)) 
+    {
       *whyNot = "incompatible CUDA data attributes";
     }
-  }
+  
   return true;
 }
 
@@ -1248,16 +1248,16 @@ bool FunctionResult::IsCompatibleWith(
               }
             }
           }
-        } else if (ifaceTypeShape->type().category() == TypeCategory::Derived) {
-          if (ifaceTypeShape->type().IsPolymorphic() ==
+        } else if ((ifaceTypeShape->type().category() == TypeCategory::Derived) && (ifaceTypeShape->type().IsPolymorphic() ==
                   actualTypeShape->type().IsPolymorphic() &&
               !ifaceTypeShape->type().IsUnlimitedPolymorphic() &&
               !actualTypeShape->type().IsUnlimitedPolymorphic() &&
               AreSameDerivedType(ifaceTypeShape->type().GetDerivedTypeSpec(),
-                  actualTypeShape->type().GetDerivedTypeSpec())) {
+                  actualTypeShape->type().GetDerivedTypeSpec()))) 
+          {
             return true;
           }
-        }
+        
         if (whyNot) {
           *whyNot = "function results have distinct types: "s +
               ifaceTypeShape->type().AsFortran() + " vs "s +
@@ -1689,11 +1689,11 @@ bool DistinguishUtils::AnyOptionalData(const DummyArguments &args) const {
 bool DistinguishUtils::AnyUnlimitedPolymorphicData(
     const DummyArguments &args) const {
   for (const auto &arg : args) {
-    if (const auto *object{std::get_if<DummyDataObject>(&arg.u)}) {
-      if (object->type.type().IsUnlimitedPolymorphic()) {
+    if (const auto *object{std::get_if<DummyDataObject>(&arg.u)}; object && (object->type.type().IsUnlimitedPolymorphic())) 
+      {
         return true;
       }
-    }
+    
   }
   return false;
 }
@@ -1720,14 +1720,14 @@ const DummyArgument *DistinguishUtils::Rule1DistinguishingArg(
   auto size2{args2.size()};
   for (std::size_t i{0}; i < size1 + size2; ++i) {
     const DummyArgument &x{i < size1 ? args1[i] : args2[i - size1]};
-    if (!x.pass && std::holds_alternative<DummyDataObject>(x.u)) {
-      if (CountCompatibleWith(x, args1) >
+    if ((!x.pass && std::holds_alternative<DummyDataObject>(x.u)) && (CountCompatibleWith(x, args1) >
               CountNotDistinguishableFrom(x, args2) ||
           CountCompatibleWith(x, args2) >
-              CountNotDistinguishableFrom(x, args1)) {
+              CountNotDistinguishableFrom(x, args1))) 
+      {
         return &x;
       }
-    }
+    
   }
   return nullptr;
 }

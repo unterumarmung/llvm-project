@@ -142,9 +142,8 @@ NodeList Liveness::getAllReachingDefs(RegisterRef RefRR,
       continue;
     // Stop at the covering/overwriting def of the initial register reference.
     RegisterRef RR = TA.Addr->getRegRef(DFG);
-    if (!DFG.IsPreservingDef(TA))
-      if (RegisterAggr::isCoverOf(RR, RefRR, PRI))
-        continue;
+    if ((!DFG.IsPreservingDef(TA)) && (RegisterAggr::isCoverOf(RR, RefRR, PRI)))
+      continue;
     // Get the next level of reaching defs. This will include multiple
     // reaching defs for shadows.
     for (auto S : DFG.getRelatedRefs(TA.Addr->getOwner(DFG), TA))
@@ -396,10 +395,9 @@ NodeAddr<RefNode *> Liveness::getNearestAliasedRef(RegisterRef RefRR,
     // Go up to the immediate dominator, if any.
     MachineBasicBlock *BB = BA.Addr->getCode();
     BA = NodeAddr<BlockNode *>();
-    if (MachineDomTreeNode *N = MDT.getNode(BB)) {
-      if ((N = N->getIDom()))
-        BA = DFG.findBlock(N->getBlock());
-    }
+    if (MachineDomTreeNode *N = MDT.getNode(BB); N && ((N = N->getIDom()))) 
+      BA = DFG.findBlock(N->getBlock());
+    
     if (!BA.Id)
       break;
 

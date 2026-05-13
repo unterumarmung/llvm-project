@@ -1398,12 +1398,11 @@ Error LVSymbolVisitor::visitKnownRecord(CVSymbol &Record, DataSym &Data) {
       return Error::success();
     }
 
-    if (LVScope *Namespace = Shared->NamespaceDeduction.get(Data.Name)) {
+    if (LVScope *Namespace = Shared->NamespaceDeduction.get(Data.Name); Namespace && (Symbol->getParentScope()->removeElement(Symbol))) 
       // The variable is already at different scope. In order to reflect
       // the correct parent, move it to the namespace.
-      if (Symbol->getParentScope()->removeElement(Symbol))
-        Namespace->addElement(Symbol);
-    }
+      Namespace->addElement(Symbol);
+    
 
     Symbol->setType(LogicalVisitor->getElement(StreamTPI, Data.Type));
     if (Record.kind() == SymbolKind::S_GDATA32)
@@ -1601,10 +1600,9 @@ Error LVSymbolVisitor::visitKnownRecord(CVSymbol &Record, ProcSym &Proc) {
         if (!CVFunctionType)
           return false;
 
-        if (TI.isNoneType())
+        if ((TI.isNoneType()) && (CVFunctionType->kind() == LF_FUNC_ID))
           // Normal function.
-          if (CVFunctionType->kind() == LF_FUNC_ID)
-            return true;
+          return true;
 
         // Member function.
         return (CVFunctionType->kind() == LF_MFUNC_ID);
@@ -1677,10 +1675,9 @@ Error LVSymbolVisitor::visitKnownRecord(CVSymbol &Record, UDTSym &UDT) {
   });
 
   if (LVType *Type = LogicalVisitor->CurrentType) {
-    if (LVScope *Namespace = Shared->NamespaceDeduction.get(UDT.Name)) {
-      if (Type->getParentScope()->removeElement(Type))
-        Namespace->addElement(Type);
-    }
+    if (LVScope *Namespace = Shared->NamespaceDeduction.get(UDT.Name); Namespace && (Type->getParentScope()->removeElement(Type))) 
+      Namespace->addElement(Type);
+    
 
     Type->setName(UDT.Name);
 
@@ -3480,10 +3477,9 @@ Error LVLogicalVisitor::inlineSiteAnnotation(LVScope *AbstractFunction,
   // scope representing the inlined function.
   LVAddress ParentLowPC = 0;
   LVScope *Parent = InlinedFunction->getParentScope();
-  if (const LVLocations *Locations = Parent->getRanges()) {
-    if (!Locations->empty())
-      ParentLowPC = (*Locations->begin())->getLowerAddress();
-  }
+  if (const LVLocations *Locations = Parent->getRanges(); Locations && (!Locations->empty())) 
+    ParentLowPC = (*Locations->begin())->getLowerAddress();
+  
 
   // For the given inlinesite, get the initial line number and its
   // source filename. Update the logical scope representing it.

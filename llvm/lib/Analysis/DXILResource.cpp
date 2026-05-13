@@ -310,9 +310,8 @@ static Type *getTypeWithoutPadding(Type *Ty) {
 
     // Handle explicitly padded cbuffer arrays like { [ n x paddedty ], ty }
     if (ElementTypes.size() == 2)
-      if (auto *AT = dyn_cast<ArrayType>(ElementTypes[0]))
-        if (ElementTypes[1] == AT->getElementType())
-          return ArrayType::get(ElementTypes[1], AT->getNumElements() + 1);
+      if (auto *AT = dyn_cast<ArrayType>(ElementTypes[0]); AT && (ElementTypes[1] == AT->getElementType()))
+        return ArrayType::get(ElementTypes[1], AT->getNumElements() + 1);
 
     // If we only have a single element, don't wrap it in a struct.
     if (ElementTypes.size() == 1)

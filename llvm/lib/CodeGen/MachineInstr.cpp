@@ -610,20 +610,17 @@ uint32_t MachineInstr::copyFlagsFromInstruction(const Instruction &I) {
       MIFlags |= MachineInstr::MIFlag::NonNeg;
     // Copy the disjoint flag.
   } else if (const PossiblyDisjointInst *PD =
-                 dyn_cast<PossiblyDisjointInst>(&I)) {
-    if (PD->isDisjoint())
-      MIFlags |= MachineInstr::MIFlag::Disjoint;
-  }
+                 dyn_cast<PossiblyDisjointInst>(&I); PD && (PD->isDisjoint())) 
+    MIFlags |= MachineInstr::MIFlag::Disjoint;
+  
 
   // Copy the samesign flag.
-  if (const ICmpInst *ICmp = dyn_cast<ICmpInst>(&I))
-    if (ICmp->hasSameSign())
-      MIFlags |= MachineInstr::MIFlag::SameSign;
+  if (const ICmpInst *ICmp = dyn_cast<ICmpInst>(&I); ICmp && (ICmp->hasSameSign()))
+    MIFlags |= MachineInstr::MIFlag::SameSign;
 
   // Copy the exact flag.
-  if (const PossiblyExactOperator *PE = dyn_cast<PossiblyExactOperator>(&I))
-    if (PE->isExact())
-      MIFlags |= MachineInstr::MIFlag::IsExact;
+  if (const PossiblyExactOperator *PE = dyn_cast<PossiblyExactOperator>(&I); PE && (PE->isExact()))
+    MIFlags |= MachineInstr::MIFlag::IsExact;
 
   // Copy the fast-math flags.
   if (const FPMathOperator *FP = dyn_cast<FPMathOperator>(&I)) {
@@ -716,9 +713,8 @@ bool MachineInstr::isIdenticalTo(const MachineInstr &Other,
       if (Check == IgnoreDefs)
         continue;
       else if (Check == IgnoreVRegDefs) {
-        if (!MO.getReg().isVirtual() || !OMO.getReg().isVirtual())
-          if (!MO.isIdenticalTo(OMO))
-            return false;
+        if ((!MO.getReg().isVirtual() || !OMO.getReg().isVirtual()) && (!MO.isIdenticalTo(OMO)))
+          return false;
       } else {
         if (!MO.isIdenticalTo(OMO))
           return false;
@@ -1646,10 +1642,9 @@ bool MachineInstr::isDereferenceableInvariantLoad() const {
       continue;
 
     // A load from a constant PseudoSourceValue is invariant.
-    if (const PseudoSourceValue *PSV = MMO->getPseudoValue()) {
-      if (PSV->isConstant(&MFI))
-        continue;
-    }
+    if (const PseudoSourceValue *PSV = MMO->getPseudoValue(); PSV && (PSV->isConstant(&MFI))) 
+      continue;
+    
 
     // Otherwise assume conservatively.
     return false;
@@ -2121,10 +2116,10 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
   }
 
   // Print extra comments for DEBUG_VALUE and friends if they are well-formed.
-  if ((isNonListDebugValue() && getNumOperands() >= 4) ||
+  if (((isNonListDebugValue() && getNumOperands() >= 4) ||
       (isDebugValueList() && getNumOperands() >= 2) ||
-      (isDebugRef() && getNumOperands() >= 3)) {
-    if (getDebugVariableOp().isMetadata()) {
+      (isDebugRef() && getNumOperands() >= 3)) && (getDebugVariableOp().isMetadata())) 
+    {
       if (!HaveSemi) {
         OS << ";";
         HaveSemi = true;
@@ -2134,7 +2129,7 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
       if (isIndirectDebugValue())
         OS << " indirect";
     }
-  }
+  
   // TODO: DBG_LABEL
 
   if (PrintMIAddrs)
@@ -2348,12 +2343,11 @@ const MDNode *MachineInstr::getLocCookieMD() const {
   // Find the source location cookie.
   const MDNode *LocMD = nullptr;
   for (unsigned i = getNumOperands(); i != 0; --i) {
-    if (getOperand(i-1).isMetadata() &&
+    if ((getOperand(i-1).isMetadata() &&
         (LocMD = getOperand(i-1).getMetadata()) &&
-        LocMD->getNumOperands() != 0) {
-      if (mdconst::hasa<ConstantInt>(LocMD->getOperand(0)))
-        return LocMD;
-    }
+        LocMD->getNumOperands() != 0) && (mdconst::hasa<ConstantInt>(LocMD->getOperand(0)))) 
+      return LocMD;
+    
   }
 
   return nullptr;

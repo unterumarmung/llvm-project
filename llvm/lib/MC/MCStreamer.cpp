@@ -1586,8 +1586,8 @@ void MCStreamer::emitVersionForTarget(
     ShouldEmitBuildVersion = true;
   }
 
-  if (const Triple *TVT = DarwinTargetVariantTriple) {
-    if (Target.isMacOSX() && TVT->isMacCatalystEnvironment()) {
+  if (const Triple *TVT = DarwinTargetVariantTriple; TVT && (Target.isMacOSX() && TVT->isMacCatalystEnvironment())) 
+    {
       auto TVLinkedTargetVersion =
           targetVersionOrMinimumSupportedOSVersion(*TVT, TVT->getiOSVersion());
       emitDarwinTargetVariantBuildVersion(
@@ -1597,7 +1597,7 @@ void MCStreamer::emitVersionForTarget(
           TVLinkedTargetVersion.getSubminor().value_or(0),
           DarwinTargetVariantSDKVersion);
     }
-  }
+  
 
   if (ShouldEmitBuildVersion)
     return;

@@ -496,10 +496,9 @@ void tools::AddLinkerInputs(const ToolChain &TC, const InputInfoList &Inputs,
     // If the current tool chain refers to an OpenMP offloading host, we
     // should ignore inputs that refer to OpenMP offloading devices -
     // they will be embedded according to a proper linker script.
-    if (auto *IA = II.getAction())
-      if ((JA.isHostOffloading(Action::OFK_OpenMP) &&
-           IA->isDeviceOffloading(Action::OFK_OpenMP)))
-        continue;
+    if (auto *IA = II.getAction(); IA && ((JA.isHostOffloading(Action::OFK_OpenMP) &&
+           IA->isDeviceOffloading(Action::OFK_OpenMP))))
+      continue;
 
     if (!TC.HasNativeLLVMSupport() && types::isLLVMIR(II.getType()))
       // Don't try to pass LLVM inputs unless we have native support.
@@ -1245,20 +1244,19 @@ void tools::addLTOOptions(const ToolChain &ToolChain, const ArgList &Args,
 
   // Pass an option to enable split machine functions.
   if (auto *A = Args.getLastArg(options::OPT_fsplit_machine_functions,
-                                options::OPT_fno_split_machine_functions)) {
-    if (A->getOption().matches(options::OPT_fsplit_machine_functions))
-      CmdArgs.push_back(Args.MakeArgString(Twine(PluginOptPrefix) +
+                                options::OPT_fno_split_machine_functions); A && (A->getOption().matches(options::OPT_fsplit_machine_functions))) 
+    CmdArgs.push_back(Args.MakeArgString(Twine(PluginOptPrefix) +
                                            "-split-machine-functions"));
-  }
+  
 
   if (auto *A =
           Args.getLastArg(options::OPT_fpartition_static_data_sections,
-                          options::OPT_fno_partition_static_data_sections)) {
-    if (A->getOption().matches(options::OPT_fpartition_static_data_sections)) {
+                          options::OPT_fno_partition_static_data_sections); A && (A->getOption().matches(options::OPT_fpartition_static_data_sections))) 
+    {
       CmdArgs.push_back(Args.MakeArgString(Twine(PluginOptPrefix) +
                                            "-partition-static-data-sections"));
     }
-  }
+  
 
   if (Arg *A = getLastProfileSampleUseArg(Args)) {
     StringRef FName = A->getValue();
@@ -1877,9 +1875,8 @@ const char *tools::SplitDebugName(const JobAction &JA, const ArgList &Args,
       F += (Twine("_") + JA.getOffloadingArch()).str();
     F += ".dwo";
   };
-  if (Arg *A = Args.getLastArg(options::OPT_gsplit_dwarf_EQ))
-    if (StringRef(A->getValue()) == "single" && Output.isFilename())
-      return Args.MakeArgString(Output.getFilename());
+  if (Arg *A = Args.getLastArg(options::OPT_gsplit_dwarf_EQ); A && (StringRef(A->getValue()) == "single" && Output.isFilename()))
+    return Args.MakeArgString(Output.getFilename());
 
   SmallString<128> T;
   if (const Arg *A = Args.getLastArg(options::OPT_dumpdir)) {
@@ -2073,8 +2070,8 @@ tools::ParsePICArgs(const ToolChain &ToolChain, const ArgList &Args) {
 
   // Check whether the tool chain trumps the PIC-ness decision. If the PIC-ness
   // is forced, then neither PIC nor PIE flags will have no effect.
-  if (!ToolChain.isPICDefaultForced()) {
-    if (LastPICArg) {
+  if ((!ToolChain.isPICDefaultForced()) && (LastPICArg)) 
+    {
       Option O = LastPICArg->getOption();
       if (O.matches(options::OPT_fPIC) || O.matches(options::OPT_fpic) ||
           O.matches(options::OPT_fPIE) || O.matches(options::OPT_fpie)) {
@@ -2097,7 +2094,7 @@ tools::ParsePICArgs(const ToolChain &ToolChain, const ArgList &Args) {
         }
       }
     }
-  }
+  
 
   // Introduce a Darwin and PS4/PS5-specific hack. If the default is PIC, but
   // the PIC level would've been set to level 1, force it back to level 2 PIC
@@ -2935,9 +2932,9 @@ void tools::checkAMDGPUCodeObjectVersion(const Driver &D,
   const unsigned MinCodeObjVer = 4;
   const unsigned MaxCodeObjVer = 6;
 
-  if (auto *CodeObjArg = getAMDGPUCodeObjectArgument(D, Args)) {
-    if (CodeObjArg->getOption().getID() ==
-        options::OPT_mcode_object_version_EQ) {
+  if (auto *CodeObjArg = getAMDGPUCodeObjectArgument(D, Args); CodeObjArg && (CodeObjArg->getOption().getID() ==
+        options::OPT_mcode_object_version_EQ)) 
+    {
       unsigned CodeObjVer = MaxCodeObjVer;
       auto Remnant =
           StringRef(CodeObjArg->getValue()).getAsInteger(0, CodeObjVer);
@@ -2945,7 +2942,7 @@ void tools::checkAMDGPUCodeObjectVersion(const Driver &D,
         D.Diag(diag::err_drv_invalid_int_value)
             << CodeObjArg->getAsString(Args) << CodeObjArg->getValue();
     }
-  }
+  
 }
 
 unsigned tools::getAMDGPUCodeObjectVersion(const Driver &D,
@@ -3374,10 +3371,9 @@ void tools::renderGlobalISelOptions(const Driver &D, const ArgList &Args,
       bool IsOptLevelSupported = false;
 
       Arg *A = Args.getLastArg(options::OPT_O_Group);
-      if (IsArchSupported) {
-        if (!A || A->getOption().matches(options::OPT_O0))
-          IsOptLevelSupported = true;
-      }
+      if ((IsArchSupported) && (!A || A->getOption().matches(options::OPT_O0))) 
+        IsOptLevelSupported = true;
+      
       if (!IsArchSupported || !IsOptLevelSupported) {
         CmdArgs.push_back("-mllvm");
         CmdArgs.push_back("-global-isel-abort=2");

@@ -231,8 +231,8 @@ Error LVCompare::execute(LVReader *ReferenceReader, LVReader *TargetReader) {
         if (Pass == LVComparePass::Added)
           // Record all the current missing elements for this category.
           llvm::append_range(Set, Elements);
-        if (options().getReportList()) {
-          if (Elements.size()) {
+        if ((options().getReportList()) && (Elements.size())) 
+          {
             OS << "\n(" << Elements.size() << ") "
                << (Pass == LVComparePass::Missing ? "Missing" : "Added") << " "
                << Category << ":\n";
@@ -242,7 +242,7 @@ Error LVCompare::execute(LVReader *ReferenceReader, LVReader *TargetReader) {
                 return Err;
             }
           }
-        }
+        
 
         return Error::success();
       };

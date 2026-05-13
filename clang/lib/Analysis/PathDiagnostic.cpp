@@ -641,8 +641,8 @@ PathDiagnosticLocation
 PathDiagnosticLocation::createDeclBegin(const LocationContext *LC,
                                         const SourceManager &SM) {
   // FIXME: Should handle CXXTryStmt if analyser starts supporting C++.
-  if (const auto *CS = dyn_cast_or_null<CompoundStmt>(LC->getDecl()->getBody()))
-    if (!CS->body_empty()) {
+  if (const auto *CS = dyn_cast_or_null<CompoundStmt>(LC->getDecl()->getBody()); CS && (!CS->body_empty()))
+    {
       SourceLocation Loc = (*CS->body_begin())->getBeginLoc();
       return PathDiagnosticLocation(Loc, SM, SingleLocK);
     }
@@ -1021,9 +1021,8 @@ PathDiagnosticCallPiece::getCallEnterWithinCallerEvent() const {
     return nullptr;
   if (Callee->isImplicit() || !Callee->hasBody())
     return nullptr;
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(Callee))
-    if (MD->isDefaulted())
-      return nullptr;
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(Callee); MD && (MD->isDefaulted()))
+    return nullptr;
 
   SmallString<256> buf;
   llvm::raw_svector_ostream Out(buf);

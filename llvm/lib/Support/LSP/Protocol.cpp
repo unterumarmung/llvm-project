@@ -276,10 +276,9 @@ bool llvm::lsp::fromJSON(const llvm::json::Value &Value,
               DocumentSymbol->getBoolean("hierarchicalDocumentSymbolSupport"))
         Result.hierarchicalDocumentSymbol = *HierarchicalSupport;
     }
-    if (auto *CodeAction = TextDocument->getObject("codeAction")) {
-      if (CodeAction->getObject("codeActionLiteralSupport"))
-        Result.codeActionStructure = true;
-    }
+    if (auto *CodeAction = TextDocument->getObject("codeAction"); CodeAction && (CodeAction->getObject("codeActionLiteralSupport"))) 
+      Result.codeActionStructure = true;
+    
   }
   if (auto *Window = O->getObject("window")) {
     if (std::optional<bool> WorkDoneProgressSupport =

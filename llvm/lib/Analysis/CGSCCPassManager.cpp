@@ -445,12 +445,12 @@ PreservedAnalyses DevirtSCCRepeatedPass::run(LazyCallGraph::SCC &InitialC,
     // Check whether any of the handles were devirtualized.
     bool Devirt = llvm::any_of(UR.IndirectVHs, [](auto &P) -> bool {
       if (P.second) {
-        if (CallBase *CB = dyn_cast<CallBase>(P.second)) {
-          if (CB->getCalledFunction()) {
+        if (CallBase *CB = dyn_cast<CallBase>(P.second); CB && (CB->getCalledFunction())) 
+          {
             LLVM_DEBUG(dbgs() << "Found devirtualized call: " << *CB << "\n");
             return true;
           }
-        }
+        
       }
       return false;
     });
@@ -940,9 +940,8 @@ static LazyCallGraph::SCC &updateCGAndAnalysisManagerForPass(
   // Now walk all references.
   for (Instruction &I : instructions(F))
     for (Value *Op : I.operand_values())
-      if (auto *OpC = dyn_cast<Constant>(Op))
-        if (Visited.insert(OpC).second)
-          Worklist.push_back(OpC);
+      if (auto *OpC = dyn_cast<Constant>(Op); OpC && (Visited.insert(OpC).second))
+        Worklist.push_back(OpC);
 
   auto VisitRef = [&](Function &Referee) {
     Node *RefereeN = G.lookup(Referee);

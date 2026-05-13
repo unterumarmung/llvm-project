@@ -391,11 +391,11 @@ void aarch64::getAArch64TargetFeatures(const Driver &D,
   // argument diagnostic if the code is always run.
   if (!ForAS && !ForMultilib) {
     if (Arg *A = Args.getLastArg(options::OPT_mexecute_only,
-                                 options::OPT_mno_execute_only)) {
-      if (A->getOption().matches(options::OPT_mexecute_only)) {
+                                 options::OPT_mno_execute_only); A && (A->getOption().matches(options::OPT_mexecute_only))) 
+      {
         Features.push_back("+execute-only");
       }
-    }
+    
   }
 
   if (Args.hasArg(options::OPT_ffixed_x1))

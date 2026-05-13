@@ -273,14 +273,14 @@ void Prescanner::Statement() {
   while (NextToken(tokens)) {
   }
 
-  if (continuationLines_ > 255) {
-    if (features_.ShouldWarn(common::LanguageFeature::MiscSourceExtensions)) {
+  if ((continuationLines_ > 255) && (features_.ShouldWarn(common::LanguageFeature::MiscSourceExtensions))) 
+    {
       Say(common::LanguageFeature::MiscSourceExtensions,
           GetProvenance(statementStart),
           "%d continuation lines is more than the Fortran standard allows"_port_en_US,
           continuationLines_);
     }
-  }
+  
 
   Provenance newlineProvenance{GetCurrentProvenance()};
   if (std::optional<TokenSequence> preprocessed{
@@ -489,12 +489,12 @@ void Prescanner::LabelField(TokenSequence &token) {
   }
   token.CloseToken();
   SkipToNextSignificantCharacter();
-  if (IsDecimalDigit(*at_)) {
-    if (features_.ShouldWarn(common::LanguageFeature::MiscSourceExtensions)) {
+  if ((IsDecimalDigit(*at_)) && (features_.ShouldWarn(common::LanguageFeature::MiscSourceExtensions))) 
+    {
       Say(common::LanguageFeature::MiscSourceExtensions, GetCurrentProvenance(),
           "Label digit is not in fixed-form label field"_port_en_US);
     }
-  }
+  
 }
 
 // 6.3.3.5: A program unit END statement, or any other statement whose
@@ -903,14 +903,14 @@ bool Prescanner::NextToken(TokenSequence &tokens) {
       slashInCurrentStatement_ = true;
     } else if (ch == ';' && InFixedFormSource()) {
       SkipSpaces();
-      if (IsDecimalDigit(*at_)) {
-        if (features_.ShouldWarn(
-                common::LanguageFeature::MiscSourceExtensions)) {
+      if ((IsDecimalDigit(*at_)) && (features_.ShouldWarn(
+                common::LanguageFeature::MiscSourceExtensions))) 
+        {
           Say(common::LanguageFeature::MiscSourceExtensions,
               GetProvenanceRange(at_, at_ + 1),
               "Label should be in the label field"_port_en_US);
         }
-      }
+      
     }
   }
   tokens.CloseToken();
@@ -1399,12 +1399,12 @@ const char *Prescanner::FixedFormContinuationLine(bool atNewline) {
   } else { // Normal case: not in a compiler directive.
     // Conditional compilation lines may be continuations when not
     // just preprocessing.
-    if (!preprocessingOnly_ && IsFixedFormCommentChar(col1)) {
-      if ((nextLine_[1] == '$' && nextLine_[2] == ' ' && nextLine_[3] == ' ' &&
+    if ((!preprocessingOnly_ && IsFixedFormCommentChar(col1)) && ((nextLine_[1] == '$' && nextLine_[2] == ' ' && nextLine_[3] == ' ' &&
               nextLine_[4] == ' ' &&
               IsCompilerDirectiveSentinel(&nextLine_[1], 1)) ||
           (nextLine_[1] == '@' &&
-              IsCompilerDirectiveSentinel(&nextLine_[1], 4))) {
+              IsCompilerDirectiveSentinel(&nextLine_[1], 4)))) 
+      {
         if (const char *col6{nextLine_ + 5};
             *col6 != '\n' && *col6 != '0' && !IsSpaceOrTab(col6)) {
           if (atNewline && !IsSpace(nextLine_ + 6)) {
@@ -1415,7 +1415,7 @@ const char *Prescanner::FixedFormContinuationLine(bool atNewline) {
           return nullptr;
         }
       }
-    }
+    
     if (col1 == '&' &&
         features_.IsEnabled(
             LanguageFeature::FixedFormContinuationWithColumn1Ampersand)) {
@@ -1707,12 +1707,12 @@ Prescanner::IsFreeFormCompilerDirectiveLine(const char *start) const {
           payload = p + 5; // !@acc or !@cuf
         }
         if (payload) {
-          if (const char *comment{IsFreeFormComment(payload)}) {
-            if (*comment == '!') { // !$ !blah or !@acc !blah
+          if (const char *comment{IsFreeFormComment(payload)}; comment && (*comment == '!')) 
+            { // !$ !blah or !@acc !blah
               // Conditional line comment - treat as comment
               return std::nullopt;
             }
-          }
+          
         }
         lnClass->payloadOffset = static_cast<std::size_t>(p - start);
       }

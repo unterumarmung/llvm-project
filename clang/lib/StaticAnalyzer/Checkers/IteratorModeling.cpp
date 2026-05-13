@@ -327,14 +327,14 @@ void IteratorModeling::checkDeadSymbols(SymbolReaper &SR,
 
   auto RegionMap = State->get<IteratorRegionMap>();
   for (const auto &Reg : RegionMap) {
-    if (!SR.isLiveRegion(Reg.first)) {
+    if ((!SR.isLiveRegion(Reg.first)) && (!isBoundThroughLazyCompoundVal(State->getEnvironment(), Reg.first))) 
       // The region behind the `LazyCompoundVal` is often cleaned up before
       // the `LazyCompoundVal` itself. If there are iterator positions keyed
       // by these regions their cleanup must be deferred.
-      if (!isBoundThroughLazyCompoundVal(State->getEnvironment(), Reg.first)) {
+      {
         State = State->remove<IteratorRegionMap>(Reg.first);
       }
-    }
+    
   }
 
   auto SymbolMap = State->get<IteratorSymbolMap>();
@@ -437,14 +437,14 @@ IteratorModeling::handleAdvanceLikeFunction(CheckerContext &C,
   // If std::advance() was inlined, but a non-standard function it calls inside
   // was not, then we have to model it explicitly
   const auto *IdInfo = cast<FunctionDecl>(Call.getDecl())->getIdentifier();
-  if (IdInfo) {
-    if (IdInfo->getName() == "advance") {
-      if (noChangeInAdvance(C, Call.getArgSVal(0), OrigExpr)) {
+  if ((IdInfo) && (IdInfo->getName() == "advance") && (noChangeInAdvance(C, Call.getArgSVal(0), OrigExpr))) 
+    
+      {
         (this->**Handler)(C, Call.getCFGElementRef(), Call.getReturnValue(),
                           Call.getArgSVal(0), Call.getArgSVal(1));
       }
-    }
-  }
+    
+  
 }
 
 void IteratorModeling::handleComparison(CheckerContext &C, const Expr *CE,

@@ -279,9 +279,8 @@ bool RegisterAggr::hasAliasOf(RegisterRef RR) const {
 
   for (MCRegUnitMaskIterator U(RR.asMCReg(), &PRI.getTRI()); U.isValid(); ++U) {
     auto [Unit, LaneMask] = *U;
-    if ((LaneMask & RR.Mask).any())
-      if (Units.test(static_cast<unsigned>(Unit)))
-        return true;
+    if (((LaneMask & RR.Mask).any()) && (Units.test(static_cast<unsigned>(Unit))))
+      return true;
   }
   return false;
 }
@@ -292,9 +291,8 @@ bool RegisterAggr::hasCoverOf(RegisterRef RR) const {
 
   for (MCRegUnitMaskIterator U(RR.asMCReg(), &PRI.getTRI()); U.isValid(); ++U) {
     auto [Unit, LaneMask] = *U;
-    if ((LaneMask & RR.Mask).any())
-      if (!Units.test(static_cast<unsigned>(Unit)))
-        return false;
+    if (((LaneMask & RR.Mask).any()) && (!Units.test(static_cast<unsigned>(Unit))))
+      return false;
   }
   return true;
 }

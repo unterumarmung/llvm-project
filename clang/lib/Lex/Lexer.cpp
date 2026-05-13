@@ -1377,10 +1377,9 @@ std::optional<Token> Lexer::findNextToken(SourceLocation Loc,
                                           const SourceManager &SM,
                                           const LangOptions &LangOpts,
                                           bool IncludeComments) {
-  if (Loc.isMacroID()) {
-    if (!Lexer::isAtEndOfMacroExpansion(Loc, SM, LangOpts, &Loc))
-      return std::nullopt;
-  }
+  if ((Loc.isMacroID()) && (!Lexer::isAtEndOfMacroExpansion(Loc, SM, LangOpts, &Loc))) 
+    return std::nullopt;
+  
   Loc = Lexer::getLocForEndOfToken(Loc, 0, SM, LangOpts);
 
   // Break down the source location.
@@ -2118,12 +2117,11 @@ bool Lexer::LexNumericConstant(Token &Result, const char *CurPtr) {
   }
 
   // If we fell out, check for a sign, due to 1e+12.  If we have one, continue.
-  if ((C == '-' || C == '+') && (PrevCh == 'E' || PrevCh == 'e')) {
+  if (((C == '-' || C == '+') && (PrevCh == 'E' || PrevCh == 'e')) && (!LangOpts.MicrosoftExt || !isHexaLiteral(BufferPtr, LangOpts))) 
     // If we are in Microsoft mode, don't continue if the constant is hex.
     // For example, MSVC will accept the following as 3 tokens: 0x1234567e+1
-    if (!LangOpts.MicrosoftExt || !isHexaLiteral(BufferPtr, LangOpts))
-      return LexNumericConstant(Result, ConsumeChar(CurPtr, Size, Result));
-  }
+    return LexNumericConstant(Result, ConsumeChar(CurPtr, Size, Result));
+  
 
   // If we have a hex FP constant, continue.
   if ((C == '-' || C == '+') && (PrevCh == 'P' || PrevCh == 'p')) {
@@ -3060,21 +3058,20 @@ bool Lexer::SkipBlockComment(Token &Result, const char *CurPtr) {
       if (CurPtr[-2] == '*')  // We found the final */.  We're done!
         break;
 
-      if ((CurPtr[-2] == '\n' || CurPtr[-2] == '\r')) {
-        if (isEndOfBlockCommentWithEscapedNewLine(CurPtr - 2, this,
-                                                  LangOpts.Trigraphs)) {
+      if (((CurPtr[-2] == '\n' || CurPtr[-2] == '\r')) && (isEndOfBlockCommentWithEscapedNewLine(CurPtr - 2, this,
+                                                  LangOpts.Trigraphs))) 
+        {
           // We found the final */, though it had an escaped newline between the
           // * and /.  We're done!
           break;
         }
-      }
-      if (CurPtr[0] == '*' && CurPtr[1] != '/') {
+      
+      if ((CurPtr[0] == '*' && CurPtr[1] != '/') && (!isLexingRawMode())) 
         // If this is a /* inside of the comment, emit a warning.  Don't do this
         // if this is a /*/, which will end the comment.  This misses cases with
         // embedded escaped newlines, but oh well.
-        if (!isLexingRawMode())
-          Diag(CurPtr-1, diag::warn_nested_block_comment);
-      }
+        Diag(CurPtr-1, diag::warn_nested_block_comment);
+      
     } else if (C == 0 && CurPtr == BufferEnd+1) {
       if (!isLexingRawMode())
         Diag(BufferPtr, diag::err_unterminated_block_comment);
@@ -4228,9 +4225,8 @@ LexStart:
       // However, we never do this if we are just preprocessing.
       bool TreatAsComment =
           LineComment && (LangOpts.CPlusPlus || !LangOpts.TraditionalCPP);
-      if (!TreatAsComment)
-        if (!(PP && PP->isPreprocessedOutput()))
-          TreatAsComment = getCharAndSize(CurPtr+SizeTmp, SizeTmp2) != '*';
+      if ((!TreatAsComment) && (!(PP && PP->isPreprocessedOutput())))
+        TreatAsComment = getCharAndSize(CurPtr+SizeTmp, SizeTmp2) != '*';
 
       if (TreatAsComment) {
         if (SkipLineComment(Result, ConsumeChar(CurPtr, SizeTmp, Result)))

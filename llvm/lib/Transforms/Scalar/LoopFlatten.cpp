@@ -686,13 +686,11 @@ static OverflowResult checkOverflow(FlattenInfo &FI, DominatorTree *DT,
   // Check if any IV user is, or is used by, a GEP that would cause UB if the
   // multiply overflows.
   for (Value *V : FI.LinearIVUses) {
-    if (auto *GEP = dyn_cast<GetElementPtrInst>(V))
-      if (GEP->getNumIndices() == 1 && CheckGEP(GEP, GEP->getOperand(1)))
-        return OverflowResult::NeverOverflows;
+    if (auto *GEP = dyn_cast<GetElementPtrInst>(V); GEP && (GEP->getNumIndices() == 1 && CheckGEP(GEP, GEP->getOperand(1))))
+      return OverflowResult::NeverOverflows;
     for (Value *U : V->users())
-      if (auto *GEP = dyn_cast<GetElementPtrInst>(U))
-        if (CheckGEP(GEP, V))
-          return OverflowResult::NeverOverflows;
+      if (auto *GEP = dyn_cast<GetElementPtrInst>(U); GEP && (CheckGEP(GEP, V)))
+        return OverflowResult::NeverOverflows;
   }
 
   return OverflowResult::MayOverflow;

@@ -583,9 +583,8 @@ void IRPromoter::TruncateSinks() {
     // for the zext will be promoted to the same width as the zext's return type
     // rendering that zext unnecessary.  This zext gets removed before the end
     // of the pass.
-    if (auto ZExt = dyn_cast<ZExtInst>(I))
-      if (ZExt->getType()->getScalarSizeInBits() >= PromotedWidth)
-        continue;
+    if (auto ZExt = dyn_cast<ZExtInst>(I); ZExt && (ZExt->getType()->getScalarSizeInBits() >= PromotedWidth))
+      continue;
 
     // Now handle the others.
     for (unsigned i = 0; i < I->getNumOperands(); ++i) {
@@ -889,9 +888,8 @@ bool TypePromotionImpl::TryToPromote(Value *V, unsigned PromotedWidth,
       Blocks.insert(I->getParent());
 
     if (Sources.count(CV)) {
-      if (auto *Arg = dyn_cast<Argument>(CV))
-        if (!Arg->hasZExtAttr() && !Arg->hasSExtAttr())
-          ++NonFreeArgs;
+      if (auto *Arg = dyn_cast<Argument>(CV); Arg && (!Arg->hasZExtAttr() && !Arg->hasSExtAttr()))
+        ++NonFreeArgs;
       if (!isa<Instruction>(CV) ||
           !LI.getLoopFor(cast<Instruction>(CV)->getParent()))
         ++NonLoopSources;

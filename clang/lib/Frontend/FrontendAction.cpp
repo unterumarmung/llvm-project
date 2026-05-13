@@ -350,8 +350,8 @@ public:
         NamesToCheck(NamesToCheck) {}
 
   void DeclRead(GlobalDeclID ID, const Decl *D) override {
-    if (const NamedDecl *ND = dyn_cast<NamedDecl>(D))
-      if (NamesToCheck.find(ND->getNameAsString()) != NamesToCheck.end()) {
+    if (const NamedDecl *ND = dyn_cast<NamedDecl>(D); ND && (NamesToCheck.find(ND->getNameAsString()) != NamesToCheck.end()))
+      {
         unsigned DiagID
           = Ctx.getDiagnostics().getCustomDiagID(DiagnosticsEngine::Error,
                                                  "%0 was deserialized");
@@ -435,18 +435,18 @@ FrontendAction::CreateWrappedASTConsumer(CompilerInstance &CI,
        FrontendPluginRegistry::entries()) {
     std::unique_ptr<PluginASTAction> P = Plugin.instantiate();
     PluginASTAction::ActionType ActionType = P->getActionType();
-    if (ActionType == PluginASTAction::CmdlineAfterMainAction ||
-        ActionType == PluginASTAction::CmdlineBeforeMainAction) {
+    if ((ActionType == PluginASTAction::CmdlineAfterMainAction ||
+        ActionType == PluginASTAction::CmdlineBeforeMainAction) && (llvm::is_contained(CI.getFrontendOpts().AddPluginActions,
+                             Plugin.getName()))) 
       // This is O(|plugins| * |add_plugins|), but since both numbers are
       // way below 50 in practice, that's ok.
-      if (llvm::is_contained(CI.getFrontendOpts().AddPluginActions,
-                             Plugin.getName())) {
+      {
         if (ActionType == PluginASTAction::CmdlineBeforeMainAction)
           ActionType = PluginASTAction::AddBeforeMainAction;
         else
           ActionType = PluginASTAction::AddAfterMainAction;
       }
-    }
+    
     if ((ActionType == PluginASTAction::AddBeforeMainAction ||
          ActionType == PluginASTAction::AddAfterMainAction) &&
         P->ParseArgs(

@@ -719,11 +719,11 @@ private:
     // If Target is not provided, find the closest exit block
     if (Target == AnyExitBlock) {
       for (uint64_t I = 0; I < NumBlocks(); I++) {
-        if (Func.Blocks[I].isExit() && Parent[I] != nullptr) {
-          if (Target == AnyExitBlock || Distance[Target] > Distance[I]) {
+        if ((Func.Blocks[I].isExit() && Parent[I] != nullptr) && (Target == AnyExitBlock || Distance[Target] > Distance[I])) 
+          {
             Target = I;
           }
-        }
+        
       }
     }
     assert(Parent[Target] != nullptr && "a path does not exist");

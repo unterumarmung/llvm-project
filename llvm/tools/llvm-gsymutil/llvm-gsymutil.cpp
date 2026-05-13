@@ -295,9 +295,8 @@ static bool filterArch(MachOObjectFile &Obj) {
 
     // Match architecture number.
     unsigned Value;
-    if (!Arch.getAsInteger(0, Value))
-      if (Value == getCPUType(Obj))
-        return true;
+    if ((!Arch.getAsInteger(0, Value)) && (Value == getCPUType(Obj)))
+      return true;
   }
   return false;
 }

@@ -402,9 +402,8 @@ Value *CallBase::getArgOperandWithAttribute(Attribute::AttrKind Kind) const {
 
   if (Attrs.hasAttrSomewhere(Kind, &Index))
     return getArgOperand(Index - AttributeList::FirstArgIndex);
-  if (const Function *F = getCalledFunction())
-    if (F->getAttributes().hasAttrSomewhere(Kind, &Index))
-      return getArgOperand(Index - AttributeList::FirstArgIndex);
+  if (const Function *F = getCalledFunction(); F && (F->getAttributes().hasAttrSomewhere(Kind, &Index)))
+    return getArgOperand(Index - AttributeList::FirstArgIndex);
 
   return nullptr;
 }
@@ -1811,9 +1810,8 @@ bool ShuffleVectorInst::isValidOperands(const Value *V1, const Value *V2,
     if (Elem != PoisonMaskElem && Elem >= V1Size * 2)
       return false;
 
-  if (isa<ScalableVectorType>(V1->getType()))
-    if ((Mask[0] != 0 && Mask[0] != PoisonMaskElem) || !all_equal(Mask))
-      return false;
+  if ((isa<ScalableVectorType>(V1->getType())) && ((Mask[0] != 0 && Mask[0] != PoisonMaskElem) || !all_equal(Mask)))
+    return false;
 
   return true;
 }
@@ -2904,10 +2902,9 @@ unsigned CastInst::isEliminableCastPair(Instruction::CastOps firstOp,
   bool AreBothBitcasts = IsFirstBitcast && IsSecondBitcast;
 
   // Check if any of the casts convert scalars <-> vectors.
-  if ((IsFirstBitcast  && isa<VectorType>(SrcTy) != isa<VectorType>(MidTy)) ||
-      (IsSecondBitcast && isa<VectorType>(MidTy) != isa<VectorType>(DstTy)))
-    if (!AreBothBitcasts)
-      return 0;
+  if (((IsFirstBitcast  && isa<VectorType>(SrcTy) != isa<VectorType>(MidTy)) ||
+      (IsSecondBitcast && isa<VectorType>(MidTy) != isa<VectorType>(DstTy))) && (!AreBothBitcasts))
+    return 0;
 
   int ElimCase = CastResults[firstOp-Instruction::CastOpsBegin]
                             [secondOp-Instruction::CastOpsBegin];
@@ -3173,13 +3170,13 @@ bool CastInst::isBitCastable(Type *SrcTy, Type *DestTy) {
     return true;
 
   if (VectorType *SrcVecTy = dyn_cast<VectorType>(SrcTy)) {
-    if (VectorType *DestVecTy = dyn_cast<VectorType>(DestTy)) {
-      if (SrcVecTy->getElementCount() == DestVecTy->getElementCount()) {
+    if (VectorType *DestVecTy = dyn_cast<VectorType>(DestTy); DestVecTy && (SrcVecTy->getElementCount() == DestVecTy->getElementCount())) 
+      {
         // An element by element cast. Valid if casting the elements is valid.
         SrcTy = SrcVecTy->getElementType();
         DestTy = DestVecTy->getElementType();
       }
-    }
+    
   }
 
   if (PointerType *DestPtrTy = dyn_cast<PointerType>(DestTy)) {
@@ -3236,8 +3233,8 @@ CastInst::getCastOpcode(
 
   // FIXME: Check address space sizes here
   if (VectorType *SrcVecTy = dyn_cast<VectorType>(SrcTy))
-    if (VectorType *DestVecTy = dyn_cast<VectorType>(DestTy))
-      if (SrcVecTy->getElementCount() == DestVecTy->getElementCount()) {
+    if (VectorType *DestVecTy = dyn_cast<VectorType>(DestTy); DestVecTy && (SrcVecTy->getElementCount() == DestVecTy->getElementCount()))
+      {
         // An element by element cast.  Find the appropriate opcode based on the
         // element types.
         SrcTy = SrcVecTy->getElementType();
@@ -4244,9 +4241,8 @@ void SwitchInstProfUpdateWrapper::setSuccessorWeight(
 SwitchInstProfUpdateWrapper::CaseWeightOpt
 SwitchInstProfUpdateWrapper::getSuccessorWeight(const SwitchInst &SI,
                                                 unsigned idx) {
-  if (MDNode *ProfileData = getBranchWeightMDNode(SI))
-    if (ProfileData->getNumOperands() == SI.getNumSuccessors() + 1)
-      return mdconst::extract<ConstantInt>(ProfileData->getOperand(idx + 1))
+  if (MDNode *ProfileData = getBranchWeightMDNode(SI); ProfileData && (ProfileData->getNumOperands() == SI.getNumSuccessors() + 1))
+    return mdconst::extract<ConstantInt>(ProfileData->getOperand(idx + 1))
           ->getValue()
           .getZExtValue();
 

@@ -42,9 +42,8 @@ public:
   explicit FindSuperCallVisitor(Selector S) : DoesCallSuper(false), Sel(S) {}
 
   bool VisitObjCMessageExpr(ObjCMessageExpr *E) override {
-    if (E->getSelector() == Sel)
-      if (E->getReceiverKind() == ObjCMessageExpr::SuperInstance)
-        DoesCallSuper = true;
+    if ((E->getSelector() == Sel) && (E->getReceiverKind() == ObjCMessageExpr::SuperInstance))
+      DoesCallSuper = true;
 
     // Recurse if we didn't find the super call yet.
     return !DoesCallSuper;

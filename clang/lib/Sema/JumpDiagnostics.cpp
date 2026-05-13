@@ -220,13 +220,12 @@ static ScopePair GetDiagForGotoScopeDecl(Sema &S, const Decl *D) {
     return ScopePair(InDiag, OutDiag);
   }
 
-  if (const TypedefNameDecl *TD = dyn_cast<TypedefNameDecl>(D)) {
-    if (TD->getUnderlyingType()->isVariablyModifiedType())
-      return ScopePair(isa<TypedefDecl>(TD)
+  if (const TypedefNameDecl *TD = dyn_cast<TypedefNameDecl>(D); TD && (TD->getUnderlyingType()->isVariablyModifiedType())) 
+    return ScopePair(isa<TypedefDecl>(TD)
                            ? diag::note_protected_by_vla_typedef
                            : diag::note_protected_by_vla_type_alias,
                        0);
-  }
+  
 
   return ScopePair(0U, 0U);
 }
@@ -651,8 +650,8 @@ void JumpScopeChecker::BuildScopeInformation(Stmt *S,
   }
 
   default:
-    if (auto *ED = dyn_cast<OMPExecutableDirective>(S)) {
-      if (!ED->isStandaloneDirective()) {
+    if (auto *ED = dyn_cast<OMPExecutableDirective>(S); ED && (!ED->isStandaloneDirective())) 
+      {
         unsigned NewParentScope = Scopes.size();
         Scopes.emplace_back(ParentScope,
                             diag::note_omp_protected_structured_block,
@@ -661,7 +660,7 @@ void JumpScopeChecker::BuildScopeInformation(Stmt *S,
         BuildScopeInformation(ED->getStructuredBlock(), NewParentScope);
         return;
       }
-    }
+    
     break;
   }
 

@@ -236,16 +236,15 @@ Error DWARFLinkerImpl::link() {
     }
   }
 
-  if (ArtificialTypeUnit != nullptr && !ArtificialTypeUnit->getTypePool()
+  if ((ArtificialTypeUnit != nullptr && !ArtificialTypeUnit->getTypePool()
                                             .getRoot()
                                             ->getValue()
                                             .load()
-                                            ->Children.empty()) {
-    if (GlobalData.getTargetTriple().has_value())
-      if (Error Err = ArtificialTypeUnit->finishCloningAndEmit(
+                                            ->Children.empty()) && (GlobalData.getTargetTriple().has_value())) 
+    if (Error Err = ArtificialTypeUnit->finishCloningAndEmit(
               (*GlobalData.getTargetTriple()).get()))
         return Err;
-  }
+  
 
   // At this stage each compile units are cloned to their own set of debug
   // sections. Now, update patches, assign offsets and assemble final file

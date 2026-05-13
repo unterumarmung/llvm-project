@@ -1163,10 +1163,9 @@ static Intrinsic::ID shouldUpgradeNVPTXTMAG2SIntrinsics(Function *F,
 
 static Intrinsic::ID shouldUpgradeNVPTXSharedClusterIntrinsic(Function *F,
                                                               StringRef Name) {
-  if (Name.consume_front("mapa.shared.cluster"))
-    if (F->getReturnType()->getPointerAddressSpace() ==
-        NVPTXAS::ADDRESS_SPACE_SHARED)
-      return Intrinsic::nvvm_mapa_shared_cluster;
+  if ((Name.consume_front("mapa.shared.cluster")) && (F->getReturnType()->getPointerAddressSpace() ==
+        NVPTXAS::ADDRESS_SPACE_SHARED))
+    return Intrinsic::nvvm_mapa_shared_cluster;
 
   if (Name.consume_front("cp.async.bulk.")) {
     Intrinsic::ID ID =
@@ -1177,10 +1176,9 @@ static Intrinsic::ID shouldUpgradeNVPTXSharedClusterIntrinsic(Function *F,
                   Intrinsic::nvvm_cp_async_bulk_shared_cta_to_cluster)
             .Default(Intrinsic::not_intrinsic);
 
-    if (ID != Intrinsic::not_intrinsic)
-      if (F->getArg(0)->getType()->getPointerAddressSpace() ==
-          NVPTXAS::ADDRESS_SPACE_SHARED)
-        return ID;
+    if ((ID != Intrinsic::not_intrinsic) && (F->getArg(0)->getType()->getPointerAddressSpace() ==
+          NVPTXAS::ADDRESS_SPACE_SHARED))
+      return ID;
   }
 
   return Intrinsic::not_intrinsic;
@@ -1341,18 +1339,18 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
         break;
       }
 
-      if (Name.consume_front("ds.") || Name.consume_front("global.atomic.") ||
-          Name.consume_front("flat.atomic.")) {
-        if (Name.starts_with("fadd") ||
+      if ((Name.consume_front("ds.") || Name.consume_front("global.atomic.") ||
+          Name.consume_front("flat.atomic.")) && (Name.starts_with("fadd") ||
             // FIXME: We should also remove fmin.num and fmax.num intrinsics.
             (Name.starts_with("fmin") && !Name.starts_with("fmin.num")) ||
-            (Name.starts_with("fmax") && !Name.starts_with("fmax.num"))) {
+            (Name.starts_with("fmax") && !Name.starts_with("fmax.num")))) 
+        {
           // Replaced with atomicrmw fadd/fmin/fmax, so there's no new
           // declaration.
           NewFn = nullptr;
           return true;
         }
-      }
+      
 
       if (Name.starts_with("ldexp.")) {
         // Target specific intrinsic became redundant
@@ -1368,12 +1366,12 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
   }
   case 'c': {
     if (F->arg_size() == 1) {
-      if (Name.consume_front("convert.")) {
-        if (convertIntrinsicValidType(Name, F->getFunctionType())) {
+      if ((Name.consume_front("convert.")) && (convertIntrinsicValidType(Name, F->getFunctionType()))) 
+        {
           NewFn = nullptr;
           return true;
         }
-      }
+      
 
       Intrinsic::ID ID = StringSwitch<Intrinsic::ID>(Name)
                              .StartsWith("ctlz.", Intrinsic::ctlz)
@@ -1399,15 +1397,15 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
   case 'd':
     if (Name.consume_front("dbg.")) {
       // Mark debug intrinsics for upgrade to new debug format.
-      if (CanUpgradeDebugIntrinsicsToRecords) {
-        if (Name == "addr" || Name == "value" || Name == "assign" ||
-            Name == "declare" || Name == "label") {
+      if ((CanUpgradeDebugIntrinsicsToRecords) && (Name == "addr" || Name == "value" || Name == "assign" ||
+            Name == "declare" || Name == "label")) 
+        {
           // There's no function to replace these with.
           NewFn = nullptr;
           // But we do want these to get upgraded.
           return true;
         }
-      }
+      
       // Update llvm.dbg.addr intrinsics even in "new debug mode"; they'll get
       // converted to DbgVariableRecords later.
       if (Name == "addr" || (Name == "value" && F->arg_size() == 4)) {
@@ -1542,8 +1540,8 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
     if (unsigned ID = StringSwitch<unsigned>(Name)
                           .StartsWith("memcpy.", Intrinsic::memcpy)
                           .StartsWith("memmove.", Intrinsic::memmove)
-                          .Default(0)) {
-      if (F->arg_size() == 5) {
+                          .Default(0); ID && (F->arg_size() == 5)) 
+      {
         rename(F);
         // Get the types of dest, src, and len
         ArrayRef<Type *> ParamTypes =
@@ -1552,7 +1550,7 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
             Intrinsic::getOrInsertDeclaration(F->getParent(), ID, ParamTypes);
         return true;
       }
-    }
+    
     if (Name.starts_with("memset.") && F->arg_size() == 5) {
       rename(F);
       // Get the types of dest, and len
@@ -1863,13 +1861,13 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
   }
 
   auto *ST = dyn_cast<StructType>(F->getReturnType());
-  if (ST && (!ST->isLiteral() || ST->isPacked()) &&
-      F->getIntrinsicID() != Intrinsic::not_intrinsic) {
+  if ((ST && (!ST->isLiteral() || ST->isPacked()) &&
+      F->getIntrinsicID() != Intrinsic::not_intrinsic) && (Intrinsic::hasStructReturnType(F->getIntrinsicID()))) 
     // Replace return type with literal non-packed struct. Only do this for
     // intrinsics declared to return a struct, not for intrinsics with
     // overloaded return type, in which case the exact struct type will be
     // mangled into the name.
-    if (Intrinsic::hasStructReturnType(F->getIntrinsicID())) {
+    {
       FunctionType *FT = F->getFunctionType();
       auto *NewST = StructType::get(ST->getContext(), ST->elements());
       auto *NewFT = FunctionType::get(NewST, FT->params(), FT->isVarArg());
@@ -1883,7 +1881,7 @@ static bool upgradeIntrinsicFunction1(Function *F, Function *&NewFn,
         NewFn = *Result;
       return true;
     }
-  }
+  
 
   // Remangle our intrinsic since we upgrade the mangling
   auto Result = llvm::Intrinsic::remangleIntrinsicFunction(F);
@@ -2040,9 +2038,8 @@ static Value *getX86MaskVec(IRBuilder<> &Builder, Value *Mask,
 static Value *emitX86Select(IRBuilder<> &Builder, Value *Mask, Value *Op0,
                             Value *Op1) {
   // If the mask is all ones just emit the first operation.
-  if (const auto *C = dyn_cast<Constant>(Mask))
-    if (C->isAllOnesValue())
-      return Op0;
+  if (const auto *C = dyn_cast<Constant>(Mask); C && (C->isAllOnesValue()))
+    return Op0;
 
   Mask = getX86MaskVec(Builder, Mask,
                        cast<FixedVectorType>(Op0->getType())->getNumElements());
@@ -2052,9 +2049,8 @@ static Value *emitX86Select(IRBuilder<> &Builder, Value *Mask, Value *Op0,
 static Value *emitX86ScalarSelect(IRBuilder<> &Builder, Value *Mask, Value *Op0,
                                   Value *Op1) {
   // If the mask is all ones just emit the first operation.
-  if (const auto *C = dyn_cast<Constant>(Mask))
-    if (C->isAllOnesValue())
-      return Op0;
+  if (const auto *C = dyn_cast<Constant>(Mask); C && (C->isAllOnesValue()))
+    return Op0;
 
   auto *MaskTy = FixedVectorType::get(Builder.getInt1Ty(),
                                       Mask->getType()->getIntegerBitWidth());
@@ -2292,9 +2288,8 @@ static Value *upgradeMaskedStore(IRBuilder<> &Builder, Value *Ptr, Value *Data,
           : Align(1);
 
   // If the mask is all ones just emit a regular store.
-  if (const auto *C = dyn_cast<Constant>(Mask))
-    if (C->isAllOnesValue())
-      return Builder.CreateAlignedStore(Data, Ptr, Alignment);
+  if (const auto *C = dyn_cast<Constant>(Mask); C && (C->isAllOnesValue()))
+    return Builder.CreateAlignedStore(Data, Ptr, Alignment);
 
   // Convert the mask from an integer type to a vector of i1.
   unsigned NumElts = cast<FixedVectorType>(Data->getType())->getNumElements();
@@ -2313,9 +2308,8 @@ static Value *upgradeMaskedLoad(IRBuilder<> &Builder, Value *Ptr,
           : Align(1);
 
   // If the mask is all ones just emit a regular store.
-  if (const auto *C = dyn_cast<Constant>(Mask))
-    if (C->isAllOnesValue())
-      return Builder.CreateAlignedLoad(ValTy, Ptr, Alignment);
+  if (const auto *C = dyn_cast<Constant>(Mask); C && (C->isAllOnesValue()))
+    return Builder.CreateAlignedLoad(ValTy, Ptr, Alignment);
 
   // Convert the mask from an integer type to a vector of i1.
   unsigned NumElts = cast<FixedVectorType>(ValTy)->getNumElements();
@@ -4831,13 +4825,13 @@ static Value *upgradeAMDGCNIntrinsicCall(StringRef Name, CallBase *CI,
 
   // Handle the v2bf16 intrinsic which used <2 x i16> instead of <2 x bfloat>
   Type *RetTy = CI->getType();
-  if (VectorType *VT = dyn_cast<VectorType>(RetTy)) {
-    if (VT->getElementType()->isIntegerTy(16)) {
+  if (VectorType *VT = dyn_cast<VectorType>(RetTy); VT && (VT->getElementType()->isIntegerTy(16))) 
+    {
       VectorType *AsBF16 =
           VectorType::get(Type::getBFloatTy(Ctx), VT->getElementCount());
       Val = Builder.CreateBitCast(Val, AsBF16);
     }
-  }
+  
 
   // The scope argument never really worked correctly. Use agent as the most
   // conservative option which should still always produce the instruction.
@@ -5263,8 +5257,8 @@ void llvm::UpgradeIntrinsicCall(CallBase *CI, Function *NewFn) {
     // Upgrade from the old version that had an extra offset argument.
     assert(CI->arg_size() == 4);
     // Drop nonzero offsets instead of attempting to upgrade them.
-    if (auto *Offset = dyn_cast_or_null<Constant>(CI->getArgOperand(1)))
-      if (Offset->isNullValue()) {
+    if (auto *Offset = dyn_cast_or_null<Constant>(CI->getArgOperand(1)); Offset && (Offset->isNullValue()))
+      {
         NewCall = Builder.CreateCall(
             NewFn,
             {CI->getArgOperand(0), CI->getArgOperand(2), CI->getArgOperand(3)});
@@ -6214,17 +6208,16 @@ bool llvm::UpgradeModuleFlags(Module &M) {
     // Upgrade "PIE Level" from Error to Max.
     if (ID->getString() == "PIE Level")
       if (auto *Behavior =
-              mdconst::dyn_extract_or_null<ConstantInt>(Op->getOperand(0)))
-        if (Behavior->getLimitedValue() == Module::Error)
-          SetBehavior(Module::Max);
+              mdconst::dyn_extract_or_null<ConstantInt>(Op->getOperand(0)); Behavior && (Behavior->getLimitedValue() == Module::Error))
+        SetBehavior(Module::Max);
 
     // Upgrade branch protection and return address signing module flags. The
     // module flag behavior for these fields were Error and now they are Min.
     if (ID->getString() == "branch-target-enforcement" ||
         ID->getString().starts_with("sign-return-address")) {
       if (auto *Behavior =
-              mdconst::dyn_extract_or_null<ConstantInt>(Op->getOperand(0))) {
-        if (Behavior->getLimitedValue() == Module::Error) {
+              mdconst::dyn_extract_or_null<ConstantInt>(Op->getOperand(0)); Behavior && (Behavior->getLimitedValue() == Module::Error)) 
+        {
           Type *Int32Ty = Type::getInt32Ty(M.getContext());
           Metadata *Ops[3] = {
               ConstantAsMetadata::get(ConstantInt::get(Int32Ty, Module::Min)),
@@ -6232,7 +6225,7 @@ bool llvm::UpgradeModuleFlags(Module &M) {
           ModFlags->setOperand(I, MDNode::get(M.getContext(), Ops));
           Changed = true;
         }
-      }
+      
     }
 
     // Upgrade Objective-C Image Info Section. Removed the whitespce in the

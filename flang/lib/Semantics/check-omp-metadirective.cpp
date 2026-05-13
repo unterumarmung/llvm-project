@@ -544,8 +544,8 @@ void OmpStructureChecker::Enter(const parser::OmpDirectiveSpecification &x) {
   }
 
   llvm::omp::Directive dirId{x.DirId()};
-  if (const parser::OpenMPConstruct *meta{GetCurrentConstruct()}) {
-    if (parser::Unwrap<parser::OmpDelimitedMetadirectiveDirective>(meta->u)) {
+  if (const parser::OpenMPConstruct *meta{GetCurrentConstruct()}; meta && (parser::Unwrap<parser::OmpDelimitedMetadirectiveDirective>(meta->u))) 
+    {
       unsigned version{context_.langOptions().OpenMPVersion};
       switch (llvm::omp::getDirectiveAssociation(dirId)) {
       case llvm::omp::Association::Block:
@@ -561,7 +561,7 @@ void OmpStructureChecker::Enter(const parser::OmpDirectiveSpecification &x) {
         }
       }
     }
-  }
+  
 
   PushContextAndClauseSets(
       std::get<parser::OmpDirectiveName>(x.t).source, dirId);

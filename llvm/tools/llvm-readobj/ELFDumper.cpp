@@ -3415,9 +3415,8 @@ readMipsOptions(const uint8_t *SecBegin, ArrayRef<uint8_t> &SecData,
   const size_t ExpectedSize =
       sizeof(Elf_Mips_Options<ELFT>) + sizeof(Elf_Mips_RegInfo<ELFT>);
 
-  if (IsSupported)
-    if (Size < ExpectedSize)
-      return createError(
+  if ((IsSupported) && (Size < ExpectedSize))
+    return createError(
           "a .MIPS.options entry of kind " +
           Twine(getElfMipsOptionsOdkType(O->kind)) +
           " has an invalid size (0x" + Twine::utohexstr(Size) +

@@ -855,9 +855,8 @@ void LoadOp::getEffects(
 /// size of 8 bits are supported.
 bool LLVM::isTypeCompatibleWithAtomicOp(Type type,
                                         const DataLayout &dataLayout) {
-  if (!isa<IntegerType, LLVMPointerType>(type))
-    if (!isCompatibleFloatingPointType(type))
-      return false;
+  if ((!isa<IntegerType, LLVMPointerType>(type)) && (!isCompatibleFloatingPointType(type)))
+    return false;
 
   llvm::TypeSize bitWidth = dataLayout.getTypeSizeInBits(type);
   if (bitWidth.isScalable())
@@ -2645,13 +2644,13 @@ LogicalResult GlobalOp::verify() {
     }
   }
 
-  if (getLinkage() == Linkage::Appending) {
-    if (!llvm::isa<LLVMArrayType>(getType())) {
+  if ((getLinkage() == Linkage::Appending) && (!llvm::isa<LLVMArrayType>(getType()))) 
+    {
       return emitOpError() << "expected array type for '"
                            << stringifyLinkage(Linkage::Appending)
                            << "' linkage";
     }
-  }
+  
 
   if (failed(verifyComdat(*this, getComdat())))
     return failure();
@@ -4255,13 +4254,12 @@ static ParseResult parseIndirectBrOpSucessors(
             if (parser.parseSuccessor(destination).failed())
               return failure();
 
-            if (succeeded(parser.parseOptionalLParen())) {
-              if (failed(parser.parseOperandList(
+            if ((succeeded(parser.parseOptionalLParen())) && (failed(parser.parseOperandList(
                       operands, OpAsmParser::Delimiter::None)) ||
                   failed(parser.parseColonTypeList(operandTypes)) ||
-                  failed(parser.parseRParen()))
-                return failure();
-            }
+                  failed(parser.parseRParen()))) 
+              return failure();
+            
             succOperandBlocks.push_back(destination);
             succOperands.emplace_back(operands);
             succOperandsTypes.emplace_back(operandTypes);

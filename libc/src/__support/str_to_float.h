@@ -166,14 +166,14 @@ eisel_lemire(ExpandedFloat<T> init_num,
     // Round to even.
     final_mantissa += final_mantissa & 1;
 
-  } else if (round == RoundDirection::Up) {
+  } else if ((round == RoundDirection::Up) && (low64(final_approx) > 0 ||
+        (high64(final_approx) & halfway_constant) > 0)) 
     // If any of the bits being rounded away are non-zero, then round up.
-    if (low64(final_approx) > 0 ||
-        (high64(final_approx) & halfway_constant) > 0) {
+    {
       // Add two since the last current lowest bit is about to be shifted away.
       final_mantissa += 2;
     }
-  }
+  
   // else round down, which has no effect.
 
   // From 54 to 53 bits for doubles and 25 to 24 bits for floats

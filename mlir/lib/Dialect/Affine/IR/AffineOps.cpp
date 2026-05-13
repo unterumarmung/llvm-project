@@ -2218,15 +2218,13 @@ LogicalResult AffineForOp::verifyRegions() {
 
   // Verify that the bound operands are valid dimension/symbols.
   /// Lower bound.
-  if (getLowerBoundMap().getNumInputs() > 0)
-    if (failed(verifyDimAndSymbolIdentifiers(*this, getLowerBoundOperands(),
-                                             getLowerBoundMap().getNumDims())))
-      return failure();
+  if ((getLowerBoundMap().getNumInputs() > 0) && (failed(verifyDimAndSymbolIdentifiers(*this, getLowerBoundOperands(),
+                                             getLowerBoundMap().getNumDims()))))
+    return failure();
   /// Upper bound.
-  if (getUpperBoundMap().getNumInputs() > 0)
-    if (failed(verifyDimAndSymbolIdentifiers(*this, getUpperBoundOperands(),
-                                             getUpperBoundMap().getNumDims())))
-      return failure();
+  if ((getUpperBoundMap().getNumInputs() > 0) && (failed(verifyDimAndSymbolIdentifiers(*this, getUpperBoundOperands(),
+                                             getUpperBoundMap().getNumDims()))))
+    return failure();
   if (getLowerBoundMap().getNumResults() < 1)
     return emitOpError("expected lower bound map to have at least one result");
   if (getUpperBoundMap().getNumResults() < 1)
@@ -2449,12 +2447,12 @@ static void printBound(AffineMapAttr boundMap,
 
     // Print bound that consists of a single SSA symbol if the map is over a
     // single symbol.
-    if (map.getNumDims() == 0 && map.getNumSymbols() == 1) {
-      if (isa<AffineSymbolExpr>(expr)) {
+    if ((map.getNumDims() == 0 && map.getNumSymbols() == 1) && (isa<AffineSymbolExpr>(expr))) 
+      {
         p.printOperand(*boundOperands.begin());
         return;
       }
-    }
+    
   } else {
     // Map has multiple results. Print 'min' or 'max' prefix.
     p << prefix << ' ';

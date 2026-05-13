@@ -123,9 +123,8 @@ InsertPointAnalysis::computeLastInsertPoint(const LiveInterval &CurLI,
   // The def of statepoint instruction is a gc relocation and it should be alive
   // in landing pad. So we cannot split interval after statepoint instruction.
   if (SlotIndex::isSameInstr(VNI->def, LIP.second))
-    if (auto *I = LIS.getInstructionFromIndex(LIP.second))
-      if (I->getOpcode() == TargetOpcode::STATEPOINT)
-        return LIP.second;
+    if (auto *I = LIS.getInstructionFromIndex(LIP.second); I && (I->getOpcode() == TargetOpcode::STATEPOINT))
+      return LIP.second;
 
   // If the value leaving MBB was defined after the call in MBB, it can't
   // really be live-in to the landing pad.  This can happen if the landing pad
@@ -883,8 +882,8 @@ void SplitEditor::overlapIntv(SlotIndex Start, SlotIndex End) {
   // If the last use is tied to a def, we can't mark it as live for the
   // interval which includes only the use.  That would cause the tied pair
   // to end up in two different intervals.
-  if (auto *MI = LIS.getInstructionFromIndex(End))
-    if (hasTiedUseOf(*MI, Edit->getReg())) {
+  if (auto *MI = LIS.getInstructionFromIndex(End); MI && (hasTiedUseOf(*MI, Edit->getReg())))
+    {
       LLVM_DEBUG(dbgs() << "skip overlap due to tied def at end\n");
       return;
     }

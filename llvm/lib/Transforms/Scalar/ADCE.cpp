@@ -264,10 +264,8 @@ bool AggressiveDeadCodeElimination::isAlwaysLive(Instruction &I) {
 bool AggressiveDeadCodeElimination::isInstrumentsConstant(Instruction &I) {
   // TODO -- move this test into llvm::isInstructionTriviallyDead
   if (CallInst *CI = dyn_cast<CallInst>(&I))
-    if (Function *Callee = CI->getCalledFunction())
-      if (Callee->getName() == getInstrProfValueProfFuncName())
-        if (isa<Constant>(CI->getArgOperand(0)))
-          return true;
+    if (Function *Callee = CI->getCalledFunction(); Callee && (Callee->getName() == getInstrProfValueProfFuncName()) && (isa<Constant>(CI->getArgOperand(0))))
+      return true;
   return false;
 }
 
@@ -465,9 +463,8 @@ ADCEChanged AggressiveDeadCodeElimination::removeDeadInstructions() {
       // Avoid removing a DVR that is linked to instructions because it holds
       // information about an existing store.
       if (DbgVariableRecord *DVR = dyn_cast<DbgVariableRecord>(&DR);
-          DVR && DVR->isDbgAssign())
-        if (!at::getAssignmentInsts(DVR).empty())
-          continue;
+          (DVR && DVR->isDbgAssign()) && (!at::getAssignmentInsts(DVR).empty()))
+        continue;
       if (AliveScopes.count(DR.getDebugLoc()->getScope()))
         continue;
       I.dropOneDbgRecord(&DR);

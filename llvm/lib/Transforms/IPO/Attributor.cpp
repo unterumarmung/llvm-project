@@ -324,12 +324,11 @@ AA::getInitialValueForObj(Attributor &A, const AbstractAttribute &QueryingAA,
     if (!Initializer)
       return nullptr;
   } else {
-    if (!GV->hasLocalLinkage()) {
+    if ((!GV->hasLocalLinkage()) && (!GV->hasDefinitiveInitializer() || !GV->isConstant())) 
       // Externally visible global that's either non-constant,
       // or a constant with an uncertain initializer.
-      if (!GV->hasDefinitiveInitializer() || !GV->isConstant())
-        return nullptr;
-    }
+      return nullptr;
+    
 
     // Globals with local linkage are always initialized.
     assert(!GV->hasLocalLinkage() || GV->hasInitializer());
@@ -369,8 +368,8 @@ bool AA::isValidAtPosition(const AA::ValueAndContext &VAC,
     Scope = CtxI->getFunction();
   if (auto *A = dyn_cast<Argument>(VAC.getValue()))
     return A->getParent() == Scope;
-  if (auto *I = dyn_cast<Instruction>(VAC.getValue())) {
-    if (I->getFunction() == Scope) {
+  if (auto *I = dyn_cast<Instruction>(VAC.getValue()); I && (I->getFunction() == Scope)) 
+    {
       if (const DominatorTree *DT =
               InfoCache.getAnalysisResultForFunction<DominatorTreeAnalysis>(
                   *Scope))
@@ -381,7 +380,7 @@ bool AA::isValidAtPosition(const AA::ValueAndContext &VAC,
             make_range(I->getIterator(), I->getParent()->end()),
             [&](const Instruction &AfterI) { return &AfterI == CtxI; });
     }
-  }
+  
   return false;
 }
 
@@ -475,9 +474,9 @@ static bool getPotentialCopiesOfMemoryValue(
                         << "\n";);
       return false;
     }
-    if (auto *GV = dyn_cast<GlobalVariable>(&Obj))
-      if (!GV->hasLocalLinkage() &&
-          !(GV->isConstant() && GV->hasInitializer())) {
+    if (auto *GV = dyn_cast<GlobalVariable>(&Obj); GV && (!GV->hasLocalLinkage() &&
+          !(GV->isConstant() && GV->hasInitializer())))
+      {
         LLVM_DEBUG(dbgs() << "Underlying object is global with external "
                              "linkage, not supported yet: "
                           << Obj << "\n";);
@@ -519,14 +518,14 @@ static bool getPotentialCopiesOfMemoryValue(
         if (PotentialValueOrigins && !isa<AssumeInst>(Acc.getRemoteInst()))
           return false;
         if (!Acc.isWrittenValueUnknown())
-          if (Value *V = AdjustWrittenValueType(Acc, *Acc.getWrittenValue()))
-            if (NewCopies.count(V)) {
+          if (Value *V = AdjustWrittenValueType(Acc, *Acc.getWrittenValue()); V && (NewCopies.count(V)))
+            {
               NewCopyOrigins.insert(Acc.getRemoteInst());
               return true;
             }
         if (auto *SI = dyn_cast<StoreInst>(Acc.getRemoteInst()))
-          if (Value *V = AdjustWrittenValueType(Acc, *SI->getValueOperand()))
-            if (NewCopies.count(V)) {
+          if (Value *V = AdjustWrittenValueType(Acc, *SI->getValueOperand()); V && (NewCopies.count(V)))
+            {
               NewCopyOrigins.insert(Acc.getRemoteInst());
               return true;
             }
@@ -979,9 +978,8 @@ bool AA::isPotentiallyAffectedByBarrier(Attributor &A, const Instruction &I,
   if (const MemIntrinsic *MI = dyn_cast<MemIntrinsic>(&I)) {
     if (!AddLocationPtr(MemoryLocation::getForDest(MI)))
       return true;
-    if (const MemTransferInst *MTI = dyn_cast<MemTransferInst>(&I))
-      if (!AddLocationPtr(MemoryLocation::getForSource(MTI)))
-        return true;
+    if (const MemTransferInst *MTI = dyn_cast<MemTransferInst>(&I); MTI && (!AddLocationPtr(MemoryLocation::getForSource(MTI))))
+      return true;
   } else if (!AddLocationPtr(MemoryLocation::getOrNone(&I)))
     return true;
 
@@ -1038,10 +1036,9 @@ static bool addIfNotExistent(LLVMContext &Ctx, const Attribute &Attr,
   }
   if (Attr.isStringAttribute()) {
     StringRef Kind = Attr.getKindAsString();
-    if (AttrSet.hasAttribute(Kind)) {
-      if (!ForceReplace)
-        return false;
-    }
+    if ((AttrSet.hasAttribute(Kind)) && (!ForceReplace)) 
+      return false;
+    
     AB.addAttribute(Kind, Attr.getValueAsString());
     return true;
   }
@@ -1054,10 +1051,9 @@ static bool addIfNotExistent(LLVMContext &Ctx, const Attribute &Attr,
       AB.addMemoryAttr(ME);
       return true;
     }
-    if (AttrSet.hasAttribute(Kind)) {
-      if (!ForceReplace && isEqualOrWorse(Attr, AttrSet.getAttribute(Kind)))
-        return false;
-    }
+    if ((AttrSet.hasAttribute(Kind)) && (!ForceReplace && isEqualOrWorse(Attr, AttrSet.getAttribute(Kind)))) 
+      return false;
+    
     AB.addAttribute(Attr);
     return true;
   }
@@ -1597,11 +1593,9 @@ std::optional<Value *> Attributor::translateArgumentToCallSiteContent(
     return V;
   if (*V == nullptr || isa<Constant>(*V))
     return V;
-  if (auto *Arg = dyn_cast<Argument>(*V))
-    if (CB.getCalledOperand() == Arg->getParent() &&
-        CB.arg_size() > Arg->getArgNo())
-      if (!Arg->hasPointeeInMemoryValueAttr())
-        return getAssumedSimplified(
+  if (auto *Arg = dyn_cast<Argument>(*V); Arg && (CB.getCalledOperand() == Arg->getParent() &&
+        CB.arg_size() > Arg->getArgNo()) && (!Arg->hasPointeeInMemoryValueAttr()))
+    return getAssumedSimplified(
             IRPosition::callsite_argument(CB, Arg->getArgNo()), AA,
             UsedAssumedInformation, AA::Intraprocedural);
   return nullptr;
@@ -1659,8 +1653,8 @@ bool Attributor::isAssumedDead(const Use &U,
     BasicBlock *IncomingBB = PHI->getIncomingBlock(U);
     return isAssumedDead(*IncomingBB->getTerminator(), QueryingAA, FnLivenessAA,
                          UsedAssumedInformation, CheckBBLivenessOnly, DepClass);
-  } else if (StoreInst *SI = dyn_cast<StoreInst>(UserI)) {
-    if (!CheckBBLivenessOnly && SI->getPointerOperand() != U.get()) {
+  } else if (StoreInst *SI = dyn_cast<StoreInst>(UserI); SI && (!CheckBBLivenessOnly && SI->getPointerOperand() != U.get())) 
+    {
       const IRPosition IRP = IRPosition::inst(*SI);
       const AAIsDead *IsDeadAA =
           getOrCreateAAFor<AAIsDead>(IRP, QueryingAA, DepClassTy::NONE);
@@ -1672,7 +1666,7 @@ bool Attributor::isAssumedDead(const Use &U,
         return true;
       }
     }
-  }
+  
 
   return isAssumedDead(IRPosition::inst(*UserI), QueryingAA, FnLivenessAA,
                        UsedAssumedInformation, CheckBBLivenessOnly, DepClass);
@@ -1905,8 +1899,8 @@ bool Attributor::checkForAllUses(
       continue;
     }
 
-    if (auto *SI = dyn_cast<StoreInst>(U->getUser())) {
-      if (&SI->getOperandUse(0) == U) {
+    if (auto *SI = dyn_cast<StoreInst>(U->getUser()); SI && (&SI->getOperandUse(0) == U)) 
+      {
         if (!Visited.insert(U).second)
           continue;
         SmallSetVector<Value *, 4> PotentialCopies;
@@ -1924,7 +1918,7 @@ bool Attributor::checkForAllUses(
           continue;
         }
       }
-    }
+    
 
     bool Follow = false;
     if (!Pred(*U, Follow))
@@ -1994,8 +1988,8 @@ bool Attributor::checkForAllCallSites(function_ref<bool(AbstractCallSite)> Pred,
                       dbgs() << "[Attributor] Dead use, skip!\n");
       continue;
     }
-    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(U.getUser())) {
-      if (CE->isCast() && CE->getType()->isPointerTy()) {
+    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(U.getUser()); CE && (CE->isCast() && CE->getType()->isPointerTy())) 
+      {
         DEBUG_WITH_TYPE(VERBOSE_DEBUG_TYPE, {
           dbgs() << "[Attributor] Use, is constant cast expression, add "
                  << CE->getNumUses() << " uses of that expression instead!\n";
@@ -2004,7 +1998,7 @@ bool Attributor::checkForAllCallSites(function_ref<bool(AbstractCallSite)> Pred,
           Uses.push_back(&CEU);
         continue;
       }
-    }
+    
 
     AbstractCallSite ACS(&U);
     if (!ACS) {
@@ -2257,9 +2251,8 @@ void Attributor::runTillFixpoint() {
     // changed.
     for (AbstractAttribute *AA : Worklist) {
       const auto &AAState = AA->getState();
-      if (!AAState.isAtFixpoint())
-        if (updateAA(*AA) == ChangeStatus::CHANGED)
-          ChangedAAs.push_back(AA);
+      if ((!AAState.isAtFixpoint()) && (updateAA(*AA) == ChangeStatus::CHANGED))
+        ChangedAAs.push_back(AA);
 
       // Use the InvalidAAs vector to propagate invalid states fast transitively
       // without requiring updates.
@@ -2509,9 +2502,8 @@ ChangeStatus Attributor::cleanupIR() {
     // Do not replace uses in returns if the value is a must-tail call we will
     // not delete.
     if (auto *RI = dyn_cast_or_null<ReturnInst>(I)) {
-      if (auto *CI = dyn_cast<CallInst>(OldV->stripPointerCasts()))
-        if (CI->isMustTailCall() && !ToBeDeletedInsts.count(CI))
-          return;
+      if (auto *CI = dyn_cast<CallInst>(OldV->stripPointerCasts()); CI && (CI->isMustTailCall() && !ToBeDeletedInsts.count(CI)))
+        return;
       // If we rewrite a return and the new value is not an argument, strip the
       // `returned` attribute as it is wrong now.
       if (!isa<Argument>(NewV))
@@ -2564,9 +2556,8 @@ ChangeStatus Attributor::cleanupIR() {
       if (Done || !U.getUser()->isDroppable())
         Uses.push_back(&U);
     for (Use *U : Uses) {
-      if (auto *I = dyn_cast<Instruction>(U->getUser()))
-        if (!isRunOn(*I->getFunction()))
-          continue;
+      if (auto *I = dyn_cast<Instruction>(U->getUser()); I && (!isRunOn(*I->getFunction())))
+        continue;
       ReplaceUse(U, NewV);
     }
   }
@@ -3419,9 +3410,8 @@ void Attributor::identifyDefaultAbstractAttributes(Function &F) {
   InformationCache::FunctionInfo &FI = InfoCache.getFunctionInfo(F);
   if (!isModulePass() && !FI.CalledViaMustTail) {
     for (const Use &U : F.uses())
-      if (const auto *CB = dyn_cast<CallBase>(U.getUser()))
-        if (CB->isCallee(&U) && CB->isMustTailCall())
-          FI.CalledViaMustTail = true;
+      if (const auto *CB = dyn_cast<CallBase>(U.getUser()); CB && (CB->isCallee(&U) && CB->isMustTailCall()))
+        FI.CalledViaMustTail = true;
   }
 
   IRPosition FPos = IRPosition::function(F);
@@ -3955,14 +3945,13 @@ static bool runAttributorOnFunctions(InformationCache &InfoCache,
     // We look at internal functions only on-demand but if any use is not a
     // direct call or outside the current set of analyzed functions, we have
     // to do it eagerly.
-    if (F->hasLocalLinkage()) {
-      if (llvm::all_of(F->uses(), [&Functions](const Use &U) {
+    if ((F->hasLocalLinkage()) && (llvm::all_of(F->uses(), [&Functions](const Use &U) {
             const auto *CB = dyn_cast<CallBase>(U.getUser());
             return CB && CB->isCallee(&U) &&
                    Functions.count(const_cast<Function *>(CB->getCaller()));
-          }))
-        continue;
-    }
+          }))) 
+      continue;
+    
 
     // Populate the Attributor with abstract attribute opportunities in the
     // function and the information cache with IR information.
@@ -4021,14 +4010,13 @@ static bool runAttributorLightOnFunctions(InformationCache &InfoCache,
     // We look at internal functions only on-demand but if any use is not a
     // direct call or outside the current set of analyzed functions, we have
     // to do it eagerly.
-    if (AC.UseLiveness && F->hasLocalLinkage()) {
-      if (llvm::all_of(F->uses(), [&Functions](const Use &U) {
+    if ((AC.UseLiveness && F->hasLocalLinkage()) && (llvm::all_of(F->uses(), [&Functions](const Use &U) {
             const auto *CB = dyn_cast<CallBase>(U.getUser());
             return CB && CB->isCallee(&U) &&
                    Functions.count(const_cast<Function *>(CB->getCaller()));
-          }))
-        continue;
-    }
+          }))) 
+      continue;
+    
 
     // Populate the Attributor with abstract attribute opportunities in the
     // function and the information cache with IR information.
@@ -4050,10 +4038,9 @@ static bool runAttributorLightOnFunctions(InformationCache &InfoCache,
       // cares about whether or not a call's callee modifies memory and queries
       // that through function attributes.
       for (auto *U : Changed->users()) {
-        if (auto *Call = dyn_cast<CallBase>(U)) {
-          if (Call->getCalledFunction() == Changed)
-            FAM.invalidate(*Call->getFunction(), FuncPA);
-        }
+        if (auto *Call = dyn_cast<CallBase>(U); Call && (Call->getCalledFunction() == Changed)) 
+          FAM.invalidate(*Call->getFunction(), FuncPA);
+        
       }
     }
   }

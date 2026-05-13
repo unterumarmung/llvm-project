@@ -595,12 +595,12 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
     if (const ImplicitParamDecl *IPD = dyn_cast_or_null<ImplicitParamDecl>(
             cast<DeclRefExpr>(S)->getDecl())) {
       if (const ObjCMethodDecl *MD =
-              dyn_cast<ObjCMethodDecl>(IPD->getDeclContext())) {
-        if (MD->getSelfDecl() == IPD) {
+              dyn_cast<ObjCMethodDecl>(IPD->getDeclContext()); MD && (MD->getSelfDecl() == IPD)) 
+        {
           K = CXCursor_ObjCSelfExpr;
           break;
         }
-      }
+      
     }
 
     K = CXCursor_DeclRefExpr;
@@ -1292,13 +1292,12 @@ cxcursor::getSelectorIdentifierIndexAndLoc(CXCursor cursor) {
       return std::make_pair(cursor.xdata,
                             cast<ObjCMessageExpr>(getCursorExpr(cursor))
                                 ->getSelectorLoc(cursor.xdata));
-  } else if (cursor.kind == CXCursor_ObjCClassMethodDecl ||
-             cursor.kind == CXCursor_ObjCInstanceMethodDecl) {
-    if (cursor.xdata != -1)
-      return std::make_pair(cursor.xdata,
+  } else if ((cursor.kind == CXCursor_ObjCClassMethodDecl ||
+             cursor.kind == CXCursor_ObjCInstanceMethodDecl) && (cursor.xdata != -1)) 
+    return std::make_pair(cursor.xdata,
                             cast<ObjCMethodDecl>(getCursorDecl(cursor))
                                 ->getSelectorLoc(cursor.xdata));
-  }
+  
 
   return std::make_pair(-1, SourceLocation());
 }
@@ -1414,27 +1413,26 @@ CXCursor clang_Cursor_getArgument(CXCursor C, unsigned i) {
       if (i < MD->param_size())
         return cxcursor::MakeCXCursor(MD->parameters()[i],
                                       cxcursor::getCursorTU(C));
-    } else if (const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(D)) {
-      if (i < FD->param_size())
-        return cxcursor::MakeCXCursor(FD->parameters()[i],
+    } else if (const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(D); FD && (i < FD->param_size())) 
+      return cxcursor::MakeCXCursor(FD->parameters()[i],
                                       cxcursor::getCursorTU(C));
-    }
+    
   }
 
   if (clang_isExpression(C.kind)) {
     const Expr *E = cxcursor::getCursorExpr(C);
-    if (const CallExpr *CE = dyn_cast<CallExpr>(E)) {
-      if (i < CE->getNumArgs()) {
+    if (const CallExpr *CE = dyn_cast<CallExpr>(E); CE && (i < CE->getNumArgs())) 
+      {
         return cxcursor::MakeCXCursor(CE->getArg(i), getCursorDecl(C),
                                       cxcursor::getCursorTU(C));
       }
-    }
-    if (const CXXConstructExpr *CE = dyn_cast<CXXConstructExpr>(E)) {
-      if (i < CE->getNumArgs()) {
+    
+    if (const CXXConstructExpr *CE = dyn_cast<CXXConstructExpr>(E); CE && (i < CE->getNumArgs())) 
+      {
         return cxcursor::MakeCXCursor(CE->getArg(i), getCursorDecl(C),
                                       cxcursor::getCursorTU(C));
       }
-    }
+    
   }
 
   return clang_getNullCursor();
@@ -1809,10 +1807,9 @@ int clang_Cursor_isDynamicCall(CXCursor C) {
     if (MsgE->getReceiverKind() != ObjCMessageExpr::Instance)
       return false;
     if (auto *RecE = dyn_cast<ObjCMessageExpr>(
-            MsgE->getInstanceReceiver()->IgnoreParenCasts())) {
-      if (RecE->getMethodFamily() == OMF_alloc)
-        return false;
-    }
+            MsgE->getInstanceReceiver()->IgnoreParenCasts()); RecE && (RecE->getMethodFamily() == OMF_alloc)) 
+      return false;
+    
     return true;
   }
 
@@ -1857,12 +1854,12 @@ CXType clang_Cursor_getReceiverType(CXCursor C) {
   else if (const CallExpr *CE = dyn_cast<CallExpr>(E))
     ME = dyn_cast_or_null<MemberExpr>(CE->getCallee());
 
-  if (ME) {
-    if (isa_and_nonnull<CXXMethodDecl>(ME->getMemberDecl())) {
+  if ((ME) && (isa_and_nonnull<CXXMethodDecl>(ME->getMemberDecl()))) 
+    {
       auto receiverTy = ME->getBase()->IgnoreImpCasts()->getType();
       return cxtype::MakeCXType(receiverTy, TU);
     }
-  }
+  
 
   return cxtype::MakeCXType(QualType(), TU);
 }

@@ -674,9 +674,8 @@ Section *getEHFrameSection(LinkGraph &G) {
     return nullptr;
   }
 
-  if (auto *S = G.findSectionByName(EHFrameSectionName))
-    if (!S->empty())
-      return S;
+  if (auto *S = G.findSectionByName(EHFrameSectionName); S && (!S->empty()))
+    return S;
 
   return nullptr;
 }

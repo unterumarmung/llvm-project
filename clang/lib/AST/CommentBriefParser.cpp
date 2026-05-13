@@ -104,10 +104,9 @@ std::string BriefParser::Parse() {
       //
       // We don't need to add a space to the parsed text because we just added
       // a space for the newline.
-      if (Tok.is(tok::text)) {
-        if (isWhitespace(Tok.getText()))
-          ConsumeToken();
-      }
+      if ((Tok.is(tok::text)) && (isWhitespace(Tok.getText()))) 
+        ConsumeToken();
+      
 
       if (Tok.is(tok::newline)) {
         ConsumeToken();

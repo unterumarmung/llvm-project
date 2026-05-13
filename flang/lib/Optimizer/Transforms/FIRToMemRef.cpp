@@ -606,8 +606,8 @@ FIRToMemRef::convertArrayCoorOp(Operation *memOp, fir::ArrayCoorOp arrayCoorOp,
       auto ifOp = arrayCoorOperation->getParentOfType<scf::IfOp>();
       if (ifOp) {
         Operation *condition = ifOp.getCondition().getDefiningOp();
-        if (condition && isa<fir::IsPresentOp>(condition))
-          if (condition->getOperand(0) == firMemref) {
+        if ((condition && isa<fir::IsPresentOp>(condition)) && (condition->getOperand(0) == firMemref))
+          {
             if (arrayCoorOperation->getParentRegion() == &ifOp.getThenRegion())
               rewriter.setInsertionPointToStart(
                   &(ifOp.getThenRegion().front()));
@@ -1164,10 +1164,9 @@ void FIRToMemRef::replaceFIRMemrefs(Value firMemref, Value converted,
   for (auto user : firMemref.getUsers()) {
     if (isMarshalLike(user) || isa<fir::LoadOp, fir::StoreOp>(user))
       continue;
-    if (isa<omp::AtomicCaptureOp>(user->getParentOp()) ||
-        isa<acc::AtomicCaptureOp>(user->getParentOp()))
-      if (domInfo->dominates(converted, user))
-        worklist.insert(user);
+    if ((isa<omp::AtomicCaptureOp>(user->getParentOp()) ||
+        isa<acc::AtomicCaptureOp>(user->getParentOp())) && (domInfo->dominates(converted, user)))
+      worklist.insert(user);
   }
 
   if (worklist.empty())

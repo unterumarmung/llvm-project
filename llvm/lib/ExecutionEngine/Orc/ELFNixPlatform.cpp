@@ -1073,9 +1073,8 @@ Error ELFNixPlatform::ELFNixPlatformPlugin::registerFiniSections(
           PrioStr.consume_front(".dtors.") && !PrioStr.getAsInteger(10, Prio);
       return {0, Prio, HasPrio};
     }
-    if (Name.starts_with(".fini"))
-      if (!Name.starts_with(".fini_array"))
-        return {1, 0, false};
+    if ((Name.starts_with(".fini")) && (!Name.starts_with(".fini_array")))
+      return {1, 0, false};
     if (Name.starts_with(".fini_array")) {
       StringRef PrioStr = Name;
       uint64_t Prio = 0;

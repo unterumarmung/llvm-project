@@ -222,15 +222,15 @@ private:
 
       // We know that we are past _ExtVector, therefore the first seen
       // comma is the boundary of a parameter in the prototype.
-      if (size_t CommaPos = Current.find(',', 0)) {
-        if (CommaPos != StringRef::npos) {
+      if (size_t CommaPos = Current.find(',', 0); CommaPos && (CommaPos != StringRef::npos)) 
+        {
           StringRef T = Current.substr(0, CommaPos);
           ParseType(T);
           // Move the prototype beyond the comma.
           I += CommaPos + 1;
           continue;
         }
-      }
+      
 
       // No more commas, parse final parameter.
       ParseType(Current);

@@ -44,9 +44,8 @@ void identifyUninterestingMDNodes(Oracle &O, MDNodeList &MDs) {
     if (DINode *DIM = dyn_cast_or_null<DINode>(MD)) {
       // Scan operands and record attached tuples
       for (size_t I = 0; I < DIM->getNumOperands(); ++I)
-        if (MDTuple *MDT = dyn_cast_or_null<MDTuple>(DIM->getOperand(I)))
-          if (!Visited.count(MDT) && MDT->getNumOperands())
-            Tuples.insert({DIM, I, MDT});
+        if (MDTuple *MDT = dyn_cast_or_null<MDTuple>(DIM->getOperand(I)); MDT && (!Visited.count(MDT) && MDT->getNumOperands()))
+          Tuples.insert({DIM, I, MDT});
     }
 
     // Add all of the operands of the current node to the loop's todo list.

@@ -300,12 +300,12 @@ static std::optional<omp::OMPTgtExecModeFlags>
 getTargetKernelExecMode(Function &Kernel) {
   CallInst *TargetInitCall = nullptr;
   for (Instruction &Inst : Kernel.getEntryBlock()) {
-    if (auto *Call = dyn_cast<CallInst>(&Inst)) {
-      if (Call->getCalledFunction()->getName() == "__kmpc_target_init") {
+    if (auto *Call = dyn_cast<CallInst>(&Inst); Call && (Call->getCalledFunction()->getName() == "__kmpc_target_init")) 
+      {
         TargetInitCall = Call;
         break;
       }
-    }
+    
   }
 
   if (!TargetInitCall)
@@ -751,8 +751,8 @@ OpenMPIRBuilder::getOrCreateRuntimeFunction(Module &M, RuntimeFunction FnID) {
     }
     Fn->setCallingConv(Config.getRuntimeCC());
     // Add information if the runtime function takes a callback function
-    if (FnID == OMPRTL___kmpc_fork_call || FnID == OMPRTL___kmpc_fork_teams) {
-      if (!Fn->hasMetadata(LLVMContext::MD_callback)) {
+    if ((FnID == OMPRTL___kmpc_fork_call || FnID == OMPRTL___kmpc_fork_teams) && (!Fn->hasMetadata(LLVMContext::MD_callback))) 
+      {
         LLVMContext &Ctx = Fn->getContext();
         MDBuilder MDB(Ctx);
         // Annotate the callback behavior of the runtime function:
@@ -765,7 +765,7 @@ OpenMPIRBuilder::getOrCreateRuntimeFunction(Module &M, RuntimeFunction FnID) {
             *MDNode::get(Ctx, {MDB.createCallbackEncoding(
                                   2, {-1, -1}, /* VarArgsArePassed */ true)}));
       }
-    }
+    
 
     LLVM_DEBUG(dbgs() << "Created OpenMP runtime function " << Fn->getName()
                       << " with type " << *Fn->getFunctionType() << "\n");
@@ -873,9 +873,8 @@ static void hoistNonEntryAllocasToEntryBlock(llvm::BasicBlock &Block) {
   };
 
   for (llvm::Instruction &Inst : Block)
-    if (auto *AllocaInst = llvm::dyn_cast<llvm::AllocaInst>(&Inst))
-      if (ShouldHoistAlloca(*AllocaInst))
-        AllocasToMove.push_back(AllocaInst);
+    if (auto *AllocaInst = llvm::dyn_cast<llvm::AllocaInst>(&Inst); AllocaInst && (ShouldHoistAlloca(*AllocaInst)))
+      AllocasToMove.push_back(AllocaInst);
 
   auto InsertPoint =
       Block.getParent()->getEntryBlock().getTerminator()->getIterator();
@@ -1116,9 +1115,8 @@ Constant *OpenMPIRBuilder::getOrCreateIdent(Constant *SrcLocStr,
     // Look for existing encoding of the location + flags, not needed but
     // minimizes the difference to the existing solution while we transition.
     for (GlobalVariable &GV : M.globals())
-      if (GV.getValueType() == OpenMPIRBuilder::Ident && GV.hasInitializer())
-        if (GV.getInitializer() == Initializer)
-          Ident = &GV;
+      if ((GV.getValueType() == OpenMPIRBuilder::Ident && GV.hasInitializer()) && (GV.getInitializer() == Initializer))
+        Ident = &GV;
 
     if (!Ident) {
       auto *GV = new GlobalVariable(
@@ -1684,8 +1682,8 @@ hostParallelCallback(OpenMPIRBuilder *OMPIRBuilder, Function &OutlinedFn,
     RTLFn =
         OMPIRBuilder->getOrCreateRuntimeFunctionPtr(OMPRTL___kmpc_fork_call);
   }
-  if (auto *F = dyn_cast<Function>(RTLFn.getCallee())) {
-    if (!F->hasMetadata(LLVMContext::MD_callback)) {
+  if (auto *F = dyn_cast<Function>(RTLFn.getCallee()); F && (!F->hasMetadata(LLVMContext::MD_callback))) 
+    {
       LLVMContext &Ctx = F->getContext();
       MDBuilder MDB(Ctx);
       // Annotate the callback behavior of the __kmpc_fork_call:
@@ -1698,7 +1696,7 @@ hostParallelCallback(OpenMPIRBuilder *OMPIRBuilder, Function &OutlinedFn,
                                            2, {-1, -1},
                                            /* VarArgsArePassed */ true)}));
     }
-  }
+  
   // Add some known attributes.
   OutlinedFn.addParamAttr(0, Attribute::NoAlias);
   OutlinedFn.addParamAttr(1, Attribute::NoAlias);
@@ -1976,9 +1974,8 @@ OpenMPIRBuilder::InsertPointOrErrorTy OpenMPIRBuilder::createParallel(
 
     SetVector<Use *> Uses;
     for (Use &U : V.uses())
-      if (auto *UserI = dyn_cast<Instruction>(U.getUser()))
-        if (ParallelRegionBlockSet.count(UserI->getParent()))
-          Uses.insert(&U);
+      if (auto *UserI = dyn_cast<Instruction>(U.getUser()); UserI && (ParallelRegionBlockSet.count(UserI->getParent())))
+        Uses.insert(&U);
 
     // __kmpc_fork_call expects extra arguments as pointers. If the input
     // already has a pointer type, everything is fine. Otherwise, store the
@@ -2586,12 +2583,12 @@ OpenMPIRBuilder::InsertPointOrErrorTy OpenMPIRBuilder::createTaskloop(
       for (auto IVUse = CLI->getIndVar()->uses().begin();
            IVUse != CLI->getIndVar()->uses().end(); IVUse++) {
         User *IVUser = IVUse->getUser();
-        if (auto *Op = dyn_cast<BinaryOperator>(IVUser)) {
-          if (Op->getOpcode() == Instruction::URem ||
-              Op->getOpcode() == Instruction::UDiv) {
+        if (auto *Op = dyn_cast<BinaryOperator>(IVUser); Op && (Op->getOpcode() == Instruction::URem ||
+              Op->getOpcode() == Instruction::UDiv)) 
+          {
             UsersToReplace.push_back(IVUser);
           }
-        }
+        
       }
       for (User *User : UsersToReplace) {
         User->replaceUsesOfWith(CLI->getIndVar(), IVPlusTaskLB);
@@ -2614,17 +2611,17 @@ OpenMPIRBuilder::InsertPointOrErrorTy OpenMPIRBuilder::createTaskloop(
       assert(CLI->getIndVar()->getNumUses() == 3 &&
              "Canonical loop should have exactly three uses of the ind var");
       for (User *IVUser : CLI->getIndVar()->users()) {
-        if (auto *Mul = dyn_cast<BinaryOperator>(IVUser)) {
-          if (Mul->getOpcode() == Instruction::Mul) {
+        if (auto *Mul = dyn_cast<BinaryOperator>(IVUser); Mul && (Mul->getOpcode() == Instruction::Mul)) 
+          {
             for (User *MulUser : Mul->users()) {
-              if (auto *Add = dyn_cast<BinaryOperator>(MulUser)) {
-                if (Add->getOpcode() == Instruction::Add) {
+              if (auto *Add = dyn_cast<BinaryOperator>(MulUser); Add && (Add->getOpcode() == Instruction::Add)) 
+                {
                   Add->setOperand(1, CastedTaskLB);
                 }
-              }
+              
             }
           }
-        }
+        
       }
     }
 
@@ -6273,11 +6270,11 @@ OpenMPIRBuilder::InsertPointTy OpenMPIRBuilder::applyWorkshareLoopTarget(
   SmallVector<User *> Users(CLI->getIndVar()->user_begin(),
                             CLI->getIndVar()->user_end());
   for (auto Use : Users) {
-    if (Instruction *Inst = dyn_cast<Instruction>(Use)) {
-      if (ParallelRegionBlockSet.count(Inst->getParent())) {
+    if (Instruction *Inst = dyn_cast<Instruction>(Use); Inst && (ParallelRegionBlockSet.count(Inst->getParent()))) 
+      {
         Inst->replaceUsesOfWith(CLI->getIndVar(), NewLoopCntLoad);
       }
-    }
+    
   }
   // Make sure that loop counter variable is not merged into loop body
   // function argument structure and it is passed as separate variable
@@ -7419,10 +7416,9 @@ static int32_t computeHeuristicUnrollFactor(CanonicalLoopInfo *CLI) {
 
       Ptr = Ptr->stripPointerCasts();
 
-      if (auto *Alloca = dyn_cast<AllocaInst>(Ptr)) {
-        if (Alloca->getParent() == &F->getEntryBlock())
-          EphValues.insert(&I);
-      }
+      if (auto *Alloca = dyn_cast<AllocaInst>(Ptr); Alloca && (Alloca->getParent() == &F->getEntryBlock())) 
+        EphValues.insert(&I);
+      
     }
   }
 
@@ -8937,9 +8933,8 @@ static Expected<Function *> createOutlinedFunction(
     SetVector<User *> Users(Input->users().begin(), Input->users().end());
     // Collect all the instructions
     for (User *User : make_early_inc_range(Users))
-      if (auto *Instr = dyn_cast<Instruction>(User))
-        if (Instr->getFunction() == Func)
-          Instr->replaceUsesOfWith(Input, InputCopy);
+      if (auto *Instr = dyn_cast<Instruction>(User); Instr && (Instr->getFunction() == Func))
+        Instr->replaceUsesOfWith(Input, InputCopy);
   };
 
   SmallVector<std::pair<Value *, Value *>> DeferredReplacement;
@@ -10440,12 +10435,12 @@ Error OpenMPIRBuilder::emitOffloadingArrays(
       ConstSizes[I] = ConstantInt::get(Int64Ty, DimCount);
       continue;
     }
-    if (auto *CI = dyn_cast<Constant>(CombinedInfo.Sizes[I])) {
-      if (!isa<ConstantExpr>(CI) && !isa<GlobalValue>(CI)) {
+    if (auto *CI = dyn_cast<Constant>(CombinedInfo.Sizes[I]); CI && (!isa<ConstantExpr>(CI) && !isa<GlobalValue>(CI))) 
+      {
         ConstSizes[I] = CI;
         continue;
       }
-    }
+    
     RuntimeSizes.set(I);
   }
 
@@ -11730,13 +11725,12 @@ void OpenMPIRBuilder::createOffloadEntriesAndInfoMetadata(
       // Hidden or internal symbols on the device are not externally visible.
       // We should not attempt to register them by creating an offloading
       // entry. Indirect variables are handled separately on the device.
-      if (auto *GV = dyn_cast<GlobalValue>(CE->getAddress()))
-        if ((GV->hasLocalLinkage() || GV->hasHiddenVisibility()) &&
+      if (auto *GV = dyn_cast<GlobalValue>(CE->getAddress()); GV && ((GV->hasLocalLinkage() || GV->hasHiddenVisibility()) &&
             (Flags !=
                  OffloadEntriesInfoManager::OMPTargetGlobalVarEntryIndirect &&
              Flags != OffloadEntriesInfoManager::
-                          OMPTargetGlobalVarEntryIndirectVTable))
-          continue;
+                          OMPTargetGlobalVarEntryIndirectVTable)))
+        continue;
 
       // Indirect globals need to use a special name that doesn't match the name
       // of the associated host global.

@@ -512,10 +512,9 @@ Parser::parseVectorDimensionList(SmallVectorImpl<int64_t> &dimensions,
     if (parseIntegerInDimensionList(value))
       return failure();
     dimensions.push_back(value);
-    if (scalable) {
-      if (!consumeIf(Token::r_square))
-        return emitWrongTokenError("missing ']' closing scalable dimension");
-    }
+    if ((scalable) && (!consumeIf(Token::r_square))) 
+      return emitWrongTokenError("missing ']' closing scalable dimension");
+    
     scalableDims.push_back(scalable);
     // Make sure we have an 'x' or something like 'xbf32'.
     if (parseXInDimensionList())

@@ -118,9 +118,8 @@ findDbgIntrinsics(Value *V,
     // Get DbgVariableRecords that use this as a single value.
     if (LocalAsMetadata *L = dyn_cast<LocalAsMetadata>(MD)) {
       for (DbgVariableRecord *DVR : L->getAllDbgVariableRecordUsers()) {
-        if (!DbgAssignAndValuesOnly || DVR->isDbgValue() || DVR->isDbgAssign())
-          if (EncounteredDbgVariableRecords.insert(DVR).second)
-            DbgVariableRecords.push_back(DVR);
+        if ((!DbgAssignAndValuesOnly || DVR->isDbgValue() || DVR->isDbgAssign()) && (EncounteredDbgVariableRecords.insert(DVR).second))
+          DbgVariableRecords.push_back(DVR);
       }
     }
   };
@@ -131,9 +130,8 @@ findDbgIntrinsics(Value *V,
       AppendUsers(AL);
       DIArgList *DI = cast<DIArgList>(AL);
       for (DbgVariableRecord *DVR : DI->getAllDbgVariableRecordUsers())
-        if (!DbgAssignAndValuesOnly || DVR->isDbgValue() || DVR->isDbgAssign())
-          if (EncounteredDbgVariableRecords.insert(DVR).second)
-            DbgVariableRecords.push_back(DVR);
+        if ((!DbgAssignAndValuesOnly || DVR->isDbgValue() || DVR->isDbgAssign()) && (EncounteredDbgVariableRecords.insert(DVR).second))
+          DbgVariableRecords.push_back(DVR);
     }
   }
 }
@@ -886,10 +884,9 @@ void DebugTypeInfoRemoval::traverse(MDNode *N) {
       continue;
     }
     for (auto &I : N->operands())
-      if (auto *MDN = dyn_cast_or_null<MDNode>(I))
-        if (!Opened.count(MDN) && !Replacements.count(MDN) && !prune(N, MDN) &&
-            !isa<DICompileUnit>(MDN))
-          ToVisit.push_back(MDN);
+      if (auto *MDN = dyn_cast_or_null<MDNode>(I); MDN && (!Opened.count(MDN) && !Replacements.count(MDN) && !prune(N, MDN) &&
+            !isa<DICompileUnit>(MDN)))
+        ToVisit.push_back(MDN);
   }
 }
 
@@ -2120,9 +2117,8 @@ getAssignmentInfoImpl(const DataLayout &DL, const Value *StoreDest,
   // Check for overflow.
   if (OffsetInBytes == UINT64_MAX)
     return std::nullopt;
-  if (const auto *Alloca = dyn_cast<AllocaInst>(Base))
-    if (!DL.getTypeSizeInBits(Alloca->getAllocatedType()).isScalable())
-      return AssignmentInfo(DL, Alloca, OffsetInBytes * 8, SizeInBits);
+  if (const auto *Alloca = dyn_cast<AllocaInst>(Base); Alloca && (!DL.getTypeSizeInBits(Alloca->getAllocatedType()).isScalable()))
+    return AssignmentInfo(DL, Alloca, OffsetInBytes * 8, SizeInBits);
   return std::nullopt;
 }
 

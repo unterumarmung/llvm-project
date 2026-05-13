@@ -784,14 +784,14 @@ bool IfConverter::CountDuplicatedInstructions(
   const MachineBasicBlock::reverse_iterator RTIB = std::next(TIB.getReverse());
   const MachineBasicBlock::reverse_iterator RFIB = std::next(FIB.getReverse());
 
-  if (!TBB.succ_empty() || !FBB.succ_empty()) {
-    if (SkipUnconditionalBranches) {
+  if ((!TBB.succ_empty() || !FBB.succ_empty()) && (SkipUnconditionalBranches)) 
+    {
       while (RTIE != RTIB && RTIE->isUnconditionalBranch())
         ++RTIE;
       while (RFIE != RFIB && RFIE->isUnconditionalBranch())
         ++RFIE;
     }
-  }
+  
 
   // Count duplicate instructions at the ends of the blocks.
   while (RTIE != RTIB && RFIE != RFIB) {
@@ -1206,10 +1206,9 @@ bool IfConverter::FeasibilityAnalysis(BBInfo &BBI,
     // Test predicate subsumption.
     SmallVector<MachineOperand, 4> RevPred(Pred.begin(), Pred.end());
     SmallVector<MachineOperand, 4> Cond(BBI.BrCond.begin(), BBI.BrCond.end());
-    if (RevBranch) {
-      if (TII->reverseBranchCondition(Cond))
-        return false;
-    }
+    if ((RevBranch) && (TII->reverseBranchCondition(Cond))) 
+      return false;
+    
     if (TII->reverseBranchCondition(RevPred) ||
         !TII->SubsumesPredicate(Cond, RevPred))
       return false;
@@ -1336,9 +1335,9 @@ void IfConverter::AnalyzeBlock(
               (bool) TrueBBICalc.ClobbersPred, (bool) FalseBBICalc.ClobbersPred));
           Enqueued = true;
         }
-      } else if (ValidForkedDiamond(TrueBBI, FalseBBI, Dups, Dups2,
-                                    TrueBBICalc, FalseBBICalc)) {
-        if (feasibleDiamond(true)) {
+      } else if ((ValidForkedDiamond(TrueBBI, FalseBBI, Dups, Dups2,
+                                    TrueBBICalc, FalseBBICalc)) && (feasibleDiamond(true))) 
+        {
           // ForkedDiamond:
           // if TBB and FBB have a common tail that includes their conditional
           // branch instructions, then we can If Convert this pattern.
@@ -1354,7 +1353,7 @@ void IfConverter::AnalyzeBlock(
               (bool) TrueBBICalc.ClobbersPred, (bool) FalseBBICalc.ClobbersPred));
           Enqueued = true;
         }
-      }
+      
     }
 
     if (ValidTriangle(TrueBBI, FalseBBI, false, Dups, Prediction) &&
@@ -1647,8 +1646,8 @@ bool IfConverter::IfConvertTriangle(BBInfo &BBI, IfcvtKind Kind) {
     if (TII->reverseBranchCondition(Cond))
       llvm_unreachable("Unable to reverse branch condition!");
 
-  if (Kind == ICTriangleRev || Kind == ICTriangleFRev) {
-    if (reverseBranchCondition(*CvtBBI)) {
+  if ((Kind == ICTriangleRev || Kind == ICTriangleFRev) && (reverseBranchCondition(*CvtBBI))) 
+    {
       // BB has been changed, modify its predecessors (except for this
       // one) so they don't get ifcvt'ed based on bad intel.
       for (MachineBasicBlock *PBB : CvtMBB.predecessors()) {
@@ -1661,7 +1660,7 @@ bool IfConverter::IfConvertTriangle(BBInfo &BBI, IfcvtKind Kind) {
         }
       }
     }
-  }
+  
 
   // Initialize liveins to the first BB. These are potentially redefined by
   // predicated instructions.

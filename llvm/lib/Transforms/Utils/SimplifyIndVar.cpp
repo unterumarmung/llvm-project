@@ -620,17 +620,14 @@ bool SimplifyIndvar::eliminateIVUser(Instruction *UseInst,
       return eliminateSDiv(Bin);
   }
 
-  if (auto *WO = dyn_cast<WithOverflowInst>(UseInst))
-    if (eliminateOverflowIntrinsic(WO))
-      return true;
+  if (auto *WO = dyn_cast<WithOverflowInst>(UseInst); WO && (eliminateOverflowIntrinsic(WO)))
+    return true;
 
-  if (auto *SI = dyn_cast<SaturatingInst>(UseInst))
-    if (eliminateSaturatingIntrinsic(SI))
-      return true;
+  if (auto *SI = dyn_cast<SaturatingInst>(UseInst); SI && (eliminateSaturatingIntrinsic(SI)))
+    return true;
 
-  if (auto *TI = dyn_cast<TruncInst>(UseInst))
-    if (eliminateTrunc(TI))
-      return true;
+  if (auto *TI = dyn_cast<TruncInst>(UseInst); TI && (eliminateTrunc(TI)))
+    return true;
 
   if (eliminateIdentitySCEV(UseInst, IVOperand))
     return true;
@@ -774,11 +771,10 @@ bool SimplifyIndvar::eliminateIdentitySCEV(Instruction *UseInst,
   // getSCEV(%M) == getSCEV(%X) == {0,+,1}, but %X does not dominate %M, and
   // %M.replaceAllUsesWith(%X) would be incorrect.
 
-  if (isa<PHINode>(UseInst))
+  if ((isa<PHINode>(UseInst)) && (!DT || !DT->dominates(IVOperand, UseInst)))
     // If UseInst is not a PHI node then we know that IVOperand dominates
     // UseInst directly from the legality of SSA.
-    if (!DT || !DT->dominates(IVOperand, UseInst))
-      return false;
+    return false;
 
   if (!LI->replacementPreservesLCSSAForm(UseInst, IVOperand))
     return false;
@@ -984,13 +980,13 @@ void SimplifyIndvar::simplifyUsers(PHINode *CurrIV, IVVisitor *V) {
       continue;
     }
 
-    if (BinaryOperator *BO = dyn_cast<BinaryOperator>(UseInst)) {
-      if (strengthenBinaryOp(BO, IVOperand)) {
+    if (BinaryOperator *BO = dyn_cast<BinaryOperator>(UseInst); BO && (strengthenBinaryOp(BO, IVOperand))) 
+      {
         // re-queue uses of the now modified binary operator and fall
         // through to the checks that remain.
         pushIVUsers(IVOperand, Simplified, SimpleIVUsers);
       }
-    }
+    
 
     // Try to use integer induction for FPToSI of float induction directly.
     if (replaceFloatIVWithIntegerIV(UseInst)) {
@@ -1866,8 +1862,8 @@ Instruction *WidenIV::widenIVUse(WidenIV::NarrowIVDefUse DU,
       DU.NeverNegative || getExtendKind(DU.NarrowDef) == ExtendKind::Zero;
 
   // Stop traversing the def-use chain at inner-loop phis or post-loop phis.
-  if (PHINode *UsePhi = dyn_cast<PHINode>(DU.NarrowUse)) {
-    if (LI->getLoopFor(UsePhi->getParent()) != L) {
+  if (PHINode *UsePhi = dyn_cast<PHINode>(DU.NarrowUse); UsePhi && (LI->getLoopFor(UsePhi->getParent()) != L)) 
+    {
       // For LCSSA phis, sink the truncate outside the loop.
       // After SimplifyCFG most loop exit targets have a single predecessor.
       // Otherwise fall back to a truncate within the loop.
@@ -1895,7 +1891,7 @@ Instruction *WidenIV::widenIVUse(WidenIV::NarrowIVDefUse DU,
       }
       return nullptr;
     }
-  }
+  
 
   // Our raison d'etre! Eliminate sign and zero extension.
   if ((match(DU.NarrowUse, m_SExtLike(m_Value())) && CanWidenBySExt) ||

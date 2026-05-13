@@ -262,13 +262,13 @@ private:
         SeenTernaryOperator = true;
       updateParameterCount(Left, CurrentToken);
       if (Style.Language == FormatStyle::LK_Proto) {
-        if (FormatToken *Previous = CurrentToken->getPreviousNonComment()) {
-          if (CurrentToken->is(tok::colon) ||
+        if (FormatToken *Previous = CurrentToken->getPreviousNonComment(); Previous && (CurrentToken->is(tok::colon) ||
               (CurrentToken->isOneOf(tok::l_brace, tok::less) &&
-               Previous->isNot(tok::colon))) {
+               Previous->isNot(tok::colon)))) 
+          {
             Previous->setType(TT_SelectorName);
           }
-        }
+        
       } else if (Style.isTableGen()) {
         if (CurrentToken->isOneOf(tok::comma, tok::equal)) {
           // They appear as separators. Unless they are not in class definition.
@@ -330,13 +330,13 @@ private:
 
     bool StartsObjCSelector = false;
     if (!Style.isVerilog()) {
-      if (FormatToken *MaybeSel = OpeningParen.Previous) {
+      if (FormatToken *MaybeSel = OpeningParen.Previous; MaybeSel && (MaybeSel->is(tok::objc_selector) && MaybeSel->Previous &&
+            MaybeSel->Previous->is(tok::at))) 
         // @selector( starts a selector.
-        if (MaybeSel->is(tok::objc_selector) && MaybeSel->Previous &&
-            MaybeSel->Previous->is(tok::at)) {
+        {
           StartsObjCSelector = true;
         }
-      }
+      
     }
 
     if (OpeningParen.is(TT_OverloadedOperatorLParen)) {
@@ -1039,10 +1039,10 @@ private:
     if (!parseTableGenDAGArg())
       return false;
     bool BreakInside = false;
-    if (Style.TableGenBreakInsideDAGArg != FormatStyle::DAS_DontBreak) {
+    if ((Style.TableGenBreakInsideDAGArg != FormatStyle::DAS_DontBreak) && (isTableGenDAGArgBreakingOperator(*FirstTok))) 
       // Specialized detection for DAGArgOperator, that determines the way of
       // line break for this DAGArg elements.
-      if (isTableGenDAGArgBreakingOperator(*FirstTok)) {
+      {
         // Special case for identifier DAGArg operator.
         BreakInside = true;
         Opener->setType(TT_TableGenDAGArgOpenerToBreak);
@@ -1058,7 +1058,7 @@ private:
             FirstTok->setType(TT_TableGenDAGArgOperatorID);
         }
       }
-    }
+    
     // Parse the [DagArgList] part
     return parseTableGenDAGArgList(Opener, BreakInside);
   }
@@ -1221,12 +1221,12 @@ private:
         assert(OpeningBrace.Optional == CurrentToken->Optional);
         OpeningBrace.MatchingParen = CurrentToken;
         CurrentToken->MatchingParen = &OpeningBrace;
-        if (Style.AlignArrayOfStructures != FormatStyle::AIAS_None) {
-          if (OpeningBrace.ParentBracket == tok::l_brace &&
-              couldBeInStructArrayInitializer() && CommaCount > 0) {
+        if ((Style.AlignArrayOfStructures != FormatStyle::AIAS_None) && (OpeningBrace.ParentBracket == tok::l_brace &&
+              couldBeInStructArrayInitializer() && CommaCount > 0)) 
+          {
             Contexts.back().ContextType = Context::StructArrayInitializer;
           }
-        }
+        
         next();
         return true;
       }
@@ -1585,18 +1585,18 @@ private:
 
       if (!parseParens())
         return false;
-      if (Line.MustBeDeclaration && Contexts.size() == 1 &&
+      if ((Line.MustBeDeclaration && Contexts.size() == 1 &&
           !Contexts.back().IsExpression && !Line.startsWith(TT_ObjCProperty) &&
           !Line.startsWith(tok::l_paren) &&
-          Tok->isNoneOf(TT_TypeDeclarationParen, TT_RequiresExpressionLParen)) {
-        if (!Prev ||
+          Tok->isNoneOf(TT_TypeDeclarationParen, TT_RequiresExpressionLParen)) && (!Prev ||
             (!Prev->isAttribute() &&
              Prev->isNoneOf(TT_RequiresClause, TT_LeadingJavaAnnotation,
-                            TT_BinaryOperator))) {
+                            TT_BinaryOperator)))) 
+        {
           Line.MightBeFunctionDecl = true;
           Tok->MightBeFunctionDeclParen = true;
         }
-      }
+      
       break;
     case tok::l_square:
       if (Style.isTableGen())
@@ -1608,10 +1608,9 @@ private:
       if (IsCpp) {
         if (Tok->is(TT_RequiresExpressionLBrace))
           Line.Type = LT_RequiresExpression;
-      } else if (Style.isTextProto()) {
-        if (Prev && Prev->isNot(TT_DictLiteral))
-          Prev->setType(TT_SelectorName);
-      }
+      } else if ((Style.isTextProto()) && (Prev && Prev->isNot(TT_DictLiteral))) 
+        Prev->setType(TT_SelectorName);
+      
       Scopes.push_back(getScopeType(*Tok));
       if (!parseBrace())
         return false;
@@ -1821,12 +1820,11 @@ private:
         if (Tok->is(Keywords.kw_assert)) {
           if (!parseTableGenValue())
             return false;
-        } else if (Tok->isOneOf(Keywords.kw_def, Keywords.kw_defm) &&
-                   (!Next || Next->isNoneOf(tok::colon, tok::l_brace))) {
+        } else if ((Tok->isOneOf(Keywords.kw_def, Keywords.kw_defm) &&
+                   (!Next || Next->isNoneOf(tok::colon, tok::l_brace))) && (!parseTableGenValue(true))) 
           // The case NameValue appears.
-          if (!parseTableGenValue(true))
-            return false;
-        }
+          return false;
+        
       }
       if (Style.AllowBreakBeforeQtProperty &&
           Contexts.back().ContextType == Context::QtProperty &&
@@ -2222,13 +2220,13 @@ private:
     }
 
     ~ScopedContextCreator() {
-      if (P.Style.AlignArrayOfStructures != FormatStyle::AIAS_None) {
-        if (P.Contexts.back().ContextType == Context::StructArrayInitializer) {
+      if ((P.Style.AlignArrayOfStructures != FormatStyle::AIAS_None) && (P.Contexts.back().ContextType == Context::StructArrayInitializer)) 
+        {
           P.Contexts.pop_back();
           P.Contexts.back().ContextType = Context::StructArrayInitializer;
           return;
         }
-      }
+      
       P.Contexts.pop_back();
     }
   };
@@ -3293,20 +3291,20 @@ public:
       parse(Precedence + 1);
 
       int CurrentPrecedence = getCurrentPrecedence();
-      if (CurrentPrecedence > prec::Conditional &&
-          CurrentPrecedence < prec::PointerToMember) {
+      if ((CurrentPrecedence > prec::Conditional &&
+          CurrentPrecedence < prec::PointerToMember) && (Style.BreakBinaryOperations.PerOperator.empty() &&
+            Style.BreakBinaryOperations.Default ==
+                FormatStyle::BBO_OnePerLine)) 
         // When BreakBinaryOperations is globally OnePerLine (no per-operator
         // rules), flatten all precedence levels so that every operator is
         // treated equally for line-breaking purposes. With per-operator rules
         // we must preserve natural precedence so that higher-precedence
         // sub-expressions (e.g. `x << 8` inside a `|` chain) stay grouped;
         // mustBreakBinaryOperation() handles the forced breaks instead.
-        if (Style.BreakBinaryOperations.PerOperator.empty() &&
-            Style.BreakBinaryOperations.Default ==
-                FormatStyle::BBO_OnePerLine) {
+        {
           CurrentPrecedence = prec::Additive;
         }
-      }
+      
 
       if (Precedence == CurrentPrecedence && Current &&
           Current->is(TT_SelectorName)) {
@@ -5287,13 +5285,13 @@ bool TokenAnnotator::spaceRequiredBefore(const AnnotatedLine &Line,
       return true;
 
     // space between keywords and paren e.g. "using ("
-    if (Right.is(tok::l_paren)) {
-      if (Left.isOneOf(tok::kw_using, Keywords.kw_async, Keywords.kw_when,
-                       Keywords.kw_lock)) {
+    if ((Right.is(tok::l_paren)) && (Left.isOneOf(tok::kw_using, Keywords.kw_async, Keywords.kw_when,
+                       Keywords.kw_lock))) 
+      {
         return Style.SpaceBeforeParensOptions.AfterControlStatements ||
                spaceRequiredBeforeParens(Right);
       }
-    }
+    
 
     // space between method modifier and opening parenthesis of a tuple return
     // type
@@ -5894,11 +5892,10 @@ bool TokenAnnotator::mustBreakBefore(AnnotatedLine &Line,
     // it is hard to identify them in UnwrappedLineParser.
     if (!Keywords.isVerilogBegin(Right) && Keywords.isVerilogEndOfLabel(Left))
       return true;
-  } else if (Style.BreakAdjacentStringLiterals &&
-             (IsCpp || Style.isProto() || Style.isTableGen())) {
-    if (Left.isStringLiteral() && Right.isStringLiteral())
-      return true;
-  }
+  } else if ((Style.BreakAdjacentStringLiterals &&
+             (IsCpp || Style.isProto() || Style.isTableGen())) && (Left.isStringLiteral() && Right.isStringLiteral())) 
+    return true;
+  
 
   // Basic JSON newline processing.
   if (Style.isJson()) {
@@ -6204,7 +6201,7 @@ bool TokenAnnotator::mustBreakBefore(AnnotatedLine &Line,
           LBrace = LBrace->Next;
       }
     }
-    if (LBrace &&
+    if ((LBrace &&
         // The scope opener is one of {, [, <:
         // selector { ... }
         // selector [ ... ]
@@ -6216,20 +6213,19 @@ bool TokenAnnotator::mustBreakBefore(AnnotatedLine &Line,
         ((LBrace->is(tok::l_brace) &&
           (LBrace->is(TT_DictLiteral) ||
            (LBrace->Next && LBrace->Next->is(tok::r_brace)))) ||
-         LBrace->isOneOf(TT_ArrayInitializerLSquare, tok::less))) {
+         LBrace->isOneOf(TT_ArrayInitializerLSquare, tok::less))) && (Left.ParameterCount == 0)) 
       // If Left.ParameterCount is 0, then this submessage entry is not the
       // first in its parent submessage, and we want to break before this entry.
       // If Left.ParameterCount is greater than 0, then its parent submessage
       // might contain 1 or more entries and we want to break before this entry
       // if it contains at least 2 entries. We deal with this case later by
       // detecting and breaking before the next entry in the parent submessage.
-      if (Left.ParameterCount == 0)
-        return true;
+      return true;
       // However, if this submessage is the first entry in its parent
       // submessage, Left.ParameterCount might be 1 in some cases.
       // We deal with this case later by detecting an entry
       // following a closing paren of this submessage.
-    }
+    
 
     // If this is an entry immediately following a submessage, it will be
     // preceded by a closing paren of that submessage, like in:

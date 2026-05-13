@@ -1267,13 +1267,13 @@ bool clang::index::generateUSRForDecl(const Decl *D, SmallVectorImpl<char> &Buf,
 
   // Check if the declaration has explicit external USR specified.
   auto *CD = D->getCanonicalDecl();
-  if (auto *ExternalSymAttr = CD->getAttr<ExternalSourceSymbolAttr>()) {
-    if (!ExternalSymAttr->getUSR().empty()) {
+  if (auto *ExternalSymAttr = CD->getAttr<ExternalSourceSymbolAttr>(); ExternalSymAttr && (!ExternalSymAttr->getUSR().empty())) 
+    {
       llvm::raw_svector_ostream Out(Buf);
       Out << ExternalSymAttr->getUSR();
       return false;
     }
-  }
+  
   USRGenerator UG(&D->getASTContext(), Buf, LangOpts);
   UG.Visit(D);
   return UG.ignoreResults();

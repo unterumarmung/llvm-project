@@ -774,8 +774,8 @@ VerifyDiagnosticConsumer::~VerifyDiagnosticConsumer() {
 void VerifyDiagnosticConsumer::BeginSourceFile(const LangOptions &LangOpts,
                                                const Preprocessor *PP) {
   // Attach comment handler on first invocation.
-  if (++ActiveSourceFiles == 1) {
-    if (PP) {
+  if ((++ActiveSourceFiles == 1) && (PP)) 
+    {
       CurrentPreprocessor = PP;
       this->LangOpts = &LangOpts;
       setSourceManager(PP->getSourceManager());
@@ -786,7 +786,7 @@ void VerifyDiagnosticConsumer::BeginSourceFile(const LangOptions &LangOpts,
                       std::make_unique<VerifyFileTracker>(*this, *SrcManager));
 #endif
     }
-  }
+  
 
   assert((!PP || CurrentPreprocessor == PP) && "Preprocessor changed!");
   PrimaryClient->BeginSourceFile(LangOpts, PP);
@@ -893,10 +893,8 @@ bool VerifyDiagnosticConsumer::HandleComment(Preprocessor &PP,
       ++last;
 
       // Escape \r\n  or \n\r, but not \n\n.
-      if (last < C.size())
-        if (C[last] == '\n' || C[last] == '\r')
-          if (C[last] != C[last-1])
-            ++last;
+      if ((last < C.size()) && (C[last] == '\n' || C[last] == '\r') && (C[last] != C[last-1]))
+        ++last;
     } else {
       // This was just a normal backslash.
       C2 += '\\';

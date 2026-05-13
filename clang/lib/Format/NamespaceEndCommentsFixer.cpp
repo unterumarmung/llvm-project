@@ -254,15 +254,15 @@ getNamespaceToken(const AnnotatedLine *Line,
     return nullptr;
   assert(StartLineIndex < AnnotatedLines.size());
   const FormatToken *NamespaceTok = AnnotatedLines[StartLineIndex]->First;
-  if (NamespaceTok->is(tok::l_brace)) {
+  if ((NamespaceTok->is(tok::l_brace)) && (StartLineIndex > 0)) 
     // "namespace" keyword can be on the line preceding '{', e.g. in styles
     // where BraceWrapping.AfterNamespace is true.
-    if (StartLineIndex > 0) {
+    {
       NamespaceTok = AnnotatedLines[StartLineIndex - 1]->First;
       if (AnnotatedLines[StartLineIndex - 1]->endsWith(tok::semi))
         return nullptr;
     }
-  }
+  
 
   return NamespaceTok->getNamespaceToken();
 }

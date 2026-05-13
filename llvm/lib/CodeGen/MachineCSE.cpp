@@ -534,9 +534,9 @@ bool MachineCSEImpl::ProcessBlockCSE(MachineBasicBlock *MBB) {
       continue;
 
     bool FoundCSE = VNT.count(&MI);
-    if (!FoundCSE) {
+    if ((!FoundCSE) && (PerformTrivialCopyPropagation(&MI, MBB))) 
       // Using trivial copy propagation to find more CSE opportunities.
-      if (PerformTrivialCopyPropagation(&MI, MBB)) {
+      {
         Changed = true;
 
         // After coalescing MI itself may become a copy.
@@ -546,7 +546,7 @@ bool MachineCSEImpl::ProcessBlockCSE(MachineBasicBlock *MBB) {
         // Try again to see if CSE is possible.
         FoundCSE = VNT.count(&MI);
       }
-    }
+    
 
     // Commute commutable instructions.
     bool Commuted = false;

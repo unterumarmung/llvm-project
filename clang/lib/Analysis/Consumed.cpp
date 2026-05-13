@@ -460,16 +460,14 @@ class ConsumedStmtVisitor : public ConstStmtVisitor<ConsumedStmtVisitor> {
   MapType PropagationMap;
 
   InfoEntry findInfo(const Expr *E) {
-    if (const auto Cleanups = dyn_cast<ExprWithCleanups>(E))
-      if (!Cleanups->cleanupsHaveSideEffects())
-        E = Cleanups->getSubExpr();
+    if (const auto Cleanups = dyn_cast<ExprWithCleanups>(E); Cleanups && (!Cleanups->cleanupsHaveSideEffects()))
+      E = Cleanups->getSubExpr();
     return PropagationMap.find(E->IgnoreParens());
   }
 
   ConstInfoEntry findInfo(const Expr *E) const {
-    if (const auto Cleanups = dyn_cast<ExprWithCleanups>(E))
-      if (!Cleanups->cleanupsHaveSideEffects())
-        E = Cleanups->getSubExpr();
+    if (const auto Cleanups = dyn_cast<ExprWithCleanups>(E); Cleanups && (!Cleanups->cleanupsHaveSideEffects()))
+      E = Cleanups->getSubExpr();
     return PropagationMap.find(E->IgnoreParens());
   }
 
@@ -823,9 +821,8 @@ void ConsumedStmtVisitor::VisitCXXOperatorCallExpr(
 }
 
 void ConsumedStmtVisitor::VisitDeclRefExpr(const DeclRefExpr *DeclRef) {
-  if (const auto *Var = dyn_cast_or_null<VarDecl>(DeclRef->getDecl()))
-    if (StateMap->getState(Var) != consumed::CS_None)
-      PropagationMap.insert(PairType(DeclRef, PropagationInfo(Var)));
+  if (const auto *Var = dyn_cast_or_null<VarDecl>(DeclRef->getDecl()); Var && (StateMap->getState(Var) != consumed::CS_None))
+    PropagationMap.insert(PairType(DeclRef, PropagationInfo(Var)));
 }
 
 void ConsumedStmtVisitor::VisitDeclStmt(const DeclStmt *DeclS) {

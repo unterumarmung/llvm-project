@@ -110,12 +110,11 @@ static bool isDereferenceableAndAlignedPointer(
   }
 
   // bitcast instructions are no-ops as far as dereferenceability is concerned.
-  if (const BitCastOperator *BC = dyn_cast<BitCastOperator>(V)) {
-    if (BC->getSrcTy()->isPointerTy())
-      return isDereferenceableAndAlignedPointer(
+  if (const BitCastOperator *BC = dyn_cast<BitCastOperator>(V); BC && (BC->getSrcTy()->isPointerTy())) 
+    return isDereferenceableAndAlignedPointer(
         BC->getOperand(0), Alignment, Size, DL, CtxI, AC, DT, TLI,
           Visited, MaxDepth);
-  }
+  
 
   // Recurse into both hands of select.
   if (const SelectInst *Sel = dyn_cast<SelectInst>(V)) {
@@ -279,9 +278,8 @@ static bool AreEquivalentAddressValues(const Value *A, const Value *B) {
   // other, which means that they'll always either have the same
   // value or one of them will have an undefined value.
   if (isa<CastInst>(A) || isa<PHINode>(A) || isa<GetElementPtrInst>(A))
-    if (const Instruction *BI = dyn_cast<Instruction>(B))
-      if (cast<Instruction>(A)->isIdenticalToWhenDefined(BI))
-        return true;
+    if (const Instruction *BI = dyn_cast<Instruction>(B); BI && (cast<Instruction>(A)->isIdenticalToWhenDefined(BI)))
+      return true;
 
   // Otherwise they may not be equivalent.
   return false;
@@ -403,10 +401,9 @@ bool llvm::isDereferenceableAndAlignedInLoop(
     return false;
 
   Instruction *CtxI = &*L->getHeader()->getFirstNonPHIIt();
-  if (BasicBlock *LoopPred = L->getLoopPredecessor()) {
-    if (isa<UncondBrInst, CondBrInst>(LoopPred->getTerminator()))
-      CtxI = LoopPred->getTerminator();
-  }
+  if (BasicBlock *LoopPred = L->getLoopPredecessor(); LoopPred && (isa<UncondBrInst, CondBrInst>(LoopPred->getTerminator()))) 
+    CtxI = LoopPred->getTerminator();
+  
   return isDereferenceableAndAlignedPointerViaAssumption(
              Base, Alignment,
              [&SE, AccessSizeSCEV, &LoopGuards](const RetainedKnowledge &RK) {
@@ -452,13 +449,12 @@ bool llvm::isSafeToLoadUnconditionally(Value *V, Align Alignment, const APInt &S
                                        const TargetLibraryInfo *TLI) {
   // If DT is not specified we can't make context-sensitive query
   const Instruction* CtxI = DT ? ScanFrom : nullptr;
-  if (isDereferenceableAndAlignedPointer(V, Alignment, Size, DL, CtxI, AC, DT,
-                                         TLI)) {
+  if ((isDereferenceableAndAlignedPointer(V, Alignment, Size, DL, CtxI, AC, DT,
+                                         TLI)) && (!ScanFrom || !suppressSpeculativeLoadForSanitizers(*ScanFrom))) 
     // With sanitizers `Dereferenceable` is not always enough for unconditional
     // load.
-    if (!ScanFrom || !suppressSpeculativeLoadForSanitizers(*ScanFrom))
-      return true;
-  }
+    return true;
+  
 
   if (!ScanFrom)
     return false;

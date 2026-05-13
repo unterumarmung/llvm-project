@@ -85,10 +85,9 @@ struct UseDeviceHostDataHoisting : public OpRewritePattern<acc::HostDataOp> {
         if (fir::isBoxAddress(useDeviceOp.getVar().getType())) {
           if (!llvm::hasSingleElement(useDeviceOp->getUsers()))
             refToBoxUseDeviceOps.push_back(useDeviceOp);
-        } else if (isa<fir::BoxType>(useDeviceOp.getVar().getType())) {
-          if (!llvm::hasSingleElement(useDeviceOp->getUsers()))
-            boxUseDeviceOps.push_back(useDeviceOp);
-        }
+        } else if ((isa<fir::BoxType>(useDeviceOp.getVar().getType())) && (!llvm::hasSingleElement(useDeviceOp->getUsers()))) 
+          boxUseDeviceOps.push_back(useDeviceOp);
+        
 
         // host_data is the only user of this use_device operand - mark for
         // removal

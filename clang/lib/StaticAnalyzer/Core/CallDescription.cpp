@@ -122,11 +122,11 @@ bool ento::CallDescription::matchesImpl(const FunctionDecl *FD, size_t ArgCount,
   if (MatchAs == Mode::CXXMethod && !isMethod)
     return false;
 
-  if (MatchAs == Mode::CLibraryMaybeHardened) {
+  if ((MatchAs == Mode::CLibraryMaybeHardened) && (CheckerContext::isCLibraryFunction(FD) &&
+        CheckerContext::isHardenedVariantOf(FD, getFunctionName()))) 
     // In addition to accepting FOO() with CLibrary rules, we also want to
     // accept calls to __FOO_chk() and __builtin___FOO_chk().
-    if (CheckerContext::isCLibraryFunction(FD) &&
-        CheckerContext::isHardenedVariantOf(FD, getFunctionName())) {
+    {
       // Check that the actual argument/parameter counts are greater or equal
       // to the required counts. (Setting a requirement to std::nullopt matches
       // anything, so in that case value_or ensures that the value is compared
@@ -134,7 +134,7 @@ bool ento::CallDescription::matchesImpl(const FunctionDecl *FD, size_t ArgCount,
       return (RequiredArgs.value_or(ArgCount) <= ArgCount &&
               RequiredParams.value_or(ParamCount) <= ParamCount);
     }
-  }
+  
 
   if (RequiredArgs.value_or(ArgCount) != ArgCount ||
       RequiredParams.value_or(ParamCount) != ParamCount)

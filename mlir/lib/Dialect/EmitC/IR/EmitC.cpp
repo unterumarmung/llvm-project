@@ -527,12 +527,12 @@ ParseResult ExpressionOp::parse(OpAsmParser &parser, OperationState &result) {
   SMLoc beforeRegionLoc = parser.getCurrentLocation();
   if (parser.parseRegion(*body, argsInfo, enableNameShadowing))
     return failure();
-  if (!enableNameShadowing) {
-    if (body->front().getArguments().size() < result.operands.size()) {
+  if ((!enableNameShadowing) && (body->front().getArguments().size() < result.operands.size())) 
+    {
       return parser.emitError(
           beforeRegionLoc, "with recurring operands expected block arguments");
     }
-  }
+  
   return success();
 }
 
@@ -855,9 +855,8 @@ LogicalResult ReturnOp::verify() {
            << getNumOperands() << " operands, but enclosing function (@"
            << function.getName() << ") returns " << function.getNumResults();
 
-  if (function.getNumResults() == 1)
-    if (getOperand().getType() != function.getResultTypes()[0])
-      return emitError() << "type of the return operand ("
+  if ((function.getNumResults() == 1) && (getOperand().getType() != function.getResultTypes()[0]))
+    return emitError() << "type of the return operand ("
                          << getOperand().getType()
                          << ") doesn't match function result type ("
                          << function.getResultTypes()[0] << ")"

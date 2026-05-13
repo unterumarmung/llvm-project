@@ -48,9 +48,8 @@ struct ExtraRematTest : public testing::Test {
 
   CallInst *getCallByName(BasicBlock *BB, StringRef Name) const {
     for (Instruction &I : *BB) {
-      if (CallInst *CI = dyn_cast<CallInst>(&I))
-        if (CI->getCalledFunction()->getName() == Name)
-          return CI;
+      if (CallInst *CI = dyn_cast<CallInst>(&I); CI && (CI->getCalledFunction()->getName() == Name))
+        return CI;
     }
     return nullptr;
   }

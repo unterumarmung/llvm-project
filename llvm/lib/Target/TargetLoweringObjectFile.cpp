@@ -292,9 +292,8 @@ SectionKind TargetLoweringObjectFile::getKindForGlobal(const GlobalObject *GO,
   // Global variables with '!exclude' should get the exclude section kind if
   // they have an explicit section and no other metadata.
   if (GVar->hasSection())
-    if (MDNode *MD = GVar->getMetadata(LLVMContext::MD_exclude))
-      if (!MD->getNumOperands())
-        return SectionKind::getExclude();
+    if (MDNode *MD = GVar->getMetadata(LLVMContext::MD_exclude); MD && (!MD->getNumOperands()))
+      return SectionKind::getExclude();
 
   // If the global is marked constant, we can put it into a mergable section,
   // a mergable string section, or general .data if it contains relocations.
@@ -314,10 +313,10 @@ SectionKind TargetLoweringObjectFile::getKindForGlobal(const GlobalObject *GO,
       // section of the right width.
       if (ArrayType *ATy = dyn_cast<ArrayType>(C->getType())) {
         if (IntegerType *ITy =
-              dyn_cast<IntegerType>(ATy->getElementType())) {
-          if ((ITy->getBitWidth() == 8 || ITy->getBitWidth() == 16 ||
+              dyn_cast<IntegerType>(ATy->getElementType()); ITy && ((ITy->getBitWidth() == 8 || ITy->getBitWidth() == 16 ||
                ITy->getBitWidth() == 32) &&
-              IsNullTerminatedString(C)) {
+              IsNullTerminatedString(C))) 
+          {
             if (ITy->getBitWidth() == 8)
               return SectionKind::getMergeable1ByteCString();
             if (ITy->getBitWidth() == 16)
@@ -326,7 +325,7 @@ SectionKind TargetLoweringObjectFile::getKindForGlobal(const GlobalObject *GO,
             assert(ITy->getBitWidth() == 32 && "Unknown width");
             return SectionKind::getMergeable4ByteCString();
           }
-        }
+        
       }
 
       // Otherwise, just drop it into a mergable constant section.  If we have

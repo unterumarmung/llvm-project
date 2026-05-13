@@ -77,10 +77,9 @@ void InstrumentManager::customize(const ArrayRef<Instrument *> IVec,
 
 UniqueInstrument InstrumentManager::createInstrument(StringRef Desc,
                                                      StringRef Data) {
-  if (EnableInstruments) {
-    if (Desc == LatencyInstrument::DESC_NAME)
-      return std::make_unique<LatencyInstrument>(Data);
-  }
+  if ((EnableInstruments) && (Desc == LatencyInstrument::DESC_NAME)) 
+    return std::make_unique<LatencyInstrument>(Data);
+  
   return std::make_unique<Instrument>(Desc, Data);
 }
 

@@ -317,11 +317,10 @@ PhiAnalyzer::mergeTwoCounters(const Instruction &CmpOrBinaryOp,
   unsigned NewVal = std::max(LVal, RVal);
 
   if (LTy == PeelCounterType::Induction || RTy == PeelCounterType::Induction) {
-    if (const auto *BinOp = dyn_cast<BinaryOperator>(&CmpOrBinaryOp)) {
-      if (BinOp->getOpcode() == Instruction::Add ||
-          BinOp->getOpcode() == Instruction::Sub)
-        return PeelCounter({NewVal, PeelCounterType::Induction});
-    }
+    if (const auto *BinOp = dyn_cast<BinaryOperator>(&CmpOrBinaryOp); BinOp && (BinOp->getOpcode() == Instruction::Add ||
+          BinOp->getOpcode() == Instruction::Sub)) 
+      return PeelCounter({NewVal, PeelCounterType::Induction});
+    
     return Unknown;
   }
   return PeelCounter({NewVal, PeelCounterType::Invariant});

@@ -736,13 +736,13 @@ getBinOpsForFactorization(Instruction::BinaryOps TopOpcode, BinaryOperator *Op,
     }
     // TODO: We can add other conversions e.g. shr => div etc.
   }
-  if (Instruction::isBitwiseLogicOp(TopOpcode)) {
-    if (OtherOp && OtherOp->getOpcode() == Instruction::AShr &&
-        match(Op, m_LShr(m_NonNegative(), m_Value()))) {
+  if ((Instruction::isBitwiseLogicOp(TopOpcode)) && (OtherOp && OtherOp->getOpcode() == Instruction::AShr &&
+        match(Op, m_LShr(m_NonNegative(), m_Value())))) 
+    {
       // lshr nneg C, X --> ashr nneg C, X
       return Instruction::AShr;
     }
-  }
+  
   return Op->getOpcode();
 }
 
@@ -763,10 +763,10 @@ static Value *tryFactorization(BinaryOperator &I, const SimplifyQuery &SQ,
   bool InnerCommutative = Instruction::isCommutative(InnerOpcode);
 
   // Does "X op' (Y op Z)" always equal "(X op' Y) op (X op' Z)"?
-  if (leftDistributesOverRight(InnerOpcode, TopLevelOpcode)) {
+  if ((leftDistributesOverRight(InnerOpcode, TopLevelOpcode)) && (A == C || (InnerCommutative && A == D))) 
     // Does the instruction have the form "(A op' B) op (A op' D)" or, in the
     // commutative case, "(A op' B) op (C op' A)"?
-    if (A == C || (InnerCommutative && A == D)) {
+    {
       if (A != C)
         std::swap(C, D);
       // Consider forming "A op' (B op D)".
@@ -780,13 +780,13 @@ static Value *tryFactorization(BinaryOperator &I, const SimplifyQuery &SQ,
       if (V)
         RetVal = Builder.CreateBinOp(InnerOpcode, A, V);
     }
-  }
+  
 
   // Does "(X op Y) op' Z" always equal "(X op' Z) op (Y op' Z)"?
-  if (!RetVal && rightDistributesOverLeft(TopLevelOpcode, InnerOpcode)) {
+  if ((!RetVal && rightDistributesOverLeft(TopLevelOpcode, InnerOpcode)) && (B == D || (InnerCommutative && B == C))) 
     // Does the instruction have the form "(A op' B) op (C op' B)" or, in the
     // commutative case, "(A op' B) op (B op' D)"?
-    if (B == D || (InnerCommutative && B == C)) {
+    {
       if (B != D)
         std::swap(C, D);
       // Consider forming "(A op C) op' B".
@@ -800,7 +800,7 @@ static Value *tryFactorization(BinaryOperator &I, const SimplifyQuery &SQ,
       if (V)
         RetVal = Builder.CreateBinOp(InnerOpcode, V, B);
     }
-  }
+  
 
   if (!RetVal)
     return nullptr;
@@ -1494,9 +1494,8 @@ Value *InstCombinerImpl::dyn_castNegVal(Value *V) const {
   if (ConstantInt *C = dyn_cast<ConstantInt>(V))
     return ConstantExpr::getNeg(C);
 
-  if (ConstantDataVector *C = dyn_cast<ConstantDataVector>(V))
-    if (C->getType()->getElementType()->isIntegerTy())
-      return ConstantExpr::getNeg(C);
+  if (ConstantDataVector *C = dyn_cast<ConstantDataVector>(V); C && (C->getType()->getElementType()->isIntegerTy()))
+    return ConstantExpr::getNeg(C);
 
   if (ConstantVector *CV = dyn_cast<ConstantVector>(V)) {
     for (unsigned i = 0, e = CV->getNumOperands(); i != e; ++i) {
@@ -1514,10 +1513,9 @@ Value *InstCombinerImpl::dyn_castNegVal(Value *V) const {
   }
 
   // Negate integer vector splats.
-  if (auto *CV = dyn_cast<Constant>(V))
-    if (CV->getType()->isVectorTy() &&
-        CV->getType()->getScalarType()->isIntegerTy() && CV->getSplatValue())
-      return ConstantExpr::getNeg(CV);
+  if (auto *CV = dyn_cast<Constant>(V); CV && (CV->getType()->isVectorTy() &&
+        CV->getType()->getScalarType()->isIntegerTy() && CV->getSplatValue()))
+    return ConstantExpr::getNeg(CV);
 
   return nullptr;
 }
@@ -1625,10 +1623,9 @@ Instruction *InstCombinerImpl::foldFBinOpOfIntCastsFromSign(
   if (IntTy != IntOps[1]->getType())
     return nullptr;
 
-  if (Op1FpC == nullptr) {
-    if (!IsValidPromotion(1))
-      return nullptr;
-  }
+  if ((Op1FpC == nullptr) && (!IsValidPromotion(1))) 
+    return nullptr;
+  
   if (!IsValidPromotion(0))
     return nullptr;
 
@@ -1807,14 +1804,14 @@ Instruction *InstCombinerImpl::FoldOpIntoSelect(Instruction &Op, SelectInst *SI,
   // least one of the comparison operands has at least one user besides
   // the compare (the select), which would often largely negate the
   // benefit of folding anyway.
-  if (auto *CI = dyn_cast<FCmpInst>(SI->getCondition())) {
-    if (CI->hasOneUse()) {
+  if (auto *CI = dyn_cast<FCmpInst>(SI->getCondition()); CI && (CI->hasOneUse())) 
+    {
       Value *Op0 = CI->getOperand(0), *Op1 = CI->getOperand(1);
       if (((TV == Op0 && FV == Op1) || (FV == Op0 && TV == Op1)) &&
           !CI->isCommutative())
         return nullptr;
     }
-  }
+  
 
   // Make sure that one of the select arms folds successfully.
   Value *NewTV = simplifyOperationIntoSelectOperand(Op, SI, /*IsTrueArm=*/true);
@@ -1953,9 +1950,8 @@ Instruction *InstCombinerImpl::foldOpIntoPhi(Instruction &I, PHINode *PN,
       continue;
 
     // Phi-translate can handle phi nodes in the same block.
-    if (isa<PHINode>(I))
-      if (I->getParent() == PN->getParent())
-        continue;
+    if ((isa<PHINode>(I)) && (I->getParent() == PN->getParent()))
+      continue;
 
     // Operand dominates the block, no phi-translation necessary.
     if (DT.dominates(I, PN->getParent()))
@@ -3368,8 +3364,8 @@ Instruction *InstCombinerImpl::visitGetElementPtrInst(GetElementPtrInst &GEP) {
     // If the element type has zero size then any index over it is equivalent
     // to an index of zero, so replace it with zero if it is not zero already.
     Type *EltTy = GTI.getIndexedType();
-    if (EltTy->isSized() && DL.getTypeAllocSize(EltTy).isZero())
-      if (!isa<Constant>(*I) || !match(I->get(), m_Zero())) {
+    if ((EltTy->isSized() && DL.getTypeAllocSize(EltTy).isZero()) && (!isa<Constant>(*I) || !match(I->get(), m_Zero())))
+      {
         *I = Constant::getNullValue(NewIndexType);
         MadeChange = true;
       }
@@ -3540,18 +3536,18 @@ Instruction *InstCombinerImpl::visitGetElementPtrInst(GetElementPtrInst &GEP) {
                      dyn_cast<PossiblyExactOperator>(GEP.getOperand(1))) {
         // Canonicalize (gep T* X, V / sizeof(T)) to (gep i8* X, V)
         Value *V;
-        if (ExactIns->isExact()) {
-          if ((has_single_bit(TyAllocSize) &&
+        if ((ExactIns->isExact()) && ((has_single_bit(TyAllocSize) &&
                match(GEP.getOperand(1),
                      m_Shr(m_Value(V),
                            m_SpecificInt(countr_zero(TyAllocSize))))) ||
               match(GEP.getOperand(1),
-                    m_IDiv(m_Value(V), m_SpecificInt(TyAllocSize)))) {
+                    m_IDiv(m_Value(V), m_SpecificInt(TyAllocSize))))) 
+          {
             return GetElementPtrInst::Create(Builder.getInt8Ty(),
                                              GEP.getPointerOperand(), V,
                                              GEP.getNoWrapFlags());
           }
-        }
+        
         if (ExactIns->isExact() && ExactIns->hasOneUse()) {
           // Try to canonicalize non-i8 element type to i8 if the index is an
           // exact instruction. If the index is an exact instruction (div/shr)
@@ -3604,16 +3600,16 @@ Instruction *InstCombinerImpl::visitGetElementPtrInst(GetElementPtrInst &GEP) {
     bool CanBeNull, CanBeFreed;
     uint64_t DerefBytes = UnderlyingPtrOp->getPointerDereferenceableBytes(
         DL, CanBeNull, CanBeFreed);
-    if (!CanBeNull && !CanBeFreed && DerefBytes != 0) {
-      if (GEP.accumulateConstantOffset(DL, BasePtrOffset) &&
-          BasePtrOffset.isNonNegative()) {
+    if ((!CanBeNull && !CanBeFreed && DerefBytes != 0) && (GEP.accumulateConstantOffset(DL, BasePtrOffset) &&
+          BasePtrOffset.isNonNegative())) 
+      {
         APInt AllocSize(IdxWidth, DerefBytes);
         if (BasePtrOffset.ule(AllocSize)) {
           return GetElementPtrInst::CreateInBounds(
               GEP.getSourceElementType(), PtrOp, Indices, GEP.getName());
         }
       }
-    }
+    
   }
 
   // nusw + nneg -> nuw
@@ -3957,8 +3953,8 @@ Instruction *InstCombinerImpl::visitAllocSite(Instruction &MI) {
           User = nullptr; // Skip examining in the next loop.
           continue;
         }
-        if (auto *MTI = dyn_cast<MemTransferInst>(I)) {
-          if (KnowInitZero && isRefSet(*Removable)) {
+        if (auto *MTI = dyn_cast<MemTransferInst>(I); MTI && (KnowInitZero && isRefSet(*Removable))) 
+          {
             IRBuilderBase::InsertPointGuard Guard(Builder);
             Builder.SetInsertPoint(MTI);
             auto *M = Builder.CreateMemSet(
@@ -3967,7 +3963,7 @@ Instruction *InstCombinerImpl::visitAllocSite(Instruction &MI) {
                 MTI->getLength(), MTI->getDestAlign());
             M->copyMetadata(*MTI);
           }
-        }
+        
       }
     }
     for (WeakTrackingVH &User : Users) {
@@ -4262,9 +4258,8 @@ Instruction *InstCombinerImpl::visitUncondBrInst(UncondBrInst &BI) {
     return dyn_cast<StoreInst>(BBI);
   };
 
-  if (StoreInst *SI = GetLastSinkableStore(BasicBlock::iterator(BI)))
-    if (mergeStoreIntoSuccessor(*SI))
-      return &BI;
+  if (StoreInst *SI = GetLastSinkableStore(BasicBlock::iterator(BI)); SI && (mergeStoreIntoSuccessor(*SI)))
+    return &BI;
 
   return nullptr;
 }
@@ -4614,9 +4609,9 @@ InstCombinerImpl::foldExtractOfOverflowIntrinsic(ExtractValueInst &EV) {
 
   Intrinsic::ID OvID = WO->getIntrinsicID();
   const APInt *C = nullptr;
-  if (match(WO->getRHS(), m_APIntAllowPoison(C))) {
-    if (*EV.idx_begin() == 0 && (OvID == Intrinsic::smul_with_overflow ||
-                                 OvID == Intrinsic::umul_with_overflow)) {
+  if ((match(WO->getRHS(), m_APIntAllowPoison(C))) && (*EV.idx_begin() == 0 && (OvID == Intrinsic::smul_with_overflow ||
+                                 OvID == Intrinsic::umul_with_overflow))) 
+    {
       // extractvalue (any_mul_with_overflow X, -1), 0 --> -X
       if (C->isAllOnes())
         return BinaryOperator::CreateNeg(WO->getLHS());
@@ -4627,7 +4622,7 @@ InstCombinerImpl::foldExtractOfOverflowIntrinsic(ExtractValueInst &EV) {
             ConstantInt::get(WO->getLHS()->getType(), C->logBase2()));
       }
     }
-  }
+  
 
   // We're extracting from an overflow intrinsic. See if we're the only user.
   // That allows us to simplify multiple result intrinsics to simpler things
@@ -5591,17 +5586,15 @@ bool InstCombinerImpl::tryToSinkInstruction(Instruction *I,
     return false;
 
   // Do not sink convergent call instructions.
-  if (auto *CI = dyn_cast<CallInst>(I)) {
-    if (CI->isConvergent())
-      return false;
-  }
+  if (auto *CI = dyn_cast<CallInst>(I); CI && (CI->isConvergent())) 
+    return false;
+  
 
   // Unless we can prove that the memory write isn't visibile except on the
   // path we're sinking to, we must bail.
-  if (I->mayWriteToMemory()) {
-    if (!SoleWriteToDeadLocal(I, TLI))
-      return false;
-  }
+  if ((I->mayWriteToMemory()) && (!SoleWriteToDeadLocal(I, TLI))) 
+    return false;
+  
 
   // We can only sink load instructions if there is nothing between the load and
   // the end of block that could change the value.

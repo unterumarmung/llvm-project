@@ -186,9 +186,8 @@ void TemplateArgumentHasher::AddDecl(const Decl *D) {
     Args = CTSD->getTemplateArgs().asArray();
   else if (auto *VTSD = dyn_cast<VarTemplateSpecializationDecl>(D))
     Args = VTSD->getTemplateArgs().asArray();
-  else if (auto *FD = dyn_cast<FunctionDecl>(D))
-    if (FD->getTemplateSpecializationArgs())
-      Args = FD->getTemplateSpecializationArgs()->asArray();
+  else if (auto *FD = dyn_cast<FunctionDecl>(D); FD && (FD->getTemplateSpecializationArgs()))
+    Args = FD->getTemplateSpecializationArgs()->asArray();
 
   for (auto &TA : Args)
     AddTemplateArgument(TA);

@@ -2480,10 +2480,9 @@ APInt::tcExtract(WordType *dst, unsigned dstCount, const WordType *src,
     WordType mask = lowBitMask (srcBits - n);
     dst[dstParts - 1] |= ((src[firstSrcPart + dstParts] & mask)
                           << n % APINT_BITS_PER_WORD);
-  } else if (n > srcBits) {
-    if (srcBits % APINT_BITS_PER_WORD)
-      dst[dstParts - 1] &= lowBitMask (srcBits % APINT_BITS_PER_WORD);
-  }
+  } else if ((n > srcBits) && (srcBits % APINT_BITS_PER_WORD)) 
+    dst[dstParts - 1] &= lowBitMask (srcBits % APINT_BITS_PER_WORD);
+  
 
   // Clear high parts.
   while (dstParts < dstCount)

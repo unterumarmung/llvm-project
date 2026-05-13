@@ -274,9 +274,8 @@ static bool tryToSinkInstruction(Instruction *I, BasicBlock *DestBlock) {
     return false;
 
   // Do not sink convergent call instructions.
-  if (const auto *C = dyn_cast<CallBase>(I))
-    if (C->isInlineAsm() || C->cannotMerge() || C->isConvergent())
-      return false;
+  if (const auto *C = dyn_cast<CallBase>(I); C && (C->isInlineAsm() || C->cannotMerge() || C->isConvergent()))
+    return false;
 
   // Do not move an instruction that may write to memory.
   if (I->mayWriteToMemory())
@@ -981,8 +980,8 @@ bool IndirectCallPromoter::shouldSkipVTable(uint64_t VTableGUID) {
   VTableVar->getMetadata(LLVMContext::MD_type, Types);
 
   for (auto *Type : Types)
-    if (auto *TypeId = dyn_cast<MDString>(Type->getOperand(1).get()))
-      if (IgnoredBaseTypes.contains(TypeId->getString())) {
+    if (auto *TypeId = dyn_cast<MDString>(Type->getOperand(1).get()); TypeId && (IgnoredBaseTypes.contains(TypeId->getString())))
+      {
         LLVM_DEBUG(dbgs() << "    vtable profiles should be ignored. Bail "
                              "out of vtable comparison.");
         return true;

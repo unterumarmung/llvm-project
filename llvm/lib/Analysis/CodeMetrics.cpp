@@ -34,9 +34,8 @@ appendSpeculatableOperands(const Value *V,
 
   for (const Value *Operand : U->operands())
     if (Visited.insert(Operand).second)
-      if (const auto *I = dyn_cast<Instruction>(Operand))
-        if (!I->mayHaveSideEffects() && !I->isTerminator())
-          Worklist.push_back(I);
+      if (const auto *I = dyn_cast<Instruction>(Operand); I && (!I->mayHaveSideEffects() && !I->isTerminator()))
+        Worklist.push_back(I);
 }
 
 static void completeEphemeralValues(SmallPtrSetImpl<const Value *> &Visited,
@@ -169,10 +168,9 @@ void CodeMetrics::analyzeBasicBlock(
       }
     }
 
-    if (const AllocaInst *AI = dyn_cast<AllocaInst>(&I)) {
-      if (!AI->isStaticAlloca())
-        this->usesDynamicAlloca = true;
-    }
+    if (const AllocaInst *AI = dyn_cast<AllocaInst>(&I); AI && (!AI->isStaticAlloca())) 
+      this->usesDynamicAlloca = true;
+    
 
     if (isa<ExtractElementInst>(I) || I.getType()->isVectorTy())
       ++NumVectorInsts;

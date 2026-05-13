@@ -248,14 +248,12 @@ public:
     if (!Node)
       return true;
     ScopedIncrement ScopedDepth(&CurrentDepth);
-    if (auto *Init = Node->getInit())
-      if (!traverse(*Init))
-        return false;
+    if (auto *Init = Node->getInit(); Init && (!traverse(*Init)))
+      return false;
     if (!match(*Node->getLoopVariable()))
       return false;
-    if (match(*Node->getRangeInit()))
-      if (!VisitorBase::TraverseStmt(Node->getRangeInit()))
-        return false;
+    if ((match(*Node->getRangeInit())) && (!VisitorBase::TraverseStmt(Node->getRangeInit())))
+      return false;
     if (!match(*Node->getBody()))
       return false;
     return VisitorBase::TraverseStmt(Node->getBody());

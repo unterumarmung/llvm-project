@@ -421,9 +421,8 @@ Response HandleRecordDecl(Sema &SemaRef, const CXXRecordDecl *Rec,
   }
 
   if (const MemberSpecializationInfo *MSInfo =
-          Rec->getMemberSpecializationInfo())
-    if (MSInfo->getTemplateSpecializationKind() == TSK_ExplicitSpecialization)
-      return Response::Done();
+          Rec->getMemberSpecializationInfo(); MSInfo && (MSInfo->getTemplateSpecializationKind() == TSK_ExplicitSpecialization))
+    return Response::Done();
 
   bool IsFriend = Rec->getFriendObjectKind() ||
                   (Rec->getDescribedClassTemplate() &&
@@ -1764,11 +1763,10 @@ namespace {
             return CXXRecordDecl::LambdaDependencyKind::LDK_AlwaysDependent;
       }
       if (auto *CD = dyn_cast_if_present<ImplicitConceptSpecializationDecl>(
-              LSI->Lambda->getLambdaContextDecl())) {
-        if (llvm::any_of(CD->getTemplateArguments(),
-                         [](const auto &TA) { return TA.isDependent(); }))
-          return CXXRecordDecl::LambdaDependencyKind::LDK_AlwaysDependent;
-      }
+              LSI->Lambda->getLambdaContextDecl()); CD && (llvm::any_of(CD->getTemplateArguments(),
+                         [](const auto &TA) { return TA.isDependent(); }))) 
+        return CXXRecordDecl::LambdaDependencyKind::LDK_AlwaysDependent;
+      
       return inherited::ComputeLambdaDependency(LSI);
     }
 
@@ -1942,8 +1940,8 @@ Decl *TemplateInstantiator::TransformDecl(SourceLocation Loc, Decl *D) {
   if (!D)
     return nullptr;
 
-  if (TemplateTemplateParmDecl *TTP = dyn_cast<TemplateTemplateParmDecl>(D)) {
-    if (TTP->getDepth() < TemplateArgs.getNumLevels()) {
+  if (TemplateTemplateParmDecl *TTP = dyn_cast<TemplateTemplateParmDecl>(D); TTP && (TTP->getDepth() < TemplateArgs.getNumLevels())) 
+    {
       // If the corresponding template argument is NULL or non-existent, it's
       // because we are performing instantiation from explicitly-specified
       // template arguments in a function template, but there were some
@@ -1970,7 +1968,7 @@ Decl *TemplateInstantiator::TransformDecl(SourceLocation Loc, Decl *D) {
 
     // Fall through to find the instantiated declaration for this template
     // template parameter.
-  }
+  
 
   if (ParmVarDecl *PVD = dyn_cast<ParmVarDecl>(D);
       PVD && SemaRef.CurrentInstantiationScope &&
@@ -2417,18 +2415,16 @@ TemplateInstantiator::TransformDeclRefExpr(DeclRefExpr *E) {
 
   // Handle references to non-type template parameters and non-type template
   // parameter packs.
-  if (NonTypeTemplateParmDecl *NTTP = dyn_cast<NonTypeTemplateParmDecl>(D)) {
-    if (NTTP->getDepth() < TemplateArgs.getNumLevels())
-      return TransformTemplateParmRefExpr(E, NTTP);
+  if (NonTypeTemplateParmDecl *NTTP = dyn_cast<NonTypeTemplateParmDecl>(D); NTTP && (NTTP->getDepth() < TemplateArgs.getNumLevels())) 
+    return TransformTemplateParmRefExpr(E, NTTP);
 
     // We have a non-type template parameter that isn't fully substituted;
     // FindInstantiatedDecl will find it in the local instantiation scope.
-  }
+  
 
   // Handle references to function parameter packs.
-  if (VarDecl *PD = dyn_cast<VarDecl>(D))
-    if (PD->isParameterPack())
-      return TransformFunctionParmPackRefExpr(E, PD);
+  if (VarDecl *PD = dyn_cast<VarDecl>(D); PD && (PD->isParameterPack()))
+    return TransformFunctionParmPackRefExpr(E, PD);
 
   return inherited::TransformDeclRefExpr(E);
 }
@@ -3206,10 +3202,9 @@ Sema::SubstParmVarDecl(ParmVarDecl *OldParm,
       // We will first get here when instantiating the abbreviated function
       // template's described function, but we might also get here later.
       // Make sure we do not instantiate the TypeConstraint more than once.
-      if (Inst && !Inst->getTypeConstraint()) {
-        if (SubstTypeConstraint(Inst, TC, TemplateArgs, EvaluateConstraint))
-          return nullptr;
-      }
+      if ((Inst && !Inst->getTypeConstraint()) && (SubstTypeConstraint(Inst, TC, TemplateArgs, EvaluateConstraint))) 
+        return nullptr;
+      
     }
   }
 
@@ -3442,10 +3437,9 @@ Sema::SubstBaseSpecifiers(CXXRecordDecl *Instantiation,
   SmallVector<CXXBaseSpecifier*, 4> InstantiatedBases;
   for (const auto &Base : Pattern->bases()) {
     if (!Base.getType()->isInstantiationDependentType()) {
-      if (const CXXRecordDecl *RD = Base.getType()->getAsCXXRecordDecl()) {
-        if (RD->isInvalidDecl())
-          Instantiation->setInvalidDecl();
-      }
+      if (const CXXRecordDecl *RD = Base.getType()->getAsCXXRecordDecl(); RD && (RD->isInvalidDecl())) 
+        Instantiation->setInvalidDecl();
+      
       InstantiatedBases.push_back(new (Context) CXXBaseSpecifier(Base));
       continue;
     }
@@ -3689,11 +3683,10 @@ bool Sema::InstantiateClassImpl(
           Instantiation->setInvalidDecl();
           break;
         }
-      } else if (CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(NewMember)) {
-        if (MD->isConstexpr() && !MD->getFriendObjectKind() &&
-            (MD->isVirtualAsWritten() || Instantiation->getNumBases()))
-          MightHaveConstexprVirtualFunctions = true;
-      }
+      } else if (CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(NewMember); MD && (MD->isConstexpr() && !MD->getFriendObjectKind() &&
+            (MD->isVirtualAsWritten() || Instantiation->getNumBases()))) 
+        MightHaveConstexprVirtualFunctions = true;
+      
 
       if (NewMember->isInvalidDecl())
         Instantiation->setInvalidDecl();
@@ -4380,10 +4373,10 @@ Sema::InstantiateClassMembers(SourceLocation PointOfInstantiation,
         MSInfo->setTemplateSpecializationKind(TSK);
         MSInfo->setPointOfInstantiation(PointOfInstantiation);
       }
-    } else if (auto *Field = dyn_cast<FieldDecl>(D)) {
+    } else if (auto *Field = dyn_cast<FieldDecl>(D); Field && (Field->hasInClassInitializer() && TSK == TSK_ImplicitInstantiation)) 
       // No need to instantiate in-class initializers during explicit
       // instantiation.
-      if (Field->hasInClassInitializer() && TSK == TSK_ImplicitInstantiation) {
+      {
         // Handle local classes which could have substituted template params.
         CXXRecordDecl *ClassPattern =
             Instantiation->isLocalClass()
@@ -4397,7 +4390,7 @@ Sema::InstantiateClassMembers(SourceLocation PointOfInstantiation,
         InstantiateInClassInitializer(PointOfInstantiation, Field, Pattern,
                                       TemplateArgs);
       }
-    }
+    
   }
 }
 
@@ -4751,9 +4744,8 @@ LocalInstantiationScope::findInstantiationOf(const Decl *D) {
     return nullptr;
 
   // Local types referenced prior to definition may require instantiation.
-  if (const CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(D))
-    if (RD->isLocalClass())
-      return nullptr;
+  if (const CXXRecordDecl *RD = dyn_cast<CXXRecordDecl>(D); RD && (RD->isLocalClass()))
+    return nullptr;
 
   // Enumeration types referenced prior to definition may appear as a result of
   // error recovery.

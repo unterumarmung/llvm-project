@@ -71,10 +71,9 @@ StringRef EditedSource::copyString(const Twine &twine) {
 
 bool EditedSource::canInsertInOffset(SourceLocation OrigLoc, FileOffset Offs) {
   FileEditsTy::iterator FA = getActionForOffset(Offs);
-  if (FA != FileEdits.end()) {
-    if (FA->first != Offs)
-      return false; // position has been removed.
-  }
+  if ((FA != FileEdits.end()) && (FA->first != Offs)) 
+    return false; // position has been removed.
+  
 
   if (SourceMgr.isMacroArgExpansion(OrigLoc)) {
     SourceLocation ExpLoc;

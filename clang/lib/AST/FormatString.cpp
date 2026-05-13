@@ -1301,14 +1301,14 @@ bool FormatSpecifier::hasStandardLengthConversionCombination() const {
 
 std::optional<LengthModifier>
 FormatSpecifier::getCorrectedLengthModifier() const {
-  if (CS.isAnyIntArg() || CS.getKind() == ConversionSpecifier::nArg) {
-    if (LM.getKind() == LengthModifier::AsLongDouble ||
-        LM.getKind() == LengthModifier::AsQuad) {
+  if ((CS.isAnyIntArg() || CS.getKind() == ConversionSpecifier::nArg) && (LM.getKind() == LengthModifier::AsLongDouble ||
+        LM.getKind() == LengthModifier::AsQuad)) 
+    {
       LengthModifier FixedLM(LM);
       FixedLM.setKind(LengthModifier::AsLongLong);
       return FixedLM;
     }
-  }
+  
 
   return std::nullopt;
 }

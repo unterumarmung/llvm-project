@@ -529,10 +529,9 @@ private:
 
   void exitConstructOrDirective() {
     auto isOpenMPLoopConstruct = [](lower::pft::Evaluation *eval) {
-      if (const auto *ompConstruct = eval->getIf<parser::OpenMPConstruct>())
-        if (std::holds_alternative<parser::OpenMPLoopConstruct>(
-                ompConstruct->u))
-          return true;
+      if (const auto *ompConstruct = eval->getIf<parser::OpenMPConstruct>(); ompConstruct && (std::holds_alternative<parser::OpenMPLoopConstruct>(
+                ompConstruct->u)))
+        return true;
       return false;
     };
 
@@ -779,11 +778,10 @@ private:
   template <typename A>
   void analyzeIoBranches(lower::pft::Evaluation &eval, const A &stmt) {
     auto analyzeFormatSpec = [&](const parser::Format &format) {
-      if (const auto *expr = std::get_if<parser::Expr>(&format.u)) {
-        if (semantics::ExprHasTypeCategory(*semantics::GetExpr(*expr),
-                                           common::TypeCategory::Integer))
-          eval.isUnstructured = true;
-      }
+      if (const auto *expr = std::get_if<parser::Expr>(&format.u); expr && (semantics::ExprHasTypeCategory(*semantics::GetExpr(*expr),
+                                           common::TypeCategory::Integer))) 
+        eval.isUnstructured = true;
+      
     };
     auto analyzeSpecs{[&](const auto &specList) {
       for (const auto &spec : specList) {
@@ -2262,9 +2260,8 @@ struct SymbolVisitor {
           const Fortran::semantics::Symbol &result =
               subprogramDetails->result();
           if (const auto *objectDetails =
-                  result.detailsIf<Fortran::semantics::ObjectEntityDetails>())
-            if (objectDetails->shape().IsExplicitShape())
-              for (const Fortran::semantics::ShapeSpec &shapeSpec :
+                  result.detailsIf<Fortran::semantics::ObjectEntityDetails>(); objectDetails && (objectDetails->shape().IsExplicitShape()))
+            for (const Fortran::semantics::ShapeSpec &shapeSpec :
                    objectDetails->shape()) {
                 visitExpr(shapeSpec.lbound().GetExplicit().value());
                 visitExpr(shapeSpec.ubound().GetExplicit().value());

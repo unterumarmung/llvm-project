@@ -350,9 +350,8 @@ std::optional<StringRef> AttrOrTypeParameter::getDefaultValue() const {
 const Init *AttrOrTypeParameter::getDef() const { return def->getArg(index); }
 
 std::optional<Constraint> AttrOrTypeParameter::getConstraint() const {
-  if (const auto *param = dyn_cast<DefInit>(getDef()))
-    if (param->getDef()->isSubClassOf("Constraint"))
-      return Constraint(param->getDef());
+  if (const auto *param = dyn_cast<DefInit>(getDef()); param && (param->getDef()->isSubClassOf("Constraint")))
+    return Constraint(param->getDef());
   return std::nullopt;
 }
 

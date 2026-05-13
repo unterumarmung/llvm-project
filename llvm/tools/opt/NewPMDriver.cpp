@@ -575,10 +575,9 @@ bool llvm::runPassPipeline(
 
   // If a pass reported an error via LLVMContext::emitError, fail without
   // writing the output module.
-  if (auto *DH = M.getContext().getDiagHandlerPtr()) {
-    if (DH->HasErrors)
-      return false;
-  }
+  if (auto *DH = M.getContext().getDiagHandlerPtr(); DH && (DH->HasErrors)) 
+    return false;
+  
 
   // Declare success.
   if (OK != OK_NoOutput) {

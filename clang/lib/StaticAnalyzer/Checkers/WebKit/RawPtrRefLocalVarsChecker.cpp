@@ -36,15 +36,13 @@ bool isRefcountedStringsHack(const VarDecl *V) {
   };
   QualType QT = V->getType();
   auto *T = QT.getTypePtr();
-  if (auto *CXXRD = T->getAsCXXRecordDecl()) {
-    if (safeClass(safeGetName(CXXRD)))
-      return true;
-  }
+  if (auto *CXXRD = T->getAsCXXRecordDecl(); CXXRD && (safeClass(safeGetName(CXXRD)))) 
+    return true;
+  
   if (T->isPointerType() || T->isReferenceType()) {
-    if (auto *CXXRD = T->getPointeeCXXRecordDecl()) {
-      if (safeClass(safeGetName(CXXRD)))
-        return true;
-    }
+    if (auto *CXXRD = T->getPointeeCXXRecordDecl(); CXXRD && (safeClass(safeGetName(CXXRD)))) 
+      return true;
+    
   }
   return false;
 }
@@ -58,24 +56,22 @@ struct GuardianVisitor : DynamicRecursiveASTVisitor {
 
   bool VisitBinaryOperator(BinaryOperator *BO) override {
     if (BO->isAssignmentOp()) {
-      if (auto *VarRef = dyn_cast<DeclRefExpr>(BO->getLHS())) {
-        if (VarRef->getDecl() == Guardian)
-          return false;
-      }
+      if (auto *VarRef = dyn_cast<DeclRefExpr>(BO->getLHS()); VarRef && (VarRef->getDecl() == Guardian)) 
+        return false;
+      
     }
     return true;
   }
 
   bool VisitCXXConstructExpr(CXXConstructExpr *CE) override {
-    if (auto *Ctor = CE->getConstructor()) {
-      if (Ctor->isMoveConstructor() && CE->getNumArgs() == 1) {
+    if (auto *Ctor = CE->getConstructor(); Ctor && (Ctor->isMoveConstructor() && CE->getNumArgs() == 1)) 
+      {
         auto *Arg = CE->getArg(0)->IgnoreParenCasts();
-        if (auto *VarRef = dyn_cast<DeclRefExpr>(Arg)) {
-          if (VarRef->getDecl() == Guardian)
-            return false;
-        }
+        if (auto *VarRef = dyn_cast<DeclRefExpr>(Arg); VarRef && (VarRef->getDecl() == Guardian)) 
+          return false;
+        
       }
-    }
+    
     return true;
   }
 
@@ -84,10 +80,9 @@ struct GuardianVisitor : DynamicRecursiveASTVisitor {
     if (MethodName == "swap" || MethodName == "leakRef" ||
         MethodName == "releaseNonNull" || MethodName == "clear") {
       auto *ThisArg = MCE->getImplicitObjectArgument()->IgnoreParenCasts();
-      if (auto *VarRef = dyn_cast<DeclRefExpr>(ThisArg)) {
-        if (VarRef->getDecl() == Guardian)
-          return false;
-      }
+      if (auto *VarRef = dyn_cast<DeclRefExpr>(ThisArg); VarRef && (VarRef->getDecl() == Guardian)) 
+        return false;
+      
     }
     return true;
   }
@@ -96,10 +91,9 @@ struct GuardianVisitor : DynamicRecursiveASTVisitor {
     if (OCE->isAssignmentOp()) {
       assert(OCE->getNumArgs() == 2);
       auto *ThisArg = OCE->getArg(0)->IgnoreParenCasts();
-      if (auto *VarRef = dyn_cast<DeclRefExpr>(ThisArg)) {
-        if (VarRef->getDecl() == Guardian)
-          return false;
-      }
+      if (auto *VarRef = dyn_cast<DeclRefExpr>(ThisArg); VarRef && (VarRef->getDecl() == Guardian)) 
+        return false;
+      
     }
     return true;
   }
@@ -328,14 +322,13 @@ public:
                     if (MaybeGuardianArgType) {
                       const CXXRecordDecl *const MaybeGuardianArgCXXRecord =
                           MaybeGuardianArgType->getAsCXXRecordDecl();
-                      if (MaybeGuardianArgCXXRecord) {
-                        if (MaybeGuardian->isLocalVarDecl() &&
+                      if ((MaybeGuardianArgCXXRecord) && (MaybeGuardian->isLocalVarDecl() &&
                             (isSafePtr(MaybeGuardianArgCXXRecord) ||
                              isRefcountedStringsHack(MaybeGuardian)) &&
                             isGuardedScopeEmbeddedInGuardianScope(
-                                V, MaybeGuardian))
-                          return true;
-                      }
+                                V, MaybeGuardian))) 
+                        return true;
+                      
                     }
 
                     // Parameters are guaranteed to be safe for the duration of

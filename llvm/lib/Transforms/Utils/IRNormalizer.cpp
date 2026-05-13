@@ -368,9 +368,8 @@ void IRNormalizer::foldInstructionName(Instruction *I) const {
   if (!Options.FoldPreOutputs) {
     // Don't fold if one of the users is an output instruction.
     for (auto *U : I->users())
-      if (auto *IU = dyn_cast<Instruction>(U))
-        if (isOutput(IU))
-          return;
+      if (auto *IU = dyn_cast<Instruction>(U); IU && (isOutput(IU)))
+        return;
   }
 
   // Don't fold if it is an output instruction or has no op prefix.
@@ -455,12 +454,11 @@ void IRNormalizer::reorderInstructions(Function &F) const {
     while (!TopologicalSort.empty()) {
       auto *Instruction = TopologicalSort.top();
       auto FirstNonPHIOrDbgOrAlloca = BB.getFirstNonPHIOrDbgOrAlloca();
-      if (auto *Call = dyn_cast<CallInst>(&*FirstNonPHIOrDbgOrAlloca)) {
-        if (Call->getIntrinsicID() ==
+      if (auto *Call = dyn_cast<CallInst>(&*FirstNonPHIOrDbgOrAlloca); Call && (Call->getIntrinsicID() ==
                 Intrinsic::experimental_convergence_entry ||
-            Call->getIntrinsicID() == Intrinsic::experimental_convergence_loop)
-          FirstNonPHIOrDbgOrAlloca++;
-      }
+            Call->getIntrinsicID() == Intrinsic::experimental_convergence_loop)) 
+        FirstNonPHIOrDbgOrAlloca++;
+      
       Instruction->moveBefore(FirstNonPHIOrDbgOrAlloca);
       TopologicalSort.pop();
     }
@@ -506,10 +504,9 @@ void IRNormalizer::reorderDefinition(
       return;
   }
   if (auto *BitCast = dyn_cast<BitCastInst>(Definition)) {
-    if (auto *Call = dyn_cast<CallInst>(BitCast->getOperand(0))) {
-      if (Call->isMustTailCall())
-        return;
-    }
+    if (auto *Call = dyn_cast<CallInst>(BitCast->getOperand(0)); Call && (Call->isMustTailCall())) 
+      return;
+    
   }
 
   TopologicalSort.emplace(Definition);

@@ -876,11 +876,10 @@ bool HWAddressSanitizer::ignoreAccessWithoutRemark(Instruction *Inst,
       return true;
   }
 
-  if (isa<GlobalVariable>(getUnderlyingObject(Ptr))) {
-    if (!InstrumentGlobals)
-      return true;
+  if ((isa<GlobalVariable>(getUnderlyingObject(Ptr))) && (!InstrumentGlobals)) 
+    return true;
     // TODO: Optimize inbound global accesses, like Asan `instrumentMop`.
-  }
+  
 
   return false;
 }
@@ -1654,9 +1653,8 @@ void HWAddressSanitizer::sanitizeFunction(Function &F,
 
     getInterestingMemoryOperands(ORE, &Inst, TLI, OperandsToInstrument);
 
-    if (MemIntrinsic *MI = dyn_cast<MemIntrinsic>(&Inst))
-      if (!ignoreMemIntrinsic(ORE, MI))
-        IntrinToInstrument.push_back(MI);
+    if (MemIntrinsic *MI = dyn_cast<MemIntrinsic>(&Inst); MI && (!ignoreMemIntrinsic(ORE, MI)))
+      IntrinToInstrument.push_back(MI);
   }
 
   memtag::StackInfo &SInfo = SIB.get();
@@ -1702,9 +1700,8 @@ void HWAddressSanitizer::sanitizeFunction(Function &F,
     InsertPt = F.getEntryBlock().begin();
     for (Instruction &I :
          llvm::make_early_inc_range(*EntryIRB.GetInsertBlock())) {
-      if (auto *AI = dyn_cast<AllocaInst>(&I))
-        if (isa<ConstantInt>(AI->getArraySize()))
-          I.moveBefore(F.getEntryBlock(), InsertPt);
+      if (auto *AI = dyn_cast<AllocaInst>(&I); AI && (isa<ConstantInt>(AI->getArraySize())))
+        I.moveBefore(F.getEntryBlock(), InsertPt);
     }
   }
 

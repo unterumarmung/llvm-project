@@ -305,10 +305,9 @@ void PointerArithChecker::checkPreStmt(const CastExpr *CE,
   if (!Region)
     return;
 
-  if (const AllocKind *Kind = State->get<RegionState>(Region)) {
-    if (*Kind == AllocKind::Array || *Kind == AllocKind::Reinterpreted)
-      return;
-  }
+  if (const AllocKind *Kind = State->get<RegionState>(Region); Kind && (*Kind == AllocKind::Array || *Kind == AllocKind::Reinterpreted)) 
+    return;
+  
   State = State->set<RegionState>(Region, AllocKind::Array);
   C.addTransition(State);
 }

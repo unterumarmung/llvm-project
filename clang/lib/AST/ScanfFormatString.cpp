@@ -41,12 +41,12 @@ static bool ParseScanList(FormatStringHandler &H, ScanfConversionSpecifier &CS,
   }
 
   // Special case: ']' is the first character.
-  if (*I == ']') {
-    if (++I == E) {
+  if ((*I == ']') && (++I == E)) 
+    {
       H.HandleIncompleteScanList(start, I - 1);
       return true;
     }
-  }
+  
 
   // Special case: "^]" are the first characters.
   if (I + 1 != E && I[0] == '^' && I[1] == ']') {
@@ -243,10 +243,9 @@ static ScanfSpecifierResult ParseScanfSpecifier(FormatStringHandler &H,
     break;
   }
   ScanfConversionSpecifier CS(conversionPosition, k);
-  if (k == ScanfConversionSpecifier::ScanListArg) {
-    if (ParseScanList(H, CS, I, E))
-      return true;
-  }
+  if ((k == ScanfConversionSpecifier::ScanListArg) && (ParseScanList(H, CS, I, E))) 
+    return true;
+  
   FS.setConversionSpecifier(CS);
   if (CS.consumesDataArgument() && !FS.getSuppressAssignment() &&
       !FS.usesPositionalArg())
@@ -494,11 +493,10 @@ bool ScanfSpecifier::fixType(QualType QT, QualType RawQT,
       LM.setKind(LengthModifier::None);
 
     // If we know the target array length, we can use it as a field width.
-    if (const ConstantArrayType *CAT = Ctx.getAsConstantArrayType(RawQT)) {
-      if (CAT->getSizeModifier() == ArraySizeModifier::Normal)
-        FieldWidth = OptionalAmount(OptionalAmount::Constant,
+    if (const ConstantArrayType *CAT = Ctx.getAsConstantArrayType(RawQT); CAT && (CAT->getSizeModifier() == ArraySizeModifier::Normal)) 
+      FieldWidth = OptionalAmount(OptionalAmount::Constant,
                                     CAT->getZExtSize() - 1, "", 0, false);
-    }
+    
     return true;
   }
 

@@ -166,9 +166,8 @@ MCSymbol *AArch64_MachoTargetObjectFile::getAuthPtrSlotSymbol(
 
 static bool isExecuteOnlyFunction(const GlobalObject *GO, SectionKind Kind,
                                   const TargetMachine &TM) {
-  if (const Function *F = dyn_cast<Function>(GO))
-    if (TM.getSubtarget<AArch64Subtarget>(*F).genExecuteOnly() && Kind.isText())
-      return true;
+  if (const Function *F = dyn_cast<Function>(GO); F && (TM.getSubtarget<AArch64Subtarget>(*F).genExecuteOnly() && Kind.isText()))
+    return true;
   return false;
 }
 

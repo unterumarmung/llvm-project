@@ -719,18 +719,17 @@ void LoopVectorizationLegality::addInductionPhi(
   }
 
   // Int inductions are special because we only allow one IV.
-  if (ID.getKind() == InductionDescriptor::IK_IntInduction &&
+  if ((ID.getKind() == InductionDescriptor::IK_IntInduction &&
       ID.getConstIntStepValue() && ID.getConstIntStepValue()->isOne() &&
       isa<Constant>(ID.getStartValue()) &&
-      cast<Constant>(ID.getStartValue())->isNullValue()) {
+      cast<Constant>(ID.getStartValue())->isNullValue()) && (!PrimaryInduction || PhiTy == WidestIndTy)) 
 
     // Use the phi node with the widest type as induction. Use the last
     // one if there are multiple (no good reason for doing this other
     // than it is expedient). We've checked that it begins at zero and
     // steps by one, so this is a canonical induction variable.
-    if (!PrimaryInduction || PhiTy == WidestIndTy)
-      PrimaryInduction = Phi;
-  }
+    PrimaryInduction = Phi;
+  
 
   // Both the PHI node itself, and the "post-increment" value feeding
   // back into the PHI node may have external users.
@@ -986,15 +985,15 @@ bool LoopVectorizationLegality::canVectorizeInstr(Instruction &I) {
     auto *SE = PSE.getSE();
     Intrinsic::ID IntrinID = getVectorIntrinsicIDForCall(CI, TLI);
     for (unsigned Idx = 0; Idx < CI->arg_size(); ++Idx)
-      if (isVectorIntrinsicWithScalarOpAtArg(IntrinID, Idx, TTI)) {
-        if (!SE->isLoopInvariant(PSE.getSCEV(CI->getOperand(Idx)), TheLoop)) {
+      if ((isVectorIntrinsicWithScalarOpAtArg(IntrinID, Idx, TTI)) && (!SE->isLoopInvariant(PSE.getSCEV(CI->getOperand(Idx)), TheLoop))) 
+        {
           reportVectorizationFailure(
               "Found unvectorizable intrinsic",
               "intrinsic instruction cannot be vectorized",
               "CantVectorizeIntrinsic", ORE, TheLoop, CI);
           return false;
         }
-      }
+      
   }
 
   // If we found a vectorized variant of a function, note that so LV can
@@ -1277,8 +1276,8 @@ bool LoopVectorizationLegality::canVectorizeMemory() {
       // Invariant address should be defined outside of loop. LICM pass usually
       // makes sure it happens, but in rare cases it does not, we do not want
       // to overcomplicate vectorization to support this case.
-      if (Instruction *Ptr = dyn_cast<Instruction>(SI->getPointerOperand())) {
-        if (TheLoop->contains(Ptr)) {
+      if (Instruction *Ptr = dyn_cast<Instruction>(SI->getPointerOperand()); Ptr && (TheLoop->contains(Ptr))) 
+        {
           reportVectorizationFailure(
               "Invariant address is calculated inside the loop",
               "write to a loop invariant address could not "
@@ -1286,7 +1285,7 @@ bool LoopVectorizationLegality::canVectorizeMemory() {
               "CantVectorizeStoreToLoopInvariantAddress", ORE, TheLoop);
           return false;
         }
-      }
+      
     }
 
     if (LAI->hasStoreStoreDependenceInvolvingLoopInvariantAddress()) {
@@ -1460,8 +1459,8 @@ bool LoopVectorizationLegality::blockCanBePredicated(
     // if we end up scalarizing due to the cost model calculations.
     // TODO: Allow other calls if they have appropriate attributes... readonly
     // and argmemonly?
-    if (CallInst *CI = dyn_cast<CallInst>(&I))
-      if (VFDatabase::hasMaskedVariant(*CI)) {
+    if (CallInst *CI = dyn_cast<CallInst>(&I); CI && (VFDatabase::hasMaskedVariant(*CI)))
+      {
         MaskedOp.insert(CI);
         continue;
       }

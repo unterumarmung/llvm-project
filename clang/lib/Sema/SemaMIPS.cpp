@@ -32,24 +32,21 @@ bool SemaMIPS::CheckMipsBuiltinFunctionCall(const TargetInfo &TI,
 bool SemaMIPS::CheckMipsBuiltinCpu(const TargetInfo &TI, unsigned BuiltinID,
                                    CallExpr *TheCall) {
 
-  if (Mips::BI__builtin_mips_addu_qb <= BuiltinID &&
-      BuiltinID <= Mips::BI__builtin_mips_lwx) {
-    if (!TI.hasFeature("dsp"))
-      return Diag(TheCall->getBeginLoc(), diag::err_mips_builtin_requires_dsp);
-  }
+  if ((Mips::BI__builtin_mips_addu_qb <= BuiltinID &&
+      BuiltinID <= Mips::BI__builtin_mips_lwx) && (!TI.hasFeature("dsp"))) 
+    return Diag(TheCall->getBeginLoc(), diag::err_mips_builtin_requires_dsp);
+  
 
-  if (Mips::BI__builtin_mips_absq_s_qb <= BuiltinID &&
-      BuiltinID <= Mips::BI__builtin_mips_subuh_r_qb) {
-    if (!TI.hasFeature("dspr2"))
-      return Diag(TheCall->getBeginLoc(),
+  if ((Mips::BI__builtin_mips_absq_s_qb <= BuiltinID &&
+      BuiltinID <= Mips::BI__builtin_mips_subuh_r_qb) && (!TI.hasFeature("dspr2"))) 
+    return Diag(TheCall->getBeginLoc(),
                   diag::err_mips_builtin_requires_dspr2);
-  }
+  
 
-  if (Mips::BI__builtin_msa_add_a_b <= BuiltinID &&
-      BuiltinID <= Mips::BI__builtin_msa_xori_b) {
-    if (!TI.hasFeature("msa"))
-      return Diag(TheCall->getBeginLoc(), diag::err_mips_builtin_requires_msa);
-  }
+  if ((Mips::BI__builtin_msa_add_a_b <= BuiltinID &&
+      BuiltinID <= Mips::BI__builtin_msa_xori_b) && (!TI.hasFeature("msa"))) 
+    return Diag(TheCall->getBeginLoc(), diag::err_mips_builtin_requires_msa);
+  
 
   return false;
 }

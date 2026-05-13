@@ -259,13 +259,12 @@ void CodeGenTypes::UpdateCompletedType(const TagDecl *TD) {
   // from the enum to be recomputed.
   if (const EnumDecl *ED = dyn_cast<EnumDecl>(TD)) {
     // Only flush the cache if we've actually already converted this type.
-    if (TypeCache.count(T->getTypePtr())) {
+    if ((TypeCache.count(T->getTypePtr())) && (!ConvertType(ED->getIntegerType())->isIntegerTy(32))) 
       // Okay, we formed some types based on this.  We speculated that the enum
       // would be lowered to i32, so we only need to flush the cache if this
       // didn't happen.
-      if (!ConvertType(ED->getIntegerType())->isIntegerTy(32))
-        TypeCache.clear();
-    }
+      TypeCache.clear();
+    
     // If necessary, provide the full definition of a type only used with a
     // declaration so far.
     if (CGDebugInfo *DI = CGM.getModuleDebugInfo())
@@ -899,9 +898,8 @@ bool CodeGenTypes::isZeroInitializable(QualType T) {
   if (const auto *AT = Context.getAsArrayType(T)) {
     if (isa<IncompleteArrayType>(AT))
       return true;
-    if (const auto *CAT = dyn_cast<ConstantArrayType>(AT))
-      if (Context.getConstantArrayElementCount(CAT) == 0)
-        return true;
+    if (const auto *CAT = dyn_cast<ConstantArrayType>(AT); CAT && (Context.getConstantArrayElementCount(CAT) == 0))
+      return true;
     T = Context.getBaseElementType(T);
   }
 

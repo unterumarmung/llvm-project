@@ -421,15 +421,14 @@ LVScope *LVDWARFReader::processOneDie(const DWARFDie &InputDIE, LVScope *Parent,
       bool IsCompileUnit = CurrentScope->getIsCompileUnit();
       if (FoundLowPC && FoundHighPC) {
         CurrentScope->addObject(CurrentLowPC, CurrentHighPC);
-        if (!IsCompileUnit) {
-          // If the scope is a function, add it to the public names.
-          if ((options().getAttributePublics() ||
+        if ((!IsCompileUnit) && ((options().getAttributePublics() ||
                options().getPrintAnyLine()) &&
               CurrentScope->getIsFunction() &&
-              !CurrentScope->getIsInlinedFunction())
-            CompileUnit->addPublicName(CurrentScope, CurrentLowPC,
+              !CurrentScope->getIsInlinedFunction())) 
+          // If the scope is a function, add it to the public names.
+          CompileUnit->addPublicName(CurrentScope, CurrentLowPC,
                                        CurrentHighPC);
-        }
+        
       }
 
       // Look for scopes with ranges and no linkage name information that
@@ -696,9 +695,9 @@ Error LVDWARFReader::createScopes() {
         return false;
 
       if (const DWARFDebugLine::LineTable *LT =
-              CU->getContext().getLineTableForUnit(CU.get())) {
+              CU->getContext().getLineTableForUnit(CU.get()); LT && (LT->hasFileAtIndex(0) && LT->hasFileAtIndex(1))) 
         // Check if there are at least 2 entries and if they are the same.
-        if (LT->hasFileAtIndex(0) && LT->hasFileAtIndex(1)) {
+        {
           const DWARFDebugLine::FileNameEntry &EntryZero =
               LT->Prologue.getFileNameEntry(0);
           const DWARFDebugLine::FileNameEntry &EntryOne =
@@ -719,7 +718,7 @@ Error LVDWARFReader::createScopes() {
               FileOne);
           return FileZero != FileOne;
         }
-      }
+      
 
       // DWARF-5 -> Increment index.
       return true;

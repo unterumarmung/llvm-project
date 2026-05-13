@@ -288,11 +288,10 @@ static void dumpAttribute(raw_ostream &OS, const DWARFDie &Die,
       DumpOpts.RecoverableErrorHandler(createStringError(
           errc::invalid_argument, "decoding address ranges: %s",
           toString(RangesOrError.takeError()).c_str()));
-  } else if (Attr == DW_AT_language_version) {
-    if (!PrettyVersionName.empty())
-      WithColor(OS, Color) << (ShouldDumpRawLanguageVersion ? " " : "")
+  } else if ((Attr == DW_AT_language_version) && (!PrettyVersionName.empty())) 
+    WithColor(OS, Color) << (ShouldDumpRawLanguageVersion ? " " : "")
                            << PrettyVersionName;
-  }
+  
 
   OS << ")\n";
 }

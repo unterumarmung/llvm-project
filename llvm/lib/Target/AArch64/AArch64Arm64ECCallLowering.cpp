@@ -340,9 +340,8 @@ ThunkArgInfo AArch64Arm64ECCallLowering::canonicalizeThunkType(
 
   auto &DL = M->getDataLayout();
 
-  if (auto *StructTy = dyn_cast<StructType>(T))
-    if (StructTy->getNumElements() == 1)
-      T = StructTy->getElementType(0);
+  if (auto *StructTy = dyn_cast<StructType>(T); StructTy && (StructTy->getNumElements() == 1))
+    T = StructTy->getElementType(0);
 
   if (T->isArrayTy()) {
     Type *ElementTy = T->getArrayElementType();

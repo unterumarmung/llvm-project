@@ -315,20 +315,18 @@ shouldExtendReceiverForInnerPointerMessage(const ObjCMessageExpr *message) {
     const Expr *receiver = message->getInstanceReceiver();
 
     // Look through OVEs.
-    if (auto opaque = dyn_cast<OpaqueValueExpr>(receiver)) {
-      if (opaque->getSourceExpr())
-        receiver = opaque->getSourceExpr()->IgnoreParens();
-    }
+    if (auto opaque = dyn_cast<OpaqueValueExpr>(receiver); opaque && (opaque->getSourceExpr())) 
+      receiver = opaque->getSourceExpr()->IgnoreParens();
+    
 
     const ImplicitCastExpr *ice = dyn_cast<ImplicitCastExpr>(receiver);
     if (!ice || ice->getCastKind() != CK_LValueToRValue) return true;
     receiver = ice->getSubExpr()->IgnoreParens();
 
     // Look through OVEs.
-    if (auto opaque = dyn_cast<OpaqueValueExpr>(receiver)) {
-      if (opaque->getSourceExpr())
-        receiver = opaque->getSourceExpr()->IgnoreParens();
-    }
+    if (auto opaque = dyn_cast<OpaqueValueExpr>(receiver); opaque && (opaque->getSourceExpr())) 
+      receiver = opaque->getSourceExpr()->IgnoreParens();
+    
 
     // Only __strong variables.
     if (receiver->getType().getObjCLifetime() != Qualifiers::OCL_Strong)
@@ -368,12 +366,11 @@ shouldExtendReceiverForInnerPointerMessage(const ObjCMessageExpr *message) {
 static const Expr *findWeakLValue(const Expr *E) {
   assert(E->getType()->isObjCRetainableType());
   E = E->IgnoreParens();
-  if (auto CE = dyn_cast<CastExpr>(E)) {
-    if (CE->getCastKind() == CK_LValueToRValue) {
-      if (CE->getSubExpr()->getType().getObjCLifetime() == Qualifiers::OCL_Weak)
-        return CE->getSubExpr();
-    }
-  }
+  if (auto CE = dyn_cast<CastExpr>(E); CE && (CE->getCastKind() == CK_LValueToRValue) && (CE->getSubExpr()->getType().getObjCLifetime() == Qualifiers::OCL_Weak)) 
+    
+      return CE->getSubExpr();
+    
+  
 
   return nullptr;
 }
@@ -1480,9 +1477,8 @@ static bool hasTrivialSetExpr(const ObjCPropertyImplDecl *PID) {
   // references.
   if (CallExpr *call = dyn_cast<CallExpr>(setter)) {
     if (const FunctionDecl *callee
-          = dyn_cast_or_null<FunctionDecl>(call->getCalleeDecl()))
-      if (callee->isTrivial())
-        return true;
+          = dyn_cast_or_null<FunctionDecl>(call->getCalleeDecl()); callee && (callee->isTrivial()))
+      return true;
     return false;
   }
 
@@ -2216,15 +2212,15 @@ void CodeGenFunction::EmitARCNoopIntrinsicUse(ArrayRef<llvm::Value *> values) {
 }
 
 static void setARCRuntimeFunctionLinkage(CodeGenModule &CGM, llvm::Value *RTF) {
-  if (auto *F = dyn_cast<llvm::Function>(RTF)) {
+  if (auto *F = dyn_cast<llvm::Function>(RTF); F && (!CGM.getLangOpts().ObjCRuntime.hasNativeARC() &&
+        !CGM.getTriple().isOSBinFormatCOFF())) 
     // If the target runtime doesn't naturally support ARC, emit weak
     // references to the runtime support library.  We don't really
     // permit this to fail, but we need a particular relocation style.
-    if (!CGM.getLangOpts().ObjCRuntime.hasNativeARC() &&
-        !CGM.getTriple().isOSBinFormatCOFF()) {
+    {
       F->setLinkage(llvm::Function::ExternalWeakLinkage);
     }
-  }
+  
 }
 
 static void setARCRuntimeFunctionLinkage(CodeGenModule &CGM,
@@ -2332,9 +2328,8 @@ static llvm::Value *emitObjCValueOperation(CodeGenFunction &CGF,
     fn = CGF.CGM.CreateRuntimeFunction(fnType, fnName);
 
     // We have Native ARC, so set nonlazybind attribute for performance
-    if (llvm::Function *f = dyn_cast<llvm::Function>(fn.getCallee()))
-      if (fnName == "objc_retain")
-        f->addFnAttr(llvm::Attribute::NonLazyBind);
+    if (llvm::Function *f = dyn_cast<llvm::Function>(fn.getCallee()); f && (fnName == "objc_retain"))
+      f->addFnAttr(llvm::Attribute::NonLazyBind);
   }
 
   // Cast the argument to 'id'.

@@ -143,9 +143,8 @@ void ACCIfClauseLowering::lowerIfClauseForComputeConstruct(
 
   // Collect data entry operations
   for (Value operand : computeConstructOp.getDataClauseOperands())
-    if (Operation *defOp = operand.getDefiningOp())
-      if (isa<ACC_DATA_ENTRY_OPS>(defOp))
-        dataEntryOps.push_back(defOp);
+    if (Operation *defOp = operand.getDefiningOp(); defOp && (isa<ACC_DATA_ENTRY_OPS>(defOp)))
+      dataEntryOps.push_back(defOp);
 
   // Find corresponding exit operations for each entry operation.
   // Iterate backwards through entry ops since exit ops appear in reverse order.

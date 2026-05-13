@@ -127,9 +127,8 @@ ProgramStateRef taint::addPartialTaint(ProgramStateRef State,
                                        const SubRegion *SubRegion,
                                        TaintTagType Kind) {
   // Ignore partial taint if the entire parent symbol is already tainted.
-  if (const TaintTagType *T = State->get<TaintMap>(ParentSym))
-    if (*T == Kind)
-      return State;
+  if (const TaintTagType *T = State->get<TaintMap>(ParentSym); T && (*T == Kind))
+    return State;
 
   // Partial taint applies if only a portion of the symbol is tainted.
   if (SubRegion == SubRegion->getBaseRegion())
@@ -277,13 +276,13 @@ std::vector<SymbolRef> taint::getTaintedSymbolsImpl(ProgramStateRef State,
     if (!isa<SymbolData>(SubSym))
       continue;
 
-    if (const TaintTagType *Tag = State->get<TaintMap>(SubSym)) {
-      if (*Tag == Kind) {
+    if (const TaintTagType *Tag = State->get<TaintMap>(SubSym); Tag && (*Tag == Kind)) 
+      {
         TaintedSymbols.push_back(SubSym);
         if (returnFirstOnly)
           return TaintedSymbols; // return early if needed
       }
-    }
+    
 
     if (const auto *SD = dyn_cast<SymbolDerived>(SubSym)) {
       // If this is a SymbolDerived with a tainted parent, it's also tainted.

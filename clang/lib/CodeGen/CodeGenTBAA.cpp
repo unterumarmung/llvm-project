@@ -118,9 +118,8 @@ llvm::MDNode *CodeGenTBAA::getAnyPtr(unsigned PtrDepth) {
 
 static bool TypeHasMayAlias(QualType QTy) {
   // Tagged types have declarations, and therefore may have attributes.
-  if (auto *TD = QTy->getAsTagDecl())
-    if (TD->hasAttr<MayAliasAttr>())
-      return true;
+  if (auto *TD = QTy->getAsTagDecl(); TD && (TD->hasAttr<MayAliasAttr>()))
+    return true;
 
   // Also look for may_alias as a declaration attribute on a typedef.
   // FIXME: We should follow GCC and model may_alias as a type attribute
@@ -133,9 +132,8 @@ static bool TypeHasMayAlias(QualType QTy) {
 
   // Also consider an array type as may_alias when its element type (at
   // any level) is marked as such.
-  if (auto *ArrayTy = QTy->getAsArrayTypeUnsafe())
-    if (TypeHasMayAlias(ArrayTy->getElementType()))
-      return true;
+  if (auto *ArrayTy = QTy->getAsArrayTypeUnsafe(); ArrayTy && (TypeHasMayAlias(ArrayTy->getElementType())))
+    return true;
 
   return false;
 }
@@ -445,9 +443,8 @@ CodeGenTBAA::CollectFields(uint64_t BaseOffset,
       return false;
 
     // TODO: Handle C++ base classes.
-    if (const CXXRecordDecl *Decl = dyn_cast<CXXRecordDecl>(RD))
-      if (!Decl->bases().empty())
-        return false;
+    if (const CXXRecordDecl *Decl = dyn_cast<CXXRecordDecl>(RD); Decl && (!Decl->bases().empty()))
+      return false;
 
     const ASTRecordLayout &Layout = Context.getASTRecordLayout(RD);
     const CGRecordLayout &CGRL = CGTypes.getCGRecordLayout(RD);

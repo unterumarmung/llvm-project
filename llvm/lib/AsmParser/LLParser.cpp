@@ -83,10 +83,9 @@ bool LLParser::Run(bool UpgradeDebugInfo,
         Lex.getLoc(),
         "Can't read textual IR with a Context that discards named Values");
 
-  if (M) {
-    if (parseTargetDefinitions(DataLayoutCallback))
-      return true;
-  }
+  if ((M) && (parseTargetDefinitions(DataLayoutCallback))) 
+    return true;
+  
 
   return parseTopLevelEntities() || validateEndOfModule(UpgradeDebugInfo) ||
          validateEndOfIndex();
@@ -158,9 +157,8 @@ static void dropIntrinsicWithUnknownMetadataArgument(IntrinsicInst *II) {
   SmallVector<MetadataAsValue *> MVs;
   for (Value *V : II->args())
     if (auto *MV = dyn_cast<MetadataAsValue>(V))
-      if (auto *MD = dyn_cast<MDNode>(MV->getMetadata()))
-        if (MD->isTemporary())
-          MVs.push_back(MV);
+      if (auto *MD = dyn_cast<MDNode>(MV->getMetadata()); MD && (MD->isTemporary()))
+        MVs.push_back(MV);
 
   if (!MVs.empty()) {
     assert(II->use_empty() && "Cannot have uses");
@@ -1399,12 +1397,11 @@ bool LLParser::parseGlobal(const std::string &Name, unsigned NameID,
   // If the linkage is specified and is external, then no initializer is
   // present.
   Constant *Init = nullptr;
-  if (!HasLinkage ||
+  if ((!HasLinkage ||
       !GlobalValue::isValidDeclarationLinkage(
-          (GlobalValue::LinkageTypes)Linkage)) {
-    if (parseGlobalValue(Ty, Init))
-      return true;
-  }
+          (GlobalValue::LinkageTypes)Linkage)) && (parseGlobalValue(Ty, Init))) 
+    return true;
+  
 
   if (Ty->isFunctionTy() || !PointerType::isValidElementType(Ty))
     return error(TyLoc, "invalid type for global variable");
@@ -2455,10 +2452,9 @@ bool LLParser::parseOptionalAlignment(MaybeAlign &Alignment, bool AllowParens) {
 
   LocTy ParenLoc = Lex.getLoc();
   bool HaveParens = false;
-  if (AllowParens) {
-    if (EatIfPresent(lltok::lparen))
-      HaveParens = true;
-  }
+  if ((AllowParens) && (EatIfPresent(lltok::lparen))) 
+    HaveParens = true;
+  
 
   if (parseUInt64(Value))
     return true;
@@ -4729,11 +4725,10 @@ bool LLParser::parseValID(ValID &ID, PerFunctionState *PFS, Type *ExpectedTy) {
     if (parseToken(lltok::lparen, "expected '(' in constantexpr"))
       return true;
 
-    if (Opc == Instruction::GetElementPtr) {
-      if (parseType(Ty) ||
-          parseToken(lltok::comma, "expected comma after getelementptr's type"))
-        return true;
-    }
+    if ((Opc == Instruction::GetElementPtr) && (parseType(Ty) ||
+          parseToken(lltok::comma, "expected comma after getelementptr's type"))) 
+      return true;
+    
 
     if (parseGlobalValueVector(Elts) ||
         parseToken(lltok::rparen, "expected ')' in constantexpr"))
@@ -6827,9 +6822,8 @@ bool LLParser::convertValIDToValue(Type *Ty, ValID &ID, Value *&V,
     // FIXME: LabelTy should not be a first-class type.
     if (!Ty->isFirstClassType() || Ty->isLabelTy())
       return error(ID.Loc, "invalid type for null constant");
-    if (auto *TETy = dyn_cast<TargetExtType>(Ty))
-      if (!TETy->hasProperty(TargetExtType::HasZeroInit))
-        return error(ID.Loc, "invalid type for null constant");
+    if (auto *TETy = dyn_cast<TargetExtType>(Ty); TETy && (!TETy->hasProperty(TargetExtType::HasZeroInit)))
+      return error(ID.Loc, "invalid type for null constant");
     V = Constant::getNullValue(Ty);
     return false;
   case ValID::t_None:
@@ -7366,9 +7360,8 @@ bool LLParser::parseBasicBlock(PerFunctionState &PFS) {
 
       // With a normal result, we check to see if the instruction is followed by
       // a comma and metadata.
-      if (EatIfPresent(lltok::comma))
-        if (parseInstructionMetadata(*Inst))
-          return true;
+      if ((EatIfPresent(lltok::comma)) && (parseInstructionMetadata(*Inst)))
+        return true;
       break;
     case InstExtraComma:
       Inst->insertInto(BB, BB->end());
@@ -9531,11 +9524,10 @@ bool LLParser::parseTypeIdSummary(TypeIdSummary &TIS) {
       parseTypeTestResolution(TIS.TTRes))
     return true;
 
-  if (EatIfPresent(lltok::comma)) {
+  if ((EatIfPresent(lltok::comma)) && (parseOptionalWpdResolutions(TIS.WPDRes))) 
     // Expect optional wpdResolutions field
-    if (parseOptionalWpdResolutions(TIS.WPDRes))
-      return true;
-  }
+    return true;
+  
 
   if (parseToken(lltok::rparen, "expected ')' here"))
     return true;
@@ -10938,9 +10930,8 @@ bool LLParser::parseConstVCall(FunctionSummary::ConstVCall &ConstVCall,
       parseVFuncId(ConstVCall.VFunc, IdToIndexMap, Index))
     return true;
 
-  if (EatIfPresent(lltok::comma))
-    if (parseArgs(ConstVCall.Args))
-      return true;
+  if ((EatIfPresent(lltok::comma)) && (parseArgs(ConstVCall.Args)))
+    return true;
 
   if (parseToken(lltok::rparen, "expected ')' here"))
     return true;
@@ -11312,10 +11303,9 @@ bool LLParser::parseOptionalCallsites(std::vector<CallsiteInfo> &Callsites) {
     ValueInfo VI;
     unsigned GVId = 0;
     LocTy Loc = Lex.getLoc();
-    if (!EatIfPresent(lltok::kw_null)) {
-      if (parseGVReference(VI, GVId))
-        return true;
-    }
+    if ((!EatIfPresent(lltok::kw_null)) && (parseGVReference(VI, GVId))) 
+      return true;
+    
 
     if (parseToken(lltok::comma, "expected ',' in callsite") ||
         parseToken(lltok::kw_clones, "expected 'clones' in callsite") ||

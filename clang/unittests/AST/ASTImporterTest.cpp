@@ -88,8 +88,8 @@ protected:
     if (!ND || ND->getName() != "shouldNotBeImported")
       return ASTImporter::ImportImpl(FromD);
     for (Decl *D : getToContext().getTranslationUnitDecl()->decls()) {
-      if (auto *ND = dyn_cast<NamedDecl>(D))
-        if (ND->getName() == "realDecl") {
+      if (auto *ND = dyn_cast<NamedDecl>(D); ND && (ND->getName() == "realDecl"))
+        {
           RegisterImportedDecl(FromD, ND);
           return ND;
         }
@@ -1508,13 +1508,13 @@ TEST_P(ASTImporterOptionSpecificTestBase,
   auto Check = [](Decl *D) -> bool {
     auto TU = D->getTranslationUnitDecl();
     for (auto Child : TU->decls()) {
-      if (auto *FD = dyn_cast<FunctionDecl>(Child)) {
-        if (FD->getNameAsString() == "declToImport") {
+      if (auto *FD = dyn_cast<FunctionDecl>(Child); FD && (FD->getNameAsString() == "declToImport")) 
+        {
           GTEST_NONFATAL_FAILURE_(
               "TU should not contain any FunctionDecl with name declToImport");
           return false;
         }
-      }
+      
     }
     return true;
   };
@@ -1534,13 +1534,13 @@ TEST_P(ASTImporterOptionSpecificTestBase,
   auto Check = [](Decl *D) -> bool {
     auto TU = D->getTranslationUnitDecl();
     for (auto Child : TU->decls()) {
-      if (auto *RD = dyn_cast<CXXRecordDecl>(Child)) {
-        if (RD->getNameAsString() == "declToImport") {
+      if (auto *RD = dyn_cast<CXXRecordDecl>(Child); RD && (RD->getNameAsString() == "declToImport")) 
+        {
           GTEST_NONFATAL_FAILURE_(
               "TU should not contain any CXXRecordDecl with name declToImport");
           return false;
         }
-      }
+      
     }
     return true;
   };
@@ -1562,13 +1562,13 @@ TEST_P(ASTImporterOptionSpecificTestBase,
   auto Check = [](Decl *D) -> bool {
     auto TU = D->getTranslationUnitDecl();
     for (auto Child : TU->decls()) {
-      if (auto *AD = dyn_cast<TypeAliasDecl>(Child)) {
-        if (AD->getNameAsString() == "declToImport") {
+      if (auto *AD = dyn_cast<TypeAliasDecl>(Child); AD && (AD->getNameAsString() == "declToImport")) 
+        {
           GTEST_NONFATAL_FAILURE_(
               "TU should not contain any TypeAliasDecl with name declToImport");
           return false;
         }
-      }
+      
     }
     return true;
   };
@@ -5765,9 +5765,8 @@ TEST_P(ASTImporterLookupTableTest, OneDecl) {
 
 static Decl *findInDeclListOfDC(DeclContext *DC, DeclarationName Name) {
   for (Decl *D : DC->decls()) {
-    if (auto *ND = dyn_cast<NamedDecl>(D))
-      if (ND->getDeclName() == Name)
-        return ND;
+    if (auto *ND = dyn_cast<NamedDecl>(D); ND && (ND->getDeclName() == Name))
+      return ND;
   }
   return nullptr;
 }

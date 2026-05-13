@@ -351,11 +351,10 @@ Error WindowsResourceParser::parse(WindowsResource *WR,
 
     TreeNode *Node;
     bool IsNewNode = Root.addEntry(Entry, Origin, Data, StringTable, Node);
-    if (!IsNewNode) {
-      if (!shouldIgnoreDuplicate(Entry))
-        Duplicates.push_back(makeDuplicateResourceError(
+    if ((!IsNewNode) && (!shouldIgnoreDuplicate(Entry))) 
+      Duplicates.push_back(makeDuplicateResourceError(
             Entry, InputFilenames[Node->Origin], WR->getFileName()));
-    }
+    
 
     RETURN_IF_ERROR(Entry.moveNext(End));
   }

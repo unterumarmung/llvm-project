@@ -280,13 +280,13 @@ SDNodeInfoEmitter::emitTypeConstraints(raw_ostream &OS) const {
       continue;
 
     for (const SDTypeConstraint &C : Constraints) {
-      if (C.ConstraintType == SDTypeConstraint::SDTCisVT ||
-          C.ConstraintType == SDTypeConstraint::SDTCVecEltisVT) {
-        if (!C.VVT.isSimple()) {
+      if ((C.ConstraintType == SDTypeConstraint::SDTCisVT ||
+          C.ConstraintType == SDTypeConstraint::SDTCVecEltisVT) && (!C.VVT.isSimple())) 
+        {
           assert(!C.VVT.empty() && "Unexpected empty type set");
           VTByHwModeTable.try_emplace(C.VVT);
         }
-      }
+      
     }
 
     // SequenceToOffsetTable reuses the storage if a sequence matches another

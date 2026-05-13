@@ -770,10 +770,9 @@ LogicalResult Serializer::prepareBasicType(
     // Ideally, Block decorations should be inserted when converting to SPIR-V.
     if (isInterfaceStructPtrType(ptrType)) {
       auto structType = cast<spirv::StructType>(ptrType.getPointeeType());
-      if (!structType.hasDecoration(spirv::Decoration::Block))
-        if (failed(emitDecoration(getTypeID(pointeeStruct),
-                                  spirv::Decoration::Block)))
-          return emitError(loc, "cannot decorate ")
+      if ((!structType.hasDecoration(spirv::Decoration::Block)) && (failed(emitDecoration(getTypeID(pointeeStruct),
+                                  spirv::Decoration::Block))))
+        return emitError(loc, "cannot decorate ")
                  << pointeeStruct << " with Block decoration";
     }
 

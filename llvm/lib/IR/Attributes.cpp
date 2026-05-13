@@ -2484,17 +2484,15 @@ AttributeMask AttributeFuncs::typeIncompatible(Type *Ty, AttributeSet AS,
                                                AttributeSafetyKind ASK) {
   AttributeMask Incompatible;
 
-  if (!Ty->isIntegerTy()) {
+  if ((!Ty->isIntegerTy()) && (ASK & ASK_SAFE_TO_DROP)) 
     // Attributes that only apply to integers.
-    if (ASK & ASK_SAFE_TO_DROP)
-      Incompatible.addAttribute(Attribute::AllocAlign);
-  }
+    Incompatible.addAttribute(Attribute::AllocAlign);
+  
 
-  if (!Ty->isIntegerTy() && !Ty->isByteTy()) {
+  if ((!Ty->isIntegerTy() && !Ty->isByteTy()) && (ASK & ASK_UNSAFE_TO_DROP)) 
     // Attributes that only apply to integers and bytes.
-    if (ASK & ASK_UNSAFE_TO_DROP)
-      Incompatible.addAttribute(Attribute::SExt).addAttribute(Attribute::ZExt);
-  }
+    Incompatible.addAttribute(Attribute::SExt).addAttribute(Attribute::ZExt);
+  
 
   if (!Ty->isIntOrIntVectorTy()) {
     // Attributes that only apply to integers or vector of integers.
@@ -2534,21 +2532,18 @@ AttributeMask AttributeFuncs::typeIncompatible(Type *Ty, AttributeSet AS,
   }
 
     // Attributes that only apply to pointers or vectors of pointers.
-  if (!Ty->isPtrOrPtrVectorTy()) {
-    if (ASK & ASK_SAFE_TO_DROP)
-      Incompatible.addAttribute(Attribute::Alignment);
-  }
+  if ((!Ty->isPtrOrPtrVectorTy()) && (ASK & ASK_SAFE_TO_DROP)) 
+    Incompatible.addAttribute(Attribute::Alignment);
+  
 
-  if (ASK & ASK_SAFE_TO_DROP) {
-    if (!isNoFPClassCompatibleType(Ty))
-      Incompatible.addAttribute(Attribute::NoFPClass);
-  }
+  if ((ASK & ASK_SAFE_TO_DROP) && (!isNoFPClassCompatibleType(Ty))) 
+    Incompatible.addAttribute(Attribute::NoFPClass);
+  
 
   // Some attributes can apply to all "values" but there are no `void` values.
-  if (Ty->isVoidTy()) {
-    if (ASK & ASK_SAFE_TO_DROP)
-      Incompatible.addAttribute(Attribute::NoUndef);
-  }
+  if ((Ty->isVoidTy()) && (ASK & ASK_SAFE_TO_DROP)) 
+    Incompatible.addAttribute(Attribute::NoUndef);
+  
 
   return Incompatible;
 }

@@ -530,9 +530,8 @@ const CGFunctionInfo &CodeGenTypes::arrangeCXXConstructorCall(
 const CGFunctionInfo &
 CodeGenTypes::arrangeFunctionDeclaration(const GlobalDecl GD) {
   const FunctionDecl *FD = cast<FunctionDecl>(GD.getDecl());
-  if (const CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(FD))
-    if (MD->isImplicitObjectMemberFunction())
-      return arrangeCXXMethodDeclaration(MD);
+  if (const CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(FD); MD && (MD->isImplicitObjectMemberFunction()))
+    return arrangeCXXMethodDeclaration(MD);
 
   CanQualType FTy = FD->getType()->getCanonicalTypeUnqualified();
 
@@ -1856,10 +1855,9 @@ bool CodeGenModule::ReturnTypeUsesFPRet(QualType ResultType) {
 
 bool CodeGenModule::ReturnTypeUsesFP2Ret(QualType ResultType) {
   if (const ComplexType *CT = ResultType->getAs<ComplexType>()) {
-    if (const BuiltinType *BT = CT->getElementType()->getAs<BuiltinType>()) {
-      if (BT->getKind() == BuiltinType::LongDouble)
-        return getTarget().useObjCFP2RetForComplexLongDouble();
-    }
+    if (const BuiltinType *BT = CT->getElementType()->getAs<BuiltinType>(); BT && (BT->getKind() == BuiltinType::LongDouble)) 
+      return getTarget().useObjCFP2RetForComplexLongDouble();
+    
   }
 
   return false;
@@ -2091,11 +2089,10 @@ static bool HasStrictReturn(const CodeGenModule &Module, QualType RetTy,
     if (const FunctionDecl *FDecl = dyn_cast<FunctionDecl>(TargetDecl)) {
       if (FDecl->isExternC())
         return false;
-    } else if (const VarDecl *VDecl = dyn_cast<VarDecl>(TargetDecl)) {
+    } else if (const VarDecl *VDecl = dyn_cast<VarDecl>(TargetDecl); VDecl && (VDecl->isExternC())) 
       // Function pointer.
-      if (VDecl->isExternC())
-        return false;
-    }
+      return false;
+    
   }
 
   // We don't want to be too aggressive with the return checking, unless
@@ -2632,12 +2629,11 @@ void CodeGenModule::ConstructAttributeList(StringRef Name,
       }
     }
 
-    if (isa<FunctionDecl>(TargetDecl) || isa<VarDecl>(TargetDecl)) {
+    if ((isa<FunctionDecl>(TargetDecl) || isa<VarDecl>(TargetDecl)) && (AttrOnCallSite && TargetDecl->hasAttr<NoMergeAttr>())) 
       // Only place nomerge attribute on call sites, never functions. This
       // allows it to work on indirect virtual function calls.
-      if (AttrOnCallSite && TargetDecl->hasAttr<NoMergeAttr>())
-        FuncAttrs.addAttribute(llvm::Attribute::NoMerge);
-    }
+      FuncAttrs.addAttribute(llvm::Attribute::NoMerge);
+    
 
     // 'const', 'pure' and 'noalias' attributed functions are also nounwind.
     if (TargetDecl->hasAttr<ConstAttr>()) {
@@ -2741,11 +2737,11 @@ void CodeGenModule::ConstructAttributeList(StringRef Name,
     // FIXME: what if we just haven't processed the function definition
     // yet, or if it's an external definition like C99 inline?
     if (CodeGenOpts.NoPLT) {
-      if (auto *Fn = dyn_cast<FunctionDecl>(TargetDecl)) {
-        if (!Fn->isDefined() && !AttrOnCallSite) {
+      if (auto *Fn = dyn_cast<FunctionDecl>(TargetDecl); Fn && (!Fn->isDefined() && !AttrOnCallSite)) 
+        {
           FuncAttrs.addAttribute(llvm::Attribute::NonLazyBind);
         }
-      }
+      
     }
     // Remove 'convergent' if requested.
     if (TargetDecl->hasAttr<NoConvergentAttr>())
@@ -2755,11 +2751,10 @@ void CodeGenModule::ConstructAttributeList(StringRef Name,
   // Add "sample-profile-suffix-elision-policy" attribute for internal linkage
   // functions with -funique-internal-linkage-names.
   if (TargetDecl && CodeGenOpts.UniqueInternalLinkageNames) {
-    if (const auto *FD = dyn_cast_or_null<FunctionDecl>(TargetDecl)) {
-      if (!FD->isExternallyVisible())
-        FuncAttrs.addAttribute("sample-profile-suffix-elision-policy",
+    if (const auto *FD = dyn_cast_or_null<FunctionDecl>(TargetDecl); FD && (!FD->isExternallyVisible())) 
+      FuncAttrs.addAttribute("sample-profile-suffix-elision-policy",
                                "selected");
-    }
+    
   }
 
   // Collect non-call-site function IR attributes from declaration-specific
@@ -2782,9 +2777,8 @@ void CodeGenModule::ConstructAttributeList(StringRef Name,
         return true;
 
       if (CodeGenOpts.NoEscapingBlockTailCalls) {
-        if (const auto *BD = dyn_cast<BlockDecl>(TargetDecl))
-          if (!BD->doesNotEscape())
-            return true;
+        if (const auto *BD = dyn_cast<BlockDecl>(TargetDecl); BD && (!BD->doesNotEscape()))
+          return true;
       }
 
       return false;
@@ -2825,12 +2819,11 @@ void CodeGenModule::ConstructAttributeList(StringRef Name,
   const llvm::DataLayout &DL = getDataLayout();
 
   // Determine if the return type could be partially undef
-  if (CodeGenOpts.EnableNoundefAttrs &&
-      HasStrictReturn(*this, RetTy, TargetDecl)) {
-    if (!RetTy->isVoidType() && RetAI.getKind() != ABIArgInfo::Indirect &&
-        DetermineNoUndef(RetTy, getTypes(), DL, RetAI))
-      RetAttrs.addAttribute(llvm::Attribute::NoUndef);
-  }
+  if ((CodeGenOpts.EnableNoundefAttrs &&
+      HasStrictReturn(*this, RetTy, TargetDecl)) && (!RetTy->isVoidType() && RetAI.getKind() != ABIArgInfo::Indirect &&
+        DetermineNoUndef(RetTy, getTypes(), DL, RetAI))) 
+    RetAttrs.addAttribute(llvm::Attribute::NoUndef);
+  
 
   switch (RetAI.getKind()) {
   case ABIArgInfo::Extend:
@@ -2981,14 +2974,14 @@ void CodeGenModule::ConstructAttributeList(StringRef Name,
     llvm::AttrBuilder Attrs(getLLVMContext());
 
     // Add attribute for padding argument, if necessary.
-    if (IRFunctionArgs.hasPaddingArg(ArgNo)) {
-      if (AI.getPaddingInReg()) {
+    if ((IRFunctionArgs.hasPaddingArg(ArgNo)) && (AI.getPaddingInReg())) 
+      {
         ArgAttrs[IRFunctionArgs.getPaddingArgNo(ArgNo)] =
             llvm::AttributeSet::get(getLLVMContext(),
                                     llvm::AttrBuilder(getLLVMContext())
                                         .addAttribute(llvm::Attribute::InReg));
       }
-    }
+    
 
     // Decide whether the argument we're handling could be partially undef
     if (CodeGenOpts.EnableNoundefAttrs &&
@@ -3290,14 +3283,14 @@ void CodeGenFunction::EmitFunctionProlog(const CGFunctionInfo &FI,
   // initialize the return value.  TODO: it might be nice to have
   // a more general mechanism for this that didn't require synthesized
   // return statements.
-  if (const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(CurCodeDecl)) {
-    if (FD->hasImplicitReturnZero()) {
+  if (const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(CurCodeDecl); FD && (FD->hasImplicitReturnZero())) 
+    {
       QualType RetTy = FD->getReturnType().getUnqualifiedType();
       llvm::Type *LLVMTy = CGM.getTypes().ConvertType(RetTy);
       llvm::Constant *Zero = llvm::Constant::getNullValue(LLVMTy);
       Builder.CreateStore(Zero, ReturnValue);
     }
-  }
+  
 
   // FIXME: We no longer need the types from FunctionArgList; lift up and
   // simplify.
@@ -3450,11 +3443,11 @@ void CodeGenFunction::EmitFunctionProlog(const CGFunctionInfo &FI,
               }
             }
           } else if (const auto *ArrTy =
-                         getContext().getAsVariableArrayType(OTy)) {
+                         getContext().getAsVariableArrayType(OTy); ArrTy && (ArrTy->getSizeModifier() == ArraySizeModifier::Static)) 
             // For C99 VLAs with the static keyword, we don't know the size so
             // we can't use the dereferenceable attribute, but in addrspace(0)
             // we know that it must be nonnull.
-            if (ArrTy->getSizeModifier() == ArraySizeModifier::Static) {
+            {
               QualType ETy = ArrTy->getElementType();
               llvm::Align Alignment =
                   CGM.getNaturalTypeAlignment(ETy).getAsAlign();
@@ -3464,7 +3457,7 @@ void CodeGenFunction::EmitFunctionProlog(const CGFunctionInfo &FI,
                   !CGM.getCodeGenOpts().NullPointerIsValid)
                 AI->addAttr(llvm::Attribute::NonNull);
             }
-          }
+          
 
           // Set `align` attribute if any.
           const auto *AVAttr = PVD->getAttr<AlignValueAttr>();
@@ -4614,9 +4607,8 @@ static void deactivateArgCleanupsBeforeCall(CodeGenFunction &CGF,
 }
 
 static const Expr *maybeGetUnaryAddrOfOperand(const Expr *E) {
-  if (const UnaryOperator *uop = dyn_cast<UnaryOperator>(E->IgnoreParens()))
-    if (uop->getOpcode() == UO_AddrOf)
-      return uop->getSubExpr();
+  if (const UnaryOperator *uop = dyn_cast<UnaryOperator>(E->IgnoreParens()); uop && (uop->getOpcode() == UO_AddrOf))
+    return uop->getSubExpr();
   return nullptr;
 }
 
@@ -5214,13 +5206,13 @@ CodeGenFunction::getBundlesForFunclet(llvm::Value *Callee) {
 
   // Skip intrinsics which cannot throw (as long as they don't lower into
   // regular function calls in the course of IR transformations).
-  if (auto *CalleeFn = dyn_cast<llvm::Function>(Callee->stripPointerCasts())) {
-    if (CalleeFn->isIntrinsic() && CalleeFn->doesNotThrow()) {
+  if (auto *CalleeFn = dyn_cast<llvm::Function>(Callee->stripPointerCasts()); CalleeFn && (CalleeFn->isIntrinsic() && CalleeFn->doesNotThrow())) 
+    {
       auto IID = CalleeFn->getIntrinsicID();
       if (!llvm::IntrinsicInst::mayLowerToFunctionCall(IID))
         return (SmallVector<llvm::OperandBundleDef, 1>());
     }
-  }
+  
 
   SmallVector<llvm::OperandBundleDef, 1> BundleList;
   BundleList.emplace_back("funclet", CurrentFuncletPad);
@@ -5443,21 +5435,20 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
   llvm::FunctionType *IRFuncTy = getTypes().GetFunctionType(CallInfo);
 
   const Decl *TargetDecl = Callee.getAbstractInfo().getCalleeDecl().getDecl();
-  if (const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(TargetDecl)) {
+  if (const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(TargetDecl); FD && ((TargetDecl->hasAttr<AlwaysInlineAttr>() &&
+         (TargetDecl->hasAttr<TargetAttr>() ||
+          (CurFuncDecl && CurFuncDecl->hasAttr<TargetAttr>()))) ||
+        (CurFuncDecl && CurFuncDecl->hasAttr<FlattenAttr>() &&
+         (CurFuncDecl->hasAttr<TargetAttr>() ||
+          TargetDecl->hasAttr<TargetAttr>())))) 
     // We can only guarantee that a function is called from the correct
     // context/function based on the appropriate target attributes,
     // so only check in the case where we have both always_inline and target
     // since otherwise we could be making a conditional call after a check for
     // the proper cpu features (and it won't cause code generation issues due to
     // function based code generation).
-    if ((TargetDecl->hasAttr<AlwaysInlineAttr>() &&
-         (TargetDecl->hasAttr<TargetAttr>() ||
-          (CurFuncDecl && CurFuncDecl->hasAttr<TargetAttr>()))) ||
-        (CurFuncDecl && CurFuncDecl->hasAttr<FlattenAttr>() &&
-         (CurFuncDecl->hasAttr<TargetAttr>() ||
-          TargetDecl->hasAttr<TargetAttr>())))
-      checkTargetFeatures(Loc, FD);
-  }
+    checkTargetFeatures(Loc, FD);
+  
 
   // Some architectures (such as x86-64) have the ABI changed based on
   // attribute-target/features. Give them a chance to diagnose.
@@ -5968,10 +5959,9 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
       return nullptr;
 
     // Get underlying value if it's a bitcast
-    if (llvm::ConstantExpr *CE = dyn_cast<llvm::ConstantExpr>(Ptr)) {
-      if (CE->getOpcode() == llvm::Instruction::BitCast)
-        Ptr = CE->getOperand(0);
-    }
+    if (llvm::ConstantExpr *CE = dyn_cast<llvm::ConstantExpr>(Ptr); CE && (CE->getOpcode() == llvm::Instruction::BitCast)) 
+      Ptr = CE->getOperand(0);
+    
 
     llvm::Function *OrigFn = dyn_cast<llvm::Function>(Ptr);
     if (!OrigFn)
@@ -6091,9 +6081,8 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
     // Otherwise, nounwind call sites will never throw.
     CannotThrow = Attrs.hasFnAttr(llvm::Attribute::NoUnwind);
 
-    if (auto *FPtr = dyn_cast<llvm::Function>(CalleePtr))
-      if (FPtr->hasFnAttribute(llvm::Attribute::NoUnwind))
-        CannotThrow = true;
+    if (auto *FPtr = dyn_cast<llvm::Function>(CalleePtr); FPtr && (FPtr->hasFnAttribute(llvm::Attribute::NoUnwind)))
+      CannotThrow = true;
   }
 
   // If we made a temporary, be sure to clean up after ourselves. Note that we
@@ -6166,11 +6155,10 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
   // indirect call, add the "guard_nocf" attribute to this call to indicate that
   // Control Flow Guard checks should not be added, even if the call is inlined.
   if (const auto *FD = dyn_cast_or_null<FunctionDecl>(CurFuncDecl)) {
-    if (const auto *A = FD->getAttr<CFGuardAttr>()) {
-      if (A->getGuard() == CFGuardAttr::GuardArg::nocf &&
-          !CI->getCalledFunction())
-        Attrs = Attrs.addFnAttribute(getLLVMContext(), "guard_nocf");
-    }
+    if (const auto *A = FD->getAttr<CFGuardAttr>(); A && (A->getGuard() == CFGuardAttr::GuardArg::nocf &&
+          !CI->getCalledFunction())) 
+      Attrs = Attrs.addFnAttribute(getLLVMContext(), "guard_nocf");
+    
   }
 
   // Apply the attributes and calling convention.
@@ -6447,14 +6435,14 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
         if (auto *FixedDstTy = dyn_cast<llvm::FixedVectorType>(RetIRTy)) {
           llvm::Value *V = CI;
           if (auto *ScalableSrcTy =
-                  dyn_cast<llvm::ScalableVectorType>(V->getType())) {
-            if (FixedDstTy->getElementType() ==
-                ScalableSrcTy->getElementType()) {
+                  dyn_cast<llvm::ScalableVectorType>(V->getType()); ScalableSrcTy && (FixedDstTy->getElementType() ==
+                ScalableSrcTy->getElementType())) 
+            {
               V = Builder.CreateExtractVector(FixedDstTy, V, uint64_t(0),
                                               "cast.fixed");
               return RValue::get(V);
             }
-          }
+          
         }
 
         Address DestPtr = ReturnValue.getValue();

@@ -431,14 +431,14 @@ bool vputils::isUniformAcrossVFsAndUFs(const VPValue *V) {
   const VPRecipeBase *R = V->getDefiningRecipe();
   const VPBasicBlock *VPBB = R ? R->getParent() : nullptr;
   const VPlan *Plan = VPBB ? VPBB->getPlan() : nullptr;
-  if (VPBB) {
-    if ((VPBB == Plan->getVectorPreheader() || VPBB == Plan->getEntry())) {
+  if ((VPBB) && ((VPBB == Plan->getVectorPreheader() || VPBB == Plan->getEntry()))) 
+    {
       if (match(V->getDefiningRecipe(),
                 m_VPInstruction<VPInstruction::CanonicalIVIncrementForPart>()))
         return false;
       return all_of(R->operands(), isUniformAcrossVFsAndUFs);
     }
-  }
+  
 
   return TypeSwitch<const VPRecipeBase *, bool>(R)
       .Case([](const VPDerivedIVRecipe *R) { return true; })
@@ -808,9 +808,8 @@ bool vputils::isUsedByLoadStoreAddress(const VPValue *V) {
       continue;
 
     for (VPUser *U : Cur->users()) {
-      if (auto *InterleaveR = dyn_cast<VPInterleaveBase>(U))
-        if (InterleaveR->getAddr() == Cur)
-          return true;
+      if (auto *InterleaveR = dyn_cast<VPInterleaveBase>(U); InterleaveR && (InterleaveR->getAddr() == Cur))
+        return true;
       if (auto *RepR = dyn_cast<VPReplicateRecipe>(U)) {
         if (RepR->getOpcode() == Instruction::Load &&
             RepR->getOperand(0) == Cur)
@@ -819,10 +818,9 @@ bool vputils::isUsedByLoadStoreAddress(const VPValue *V) {
             RepR->getOperand(1) == Cur)
           return true;
       }
-      if (auto *MemR = dyn_cast<VPWidenMemoryRecipe>(U)) {
-        if (MemR->getAddr() == Cur && MemR->isConsecutive())
-          return true;
-      }
+      if (auto *MemR = dyn_cast<VPWidenMemoryRecipe>(U); MemR && (MemR->getAddr() == Cur && MemR->isConsecutive())) 
+        return true;
+      
     }
 
     // The legacy cost model only supports scalarization loads/stores with phi

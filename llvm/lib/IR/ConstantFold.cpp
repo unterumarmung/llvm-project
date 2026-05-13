@@ -181,13 +181,13 @@ Constant *llvm::ConstantFoldCastInstruction(unsigned opc, Constant *V,
 
   // If the cast operand is a constant expression, there's a few things we can
   // do to try to simplify it.
-  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V)) {
-    if (CE->isCast()) {
+  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V); CE && (CE->isCast())) 
+    {
       // Try hard to fold cast of cast because they are often eliminable.
       if (unsigned newOpc = foldConstantCastPair(opc, CE, DestTy))
         return foldMaybeUndesirableCast(newOpc, CE->getOperand(0), DestTy);
     }
-  }
+  
 
   // If the cast operand is a constant vector, perform the cast by
   // operating on each element. In the cast of bitcasts, the element
@@ -387,11 +387,10 @@ Constant *llvm::ConstantFoldExtractElementInstruction(Constant *Val,
   if (!CIdx)
     return nullptr;
 
-  if (auto *ValFVTy = dyn_cast<FixedVectorType>(Val->getType())) {
+  if (auto *ValFVTy = dyn_cast<FixedVectorType>(Val->getType()); ValFVTy && (CIdx->uge(ValFVTy->getNumElements()))) 
     // ee({w,x,y,z}, wrong_value) -> poison
-    if (CIdx->uge(ValFVTy->getNumElements()))
-      return PoisonValue::get(ValFVTy->getElementType());
-  }
+    return PoisonValue::get(ValFVTy->getElementType());
+  
 
   // ee (gep (ptr, idx0, ...), idx) -> gep (ee (ptr, idx), ee (idx0, idx), ...)
   if (auto *CE = dyn_cast<ConstantExpr>(Val)) {
@@ -647,10 +646,9 @@ Constant *llvm::ConstantFoldBinaryInstruction(unsigned Opcode, Constant *C1,
     if (C2 == Identity)
       return C1;
   } else if (Constant *Identity = ConstantExpr::getBinOpIdentity(
-                 Opcode, C1->getType(), /*AllowRHSIdentity*/ true)) {
-    if (C2 == Identity)
-      return C1;
-  }
+                 Opcode, C1->getType(), /*AllowRHSIdentity*/ true); Identity && (C2 == Identity)) 
+    return C1;
+  
 
   // Binary operations propagate poison.
   if (isa<PoisonValue>(C1) || isa<PoisonValue>(C2))
@@ -683,9 +681,8 @@ Constant *llvm::ConstantFoldBinaryInstruction(unsigned Opcode, Constant *C1,
         return C1;
       const APInt *CV;
       // X * undef -> undef   if X is odd
-      if (match(C1, m_APInt(CV)) || match(C2, m_APInt(CV)))
-        if ((*CV)[0])
-          return UndefValue::get(C1->getType());
+      if ((match(C1, m_APInt(CV)) || match(C2, m_APInt(CV))) && ((*CV)[0]))
+        return UndefValue::get(C1->getType());
 
       // X * undef -> 0       otherwise
       return Constant::getNullValue(C1->getType());
@@ -778,11 +775,11 @@ Constant *llvm::ConstantFoldBinaryInstruction(unsigned Opcode, Constant *C1,
       break;
     case Instruction::And:
       assert(!CI2->isZero() && "And zero handled above");
-      if (ConstantExpr *CE1 = dyn_cast<ConstantExpr>(C1)) {
-        // If and'ing the address of a global with a constant, fold it.
-        if ((CE1->getOpcode() == Instruction::PtrToInt ||
+      if (ConstantExpr *CE1 = dyn_cast<ConstantExpr>(C1); CE1 && ((CE1->getOpcode() == Instruction::PtrToInt ||
              CE1->getOpcode() == Instruction::PtrToAddr) &&
-            isa<GlobalValue>(CE1->getOperand(0))) {
+            isa<GlobalValue>(CE1->getOperand(0)))) 
+        // If and'ing the address of a global with a constant, fold it.
+        {
           GlobalValue *GV = cast<GlobalValue>(CE1->getOperand(0));
 
           Align GVAlign; // defaults to 1
@@ -816,16 +813,15 @@ Constant *llvm::ConstantFoldBinaryInstruction(unsigned Opcode, Constant *C1,
               return Constant::getNullValue(CI2->getType());
           }
         }
-      }
+      
       break;
     }
-  } else if (isa<ConstantInt>(C1)) {
+  } else if ((isa<ConstantInt>(C1)) && (Instruction::isCommutative(Opcode))) 
     // If C1 is a ConstantInt and C2 is not, swap the operands.
-    if (Instruction::isCommutative(Opcode))
-      return ConstantExpr::isDesirableBinOp(Opcode)
+    return ConstantExpr::isDesirableBinOp(Opcode)
                  ? ConstantExpr::get(Opcode, C2, C1)
                  : ConstantFoldBinaryInstruction(Opcode, C2, C1);
-  }
+  
 
   if (ConstantInt *CI1 = dyn_cast<ConstantInt>(C1)) {
     if (ConstantInt *CI2 = dyn_cast<ConstantInt>(C2)) {
@@ -955,12 +951,11 @@ Constant *llvm::ConstantFoldBinaryInstruction(unsigned Opcode, Constant *C1,
       if (!isa<ConstantExpr>(T) || cast<ConstantExpr>(T)->getOpcode() != Opcode)
         return ConstantExpr::get(Opcode, CE1->getOperand(0), T);
     }
-  } else if (isa<ConstantExpr>(C2)) {
+  } else if ((isa<ConstantExpr>(C2)) && (Instruction::isCommutative(Opcode))) 
     // If C2 is a constant expr and C1 isn't, flop them around and fold the
     // other way if possible.
-    if (Instruction::isCommutative(Opcode))
-      return ConstantFoldBinaryInstruction(Opcode, C2, C1);
-  }
+    return ConstantFoldBinaryInstruction(Opcode, C2, C1);
+  
 
   // i1 can be simplified in many cases.
   if (C1->getType()->isIntegerTy(1)) {
@@ -1011,9 +1006,8 @@ static ICmpInst::Predicate areGlobalsPotentiallyEqual(const GlobalValue *GV1,
     return false;
   };
   // Don't try to decide equality of aliases.
-  if (!isa<GlobalAlias>(GV1) && !isa<GlobalAlias>(GV2))
-    if (!isGlobalUnsafeForEquality(GV1) && !isGlobalUnsafeForEquality(GV2))
-      return ICmpInst::ICMP_NE;
+  if ((!isa<GlobalAlias>(GV1) && !isa<GlobalAlias>(GV2)) && (!isGlobalUnsafeForEquality(GV1) && !isGlobalUnsafeForEquality(GV2)))
+    return ICmpInst::ICMP_NE;
   return ICmpInst::BAD_ICMP_PREDICATE;
 }
 
@@ -1070,17 +1064,16 @@ static ICmpInst::Predicate evaluateICmpRelation(Constant *V1, Constant *V2) {
       return areGlobalsPotentiallyEqual(GV, GV2);
     } else if (isa<BlockAddress>(V2)) {
       return ICmpInst::ICMP_NE; // Globals never equal labels.
-    } else if (isa<ConstantPointerNull>(V2)) {
+    } else if ((isa<ConstantPointerNull>(V2)) && (!GV->hasExternalWeakLinkage() && !isa<GlobalAlias>(GV) &&
+          !NullPointerIsDefined(nullptr /* F */,
+                                GV->getType()->getAddressSpace()))) 
       // GlobalVals can never be null unless they have external weak linkage.
       // We don't try to evaluate aliases here.
       // NOTE: We should not be doing this constant folding if null pointer
       // is considered valid for the function. But currently there is no way to
       // query it from the Constant type.
-      if (!GV->hasExternalWeakLinkage() && !isa<GlobalAlias>(GV) &&
-          !NullPointerIsDefined(nullptr /* F */,
-                                GV->getType()->getAddressSpace()))
-        return ICmpInst::ICMP_UGT;
-    }
+      return ICmpInst::ICMP_UGT;
+    
   } else if (auto *CE1 = dyn_cast<ConstantExpr>(V1)) {
     // Ok, the LHS is known to be a constantexpr.  The RHS can be any of a
     // constantexpr, a global, block address, or a simple constant.
@@ -1094,33 +1087,32 @@ static ICmpInst::Predicate evaluateICmpRelation(Constant *V1, Constant *V2) {
       if (isa<ConstantPointerNull>(V2)) {
         // If we are comparing a GEP to a null pointer, check to see if the base
         // of the GEP equals the null pointer.
-        if (const GlobalValue *GV = dyn_cast<GlobalValue>(CE1Op0)) {
+        if (const GlobalValue *GV = dyn_cast<GlobalValue>(CE1Op0); GV && (!GV->hasExternalWeakLinkage() && CE1GEP->isInBounds())) 
           // If its not weak linkage, the GVal must have a non-zero address
           // so the result is greater-than
-          if (!GV->hasExternalWeakLinkage() && CE1GEP->isInBounds())
-            return ICmpInst::ICMP_UGT;
-        }
+          return ICmpInst::ICMP_UGT;
+        
       } else if (const GlobalValue *GV2 = dyn_cast<GlobalValue>(V2)) {
-        if (const GlobalValue *GV = dyn_cast<GlobalValue>(CE1Op0)) {
-          if (GV != GV2) {
+        if (const GlobalValue *GV = dyn_cast<GlobalValue>(CE1Op0); GV && (GV != GV2)) 
+          {
             if (CE1GEP->hasAllZeroIndices())
               return areGlobalsPotentiallyEqual(GV, GV2);
             return ICmpInst::BAD_ICMP_PREDICATE;
           }
-        }
+        
       } else if (const auto *CE2GEP = dyn_cast<GEPOperator>(V2)) {
         // By far the most common case to handle is when the base pointers are
         // obviously to the same global.
         const Constant *CE2Op0 = cast<Constant>(CE2GEP->getPointerOperand());
-        if (isa<GlobalValue>(CE1Op0) && isa<GlobalValue>(CE2Op0)) {
+        if ((isa<GlobalValue>(CE1Op0) && isa<GlobalValue>(CE2Op0)) && (CE1Op0 != CE2Op0)) 
           // Don't know relative ordering, but check for inequality.
-          if (CE1Op0 != CE2Op0) {
+          {
             if (CE1GEP->hasAllZeroIndices() && CE2GEP->hasAllZeroIndices())
               return areGlobalsPotentiallyEqual(cast<GlobalValue>(CE1Op0),
                                                 cast<GlobalValue>(CE2Op0));
             return ICmpInst::BAD_ICMP_PREDICATE;
           }
-        }
+        
       }
       break;
     }

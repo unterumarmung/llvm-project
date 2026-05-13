@@ -273,13 +273,13 @@ CudaInstallationDetector::CudaInstallationDetector(
         } else if (GpuArch == "compute_35") {
           LibDeviceMap["sm_35"] = std::string(FilePath);
           LibDeviceMap["sm_37"] = std::string(FilePath);
-        } else if (GpuArch == "compute_50") {
-          if (Version >= CudaVersion::CUDA_80) {
+        } else if ((GpuArch == "compute_50") && (Version >= CudaVersion::CUDA_80)) 
+          {
             LibDeviceMap["sm_50"] = std::string(FilePath);
             LibDeviceMap["sm_52"] = std::string(FilePath);
             LibDeviceMap["sm_53"] = std::string(FilePath);
           }
-        }
+        
       }
     }
 
@@ -941,12 +941,11 @@ void CudaToolChain::addClangTargetOptions(
 llvm::DenormalMode CudaToolChain::getDefaultDenormalModeForType(
     const llvm::opt::ArgList &DriverArgs, const JobAction &JA,
     const llvm::fltSemantics *FPType) const {
-  if (JA.getOffloadingDeviceKind() == Action::OFK_Cuda) {
-    if (FPType && FPType == &llvm::APFloat::IEEEsingle() &&
+  if ((JA.getOffloadingDeviceKind() == Action::OFK_Cuda) && (FPType && FPType == &llvm::APFloat::IEEEsingle() &&
         DriverArgs.hasFlag(options::OPT_fgpu_flush_denormals_to_zero,
-                           options::OPT_fno_gpu_flush_denormals_to_zero, false))
-      return llvm::DenormalMode::getPreserveSign();
-  }
+                           options::OPT_fno_gpu_flush_denormals_to_zero, false))) 
+    return llvm::DenormalMode::getPreserveSign();
+  
 
   assert(JA.getOffloadingDeviceKind() != Action::OFK_Host);
   return llvm::DenormalMode::getIEEE();

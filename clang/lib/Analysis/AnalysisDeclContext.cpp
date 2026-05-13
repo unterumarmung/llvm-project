@@ -117,11 +117,11 @@ Stmt *AnalysisDeclContext::getBody(bool &IsAutosynthesized) const {
     return BD->getBody();
   else if (const auto *FunTmpl = dyn_cast_or_null<FunctionTemplateDecl>(D))
     return FunTmpl->getTemplatedDecl()->getBody();
-  else if (const auto *VD = dyn_cast_or_null<VarDecl>(D)) {
-    if (VD->isFileVarDecl()) {
+  else if (const auto *VD = dyn_cast_or_null<VarDecl>(D); VD && (VD->isFileVarDecl())) 
+    {
       return const_cast<Stmt *>(dyn_cast_or_null<Stmt>(VD->getInit()));
     }
-  }
+  
 
   llvm_unreachable("unknown code decl");
 }
@@ -568,12 +568,11 @@ public:
 
   void VisitDeclRefExpr(DeclRefExpr *DR) {
     // Non-local variables are also directly modified.
-    if (const auto *VD = dyn_cast<VarDecl>(DR->getDecl())) {
-      if (!VD->hasLocalStorage()) {
-        if (Visited.insert(VD).second)
-          BEVals.push_back(VD, BC);
-      }
-    }
+    if (const auto *VD = dyn_cast<VarDecl>(DR->getDecl()); VD && (!VD->hasLocalStorage()) && (Visited.insert(VD).second)) 
+      
+        BEVals.push_back(VD, BC);
+      
+    
   }
 
   void VisitBlockExpr(BlockExpr *BR) {

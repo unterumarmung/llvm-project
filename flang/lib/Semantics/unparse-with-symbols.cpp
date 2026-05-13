@@ -132,12 +132,12 @@ void SymbolDumpVisitor::Indent(llvm::raw_ostream &out, int indent) const {
 }
 
 void SymbolDumpVisitor::Post(const parser::Name &name) {
-  if (const auto *symbol{name.symbol}) {
-    if (!symbol->has<MiscDetails>()) {
+  if (const auto *symbol{name.symbol}; symbol && (!symbol->has<MiscDetails>())) 
+    {
       CHECK(currStmt_.has_value());
       symbols_.emplace(currStmt_.value().begin(), symbol);
     }
-  }
+  
 }
 
 void UnparseWithSymbols(llvm::raw_ostream &out, const parser::Program &program,

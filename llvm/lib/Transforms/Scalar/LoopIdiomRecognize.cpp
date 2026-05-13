@@ -1445,10 +1445,9 @@ bool LoopIdiomRecognize::processLoopStoreOfLoopLoad(
       return Changed;
   }
 
-  if (UseMemMove)
-    if (!Verifier.loadAndStoreMayFormMemmove(StoreSize, IsNegStride, *TheLoad,
-                                             IsMemCpy))
-      return Changed;
+  if ((UseMemMove) && (!Verifier.loadAndStoreMayFormMemmove(StoreSize, IsNegStride, *TheLoad,
+                                             IsMemCpy)))
+    return Changed;
 
   if (avoidLIRForMultiBlockLoop())
     return Changed;
@@ -1537,14 +1536,14 @@ bool LoopIdiomRecognize::processLoopStoreOfLoopLoad(
 //
 bool LoopIdiomRecognize::avoidLIRForMultiBlockLoop(bool IsMemset,
                                                    bool IsLoopMemset) {
-  if (ApplyCodeSizeHeuristics && CurLoop->getNumBlocks() > 1) {
-    if (CurLoop->isOutermost() && (!IsMemset || !IsLoopMemset)) {
+  if ((ApplyCodeSizeHeuristics && CurLoop->getNumBlocks() > 1) && (CurLoop->isOutermost() && (!IsMemset || !IsLoopMemset))) 
+    {
       LLVM_DEBUG(dbgs() << "  " << CurLoop->getHeader()->getParent()->getName()
                         << " : LIR " << (IsMemset ? "Memset" : "Memcpy")
                         << " avoided: multi-block top-level loop\n");
       return true;
     }
-  }
+  
 
   return false;
 }
@@ -1805,9 +1804,8 @@ public:
       return false;
     if (OpWidth != 8 && OpWidth != 16 && OpWidth != 32)
       return false;
-    if (OpWidth >= 16)
-      if (OpWidth != WcharSize * 8)
-        return false;
+    if ((OpWidth >= 16) && (OpWidth != WcharSize * 8))
+      return false;
 
     // Scan every instruction in the loop to ensure there are no side effects.
     for (Instruction &I : *LoopBody)

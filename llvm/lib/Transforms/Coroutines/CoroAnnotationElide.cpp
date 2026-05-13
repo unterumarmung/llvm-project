@@ -132,10 +132,9 @@ PreservedAnalyses CoroAnnotationElidePass::run(LazyCallGraph::SCC &C,
 
     SmallVector<CallBase *, 4> Users;
     for (auto *U : Callee->users()) {
-      if (auto *CB = dyn_cast<CallBase>(U)) {
-        if (CB->getCalledFunction() == Callee)
-          Users.push_back(CB);
-      }
+      if (auto *CB = dyn_cast<CallBase>(U); CB && (CB->getCalledFunction() == Callee)) 
+        Users.push_back(CB);
+      
     }
     auto FramePtrArgPosition = NewCallee->arg_size() - 1;
     auto FrameSize =

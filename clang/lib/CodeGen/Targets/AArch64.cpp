@@ -390,9 +390,8 @@ ABIArgInfo AArch64ABIInfo::classifyArgumentType(QualType Ty, bool IsVariadicFn,
     if (const auto *ED = Ty->getAsEnumDecl())
       Ty = ED->getIntegerType();
 
-    if (const auto *EIT = Ty->getAs<BitIntType>())
-      if (EIT->getNumBits() > 128)
-        return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace(),
+    if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 128))
+      return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace(),
                                        false);
 
     if (Ty->isVectorType())
@@ -551,13 +550,13 @@ ABIArgInfo AArch64ABIInfo::classifyReturnType(QualType RetTy,
   if (RetTy->isVoidType())
     return ABIArgInfo::getIgnore();
 
-  if (const auto *VT = RetTy->getAs<VectorType>()) {
-    if (VT->getVectorKind() == VectorKind::SveFixedLengthData ||
-        VT->getVectorKind() == VectorKind::SveFixedLengthPredicate) {
+  if (const auto *VT = RetTy->getAs<VectorType>(); VT && (VT->getVectorKind() == VectorKind::SveFixedLengthData ||
+        VT->getVectorKind() == VectorKind::SveFixedLengthPredicate)) 
+    {
       unsigned NSRN = 0, NPRN = 0;
       return coerceIllegalVector(RetTy, NSRN, NPRN);
     }
-  }
+  
 
   // Large vector types should be returned via memory.
   if (RetTy->isVectorType() && getContext().getTypeSize(RetTy) > 128)
@@ -568,9 +567,8 @@ ABIArgInfo AArch64ABIInfo::classifyReturnType(QualType RetTy,
     if (const auto *ED = RetTy->getAsEnumDecl())
       RetTy = ED->getIntegerType();
 
-    if (const auto *EIT = RetTy->getAs<BitIntType>())
-      if (EIT->getNumBits() > 128)
-        return getNaturalAlignIndirect(RetTy,
+    if (const auto *EIT = RetTy->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 128))
+      return getNaturalAlignIndirect(RetTy,
                                        getDataLayout().getAllocaAddrSpace());
 
     return (isPromotableIntegerTypeForABI(RetTy) && isDarwinPCS()

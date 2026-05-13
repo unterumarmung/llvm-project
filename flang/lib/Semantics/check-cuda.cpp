@@ -155,14 +155,14 @@ struct FindHostArray
         return hostArray;
       }
     } else if (const auto *details{symbol.GetUltimate()
-                       .detailsIf<semantics::ObjectEntityDetails>()}) {
-      if (details->IsArray()) {
+                       .detailsIf<semantics::ObjectEntityDetails>()}; details && (details->IsArray())) 
+      {
         if (!IsHostArray(baseSymbol)) {
           return nullptr;
         }
         return &symbol;
       }
-    }
+    
     return (*this)(x.base());
   }
   Result operator()(const Symbol &symbol) const {

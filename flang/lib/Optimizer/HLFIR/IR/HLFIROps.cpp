@@ -83,11 +83,10 @@ static llvm::LogicalResult areMatchingTypes(Op &op, mlir::Type type1,
 
       // Constant propagation can result in mismatching lengths
       // in the dead code, but we should not fail on this.
-      if (!allowCharacterLenMismatch)
-        if (charType1.getLen() != fir::CharacterType::unknownLen() &&
+      if ((!allowCharacterLenMismatch) && (charType1.getLen() != fir::CharacterType::unknownLen() &&
             charType2.getLen() != fir::CharacterType::unknownLen() &&
-            charType1.getLen() != charType2.getLen())
-          return op.emitOpError("character LEN mismatch");
+            charType1.getLen() != charType2.getLen()))
+        return op.emitOpError("character LEN mismatch");
 
       return mlir::success();
     }
@@ -624,10 +623,9 @@ llvm::LogicalResult hlfir::ParentComponentOp::verify() {
   if (maybeOutputSeqType && maybeInputSeqType)
     for (auto [inputDim, outputDim] :
          llvm::zip(maybeInputSeqType.getShape(), maybeOutputSeqType.getShape()))
-      if (inputDim != fir::SequenceType::getUnknownExtent() &&
-          outputDim != fir::SequenceType::getUnknownExtent())
-        if (inputDim != outputDim)
-          return emitOpError(
+      if ((inputDim != fir::SequenceType::getUnknownExtent() &&
+          outputDim != fir::SequenceType::getUnknownExtent()) && (inputDim != outputDim))
+        return emitOpError(
               "result type extents are inconsistent with memref type");
   fir::RecordType baseRecType =
       mlir::dyn_cast<fir::RecordType>(hlfir::getFortranElementType(baseType));
@@ -1322,9 +1320,8 @@ llvm::LogicalResult hlfir::MatmulOp::verify() {
   int64_t lastLhsDim = lhsShape[lhsRank - 1];
   int64_t firstRhsDim = rhsShape[0];
   constexpr int64_t unknownExtent = fir::SequenceType::getUnknownExtent();
-  if (lastLhsDim != firstRhsDim)
-    if ((lastLhsDim != unknownExtent) && (firstRhsDim != unknownExtent))
-      return emitOpError(
+  if ((lastLhsDim != firstRhsDim) && ((lastLhsDim != unknownExtent) && (firstRhsDim != unknownExtent)))
+    return emitOpError(
           "the last dimension of LHS should match the first dimension of RHS");
 
   if (mlir::isa<fir::LogicalType>(lhsEleTy) !=
@@ -1494,9 +1491,8 @@ llvm::LogicalResult hlfir::MatmulTransposeOp::verify() {
   int64_t firstLhsDim = lhsShape[0];
   int64_t firstRhsDim = rhsShape[0];
   constexpr int64_t unknownExtent = fir::SequenceType::getUnknownExtent();
-  if (firstLhsDim != firstRhsDim)
-    if ((firstLhsDim != unknownExtent) && (firstRhsDim != unknownExtent))
-      return emitOpError(
+  if ((firstLhsDim != firstRhsDim) && ((firstLhsDim != unknownExtent) && (firstRhsDim != unknownExtent)))
+    return emitOpError(
           "the first dimension of LHS should match the first dimension of RHS");
 
   if (mlir::isa<fir::LogicalType>(lhsEleTy) !=
@@ -2214,9 +2210,8 @@ mlir::Region *hlfir::ElementalAddrOp::getElementCleanup() {
 //===----------------------------------------------------------------------===//
 
 llvm::LogicalResult hlfir::OrderedAssignmentTreeOpInterface::verifyImpl() {
-  if (mlir::Region *body = getSubTreeRegion())
-    if (!body->empty())
-      for (mlir::Operation &op : body->front())
+  if (mlir::Region *body = getSubTreeRegion(); body && (!body->empty()))
+    for (mlir::Operation &op : body->front())
         if (!mlir::isa<hlfir::OrderedAssignmentTreeOpInterface, fir::FirEndOp>(
                 op))
           return emitOpError(
@@ -2327,9 +2322,8 @@ llvm::LogicalResult hlfir::WhereOp::verify() {
 }
 
 llvm::LogicalResult hlfir::ElseWhereOp::verify() {
-  if (!getMaskRegion().empty())
-    if (!yieldsLogical(getMaskRegion(), /*mustBeScalarI1=*/false))
-      return emitOpError(
+  if ((!getMaskRegion().empty()) && (!yieldsLogical(getMaskRegion(), /*mustBeScalarI1=*/false)))
+    return emitOpError(
           "mask region must yield a logical array when provided");
   return verifyWhereAndElseWhereBody(*this);
 }

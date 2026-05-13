@@ -55,9 +55,8 @@ class InterfaceStubFunctionsConsumer : public ASTConsumer {
         return true;
 
       if (const VarDecl *VD = dyn_cast<VarDecl>(ND)) {
-        if (const auto *Parent = VD->getParentFunctionOrMethod())
-          if (isa<BlockDecl>(Parent) || isa<CXXMethodDecl>(Parent))
-            return true;
+        if (const auto *Parent = VD->getParentFunctionOrMethod(); Parent && (isa<BlockDecl>(Parent) || isa<CXXMethodDecl>(Parent)))
+          return true;
 
         if ((VD->getStorageClass() == StorageClass::SC_Extern) ||
             (VD->getStorageClass() == StorageClass::SC_Static &&
@@ -121,9 +120,8 @@ class InterfaceStubFunctionsConsumer : public ASTConsumer {
           << "Generating Interface Stubs is not supported with "
              "delayed template parsing.";
     } else {
-      if (const auto *FD = dyn_cast<FunctionDecl>(ND))
-        if (FD->isDependentContext())
-          return true;
+      if (const auto *FD = dyn_cast<FunctionDecl>(ND); FD && (FD->isDependentContext()))
+        return true;
 
       const bool IsWeak = (ND->hasAttr<WeakAttr>() ||
                            ND->hasAttr<WeakRefAttr>() || ND->isWeakImported());
@@ -244,8 +242,8 @@ public:
   void HandleTranslationUnit(ASTContext &context) override {
     struct Visitor : public RecursiveASTVisitor<Visitor> {
       bool VisitNamedDecl(NamedDecl *ND) {
-        if (const auto *FD = dyn_cast<FunctionDecl>(ND))
-          if (FD->isLateTemplateParsed()) {
+        if (const auto *FD = dyn_cast<FunctionDecl>(ND); FD && (FD->isLateTemplateParsed()))
+          {
             LateParsedDecls.insert(FD);
             return true;
           }

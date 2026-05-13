@@ -347,15 +347,15 @@ Token Lexer::lexNumber(const char *tokStart) {
   while (isdigit(*curPtr))
     ++curPtr;
 
-  if (*curPtr == 'e' || *curPtr == 'E') {
-    if (isdigit(static_cast<unsigned char>(curPtr[1])) ||
+  if ((*curPtr == 'e' || *curPtr == 'E') && (isdigit(static_cast<unsigned char>(curPtr[1])) ||
         ((curPtr[1] == '-' || curPtr[1] == '+') &&
-         isdigit(static_cast<unsigned char>(curPtr[2])))) {
+         isdigit(static_cast<unsigned char>(curPtr[2]))))) 
+    {
       curPtr += 2;
       while (isdigit(*curPtr))
         ++curPtr;
     }
-  }
+  
   return formToken(Token::floatliteral, tokStart);
 }
 

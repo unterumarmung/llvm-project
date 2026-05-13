@@ -905,9 +905,8 @@ declare void @foo(ptr, ptr)
   InvokeInst *CallWombat1 = [&]() -> InvokeInst * {
     for (auto &BB : *Caller)
       for (auto &I : BB)
-        if (auto *Inv = dyn_cast<InvokeInst>(&I))
-          if (Inv->getCalledFunction() && (Inv->getCalledFunction() == Callee))
-            return Inv;
+        if (auto *Inv = dyn_cast<InvokeInst>(&I); Inv && (Inv->getCalledFunction() && (Inv->getCalledFunction() == Callee)))
+          return Inv;
     return nullptr;
   }();
   ASSERT_NE(CallWombat1, nullptr);
@@ -1010,9 +1009,8 @@ declare void @foo(ptr, ptr)
   InvokeInst *CallWombat1 = [&]() -> InvokeInst * {
     for (auto &BB : *Caller)
       for (auto &I : BB)
-        if (auto *Inv = dyn_cast<InvokeInst>(&I))
-          if (Inv->getCalledFunction() && (Inv->getCalledFunction() == Callee))
-            return Inv;
+        if (auto *Inv = dyn_cast<InvokeInst>(&I); Inv && (Inv->getCalledFunction() && (Inv->getCalledFunction() == Callee)))
+          return Inv;
     return nullptr;
   }();
   ASSERT_NE(CallWombat1, nullptr);

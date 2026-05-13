@@ -113,24 +113,24 @@ public:
         } else {
           IndexCtx.handleDecl(Parm);
         }
-      } else if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
-        if (IndexCtx.shouldIndexParametersInDeclarations() ||
-            FD->isThisDeclarationADefinition()) {
+      } else if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D); FD && (IndexCtx.shouldIndexParametersInDeclarations() ||
+            FD->isThisDeclarationADefinition())) 
+        {
           for (const auto *PI : FD->parameters()) {
             IndexDefaultParmeterArgument(PI, D);
             IndexCtx.handleDecl(PI);
           }
         }
-      }
+      
     } else {
       // Index the default parameter value for function definitions.
-      if (const auto *FD = dyn_cast<FunctionDecl>(D)) {
-        if (FD->isThisDeclarationADefinition()) {
+      if (const auto *FD = dyn_cast<FunctionDecl>(D); FD && (FD->isThisDeclarationADefinition())) 
+        {
           for (const auto *PV : FD->parameters()) {
             IndexDefaultParmeterArgument(PV, D);
           }
         }
-      }
+      
     }
     if (const AssociatedConstraint &C = D->getTrailingRequiresClause())
       IndexCtx.indexBody(C.ConstraintExpr, Parent);
@@ -521,12 +521,10 @@ public:
   }
 
   bool VisitObjCPropertyDecl(const ObjCPropertyDecl *D) {
-    if (ObjCMethodDecl *MD = D->getGetterMethodDecl())
-      if (MD->getLexicalDeclContext() == D->getLexicalDeclContext())
-        handleObjCMethod(MD, D);
-    if (ObjCMethodDecl *MD = D->getSetterMethodDecl())
-      if (MD->getLexicalDeclContext() == D->getLexicalDeclContext())
-        handleObjCMethod(MD, D);
+    if (ObjCMethodDecl *MD = D->getGetterMethodDecl(); MD && (MD->getLexicalDeclContext() == D->getLexicalDeclContext()))
+      handleObjCMethod(MD, D);
+    if (ObjCMethodDecl *MD = D->getSetterMethodDecl(); MD && (MD->getLexicalDeclContext() == D->getLexicalDeclContext()))
+      handleObjCMethod(MD, D);
     TRY_DECL(D, IndexCtx.handleDecl(D));
     if (IBOutletCollectionAttr *attr = D->getAttr<IBOutletCollectionAttr>())
       IndexCtx.indexTypeSourceInfo(attr->getInterfaceLoc(), D,
@@ -556,14 +554,12 @@ public:
     assert(D->getPropertyImplementation() == ObjCPropertyImplDecl::Synthesize);
     SymbolRoleSet AccessorMethodRoles =
       SymbolRoleSet(SymbolRole::Dynamic) | SymbolRoleSet(SymbolRole::Implicit);
-    if (ObjCMethodDecl *MD = PD->getGetterMethodDecl()) {
-      if (MD->isPropertyAccessor() && !hasUserDefined(MD, Container))
-        IndexCtx.handleDecl(MD, Loc, AccessorMethodRoles, {}, Container);
-    }
-    if (ObjCMethodDecl *MD = PD->getSetterMethodDecl()) {
-      if (MD->isPropertyAccessor() && !hasUserDefined(MD, Container))
-        IndexCtx.handleDecl(MD, Loc, AccessorMethodRoles, {}, Container);
-    }
+    if (ObjCMethodDecl *MD = PD->getGetterMethodDecl(); MD && (MD->isPropertyAccessor() && !hasUserDefined(MD, Container))) 
+      IndexCtx.handleDecl(MD, Loc, AccessorMethodRoles, {}, Container);
+    
+    if (ObjCMethodDecl *MD = PD->getSetterMethodDecl(); MD && (MD->isPropertyAccessor() && !hasUserDefined(MD, Container))) 
+      IndexCtx.handleDecl(MD, Loc, AccessorMethodRoles, {}, Container);
+    
     if (ObjCIvarDecl *IvarD = D->getPropertyIvarDecl()) {
       if (IvarD->getSynthesize()) {
         // For synthesized ivars, use the location of its name in the
@@ -713,11 +709,10 @@ public:
         if (NTTP->hasDefaultArgument())
           handleTemplateArgumentLoc(NTTP->getDefaultArgument(), Parent,
                                     TP->getLexicalDeclContext());
-      } else if (const auto *TTPD = dyn_cast<TemplateTemplateParmDecl>(TP)) {
-        if (TTPD->hasDefaultArgument())
-          handleTemplateArgumentLoc(TTPD->getDefaultArgument(), Parent,
+      } else if (const auto *TTPD = dyn_cast<TemplateTemplateParmDecl>(TP); TTPD && (TTPD->hasDefaultArgument())) 
+        handleTemplateArgumentLoc(TTPD->getDefaultArgument(), Parent,
                                     TP->getLexicalDeclContext());
-      }
+      
     }
     if (auto *R = Params->getRequiresClause())
       IndexCtx.indexBody(R, Parent);

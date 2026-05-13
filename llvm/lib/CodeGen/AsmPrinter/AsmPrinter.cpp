@@ -454,9 +454,8 @@ AsmPrinter::AsmPrinter(TargetMachine &tm, std::unique_ptr<MCStreamer> Streamer,
       NeedsDefault = true;
     else
       for (const auto &I : *MI) {
-        if (GCMetadataPrinter *MP = getOrCreateGCPrinter(*I))
-          if (MP->emitStackMaps(SM, *this))
-            continue;
+        if (GCMetadataPrinter *MP = getOrCreateGCPrinter(*I); MP && (MP->emitStackMaps(SM, *this)))
+          continue;
         // The strategy doesn't have printer or doesn't emit custom stack maps.
         // Use the default format.
         NeedsDefault = true;
@@ -628,12 +627,12 @@ bool AsmPrinter::doInitialization(Module &M) {
     if ((Target.isOSWindows() || (Target.isUEFI() && EmitCodeView)) &&
         M.getNamedMetadata("llvm.dbg.cu"))
       Handlers.push_back(std::make_unique<CodeViewDebug>(this));
-    if (!EmitCodeView || M.getDwarfVersion()) {
-      if (hasDebugInfo()) {
+    if ((!EmitCodeView || M.getDwarfVersion()) && (hasDebugInfo())) 
+      {
         DD = createDwarfDebug();
         Handlers.push_back(std::unique_ptr<DwarfDebug>(DD));
       }
-    }
+    
   }
 
   if (M.getNamedMetadata(PseudoProbeDescMetadataName))
@@ -2174,10 +2173,9 @@ void AsmPrinter::emitFunctionBody() {
         break;
       case TargetOpcode::DBG_VALUE:
       case TargetOpcode::DBG_VALUE_LIST:
-        if (isVerbose()) {
-          if (!emitDebugValueComment(&MI, *this))
-            emitInstruction(&MI);
-        }
+        if ((isVerbose()) && (!emitDebugValueComment(&MI, *this))) 
+          emitInstruction(&MI);
+        
         break;
       case TargetOpcode::DBG_INSTR_REF:
         // This instruction reference will have been resolved to a machine
@@ -2189,10 +2187,9 @@ void AsmPrinter::emitFunctionBody() {
         // meta information.
         break;
       case TargetOpcode::DBG_LABEL:
-        if (isVerbose()) {
-          if (!emitDebugLabelComment(&MI, *this))
-            emitInstruction(&MI);
-        }
+        if ((isVerbose()) && (!emitDebugLabelComment(&MI, *this))) 
+          emitInstruction(&MI);
+        
         break;
       case TargetOpcode::IMPLICIT_DEF:
         if (isVerbose()) emitImplicitDef(&MI);
@@ -2343,10 +2340,10 @@ void AsmPrinter::emitFunctionBody() {
         (MAI.hasDotTypeDotSizeDirective() && MBB.isEndSection()))
       OutStreamer->emitLabel(MBB.getEndSymbol());
 
-    if (MBB.isEndSection()) {
+    if ((MBB.isEndSection()) && (!MBB.sameSection(&MF->front()))) 
       // The size directive for the section containing the entry block is
       // handled separately by the function section.
-      if (!MBB.sameSection(&MF->front())) {
+      {
         if (MAI.hasDotTypeDotSizeDirective()) {
           // Emit the size directive for the basic block section.
           const MCExpr *SizeExp = MCBinaryExpr::createSub(
@@ -2360,7 +2357,7 @@ void AsmPrinter::emitFunctionBody() {
         MBBSectionRanges[MBB.getSectionID()] =
             MBBSectionRange{CurrentSectionBeginSym, MBB.getEndSymbol()};
       }
-    }
+    
     emitBasicBlockEnd(MBB);
 
     if (CanDoExtraAnalysis) {
@@ -4800,13 +4797,13 @@ void AsmPrinter::emitBasicBlockStart(const MachineBasicBlock &MBB) {
 
   // Print some verbose block comments.
   if (isVerbose()) {
-    if (const BasicBlock *BB = MBB.getBasicBlock()) {
-      if (BB->hasName()) {
+    if (const BasicBlock *BB = MBB.getBasicBlock(); BB && (BB->hasName())) 
+      {
         BB->printAsOperand(OutStreamer->getCommentOS(),
                            /*PrintType=*/false, BB->getModule());
         OutStreamer->getCommentOS() << '\n';
       }
-    }
+    
 
     assert(MLI != nullptr && "MachineLoopInfo should has been computed");
     emitBasicBlockLoopComments(MBB, MLI, *this);

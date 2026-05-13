@@ -285,9 +285,8 @@ bool XCOFFWriter::initStringTable() {
   for (const XCOFFYAML::Symbol &YamlSym : Obj.Symbols) {
     for (const std::unique_ptr<XCOFFYAML::AuxSymbolEnt> &AuxSym :
          YamlSym.AuxEntries) {
-      if (auto AS = dyn_cast<XCOFFYAML::FileAuxEnt>(AuxSym.get()))
-        if (nameShouldBeInStringTable(AS->FileNameOrString.value_or("")))
-          StrTblBuilder.add(AS->FileNameOrString.value_or(""));
+      if (auto AS = dyn_cast<XCOFFYAML::FileAuxEnt>(AuxSym.get()); AS && (nameShouldBeInStringTable(AS->FileNameOrString.value_or(""))))
+        StrTblBuilder.add(AS->FileNameOrString.value_or(""));
     }
   }
 

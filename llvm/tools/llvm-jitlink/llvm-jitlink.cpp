@@ -1643,16 +1643,11 @@ static StringRef detectStubKind(const Session::MemoryRegionInfo &Stub) {
 
   MemoryMatcher M(Stub.getContent());
   if (M.matchMask(Thumbv7MovWTle)) {
-    if (M.matchMask(Thumbv7MovWTle))
-      if (M.matchEqual(Thumbv7BxR12le))
-        if (M.done())
-          return "thumbv7_abs_le";
-  } else if (M.matchMask(Armv7MovWTle)) {
-    if (M.matchMask(Armv7MovWTle))
-      if (M.matchEqual(Armv7BxR12le))
-        if (M.done())
-          return "armv7_abs_le";
-  }
+    if ((M.matchMask(Thumbv7MovWTle)) && (M.matchEqual(Thumbv7BxR12le)) && (M.done()))
+      return "thumbv7_abs_le";
+  } else if ((M.matchMask(Armv7MovWTle)) && (M.matchMask(Armv7MovWTle)) && (M.matchEqual(Armv7BxR12le)) && (M.done())) 
+    return "armv7_abs_le";
+  
   return "";
 }
 
@@ -1827,14 +1822,13 @@ static Error sanitizeArguments(const Triple &TT, const char *ArgV0) {
   // -oop-executor or -oop-executor-connect mode.
   //
   // FIXME: Remove once we enable remote slab allocation.
-  if (SlabAllocateSizeString != "") {
-    if (OutOfProcessExecutor.getNumOccurrences() ||
-        OutOfProcessExecutorConnect.getNumOccurrences())
-      return make_error<StringError>(
+  if ((SlabAllocateSizeString != "") && (OutOfProcessExecutor.getNumOccurrences() ||
+        OutOfProcessExecutorConnect.getNumOccurrences())) 
+    return make_error<StringError>(
           "-slab-allocate cannot be used with -oop-executor or "
           "-oop-executor-connect",
           inconvertibleErrorCode());
-  }
+  
 
   // If -slab-address is passed, require -slab-allocate and -noexec
   if (SlabAddress != ~0ULL) {

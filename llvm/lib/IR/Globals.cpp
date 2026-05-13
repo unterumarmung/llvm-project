@@ -390,9 +390,8 @@ bool GlobalObject::canIncreaseAlignment() const {
   // padding is needed thus more TOC entries are wasted.
   bool isXCOFF = (!Parent || Parent->getTargetTriple().isOSBinFormatXCOFF());
   if (isXCOFF)
-    if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(this))
-      if (GV->hasAttribute("toc-data"))
-        return false;
+    if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(this); GV && (GV->hasAttribute("toc-data")))
+      return false;
 
   return true;
 }
@@ -483,9 +482,8 @@ bool GlobalValue::canBeOmittedFromSymbolTable() const {
 
   // If it is a non constant variable, it needs to be uniqued across shared
   // objects.
-  if (auto *Var = dyn_cast<GlobalVariable>(this))
-    if (!Var->isConstant())
-      return false;
+  if (auto *Var = dyn_cast<GlobalVariable>(this); Var && (!Var->isConstant()))
+    return false;
 
   return hasAtLeastLocalUnnamedAddr();
 }

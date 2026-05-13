@@ -574,9 +574,8 @@ static Cl::Kinds ClassifyMemberExpr(ASTContext &Ctx, const MemberExpr *E) {
   // C++ [expr.ref]p3: E1->E2 is converted to the equivalent form (*(E1)).E2.
   // C++ [expr.ref]p4: If E2 is declared to have type "reference to T", then
   //   E1.E2 is an lvalue.
-  if (const auto *Value = dyn_cast<ValueDecl>(Member))
-    if (Value->getType()->isReferenceType())
-      return Cl::CL_LValue;
+  if (const auto *Value = dyn_cast<ValueDecl>(Member); Value && (Value->getType()->isReferenceType()))
+    return Cl::CL_LValue;
 
   //   Otherwise, one of the following rules applies.
   //   -- If E2 is a static member [...] then E1.E2 is an lvalue.
@@ -694,12 +693,12 @@ static Cl::ModifiableType IsModifiable(ASTContext &Ctx, const Expr *E,
   if (Kind == Cl::CL_PRValue) {
     // For the sake of better diagnostics, we want to specifically recognize
     // use of the GCC cast-as-lvalue extension.
-    if (const auto *CE = dyn_cast<ExplicitCastExpr>(E->IgnoreParens())) {
-      if (CE->getSubExpr()->IgnoreParenImpCasts()->isLValue()) {
+    if (const auto *CE = dyn_cast<ExplicitCastExpr>(E->IgnoreParens()); CE && (CE->getSubExpr()->IgnoreParenImpCasts()->isLValue())) 
+      {
         Loc = CE->getExprLoc();
         return Cl::CM_LValueCast;
       }
-    }
+    
   }
   if (Kind != Cl::CL_LValue)
     return Cl::CM_RValue;
@@ -711,11 +710,10 @@ static Cl::ModifiableType IsModifiable(ASTContext &Ctx, const Expr *E,
 
   // Assignment to a property in ObjC is an implicit setter access. But a
   // setter might not exist.
-  if (const auto *Expr = dyn_cast<ObjCPropertyRefExpr>(E)) {
-    if (Expr->isImplicitProperty() &&
-        Expr->getImplicitPropertySetter() == nullptr)
-      return Cl::CM_NoSetterProperty;
-  }
+  if (const auto *Expr = dyn_cast<ObjCPropertyRefExpr>(E); Expr && (Expr->isImplicitProperty() &&
+        Expr->getImplicitPropertySetter() == nullptr)) 
+    return Cl::CM_NoSetterProperty;
+  
 
   CanQualType CT = Ctx.getCanonicalType(E->getType());
   // Const stuff is obviously not modifiable.
@@ -734,9 +732,8 @@ static Cl::ModifiableType IsModifiable(ASTContext &Ctx, const Expr *E,
     return Cl::CM_IncompleteType;
 
   // Records with any const fields (recursively) are not modifiable.
-  if (const RecordType *R = CT->getAs<RecordType>())
-    if (R->hasConstFields())
-      return Cl::CM_ConstQualifiedField;
+  if (const RecordType *R = CT->getAs<RecordType>(); R && (R->hasConstFields()))
+    return Cl::CM_ConstQualifiedField;
 
   return Cl::CM_Modifiable;
 }

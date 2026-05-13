@@ -67,15 +67,15 @@ static bool isMaterializing(OpOperand *op, bool isZero) {
 // Helper to detect sampling operation.
 static bool isSampling(GenericOp op) {
   auto yieldOp = cast<linalg::YieldOp>(op.getRegion().front().getTerminator());
-  if (auto *def = yieldOp.getOperand(0).getDefiningOp()) {
-    if (isa<arith::MulFOp>(def) || isa<arith::MulIOp>(def)) {
+  if (auto *def = yieldOp.getOperand(0).getDefiningOp(); def && (isa<arith::MulFOp>(def) || isa<arith::MulIOp>(def))) 
+    {
       // Both scalar input arguments used exactly once.
       Value s1 = op.getBlock()->getArgument(0);
       Value s2 = op.getBlock()->getArgument(1);
       return (def->getOperand(0) == s1 && def->getOperand(1) == s2) ||
              (def->getOperand(1) == s1 && def->getOperand(0) == s2);
     }
-  }
+  
   return false;
 }
 
@@ -83,24 +83,23 @@ static bool isSampling(GenericOp op) {
 static bool isMulChain(Value val, Value x) {
   if (auto arg = dyn_cast<BlockArgument>(val))
     return arg != x;
-  if (auto *def = val.getDefiningOp()) {
-    if (isa<arith::MulFOp>(def) || isa<arith::MulIOp>(def))
-      return isMulChain(def->getOperand(0), x) &&
+  if (auto *def = val.getDefiningOp(); def && (isa<arith::MulFOp>(def) || isa<arith::MulIOp>(def))) 
+    return isMulChain(def->getOperand(0), x) &&
              isMulChain(def->getOperand(1), x);
-  }
+  
   return false;
 }
 
 // Helper to detect x = x + <multiplications>.
 static bool isSumOfMul(GenericOp op) {
   auto yieldOp = cast<linalg::YieldOp>(op.getRegion().front().getTerminator());
-  if (auto *def = yieldOp.getOperand(0).getDefiningOp()) {
-    if (isa<arith::AddFOp>(def) || isa<arith::AddIOp>(def)) {
+  if (auto *def = yieldOp.getOperand(0).getDefiningOp(); def && (isa<arith::AddFOp>(def) || isa<arith::AddIOp>(def))) 
+    {
       Value x = op.getBlock()->getArguments().back();
       return (def->getOperand(0) == x && isMulChain(def->getOperand(1), x)) ||
              (def->getOperand(1) == x && isMulChain(def->getOperand(0), x));
     }
-  }
+  
   return false;
 }
 
@@ -470,15 +469,15 @@ public:
     }
     // See if a sparsity changing cast can be fused into producer.
     if (tensor::isSameTypeWithoutEncoding(srcType, dstType)) {
-      if (Operation *def = op.getSource().getDefiningOp()) {
-        if (def->hasOneUse() && isa<tensor::ExtractSliceOp>(def)) {
+      if (Operation *def = op.getSource().getDefiningOp(); def && (def->hasOneUse() && isa<tensor::ExtractSliceOp>(def))) 
+        {
           rewriter.modifyOpInPlace(def, [&]() {
             def->getResult(0).setType(op->getResultTypes()[0]);
           });
           rewriter.replaceOp(op, def->getResult(0));
           return success();
         }
-      }
+      
     }
     // Repair tensor casts with at least one sparse operand into the
     // the properly supported sparse_tensor.convert.
@@ -607,16 +606,15 @@ private:
       return std::make_tuple(cond, tVal, fVal);
 
     Value cmpL, cmpR;
-    if (matchPattern(cond, m_Op<arith::CmpIOp>(matchers::m_Any(&cmpL),
+    if ((matchPattern(cond, m_Op<arith::CmpIOp>(matchers::m_Any(&cmpL),
                                                matchers::m_Any(&cmpR))) ||
         matchPattern(cond, m_Op<arith::CmpFOp>(matchers::m_Any(&cmpL),
-                                               matchers::m_Any(&cmpR)))) {
+                                               matchers::m_Any(&cmpR)))) && (isValFromDenseInputOrInvariant(cmpL) ||
+          isValFromDenseInputOrInvariant(cmpR))) 
       // TODO: we can do it recursively to check whether all the leaf values are
       // loaded from dense tensors or are loop invariants.
-      if (isValFromDenseInputOrInvariant(cmpL) ||
-          isValFromDenseInputOrInvariant(cmpR))
-        return std::make_tuple(cond, tVal, fVal);
-    }
+      return std::make_tuple(cond, tVal, fVal);
+    
 
     return std::nullopt;
   };

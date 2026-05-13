@@ -48,10 +48,9 @@ static bool runOnBasicBlock(BasicBlock &BB) {
     else if (LoadInst *LI = dyn_cast<LoadInst>(&Inst)) {
       if (LI->isAtomic())
         LowerLoadInst(LI);
-    } else if (StoreInst *SI = dyn_cast<StoreInst>(&Inst)) {
-      if (SI->isAtomic())
-        LowerStoreInst(SI);
-    }
+    } else if (StoreInst *SI = dyn_cast<StoreInst>(&Inst); SI && (SI->isAtomic())) 
+      LowerStoreInst(SI);
+    
   }
   return Changed;
 }

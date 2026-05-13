@@ -185,11 +185,11 @@ namespace {
 static IntrinsicInst *getConvergenceEntry(BasicBlock &BB) {
   BasicBlock::iterator It = BB.getFirstNonPHIIt();
   while (It != BB.end()) {
-    if (auto *IntrinsicCall = dyn_cast<ConvergenceControlInst>(It)) {
-      if (IntrinsicCall->isEntry()) {
+    if (auto *IntrinsicCall = dyn_cast<ConvergenceControlInst>(It); IntrinsicCall && (IntrinsicCall->isEntry())) 
+      {
         return IntrinsicCall;
       }
-    }
+    
     It = std::next(It);
   }
   return nullptr;
@@ -576,10 +576,9 @@ static BasicBlock *HandleCallsInBlockInlinedThroughInvoke(
     // attached to the newly inlined @llvm.experimental_deoptimize
     // (resp. @llvm.experimental.guard) call should contain the exception
     // handling logic, if any.
-    if (auto *F = CI->getCalledFunction())
-      if (F->getIntrinsicID() == Intrinsic::experimental_deoptimize ||
-          F->getIntrinsicID() == Intrinsic::experimental_guard)
-        continue;
+    if (auto *F = CI->getCalledFunction(); F && (F->getIntrinsicID() == Intrinsic::experimental_deoptimize ||
+          F->getIntrinsicID() == Intrinsic::experimental_guard))
+      continue;
 
     if (auto FuncletBundle = CI->getOperandBundle(LLVMContext::OB_funclet)) {
       // This call is nested inside a funclet.  If that funclet has an unwind
@@ -712,8 +711,8 @@ static void HandleInlinedEHPad(InvokeInst *II, BasicBlock *FirstNewBlock,
   UnwindDestMemoTy FuncletUnwindMap;
   for (Function::iterator BB = FirstNewBlock->getIterator(), E = Caller->end();
        BB != E; ++BB) {
-    if (auto *CRI = dyn_cast<CleanupReturnInst>(BB->getTerminator())) {
-      if (CRI->unwindsToCaller()) {
+    if (auto *CRI = dyn_cast<CleanupReturnInst>(BB->getTerminator()); CRI && (CRI->unwindsToCaller())) 
+      {
         auto *CleanupPad = CRI->getCleanupPad();
         CleanupReturnInst::Create(CleanupPad, UnwindDest, CRI->getIterator());
         CRI->eraseFromParent();
@@ -727,7 +726,7 @@ static void HandleInlinedEHPad(InvokeInst *II, BasicBlock *FirstNewBlock,
         FuncletUnwindMap[CleanupPad] =
             ConstantTokenNone::get(Caller->getContext());
       }
-    }
+    
 
     BasicBlock::iterator I = BB->getFirstNonPHIIt();
     if (!I->isEHPad())
@@ -1095,9 +1094,8 @@ void ScopedAliasMetadataDeepCloner::addRecursiveMetadataUses() {
   while (!Queue.empty()) {
     const MDNode *M = cast<MDNode>(Queue.pop_back_val());
     for (const Metadata *Op : M->operands())
-      if (const MDNode *OpMD = dyn_cast<MDNode>(Op))
-        if (MD.insert(OpMD))
-          Queue.push_back(OpMD);
+      if (const MDNode *OpMD = dyn_cast<MDNode>(Op); OpMD && (MD.insert(OpMD)))
+        Queue.push_back(OpMD);
   }
 }
 
@@ -1948,9 +1946,8 @@ static void fixupLineNumbers(Function *Fn, Function::iterator FI,
     // function body.
 
     // Don't update static allocas, as they may get moved later.
-    if (auto *AI = dyn_cast<AllocaInst>(&I))
-      if (allocaWouldBeStaticInEntry(AI))
-        return;
+    if (auto *AI = dyn_cast<AllocaInst>(&I); AI && (allocaWouldBeStaticInEntry(AI)))
+      return;
 
     // Do not force a debug loc for pseudo probes, since they do not need to
     // be debuggable, and also they are expected to have a zero/null dwarf
@@ -2534,11 +2531,11 @@ llvm::InlineResult llvm::CanInlineCallSite(const CallBase &CB,
   // before to prevent infinite inlining through mutually recursive functions.
   if (MDNode *InlineHistory = CB.getMetadata(LLVMContext::MD_inline_history)) {
     for (const auto &Op : InlineHistory->operands()) {
-      if (auto *MD = dyn_cast_or_null<ValueAsMetadata>(Op)) {
-        if (MD->getValue() == CalledFunc) {
+      if (auto *MD = dyn_cast_or_null<ValueAsMetadata>(Op); MD && (MD->getValue() == CalledFunc)) 
+        {
           return InlineResult::failure("inline history");
         }
-      }
+      
     }
   }
 
@@ -2576,13 +2573,13 @@ llvm::InlineResult llvm::CanInlineCallSite(const CallBase &CB,
   // cursory check. The underlying assumption is that in a compiler flow that
   // fully implements convergence control tokens, there is no mixing of
   // controlled and uncontrolled convergent operations in the whole program.
-  if (CB.isConvergent()) {
-    if (!IFI.ConvergenceControlToken &&
-        getConvergenceEntry(CalledFunc->getEntryBlock())) {
+  if ((CB.isConvergent()) && (!IFI.ConvergenceControlToken &&
+        getConvergenceEntry(CalledFunc->getEntryBlock()))) 
+    {
       return InlineResult::failure(
           "convergent call needs convergencectrl operand");
     }
-  }
+  
 
   const BasicBlock *OrigBB = CB.getParent();
   const Function *Caller = OrigBB->getParent();
@@ -2591,10 +2588,9 @@ llvm::InlineResult llvm::CanInlineCallSite(const CallBase &CB,
   //  1. If the caller has no GC, then the callee's GC must be propagated to the
   //     caller.
   //  2. If the caller has a differing GC, it is invalid to inline.
-  if (CalledFunc->hasGC()) {
-    if (Caller->hasGC() && CalledFunc->getGC() != Caller->getGC())
-      return InlineResult::failure("incompatible GC");
-  }
+  if ((CalledFunc->hasGC()) && (Caller->hasGC() && CalledFunc->getGC() != Caller->getGC())) 
+    return InlineResult::failure("incompatible GC");
+  
 
   // Get the personality function from the callee if it contains a landing pad.
   Constant *CalledPersonality =
@@ -2609,14 +2605,13 @@ llvm::InlineResult llvm::CanInlineCallSite(const CallBase &CB,
       Caller->hasPersonalityFn()
           ? Caller->getPersonalityFn()->stripPointerCasts()
           : nullptr;
-  if (CalledPersonality) {
+  if ((CalledPersonality) && (CallerPersonality && CalledPersonality != CallerPersonality)) 
     // If the personality functions match, then we can perform the
     // inlining. Otherwise, we can't inline.
     // TODO: This isn't 100% true. Some personality functions are proper
     //       supersets of others and can be used in place of the other.
-    if (CallerPersonality && CalledPersonality != CallerPersonality)
-      return InlineResult::failure("incompatible personality");
-  }
+    return InlineResult::failure("incompatible personality");
+  
 
   // We need to figure out which funclet the callsite was in so that we may
   // properly nest the callee.
@@ -3156,9 +3151,8 @@ void llvm::InlineFunctionImpl(CallBase &CB, InlineFunctionInfo &IFI,
       // caller and we inline it into a call site which doesn't unwind but into
       // an EH pad that does.  Such an edge must be dynamically unreachable.
       // As such, we replace the cleanupret with unreachable.
-      if (auto *CleanupRet = dyn_cast<CleanupReturnInst>(BB->getTerminator()))
-        if (CleanupRet->unwindsToCaller() && EHPadForCallUnwindsLocally)
-          changeToUnreachable(CleanupRet);
+      if (auto *CleanupRet = dyn_cast<CleanupReturnInst>(BB->getTerminator()); CleanupRet && (CleanupRet->unwindsToCaller() && EHPadForCallUnwindsLocally))
+        changeToUnreachable(CleanupRet);
 
       BasicBlock::iterator I = BB->getFirstNonPHIIt();
       if (!I->isEHPad())
@@ -3284,10 +3278,9 @@ void llvm::InlineFunctionImpl(CallBase &CB, InlineFunctionInfo &IFI,
     for (BasicBlock &NewBB :
          make_range(FirstNewBlock->getIterator(), Caller->end()))
       for (Instruction &I : NewBB)
-        if (auto *CB = dyn_cast<CallBase>(&I))
-          if (!(CB->getCalledFunction() &&
-                CB->getCalledFunction()->isIntrinsic()))
-            IFI.InlinedCallSites.push_back(CB);
+        if (auto *CB = dyn_cast<CallBase>(&I); CB && (!(CB->getCalledFunction() &&
+                CB->getCalledFunction()->isIntrinsic())))
+          IFI.InlinedCallSites.push_back(CB);
   }
 
   for (CallBase *ICB : IFI.InlinedCallSites) {

@@ -79,13 +79,12 @@ static bool generateSnippetSetupCode(const ExegesisTarget &ET,
                                       .getTargetLowering()
                                       ->getStackPointerRegisterToSaveRestore();
   for (const RegisterValue &RV : Key.RegisterInitialValues) {
-    if (GenerateMemoryInstructions) {
+    if ((GenerateMemoryInstructions) && (Register(RV.Register) == StackPointerRegister)) 
       // If we're generating memory instructions, don't load in the value for
       // the register with the stack pointer as it will be used later to finish
       // the setup.
-      if (Register(RV.Register) == StackPointerRegister)
-        continue;
-    }
+      continue;
+    
     // Load a constant in the register.
     const auto SetRegisterCode = ET.setRegTo(*MSI, RV.Register, RV.Value);
     if (SetRegisterCode.empty())

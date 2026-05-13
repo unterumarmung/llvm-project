@@ -305,9 +305,8 @@ Sema::getCurrentMangleNumberContext(const DeclContext *DC) {
 
     if (ParmVarDecl *Param = dyn_cast<ParmVarDecl>(ManglingContextDecl)) {
       if (const DeclContext *LexicalDC
-          = Param->getDeclContext()->getLexicalParent())
-        if (LexicalDC->isRecord())
-          return DefaultArgument;
+          = Param->getDeclContext()->getLexicalParent(); LexicalDC && (LexicalDC->isRecord()))
+        return DefaultArgument;
     } else if (VarDecl *Var = dyn_cast<VarDecl>(ManglingContextDecl)) {
       if (Var->getMostRecentDecl()->isInline())
         return InlineVariable;
@@ -321,10 +320,9 @@ Sema::getCurrentMangleNumberContext(const DeclContext *DC) {
       if (Var->getDescribedVarTemplate())
         return TemplatedVariable;
 
-      if (auto *VTS = dyn_cast<VarTemplateSpecializationDecl>(Var)) {
-        if (!VTS->isExplicitSpecialization())
-          return TemplatedVariable;
-      }
+      if (auto *VTS = dyn_cast<VarTemplateSpecializationDecl>(Var); VTS && (!VTS->isExplicitSpecialization())) 
+        return TemplatedVariable;
+      
     } else if (isa<FieldDecl>(ManglingContextDecl)) {
       return DataMember;
     } else if (isa<ImplicitConceptSpecializationDecl>(ManglingContextDecl)) {
@@ -341,9 +339,8 @@ Sema::getCurrentMangleNumberContext(const DeclContext *DC) {
   static constexpr auto IsInFunctionThatRequiresMangling =
       [](const DeclContext *DC) -> bool {
     while (!DC->isFileContext()) {
-      if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(DC))
-        if (FD->isInlined() || IsExternallyVisibleInModulePurview(FD))
-          return true;
+      if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(DC); FD && (FD->isInlined() || IsExternallyVisibleInModulePurview(FD)))
+        return true;
 
       DC = DC->getLexicalParent();
     }
@@ -645,23 +642,21 @@ static EnumDecl *findEnumForBlockReturn(Expr *E) {
   //     extension) whose second and third operands are
   //     enumerator-like expressions of type T or
   if (ConditionalOperator *CO = dyn_cast<ConditionalOperator>(E)) {
-    if (EnumDecl *ED = findEnumForBlockReturn(CO->getTrueExpr()))
-      if (ED == findEnumForBlockReturn(CO->getFalseExpr()))
-        return ED;
+    if (EnumDecl *ED = findEnumForBlockReturn(CO->getTrueExpr()); ED && (ED == findEnumForBlockReturn(CO->getFalseExpr())))
+      return ED;
     return nullptr;
   }
 
   // (implicitly:)
   //   - it is an implicit integral conversion applied to an
   //     enumerator-like expression of type T or
-  if (ImplicitCastExpr *ICE = dyn_cast<ImplicitCastExpr>(E)) {
+  if (ImplicitCastExpr *ICE = dyn_cast<ImplicitCastExpr>(E); ICE && (ICE->getCastKind() == CK_IntegralCast)) 
     // We can sometimes see integral conversions in valid
     // enumerator-like expressions.
-    if (ICE->getCastKind() == CK_IntegralCast)
-      return findEnumForBlockReturn(ICE->getSubExpr());
+    return findEnumForBlockReturn(ICE->getSubExpr());
 
     // Otherwise, just rely on the type.
-  }
+  
 
   //   - it is an expression of that formal enum type.
   if (auto *ED = E->getType()->getAsEnumDecl())

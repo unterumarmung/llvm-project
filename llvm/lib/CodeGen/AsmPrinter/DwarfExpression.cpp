@@ -336,10 +336,10 @@ bool DwarfExpression::addMachineRegExpression(const TargetRegisterInfo &TRI,
   }
 
   // Don't emit locations that cannot be expressed without DW_OP_stack_value.
-  if (DwarfVersion < 4)
-    if (any_of(ExprCursor, [](DIExpression::ExprOperand Op) -> bool {
+  if ((DwarfVersion < 4) && (any_of(ExprCursor, [](DIExpression::ExprOperand Op) -> bool {
           return Op.getOp() == dwarf::DW_OP_stack_value;
-        })) {
+        })))
+    {
       DwarfRegs.clear();
       LocationKind = Unknown;
       return false;

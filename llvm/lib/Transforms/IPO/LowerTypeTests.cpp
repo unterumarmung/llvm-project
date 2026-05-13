@@ -776,8 +776,8 @@ Value *LowerTypeTestsModule::lowerTypeTestCall(Metadata *TypeId, CallInst *CI,
   // where nothing happens between the type test and the br.
   // If so, create slightly simpler IR.
   if (CI->hasOneUse())
-    if (auto *Br = dyn_cast<CondBrInst>(*CI->user_begin()))
-      if (CI->getNextNode() == Br) {
+    if (auto *Br = dyn_cast<CondBrInst>(*CI->user_begin()); Br && (CI->getNextNode() == Br))
+      {
         BasicBlock *Then = InitialBB->splitBasicBlock(CI->getIterator());
         BasicBlock *Else = Br->getSuccessor(1);
         CondBrInst *NewBr = CondBrInst::Create(OffsetInRange, Then, Else);
@@ -1279,9 +1279,8 @@ LowerTypeTestsModule::getJumpTableEntrySize(Triple::ArchType JumpTableArch) {
   case Triple::x86:
   case Triple::x86_64:
     if (const auto *MD = mdconst::extract_or_null<ConstantInt>(
-            M.getModuleFlag("cf-protection-branch")))
-      if (MD->getZExtValue())
-        return kX86IBTJumpTableEntrySize;
+            M.getModuleFlag("cf-protection-branch")); MD && (MD->getZExtValue()))
+      return kX86IBTJumpTableEntrySize;
     return kX86JumpTableEntrySize;
   case Triple::arm:
     return kARMJumpTableEntrySize;
@@ -2020,14 +2019,14 @@ void LowerTypeTestsModule::replaceCfiUses(Function *Old, Value *New,
 
     // Must handle Constants specially, we cannot call replaceUsesOfWith on a
     // constant because they are uniqued.
-    if (auto *C = dyn_cast<Constant>(U.getUser())) {
-      if (!isa<GlobalValue>(C)) {
+    if (auto *C = dyn_cast<Constant>(U.getUser()); C && (!isa<GlobalValue>(C))) 
+      {
         // Save unique users to avoid processing operand replacement
         // more than once.
         Constants.insert(C);
         continue;
       }
-    }
+    
 
     U.set(New);
   }
@@ -2193,9 +2192,8 @@ bool LowerTypeTestsModule::lower() {
         if (!VI)
           return false;
         for (auto &I : VI.getSummaryList())
-          if (auto Alias = dyn_cast<AliasSummary>(I.get()))
-            if (AddressTaken.count(Alias->getAliaseeGUID()))
-              return true;
+          if (auto Alias = dyn_cast<AliasSummary>(I.get()); Alias && (AddressTaken.count(Alias->getAliaseeGUID())))
+            return true;
         return false;
       };
       for (auto *FuncMD : CfiFunctionsMD->operands()) {
@@ -2345,10 +2343,9 @@ bool LowerTypeTestsModule::lower() {
       // not that the address takers are live. This can be updated to check
       // their liveness and emit fewer jumptable entries once monolithic LTO
       // builds also emit summaries.
-      } else if (!F->hasAddressTaken()) {
-        if (!CrossDsoCfi || !IsJumpTableCanonical || F->hasLocalLinkage())
-          continue;
-      }
+      } else if ((!F->hasAddressTaken()) && (!CrossDsoCfi || !IsJumpTableCanonical || F->hasLocalLinkage())) 
+        continue;
+      
     }
 
     auto *GTM = GlobalTypeMember::create(Alloc, &GO, IsJumpTableCanonical,
@@ -2619,9 +2616,9 @@ PreservedAnalyses SimplifyTypeTestsPass::run(Module &M,
       return MaySimplifyPtr(PtrAsInt->getOperand(0));
     };
     for (User *U : make_early_inc_range(GV.users())) {
-      if (auto *CI = dyn_cast<ICmpInst>(U)) {
-        if (CI->getPredicate() == CmpInst::ICMP_EQ &&
-            MaySimplifyPtr(CI->getOperand(0))) {
+      if (auto *CI = dyn_cast<ICmpInst>(U); CI && (CI->getPredicate() == CmpInst::ICMP_EQ &&
+            MaySimplifyPtr(CI->getOperand(0)))) 
+        {
           // This is an equality comparison (TypeTestResolution::Single case in
           // lowerTypeTestCall). In this case we just replace the comparison
           // with true.
@@ -2630,7 +2627,7 @@ PreservedAnalyses SimplifyTypeTestsPass::run(Module &M,
           Changed = true;
           continue;
         }
-      }
+      
       auto *CE = dyn_cast<ConstantExpr>(U);
       if (!CE || CE->getOpcode() != Instruction::PtrToInt)
         continue;

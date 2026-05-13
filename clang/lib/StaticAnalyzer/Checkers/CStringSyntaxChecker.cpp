@@ -44,9 +44,8 @@ class WalkAST: public StmtVisitor<WalkAST> {
 
   /// Check if the expression E is a sizeof(WithArg).
   bool isSizeof(const Expr *E, const Expr *WithArg) {
-    if (const auto *UE = dyn_cast<UnaryExprOrTypeTraitExpr>(E))
-      if (UE->getKind() == UETT_SizeOf && !UE->isArgumentType())
-        return sameDecl(UE->getArgumentExpr(), WithArg);
+    if (const auto *UE = dyn_cast<UnaryExprOrTypeTraitExpr>(E); UE && (UE->getKind() == UETT_SizeOf && !UE->isArgumentType()))
+      return sameDecl(UE->getArgumentExpr(), WithArg);
     return false;
   }
 
@@ -127,9 +126,9 @@ bool WalkAST::containsBadStrncatPattern(const CallExpr *CE) {
   const Expr *LenArg = CE->getArg(2);
 
   // Identify wrong size expressions, which are commonly used instead.
-  if (const auto *BE = dyn_cast<BinaryOperator>(LenArg->IgnoreParenCasts())) {
+  if (const auto *BE = dyn_cast<BinaryOperator>(LenArg->IgnoreParenCasts()); BE && (BE->getOpcode() == BO_Sub)) 
     // - sizeof(dst) - strlen(dst)
-    if (BE->getOpcode() == BO_Sub) {
+    {
       const Expr *L = BE->getLHS();
       const Expr *R = BE->getRHS();
       if (isSizeof(L, DstArg) && isStrlen(R, DstArg))
@@ -139,7 +138,7 @@ bool WalkAST::containsBadStrncatPattern(const CallExpr *CE) {
       if (isSizeof(L, DstArg) && isOne(R->IgnoreParenCasts()))
         return true;
     }
-  }
+  
   // - sizeof(dst)
   if (isSizeof(LenArg, DstArg))
     return true;
@@ -188,11 +187,11 @@ bool WalkAST::containsBadStrlcpyStrlcatPattern(const CallExpr *CE) {
       if (const auto *BE =
               dyn_cast<BinaryOperator>(DstArg->IgnoreParenImpCasts())) {
         DstArgDRE = dyn_cast<DeclRefExpr>(BE->getLHS()->IgnoreParenImpCasts());
-        if (BE->getOpcode() == BO_Add) {
-          if ((IL = dyn_cast<IntegerLiteral>(BE->getRHS()->IgnoreParenImpCasts()))) {
+        if ((BE->getOpcode() == BO_Add) && ((IL = dyn_cast<IntegerLiteral>(BE->getRHS()->IgnoreParenImpCasts())))) 
+          {
             DstOff = IL->getValue().getZExtValue();
           }
-        }
+        
       }
     }
     if (DstArgDRE) {
@@ -239,9 +238,9 @@ void WalkAST::VisitCallExpr(CallExpr *CE) {
                          "C String API", os.str(), Loc,
                          LenArg->getSourceRange());
     }
-  } else if (CheckerContext::isCLibraryFunction(FD, "strlcpy") ||
-             CheckerContext::isCLibraryFunction(FD, "strlcat")) {
-    if (containsBadStrlcpyStrlcatPattern(CE)) {
+  } else if ((CheckerContext::isCLibraryFunction(FD, "strlcpy") ||
+             CheckerContext::isCLibraryFunction(FD, "strlcat")) && (containsBadStrlcpyStrlcatPattern(CE))) 
+    {
       const Expr *DstArg = CE->getArg(0);
       const Expr *LenArg = CE->getArg(2);
       PathDiagnosticLocation Loc =
@@ -263,7 +262,7 @@ void WalkAST::VisitCallExpr(CallExpr *CE) {
               "C String API", os.str(), Loc,
               LenArg->getSourceRange());
     }
-  }
+  
 
   // Recurse and check children.
   VisitChildren(CE);

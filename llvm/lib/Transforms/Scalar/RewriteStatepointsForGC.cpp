@@ -269,9 +269,8 @@ static bool isHandledGCPointerType(Type *T, GCStrategy *GC) {
     return true;
   // We partially support vectors of gc pointers. The code will assert if it
   // can't handle something.
-  if (auto VT = dyn_cast<VectorType>(T))
-    if (isGCPointerType(VT->getElementType(), GC))
-      return true;
+  if (auto VT = dyn_cast<VectorType>(T); VT && (isGCPointerType(VT->getElementType(), GC)))
+    return true;
   return false;
 }
 
@@ -2433,9 +2432,8 @@ static void rematerializeLiveValuesAtUses(
       continue;
 
     if (Cand->hasOneUse())
-      if (auto *U = dyn_cast<Instruction>(Cand->getUniqueUndroppableUser()))
-        if (U->getParent() == Cand->getParent())
-          continue;
+      if (auto *U = dyn_cast<Instruction>(Cand->getUniqueUndroppableUser()); U && (U->getParent() == Cand->getParent()))
+        continue;
 
     // Rematerialization before PHI nodes is not implemented.
     if (llvm::any_of(Cand->users(),
@@ -2963,8 +2961,8 @@ static void stripNonValidDataFromBody(Function &F) {
     // which frees the entire heap and the presence of invariant.start allows
     // the optimizer to sink the load of a memory location past a statepoint,
     // which is incorrect.
-    if (auto *II = dyn_cast<IntrinsicInst>(&I))
-      if (II->getIntrinsicID() == Intrinsic::invariant_start) {
+    if (auto *II = dyn_cast<IntrinsicInst>(&I); II && (II->getIntrinsicID() == Intrinsic::invariant_start))
+      {
         InvariantStartInstructions.push_back(II);
         continue;
       }
@@ -3083,10 +3081,9 @@ bool RewriteStatepointsForGC::runOnFunction(Function &F, DominatorTree &DT,
             "no unreachable blocks expected");
       ParsePointNeeded.push_back(cast<CallBase>(&I));
     }
-    if (auto *CI = dyn_cast<CallInst>(&I))
-      if (CI->getIntrinsicID() == Intrinsic::experimental_gc_get_pointer_base ||
-          CI->getIntrinsicID() == Intrinsic::experimental_gc_get_pointer_offset)
-        Intrinsics.emplace_back(CI);
+    if (auto *CI = dyn_cast<CallInst>(&I); CI && (CI->getIntrinsicID() == Intrinsic::experimental_gc_get_pointer_base ||
+          CI->getIntrinsicID() == Intrinsic::experimental_gc_get_pointer_offset))
+      Intrinsics.emplace_back(CI);
   }
 
   // Return early if no work to do.
@@ -3122,10 +3119,10 @@ bool RewriteStatepointsForGC::runOnFunction(Function &F, DominatorTree &DT,
   };
   for (BasicBlock &BB : F) {
     Instruction *TI = BB.getTerminator();
-    if (auto *Cond = getConditionInst(TI))
+    if (auto *Cond = getConditionInst(TI); Cond && (isa<ICmpInst>(Cond) && Cond->hasOneUse()))
       // TODO: Handle more than just ICmps here.  We should be able to move
       // most instructions without side effects or memory access.
-      if (isa<ICmpInst>(Cond) && Cond->hasOneUse()) {
+      {
         MadeChange = true;
         Cond->moveBefore(TI->getIterator());
       }

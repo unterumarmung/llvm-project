@@ -362,8 +362,8 @@ static bool shouldInstrumentReadWriteFromAddress(const Module *M, Value *Addr) {
   // checking the address space below.
   Value *PeeledAddr = Addr->stripInBoundsOffsets();
 
-  if (GlobalVariable *GV = dyn_cast<GlobalVariable>(PeeledAddr)) {
-    if (GV->hasSection()) {
+  if (GlobalVariable *GV = dyn_cast<GlobalVariable>(PeeledAddr); GV && (GV->hasSection())) 
+    {
       StringRef SectionName = GV->getSection();
       // Check if the global is in the PGO counters section.
       auto OF = M->getTargetTriple().getObjectFormat();
@@ -371,7 +371,7 @@ static bool shouldInstrumentReadWriteFromAddress(const Module *M, Value *Addr) {
               getInstrProfSectionName(IPSK_cnts, OF, /*AddSegmentInfo=*/false)))
         return false;
     }
-  }
+  
 
   // Do not instrument accesses from different address spaces; we cannot deal
   // with them.
@@ -393,13 +393,13 @@ bool ThreadSanitizer::addrPointsToConstantData(Value *Addr) {
       NumOmittedReadsFromConstantGlobals++;
       return true;
     }
-  } else if (LoadInst *L = dyn_cast<LoadInst>(Addr)) {
-    if (isVtableAccess(L)) {
+  } else if (LoadInst *L = dyn_cast<LoadInst>(Addr); L && (isVtableAccess(L))) 
+    {
       // Reads from a vtable pointer can not race with any writes.
       NumOmittedReadsFromVtable++;
       return true;
     }
-  }
+  
   return false;
 }
 

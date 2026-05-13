@@ -1047,12 +1047,12 @@ bool IsNullPointerOrAllocatable(const Expr<SomeType> *x) {
 
 // GetSymbolVector()
 auto GetSymbolVectorHelper::operator()(const Symbol &x) const -> Result {
-  if (const auto *details{x.detailsIf<semantics::AssocEntityDetails>()}) {
-    if (IsVariable(details->expr()) && !UnwrapProcedureRef(*details->expr())) {
+  if (const auto *details{x.detailsIf<semantics::AssocEntityDetails>()}; details && (IsVariable(details->expr()) && !UnwrapProcedureRef(*details->expr()))) 
+    {
       // associate(x => variable that is not a pointer returned by a function)
       return (*this)(details->expr());
     }
-  }
+  
   return {x.GetUltimate()};
 }
 auto GetSymbolVectorHelper::operator()(const Component &x) const -> Result {
@@ -1153,12 +1153,12 @@ int GetNbOfUniqueCUDADeviceSymbols(const Expr<SomeType> &expr) {
   semantics::UnorderedSymbolSet cudaSymbols{CollectCudaSymbols(expr)};
   for (const auto &symbolVector : symbolVectors) {
     for (const auto &sym : symbolVector) {
-      if (cudaSymbols.find(sym) != cudaSymbols.end()) {
-        if (IsCUDADeviceSymbol(*sym)) {
+      if ((cudaSymbols.find(sym) != cudaSymbols.end()) && (IsCUDADeviceSymbol(*sym))) 
+        {
           symbols.insert(sym);
           break;
         }
-      }
+      
     }
   }
   return symbols.size();
@@ -1303,14 +1303,14 @@ parser::Message *AttachDeclaration(
         unhosted->name(), "Declaration of '%s'"_en_US, unhosted->name());
   }
   if (const auto *binding{
-          unhosted->detailsIf<semantics::ProcBindingDetails>()}) {
-    if (!symbol.attrs().test(semantics::Attr::DEFERRED) &&
-        binding->symbol().name() != symbol.name()) {
+          unhosted->detailsIf<semantics::ProcBindingDetails>()}; binding && (!symbol.attrs().test(semantics::Attr::DEFERRED) &&
+        binding->symbol().name() != symbol.name())) 
+    {
       message.Attach(binding->symbol().name(),
           "Procedure '%s' of type '%s' is bound to '%s'"_en_US, symbol.name(),
           symbol.owner().GetName().value(), binding->symbol().name());
     }
-  }
+  
   return &message;
 }
 
@@ -2324,8 +2324,8 @@ const Symbol *FindCommonBlockContaining(const Symbol &original) {
 // 3.11 automatic data object
 bool IsAutomatic(const Symbol &original) {
   const Symbol &symbol{original.GetUltimate()};
-  if (const auto *object{symbol.detailsIf<ObjectEntityDetails>()}) {
-    if (!object->isDummy() && !IsAllocatable(symbol) && !IsPointer(symbol)) {
+  if (const auto *object{symbol.detailsIf<ObjectEntityDetails>()}; object && (!object->isDummy() && !IsAllocatable(symbol) && !IsPointer(symbol))) 
+    {
       if (const DeclTypeSpec * type{symbol.GetType()}) {
         // If a type parameter value is not a constant expression, the
         // object is automatic.
@@ -2361,7 +2361,7 @@ bool IsAutomatic(const Symbol &original) {
         }
       }
     }
-  }
+  
   return false;
 }
 
@@ -2662,19 +2662,19 @@ common::IgnoreTKRSet GetIgnoreTKR(const Symbol &symbol) {
   if (const auto *object{symbol.detailsIf<ObjectEntityDetails>()}) {
     result = object->ignoreTKR();
     if (const Symbol * ownerSymbol{symbol.owner().symbol()}) {
-      if (const auto *ownerSubp{ownerSymbol->detailsIf<SubprogramDetails>()}) {
-        if (ownerSubp->defaultIgnoreTKR()) {
+      if (const auto *ownerSubp{ownerSymbol->detailsIf<SubprogramDetails>()}; ownerSubp && (ownerSubp->defaultIgnoreTKR())) 
+        {
           result |= common::ignoreTKRAll;
         }
-      }
+      
     }
   }
   return result;
 }
 
 std::optional<int> GetDummyArgumentNumber(const Symbol *symbol) {
-  if (symbol) {
-    if (IsDummy(*symbol)) {
+  if ((symbol) && (IsDummy(*symbol))) 
+    {
       if (const Symbol * subpSym{symbol->owner().symbol()}) {
         if (const auto *subp{subpSym->detailsIf<SubprogramDetails>()}) {
           int j{0};
@@ -2687,7 +2687,7 @@ std::optional<int> GetDummyArgumentNumber(const Symbol *symbol) {
         }
       }
     }
-  }
+  
   return std::nullopt;
 }
 

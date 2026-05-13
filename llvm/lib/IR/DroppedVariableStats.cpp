@@ -74,9 +74,9 @@ bool DroppedVariableStats::updateDroppedCount(
   // If the Scope is a child of, or equal to the DbgValScope and is inlined at
   // the Var's InlinedAt location, return true to signify that the Var has
   // been dropped.
-  if (isScopeChildOfOrEqualTo(Scope, DbgValScope))
-    if (isInlinedAtChildOfOrEqualTo(DbgLoc->getInlinedAt(),
-                                    InlinedAtsMap[Var])) {
+  if ((isScopeChildOfOrEqualTo(Scope, DbgValScope)) && (isInlinedAtChildOfOrEqualTo(DbgLoc->getInlinedAt(),
+                                    InlinedAtsMap[Var])))
+    {
       // Found another instruction in the variable's scope, so there exists a
       // break point at which the variable could be observed. Count it as
       // dropped.

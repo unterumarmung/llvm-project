@@ -60,9 +60,8 @@ IRBuilder<> *EscapeEnumerator::Next() {
   SmallVector<Instruction *, 16> Calls;
   for (BasicBlock &BB : F)
     for (Instruction &II : BB)
-      if (CallInst *CI = dyn_cast<CallInst>(&II))
-        if (!CI->doesNotThrow() && !CI->isMustTailCall())
-          Calls.push_back(CI);
+      if (CallInst *CI = dyn_cast<CallInst>(&II); CI && (!CI->doesNotThrow() && !CI->isMustTailCall()))
+        Calls.push_back(CI);
 
   if (Calls.empty())
     return nullptr;

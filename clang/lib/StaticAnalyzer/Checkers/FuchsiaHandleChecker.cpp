@@ -256,9 +256,8 @@ namespace {
 class FuchsiaHandleSymbolVisitor final : public SymbolVisitor {
 public:
   bool VisitSymbol(SymbolRef S) override {
-    if (const auto *HandleType = S->getType()->getAs<TypedefType>())
-      if (HandleType->getDecl()->getName() == HandleTypeName)
-        Symbols.push_back(S);
+    if (const auto *HandleType = S->getType()->getAs<TypedefType>(); HandleType && (HandleType->getDecl()->getName() == HandleTypeName))
+      Symbols.push_back(S);
     return true;
   }
 
@@ -346,13 +345,13 @@ void FuchsiaHandleChecker::checkPreCall(const CallEvent &Call,
       if (!HState || HState->isEscaped())
         continue;
 
-      if (hasFuchsiaAttr<UseHandleAttr>(PVD) ||
-          PVD->getType()->isIntegerType()) {
-        if (HState->isReleased()) {
+      if ((hasFuchsiaAttr<UseHandleAttr>(PVD) ||
+          PVD->getType()->isIntegerType()) && (HState->isReleased())) 
+        {
           reportUseAfterFree(Handle, Call.getArgSourceRange(Arg), C);
           return;
         }
-      }
+      
     }
   }
   C.addTransition(State);
@@ -372,9 +371,8 @@ void FuchsiaHandleChecker::checkPostCall(const CallEvent &Call,
 
   std::vector<std::function<std::string(BugReport & BR)>> Notes;
   SymbolRef ResultSymbol = nullptr;
-  if (const auto *TypeDefTy = FuncDecl->getReturnType()->getAs<TypedefType>())
-    if (TypeDefTy->getDecl()->getName() == ErrorTypeName)
-      ResultSymbol = Call.getReturnValue().getAsSymbol();
+  if (const auto *TypeDefTy = FuncDecl->getReturnType()->getAs<TypedefType>(); TypeDefTy && (TypeDefTy->getDecl()->getName() == ErrorTypeName))
+    ResultSymbol = Call.getReturnValue().getAsSymbol();
 
   // Function returns an open handle.
   if (hasFuchsiaAttr<AcquireHandleAttr>(FuncDecl)) {
@@ -557,11 +555,10 @@ ProgramStateRef FuchsiaHandleChecker::evalAssume(ProgramStateRef State,
       if (CurItem.second.maybeAllocated())
         State = State->set<HStateMap>(
             CurItem.first, HandleState::getAllocated(State, CurItem.second));
-    } else if (ErrorVal.isConstrainedFalse()) {
+    } else if ((ErrorVal.isConstrainedFalse()) && (CurItem.second.maybeAllocated())) 
       // Allocation failed.
-      if (CurItem.second.maybeAllocated())
-        State = State->remove<HStateMap>(CurItem.first);
-    }
+      State = State->remove<HStateMap>(CurItem.first);
+    
   }
   return State;
 }

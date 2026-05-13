@@ -135,14 +135,14 @@ void MCExpr::print(raw_ostream &OS, const MCAsmInfo *MAI,
     switch (BE.getOpcode()) {
     case MCBinaryExpr::Add:
       // Print "X-42" instead of "X+-42".
-      if (const MCConstantExpr *RHSC = dyn_cast<MCConstantExpr>(BE.getRHS())) {
-        if (RHSC->getValue() < 0) {
+      if (const MCConstantExpr *RHSC = dyn_cast<MCConstantExpr>(BE.getRHS()); RHSC && (RHSC->getValue() < 0)) 
+        {
           OS << RHSC->getValue();
           if (Paren)
             OS << ')';
           return;
         }
-      }
+      
 
       OS <<  '+';
       break;

@@ -796,9 +796,8 @@ static Value *checkForNegativeOperand(BinaryOperator &I,
   // C2 is ODD
   // LHS = XOR(Y, C1), Y = AND(Z, C2), C1 == (C2 + 1) => LHS == NEG(OR(Z, ~C2))
   // ADD(LHS, RHS) == SUB(RHS, OR(Z, ~C2))
-  if (match(LHS, m_Xor(m_Value(Y), m_APInt(C1))))
-    if (C1->countr_zero() == 0)
-      if (match(Y, m_And(m_Value(Z), m_APInt(C2))) && *C1 == (*C2 + 1)) {
+  if ((match(LHS, m_Xor(m_Value(Y), m_APInt(C1)))) && (C1->countr_zero() == 0) && (match(Y, m_And(m_Value(Z), m_APInt(C2))) && *C1 == (*C2 + 1)))
+    {
         Value *NewOr = Builder.CreateOr(Z, ~(*C2));
         return Builder.CreateSub(RHS, NewOr, "sub");
       }
@@ -2294,14 +2293,13 @@ Value *InstCombinerImpl::OptimizePointerDifference(Value *LHS, Value *RHS,
 
   // If this is a single inbounds GEP and the original sub was nuw,
   // then the final multiplication is also nuw.
-  if (auto *I = dyn_cast<OverflowingBinaryOperator>(Result))
-    if (IsNUW && match(Offset2, m_Zero()) && Base.LHSNW.isInBounds() &&
+  if (auto *I = dyn_cast<OverflowingBinaryOperator>(Result); I && (IsNUW && match(Offset2, m_Zero()) && Base.LHSNW.isInBounds() &&
         (I->use_empty() || I->hasOneUse()) && I->hasNoSignedWrap() &&
         !I->hasNoUnsignedWrap() &&
         ((I->getOpcode() == Instruction::Mul &&
           match(I->getOperand(1), m_NonNegative())) ||
-         I->getOpcode() == Instruction::Shl))
-      cast<Instruction>(I)->setHasNoUnsignedWrap();
+         I->getOpcode() == Instruction::Shl)))
+    cast<Instruction>(I)->setHasNoUnsignedWrap();
 
   // If we have a 2nd GEP of the same base pointer, subtract the offsets.
   // If both GEPs are inbounds, then the subtract does not have signed overflow.
@@ -2880,9 +2878,9 @@ Instruction *InstCombinerImpl::visitSub(BinaryOperator &I) {
     return false;
   };
   if (MatchSubOfZExtOfPtrToIntOrAddr()) {
-    if (auto *GEP = dyn_cast<GEPOperator>(LHSOp)) {
-      if (GEP->getPointerOperand() == RHSOp) {
-        if (GEP->hasNoUnsignedWrap() || GEP->hasNoUnsignedSignedWrap()) {
+    if (auto *GEP = dyn_cast<GEPOperator>(LHSOp); GEP && (GEP->getPointerOperand() == RHSOp) && (GEP->hasNoUnsignedWrap() || GEP->hasNoUnsignedSignedWrap())) 
+      
+        {
           Value *Offset = EmitGEPOffset(GEP);
           Value *Res = GEP->hasNoUnsignedWrap()
                            ? Builder.CreateZExt(
@@ -2891,8 +2889,8 @@ Instruction *InstCombinerImpl::visitSub(BinaryOperator &I) {
                            : Builder.CreateSExt(Offset, I.getType());
           return replaceInstUsesWith(I, Res);
         }
-      }
-    }
+      
+    
   }
 
   // Canonicalize a shifty way to code absolute value to the common pattern.
@@ -2989,16 +2987,16 @@ Instruction *InstCombinerImpl::visitSub(BinaryOperator &I) {
   }
 
   // max(X,Y) nsw/nuw - min(X,Y) --> abs(X nsw - Y)
-  if (match(Op0, m_OneUse(m_c_SMax(m_Value(X), m_Value(Y)))) &&
-      match(Op1, m_OneUse(m_c_SMin(m_Specific(X), m_Specific(Y))))) {
-    if (I.hasNoUnsignedWrap() || I.hasNoSignedWrap()) {
+  if ((match(Op0, m_OneUse(m_c_SMax(m_Value(X), m_Value(Y)))) &&
+      match(Op1, m_OneUse(m_c_SMin(m_Specific(X), m_Specific(Y))))) && (I.hasNoUnsignedWrap() || I.hasNoSignedWrap())) 
+    {
       Value *Sub =
           Builder.CreateSub(X, Y, "sub", /*HasNUW=*/false, /*HasNSW=*/true);
       Value *Call =
           Builder.CreateBinaryIntrinsic(Intrinsic::abs, Sub, Builder.getTrue());
       return replaceInstUsesWith(I, Call);
     }
-  }
+  
 
   if (Instruction *Res = foldBinOpOfSelectAndCastOfSelectCondition(I))
     return Res;
@@ -3131,9 +3129,9 @@ Instruction *InstCombinerImpl::hoistFNegAboveFMulFDiv(Value *FNegOp,
     return FDiv;
   }
 
-  if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(FNegOp)) {
+  if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(FNegOp); II && (II->getIntrinsicID() == Intrinsic::ldexp)) 
     // Make sure to preserve flags and metadata on the call.
-    if (II->getIntrinsicID() == Intrinsic::ldexp) {
+    {
       FastMathFlags FMF = FMFSource.getFastMathFlags() | II->getFastMathFlags();
       CallInst *New =
           Builder.CreateCall(II->getCalledFunction(),
@@ -3143,7 +3141,7 @@ Instruction *InstCombinerImpl::hoistFNegAboveFMulFDiv(Value *FNegOp,
       New->copyMetadata(*II);
       return New;
     }
-  }
+  
 
   return nullptr;
 }
@@ -3279,13 +3277,13 @@ Instruction *InstCombinerImpl::visitFSub(BinaryOperator &I) {
   // Note that if this fsub was really an fneg, the fadd with -0.0 will get
   // killed later. We still limit that particular transform with 'hasOneUse'
   // because an fneg is assumed better/cheaper than a generic fsub.
-  if (I.hasNoSignedZeros() ||
-      cannotBeNegativeZero(Op0, getSimplifyQuery().getWithInstruction(&I))) {
-    if (match(Op1, m_OneUse(m_FSub(m_Value(X), m_Value(Y))))) {
+  if ((I.hasNoSignedZeros() ||
+      cannotBeNegativeZero(Op0, getSimplifyQuery().getWithInstruction(&I))) && (match(Op1, m_OneUse(m_FSub(m_Value(X), m_Value(Y)))))) 
+    {
       Value *NewSub = Builder.CreateFSubFMF(Y, X, &I);
       return BinaryOperator::CreateFAddFMF(Op0, NewSub, &I);
     }
-  }
+  
 
   // (-X) - Op1 --> -(X + Op1)
   if (I.hasNoSignedZeros() && !isa<ConstantExpr>(Op0) &&

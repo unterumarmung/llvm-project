@@ -549,11 +549,10 @@ static void visitLocalsRetainedByReferenceBinding(IndirectLocalPath &Path,
     if (auto *FE = dyn_cast<FullExpr>(Init))
       Init = FE->getSubExpr();
 
-    if (InitListExpr *ILE = dyn_cast<InitListExpr>(Init)) {
+    if (InitListExpr *ILE = dyn_cast<InitListExpr>(Init); ILE && (ILE->isTransparent())) 
       // If this is just redundant braces around an initializer, step over it.
-      if (ILE->isTransparent())
-        Init = ILE->getInit(0);
-    }
+      Init = ILE->getInit(0);
+    
 
     if (MemberExpr *ME = dyn_cast<MemberExpr>(Init->IgnoreImpCasts()))
       Path.push_back(
@@ -564,9 +563,8 @@ static void visitLocalsRetainedByReferenceBinding(IndirectLocalPath &Path,
 
     // Per current approach for DR1376, look through casts to reference type
     // when performing lifetime extension.
-    if (CastExpr *CE = dyn_cast<CastExpr>(Init))
-      if (CE->getSubExpr()->isGLValue())
-        Init = CE->getSubExpr();
+    if (CastExpr *CE = dyn_cast<CastExpr>(Init); CE && (CE->getSubExpr()->isGLValue()))
+      Init = CE->getSubExpr();
 
     // Per the current approach for DR1299, look through array element access
     // on array glvalues when performing lifetime extension.
@@ -590,10 +588,9 @@ static void visitLocalsRetainedByReferenceBinding(IndirectLocalPath &Path,
     }
   } while (Init != Old);
 
-  if (auto *MTE = dyn_cast<MaterializeTemporaryExpr>(Init)) {
-    if (Visit(Path, Local(MTE), RK))
-      visitLocalsRetainedByInitializer(Path, MTE->getSubExpr(), Visit, true);
-  }
+  if (auto *MTE = dyn_cast<MaterializeTemporaryExpr>(Init); MTE && (Visit(Path, Local(MTE), RK))) 
+    visitLocalsRetainedByInitializer(Path, MTE->getSubExpr(), Visit, true);
+  
 
   if (auto *M = dyn_cast<MemberExpr>(Init)) {
     // Lifetime of a non-reference type field is same as base object.
@@ -655,10 +652,9 @@ static void visitLocalsRetainedByReferenceBinding(IndirectLocalPath &Path,
   }
 
   case Stmt::CompoundLiteralExprClass: {
-    if (auto *CLE = dyn_cast<CompoundLiteralExpr>(Init)) {
-      if (!CLE->isFileScope())
-        Visit(Path, Local(CLE), RK);
-    }
+    if (auto *CLE = dyn_cast<CompoundLiteralExpr>(Init); CLE && (!CLE->isFileScope())) 
+      Visit(Path, Local(CLE), RK);
+    
     break;
   }
 
@@ -717,11 +713,10 @@ static void visitLocalsRetainedByInitializer(IndirectLocalPath &Path,
                   visitLocalsRetainedByInitializer(Path, VD->getInit(), Visit,
                                                    true);
                 }
-              } else if (auto *MTE = dyn_cast<MaterializeTemporaryExpr>(L)) {
-                if (MTE->getType().isConstQualified())
-                  visitLocalsRetainedByInitializer(Path, MTE->getSubExpr(),
+              } else if (auto *MTE = dyn_cast<MaterializeTemporaryExpr>(L); MTE && (MTE->getType().isConstQualified())) 
+                visitLocalsRetainedByInitializer(Path, MTE->getSubExpr(),
                                                    Visit, true);
-              }
+              
               return false;
             });
 
@@ -848,8 +843,8 @@ static void visitLocalsRetainedByInitializer(IndirectLocalPath &Path,
 
   // Assume that a copy or move from a temporary references the same objects
   // that the temporary does.
-  if (auto *CCE = dyn_cast<CXXConstructExpr>(Init)) {
-    if (CCE->getConstructor()->isCopyOrMoveConstructor()) {
+  if (auto *CCE = dyn_cast<CXXConstructExpr>(Init); CCE && (CCE->getConstructor()->isCopyOrMoveConstructor())) 
+    {
       if (auto *MTE = dyn_cast<MaterializeTemporaryExpr>(CCE->getArg(0))) {
         Expr *Arg = MTE->getSubExpr();
         Path.push_back({IndirectLocalPathEntry::TemporaryCopy, Arg,
@@ -858,7 +853,7 @@ static void visitLocalsRetainedByInitializer(IndirectLocalPath &Path,
         Path.pop_back();
       }
     }
-  }
+  
 
   if (isa<CallExpr>(Init) || isa<CXXConstructExpr>(Init))
     return visitFunctionCallArguments(Path, Init, Visit);
@@ -1337,9 +1332,8 @@ checkExprLifetimeImpl(Sema &SemaRef, const InitializedEntity *InitEntity,
         // expression.
         if (LK == LK_StmtExprResult)
           return false;
-        if (auto *VD = dyn_cast<VarDecl>(DRE->getDecl()))
-          if (VD->getType().getAddressSpace() == LangAS::opencl_local)
-            return false;
+        if (auto *VD = dyn_cast<VarDecl>(DRE->getDecl()); VD && (VD->getType().getAddressSpace() == LangAS::opencl_local))
+          return false;
         SemaRef.Diag(DiagLoc, diag::warn_ret_stack_addr_ref)
             << InitEntity->getType()->isReferenceType() << DRE->getDecl()
             << isa<ParmVarDecl>(DRE->getDecl()) << (LK == LK_MustTail)

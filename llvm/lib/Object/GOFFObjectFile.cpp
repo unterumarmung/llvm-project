@@ -75,15 +75,15 @@ GOFFObjectFile::GOFFObjectFile(MemoryBufferRef Object, Error &Err)
 
     // If the previous record was continued, the current record should be a
     // continuation.
-    if (PrevWasContinued && !IsContinuation) {
-      if (PrevRecordType == RecordType) {
+    if ((PrevWasContinued && !IsContinuation) && (PrevRecordType == RecordType)) 
+      {
         Err = createStringError(object_error::parse_failed,
                                 "record " + std::to_string(RecordNum) +
                                     " is not a continuation record but the "
                                     "preceding record is continued");
         return;
       }
-    }
+    
     // Don't parse continuations records, only parse initial record.
     if (IsContinuation) {
       if (RecordType != PrevRecordType) {

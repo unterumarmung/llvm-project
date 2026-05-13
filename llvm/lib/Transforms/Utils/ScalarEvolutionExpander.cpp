@@ -249,26 +249,23 @@ Value *SCEVExpander::InsertNoopCastOfTo(Value *V, Type *Ty) {
   if (Op == Instruction::BitCast) {
     if (V->getType() == Ty)
       return V;
-    if (CastInst *CI = dyn_cast<CastInst>(V)) {
-      if (CI->getOperand(0)->getType() == Ty)
-        return CI->getOperand(0);
-    }
+    if (CastInst *CI = dyn_cast<CastInst>(V); CI && (CI->getOperand(0)->getType() == Ty)) 
+      return CI->getOperand(0);
+    
   }
   // Short-circuit unnecessary inttoptr<->ptrtoint casts.
   if ((Op == Instruction::PtrToInt || Op == Instruction::IntToPtr) &&
       SE.getTypeSizeInBits(Ty) == SE.getTypeSizeInBits(V->getType())) {
-    if (CastInst *CI = dyn_cast<CastInst>(V))
-      if ((CI->getOpcode() == Instruction::PtrToInt ||
+    if (CastInst *CI = dyn_cast<CastInst>(V); CI && ((CI->getOpcode() == Instruction::PtrToInt ||
            CI->getOpcode() == Instruction::IntToPtr) &&
           SE.getTypeSizeInBits(CI->getType()) ==
-          SE.getTypeSizeInBits(CI->getOperand(0)->getType()))
-        return CI->getOperand(0);
-    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V))
-      if ((CE->getOpcode() == Instruction::PtrToInt ||
+          SE.getTypeSizeInBits(CI->getOperand(0)->getType())))
+      return CI->getOperand(0);
+    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V); CE && ((CE->getOpcode() == Instruction::PtrToInt ||
            CE->getOpcode() == Instruction::IntToPtr) &&
           SE.getTypeSizeInBits(CE->getType()) ==
-          SE.getTypeSizeInBits(CE->getOperand(0)->getType()))
-        return CE->getOperand(0);
+          SE.getTypeSizeInBits(CE->getOperand(0)->getType())))
+      return CE->getOperand(0);
   }
 
   // Fold a cast of a constant.
@@ -406,15 +403,15 @@ Value *SCEVExpander::expandAddToGEP(const SCEV *Offset, Value *V,
   if (IP != BlockBegin) {
     --IP;
     for (; ScanLimit; --IP, --ScanLimit) {
-      if (auto *GEP = dyn_cast<GetElementPtrInst>(IP)) {
-        if (GEP->getPointerOperand() == V &&
+      if (auto *GEP = dyn_cast<GetElementPtrInst>(IP); GEP && (GEP->getPointerOperand() == V &&
             GEP->getSourceElementType() == Builder.getInt8Ty() &&
-            GEP->getOperand(1) == Idx) {
+            GEP->getOperand(1) == Idx)) 
+        {
           rememberFlags(GEP);
           GEP->setNoWrapFlags(GEP->getNoWrapFlags() & NW);
           return &*IP;
         }
-      }
+      
       if (IP == BlockBegin) break;
     }
   }
@@ -576,9 +573,8 @@ Value *SCEVExpander::visitAddExpr(SCEVUseT<const SCEVAddExpr *> S) {
         // If the operand is SCEVUnknown and not instructions, peek through
         // it, to enable more of it to be folded into the GEP.
         const SCEV *X = I->second;
-        if (const SCEVUnknown *U = dyn_cast<SCEVUnknown>(X))
-          if (!isa<Instruction>(U->getValue()))
-            X = SE.getSCEV(U->getValue());
+        if (const SCEVUnknown *U = dyn_cast<SCEVUnknown>(X); U && (!isa<Instruction>(U->getValue())))
+          X = SE.getSCEV(U->getValue());
         NewOps.push_back(X);
       }
       Sum = expandAddToGEP(SE.getAddExpr(NewOps), Sum, S.getNoWrapFlags());
@@ -736,9 +732,8 @@ bool SCEVExpander::isNormalAddRecExprPHI(PHINode *PN, Instruction *IncV,
   // if there are instructions which haven't been hoisted.
   if (L == IVIncInsertLoop) {
     for (Use &Op : llvm::drop_begin(IncV->operands()))
-      if (Instruction *OInst = dyn_cast<Instruction>(Op))
-        if (!SE.DT.dominates(OInst, IVIncInsertPos))
-          return false;
+      if (Instruction *OInst = dyn_cast<Instruction>(Op); OInst && (!SE.DT.dominates(OInst, IVIncInsertPos)))
+        return false;
   }
   // Advance to the next instruction.
   IncV = dyn_cast<Instruction>(IncV->getOperand(0));
@@ -786,10 +781,9 @@ Instruction *SCEVExpander::getIVIncOperand(Instruction *IncV,
     for (Use &U : llvm::drop_begin(IncV->operands())) {
       if (isa<Constant>(U))
         continue;
-      if (Instruction *OInst = dyn_cast<Instruction>(U)) {
-        if (!SE.DT.dominates(OInst, InsertPos))
-          return nullptr;
-      }
+      if (Instruction *OInst = dyn_cast<Instruction>(U); OInst && (!SE.DT.dominates(OInst, InsertPos))) 
+        return nullptr;
+      
       if (allowScale) {
         // allow any kind of GEP as long as it can be hoisted.
         continue;
@@ -1336,9 +1330,8 @@ Value *SCEVExpander::visitAddRecExpr(SCEVUseT<const SCEVAddRecExpr *> S) {
 
   // First check for an existing canonical IV in a suitable type.
   PHINode *CanonicalIV = nullptr;
-  if (PHINode *PN = L->getCanonicalInductionVariable())
-    if (SE.getTypeSizeInBits(PN->getType()) >= SE.getTypeSizeInBits(Ty))
-      CanonicalIV = PN;
+  if (PHINode *PN = L->getCanonicalInductionVariable(); PN && (SE.getTypeSizeInBits(PN->getType()) >= SE.getTypeSizeInBits(Ty)))
+    CanonicalIV = PN;
 
   // Rewrite an AddRec in terms of the canonical induction variable, if
   // its type is more narrow.
@@ -2454,15 +2447,15 @@ struct SCEVFindUnsafe {
         return false;
       }
     }
-    if (const SCEVAddRecExpr *AR = dyn_cast<SCEVAddRecExpr>(S)) {
+    if (const SCEVAddRecExpr *AR = dyn_cast<SCEVAddRecExpr>(S); AR && (!AR->getLoop()->getLoopPreheader() &&
+          (!CanonicalMode || !AR->isAffine()))) 
       // For non-affine addrecs or in non-canonical mode we need a preheader
       // to insert into.
-      if (!AR->getLoop()->getLoopPreheader() &&
-          (!CanonicalMode || !AR->isAffine())) {
+      {
         IsUnsafe = true;
         return false;
       }
-    }
+    
     return true;
   }
   bool isDone() const { return IsUnsafe; }
@@ -2490,9 +2483,8 @@ bool SCEVExpander::isSafeToExpandAt(const SCEV *S,
   if (SE.dominates(S, InsertionPoint->getParent())) {
     if (InsertionPoint->getParent()->getTerminator() == InsertionPoint)
       return true;
-    if (const SCEVUnknown *U = dyn_cast<SCEVUnknown>(S))
-      if (llvm::is_contained(InsertionPoint->operand_values(), U->getValue()))
-        return true;
+    if (const SCEVUnknown *U = dyn_cast<SCEVUnknown>(S); U && (llvm::is_contained(InsertionPoint->operand_values(), U->getValue())))
+      return true;
   }
   return false;
 }

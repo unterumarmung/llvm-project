@@ -2567,9 +2567,8 @@ void ASTWriter::WriteSourceManagerBlock(SourceManager &SourceMgr) {
 
 static bool shouldIgnoreMacro(MacroDirective *MD, bool IsModule,
                               const Preprocessor &PP) {
-  if (MacroInfo *MI = MD->getMacroInfo())
-    if (MI->isBuiltinMacro())
-      return true;
+  if (MacroInfo *MI = MD->getMacroInfo(); MI && (MI->isBuiltinMacro()))
+    return true;
 
   if (IsModule) {
     SourceLocation Loc = MD->getLocation();
@@ -3865,11 +3864,10 @@ static NamedDecl *getDeclForLocalLookup(const LangOptions &LangOpts,
       if (Redecl->getOwningModuleID() == 0)
         break;
     }
-  } else if (Decl *First = D->getCanonicalDecl()) {
+  } else if (Decl *First = D->getCanonicalDecl(); First && (!First->isFromASTFile())) 
     // For Mergeable decls, the first decl might be local.
-    if (!First->isFromASTFile())
-      return cast<NamedDecl>(First);
-  }
+    return cast<NamedDecl>(First);
+  
 
   // All declarations are imported. Our most recent declaration will also be
   // the most recent one in anyone who imports us.
@@ -4409,18 +4407,17 @@ private:
     // parent of parent. We DON'T remove the enum constant from its parent. So
     // we don't need to care about merging problems here.
     if (auto *ECD = dyn_cast<EnumConstantDecl>(D);
-        ECD && DC.isFileContext() && ECD->getTopLevelOwningNamedModule()) {
-      if (llvm::all_of(
+        (ECD && DC.isFileContext() && ECD->getTopLevelOwningNamedModule()) && (llvm::all_of(
               DC.noload_lookup(
                   cast<EnumDecl>(ECD->getDeclContext())->getDeclName()),
               [](auto *Found) {
                 return Found->isInvisibleOutsideTheOwningModule();
-              }))
-        return ECD->isFromExplicitGlobalModule() ||
+              }))) 
+      return ECD->isFromExplicitGlobalModule() ||
                        ECD->isInAnonymousNamespace()
                    ? LookupVisibility::TULocal
                    : LookupVisibility::ModuleLocalVisible;
-    }
+    
 
     return LookupVisibility::GenerallyVisibile;
   }
@@ -7669,9 +7666,9 @@ void ASTWriter::CompletedTagDefinition(const TagDecl *D) {
   if (Chain && Chain->isProcessingUpdateRecords()) return;
   assert(D->isCompleteDefinition());
   assert(!WritingAST && "Already writing the AST!");
-  if (auto *RD = dyn_cast<CXXRecordDecl>(D)) {
+  if (auto *RD = dyn_cast<CXXRecordDecl>(D); RD && (RD->isFromASTFile())) 
     // We are interested when a PCH decl is modified.
-    if (RD->isFromASTFile()) {
+    {
       // A forward reference was mutated into a definition. Rewrite it.
       // FIXME: This happens during template instantiation, should we
       // have created a new definition decl instead ?
@@ -7680,7 +7677,7 @@ void ASTWriter::CompletedTagDefinition(const TagDecl *D) {
       DeclUpdates[RD].push_back(
           DeclUpdate(DeclUpdateKind::CXXInstantiatedClassDefinition));
     }
-  }
+  
 }
 
 static bool isImportedDeclContext(ASTReader *Chain, const Decl *D) {

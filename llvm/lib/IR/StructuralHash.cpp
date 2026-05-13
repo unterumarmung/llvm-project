@@ -84,9 +84,8 @@ public:
     // Hash the contents of a string.
     if (GVar.getName().starts_with(".str")) {
       auto *C = GVar.getInitializer();
-      if (const auto *Seq = dyn_cast<ConstantDataSequential>(C))
-        if (Seq->isString())
-          return stable_hash_name(Seq->getAsString());
+      if (const auto *Seq = dyn_cast<ConstantDataSequential>(C); Seq && (Seq->isString()))
+        return stable_hash_name(Seq->getAsString());
     }
 
     // Hash structural contents of Objective-C metadata in specific sections.
@@ -136,12 +135,12 @@ public:
       return stable_hash_combine(Hashes);
     }
 
-    if (const auto *Seq = dyn_cast<ConstantDataSequential>(C)) {
-      if (Seq->isString()) {
+    if (const auto *Seq = dyn_cast<ConstantDataSequential>(C); Seq && (Seq->isString())) 
+      {
         Hashes.emplace_back(stable_hash_name(Seq->getAsString()));
         return stable_hash_combine(Hashes);
       }
-    }
+    
 
     switch (C->getValueID()) {
     case Value::ConstantIntVal: {

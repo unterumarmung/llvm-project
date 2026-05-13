@@ -107,8 +107,8 @@ static bool simplifyLoopInst(Loop &L, DominatorTree &DT, LoopInfo &LI,
           // If the instruction is used by a PHI node we have already processed
           // we'll need to iterate on the loop body to converge, so add it to
           // the next set.
-          if (auto *UserPI = dyn_cast<PHINode>(UserI))
-            if (VisitedPHIs.count(UserPI)) {
+          if (auto *UserPI = dyn_cast<PHINode>(UserI); UserPI && (VisitedPHIs.count(UserPI)))
+            {
               Next->insert(UserPI);
               continue;
             }

@@ -725,15 +725,13 @@ bool LayoutAttr::isCompatibleWith(const xegpu::DistributeLayoutAttr &other,
     return false;
   if (getEffectiveOrderAsInt() == other.getEffectiveOrderAsInt()) {
     // short cut when order is the same, no need to compute coords and compare
-    if (level == xegpu::LayoutKind::Subgroup)
-      if (getEffectiveSgLayoutAsInt() == other.getEffectiveSgLayoutAsInt() &&
-          getEffectiveSgDataAsInt() == other.getEffectiveSgDataAsInt())
-        return true;
-    if (level == xegpu::LayoutKind::Lane)
-      if (getEffectiveLaneLayoutAsInt() ==
+    if ((level == xegpu::LayoutKind::Subgroup) && (getEffectiveSgLayoutAsInt() == other.getEffectiveSgLayoutAsInt() &&
+          getEffectiveSgDataAsInt() == other.getEffectiveSgDataAsInt()))
+      return true;
+    if ((level == xegpu::LayoutKind::Lane) && (getEffectiveLaneLayoutAsInt() ==
               other.getEffectiveLaneLayoutAsInt() &&
-          getEffectiveLaneDataAsInt() == other.getEffectiveLaneDataAsInt())
-        return true;
+          getEffectiveLaneDataAsInt() == other.getEffectiveLaneDataAsInt()))
+      return true;
   }
 
   auto compareCoordsForAllIds = [&](int64_t size) {
@@ -946,15 +944,13 @@ bool SliceAttr::isCompatibleWith(const xegpu::DistributeLayoutAttr &other,
     return false;
   if (getEffectiveOrderAsInt() == other.getEffectiveOrderAsInt()) {
     // short cut when order is the same, no need to compute coords and compare
-    if (level == xegpu::LayoutKind::Subgroup)
-      if (getEffectiveSgLayoutAsInt() == other.getEffectiveSgLayoutAsInt() &&
-          getEffectiveSgDataAsInt() == other.getEffectiveSgDataAsInt())
-        return true;
-    if (level == xegpu::LayoutKind::Lane)
-      if (getEffectiveLaneLayoutAsInt() ==
+    if ((level == xegpu::LayoutKind::Subgroup) && (getEffectiveSgLayoutAsInt() == other.getEffectiveSgLayoutAsInt() &&
+          getEffectiveSgDataAsInt() == other.getEffectiveSgDataAsInt()))
+      return true;
+    if ((level == xegpu::LayoutKind::Lane) && (getEffectiveLaneLayoutAsInt() ==
               other.getEffectiveLaneLayoutAsInt() &&
-          getEffectiveLaneDataAsInt() == other.getEffectiveLaneDataAsInt())
-        return true;
+          getEffectiveLaneDataAsInt() == other.getEffectiveLaneDataAsInt()))
+      return true;
   }
 
   auto compareCoordsForAllIds = [&](int64_t size) {

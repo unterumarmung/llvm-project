@@ -171,9 +171,8 @@ Cost InstCostVisitor::getCodeSizeSavingsForArg(Argument *A, Constant *C) {
                     << C->getNameOrAsOperand() << "\n");
   Cost CodeSize;
   for (auto *U : A->users())
-    if (auto *UI = dyn_cast<Instruction>(U))
-      if (isBlockExecutable(UI->getParent()))
-        CodeSize += getCodeSizeSavingsForUser(UI, A, C);
+    if (auto *UI = dyn_cast<Instruction>(U); UI && (isBlockExecutable(UI->getParent())))
+      CodeSize += getCodeSizeSavingsForUser(UI, A, C);
 
   LLVM_DEBUG(dbgs() << "FnSpecialization:   Accumulated bonus {CodeSize = "
                     << CodeSize << "} for argument " << *A << "\n");
@@ -248,9 +247,8 @@ Cost InstCostVisitor::getCodeSizeSavingsForUser(Instruction *User, Value *Use,
                     << "} for user " << *User << "\n");
 
   for (auto *U : User->users())
-    if (auto *UI = dyn_cast<Instruction>(U))
-      if (UI != User && isBlockExecutable(UI->getParent()))
-        CodeSize += getCodeSizeSavingsForUser(UI, User, C);
+    if (auto *UI = dyn_cast<Instruction>(U); UI && (UI != User && isBlockExecutable(UI->getParent())))
+      CodeSize += getCodeSizeSavingsForUser(UI, User, C);
 
   return CodeSize;
 }
@@ -317,9 +315,8 @@ bool InstCostVisitor::discoverTransitivelyIncomingValues(
       Value *V = PN->getIncomingValue(I);
 
       // Disregard self-references and dead incoming values.
-      if (auto *Inst = dyn_cast<Instruction>(V))
-        if (Inst == PN || !isBlockExecutable(PN->getIncomingBlock(I)))
-          continue;
+      if (auto *Inst = dyn_cast<Instruction>(V); Inst && (Inst == PN || !isBlockExecutable(PN->getIncomingBlock(I))))
+        continue;
 
       if (Constant *C = findConstantFor(V)) {
         // Not all incoming values are the same constant. Bail immediately.
@@ -352,9 +349,8 @@ Constant *InstCostVisitor::visitPHINode(PHINode &I) {
     Value *V = I.getIncomingValue(Idx);
 
     // Disregard self-references and dead incoming values.
-    if (auto *Inst = dyn_cast<Instruction>(V))
-      if (Inst == &I || !isBlockExecutable(I.getIncomingBlock(Idx)))
-        continue;
+    if (auto *Inst = dyn_cast<Instruction>(V); Inst && (Inst == &I || !isBlockExecutable(I.getIncomingBlock(Idx))))
+      continue;
 
     if (Constant *C = findConstantFor(V)) {
       if (!Const)
@@ -459,10 +455,9 @@ Constant *InstCostVisitor::visitSelectInst(SelectInst &I) {
                                                   : I.getTrueValue();
     return findConstantFor(V);
   }
-  if (Constant *Condition = findConstantFor(I.getCondition()))
-    if ((I.getTrueValue() == LastVisited->first && Condition->isOneValue()) ||
-        (I.getFalseValue() == LastVisited->first && Condition->isNullValue()))
-      return LastVisited->second;
+  if (Constant *Condition = findConstantFor(I.getCondition()); Condition && ((I.getTrueValue() == LastVisited->first && Condition->isOneValue()) ||
+        (I.getFalseValue() == LastVisited->first && Condition->isNullValue())))
+    return LastVisited->second;
   return nullptr;
 }
 

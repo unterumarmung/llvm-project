@@ -297,10 +297,9 @@ static const Decl *adjustParent(const Decl *Parent) {
     } else if (auto RD = dyn_cast<RecordDecl>(Parent)) {
       if (RD->isAnonymousStructOrUnion())
         continue;
-    } else if (auto ND = dyn_cast<NamedDecl>(Parent)) {
-      if (shouldSkipNamelessDecl(ND))
-        continue;
-    }
+    } else if (auto ND = dyn_cast<NamedDecl>(Parent); ND && (shouldSkipNamelessDecl(ND))) 
+      continue;
+    
     return Parent;
   }
 }

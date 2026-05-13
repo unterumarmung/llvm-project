@@ -215,9 +215,8 @@ static bool isOSObjectRelated(const CXXMethodDecl *MD) {
   for (ParmVarDecl *Param : MD->parameters()) {
     QualType PT = Param->getType()->getPointeeType();
     if (!PT.isNull())
-      if (CXXRecordDecl *RD = PT->getAsCXXRecordDecl())
-        if (isOSObjectSubclass(RD))
-          return true;
+      if (CXXRecordDecl *RD = PT->getAsCXXRecordDecl(); RD && (isOSObjectSubclass(RD)))
+        return true;
   }
 
   return false;
@@ -231,9 +230,8 @@ RetainSummaryManager::isKnownSmartPointer(QualType QT) {
     return false;
   const IdentifierInfo *II = RD->getIdentifier();
   if (II && II->getName() == "smart_ptr")
-    if (const auto *ND = dyn_cast<NamespaceDecl>(RD->getDeclContext()))
-      if (ND->getNameAsString() == "os")
-        return true;
+    if (const auto *ND = dyn_cast<NamespaceDecl>(RD->getDeclContext()); ND && (ND->getNameAsString() == "os"))
+      return true;
   return false;
 }
 
@@ -513,9 +511,8 @@ RetainSummaryManager::generateSummary(const FunctionDecl *FD,
     if (const RetainSummary *S = getSummaryForOSObject(FD, FName, RetTy))
       return S;
 
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(FD))
-    if (!isOSObjectRelated(MD))
-      return getPersistentSummary(RetEffect::MakeNoRet(),
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(FD); MD && (!isOSObjectRelated(MD)))
+    return getPersistentSummary(RetEffect::MakeNoRet(),
                                   ArgEffects(AF.getEmptyMap()),
                                   ArgEffect(DoNothing),
                                   ArgEffect(StopTracking),
@@ -601,15 +598,14 @@ RetainSummaryManager::updateSummaryForNonZeroCallbackArg(const RetainSummary *S,
   // Special cases where the callback argument CANNOT free the return value.
   // This can generally only happen if we know that the callback will only be
   // called when the return value is already being deallocated.
-  if (const IdentifierInfo *Name = C.getIdentifier()) {
+  if (const IdentifierInfo *Name = C.getIdentifier(); Name && (Name->isStr("CGBitmapContextCreateWithData") ||
+        Name->isStr("dispatch_data_create"))) 
     // When the CGBitmapContext is deallocated, the callback here will free
     // the associated data buffer.
     // The callback in dispatch_data_create frees the buffer, but not
     // the data object.
-    if (Name->isStr("CGBitmapContextCreateWithData") ||
-        Name->isStr("dispatch_data_create"))
-      RE = S->getRetEffect();
-  }
+    RE = S->getRetEffect();
+  
 
   return getPersistentSummary(RE, ScratchArgs, RecEffect, DefEffect);
 }
@@ -770,9 +766,8 @@ RetainSummaryManager::canEval(const CallExpr *CE, const FunctionDecl *FD,
 
   if (const auto *MD = dyn_cast<CXXMethodDecl>(FD)) {
     const CXXRecordDecl *Parent = MD->getParent();
-    if (TrackOSObjects && Parent && isOSObjectSubclass(Parent))
-      if (FName == "release" || FName == "retain")
-        return BehaviorSummary::NoOp;
+    if ((TrackOSObjects && Parent && isOSObjectSubclass(Parent)) && (FName == "release" || FName == "retain"))
+      return BehaviorSummary::NoOp;
   }
 
   return std::nullopt;

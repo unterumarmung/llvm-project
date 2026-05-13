@@ -755,22 +755,22 @@ bool StraightLineStrengthReduce::searchFrom(
 
 void StraightLineStrengthReduce::setBasisAndDeltaFor(Candidate &C) {
   if (const auto *BaseDeltaCandidates =
-          CandidateDict.getCandidatesWithDeltaKind(C, Candidate::BaseDelta))
-    if (searchFrom(*BaseDeltaCandidates, C, Candidate::BaseDelta)) {
+          CandidateDict.getCandidatesWithDeltaKind(C, Candidate::BaseDelta); BaseDeltaCandidates && (searchFrom(*BaseDeltaCandidates, C, Candidate::BaseDelta)))
+    {
       LLVM_DEBUG(dbgs() << "Found delta from Base: " << *C.Delta << "\n");
       return;
     }
 
   if (const auto *StrideDeltaCandidates =
-          CandidateDict.getCandidatesWithDeltaKind(C, Candidate::StrideDelta))
-    if (searchFrom(*StrideDeltaCandidates, C, Candidate::StrideDelta)) {
+          CandidateDict.getCandidatesWithDeltaKind(C, Candidate::StrideDelta); StrideDeltaCandidates && (searchFrom(*StrideDeltaCandidates, C, Candidate::StrideDelta)))
+    {
       LLVM_DEBUG(dbgs() << "Found delta from Stride: " << *C.Delta << "\n");
       return;
     }
 
   if (const auto *IndexDeltaCandidates =
-          CandidateDict.getCandidatesWithDeltaKind(C, Candidate::IndexDelta))
-    if (searchFrom(*IndexDeltaCandidates, C, Candidate::IndexDelta)) {
+          CandidateDict.getCandidatesWithDeltaKind(C, Candidate::IndexDelta); IndexDeltaCandidates && (searchFrom(*IndexDeltaCandidates, C, Candidate::IndexDelta)))
+    {
       LLVM_DEBUG(dbgs() << "Found delta from Index: " << *C.Delta << "\n");
       return;
     }

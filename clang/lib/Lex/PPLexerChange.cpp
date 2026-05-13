@@ -361,10 +361,10 @@ bool Preprocessor::HandleEndOfFile(Token &Result, bool isEndOfMacro) {
         if (MacroInfo *MI = getMacroInfo(ControllingMacro))
           MI->setUsedForHeaderGuard(true);
         if (const IdentifierInfo *DefinedMacro =
-              CurPPLexer->MIOpt.GetDefinedMacro()) {
-          if (!isMacroDefined(ControllingMacro) &&
+              CurPPLexer->MIOpt.GetDefinedMacro(); DefinedMacro && (!isMacroDefined(ControllingMacro) &&
               DefinedMacro != ControllingMacro &&
-              CurLexer->isFirstTimeLexingFile()) {
+              CurLexer->isFirstTimeLexingFile())) 
+          {
 
             // If the edit distance between the two macros is more than 50%,
             // DefinedMacro may not be header guard, or can be header guard of
@@ -392,7 +392,7 @@ bool Preprocessor::HandleEndOfFile(Token &Result, bool isEndOfMacro) {
                          ControllingMacro->getName());
             }
           }
-        }
+        
       }
     }
   }
@@ -538,16 +538,15 @@ bool Preprocessor::HandleEndOfFile(Token &Result, bool isEndOfMacro) {
     CurLexer->FormTokenWithChars(Result, EndPos, tok::eof);
   }
 
-  if (isCodeCompletionEnabled()) {
+  if ((isCodeCompletionEnabled()) && (CurLexer->getFileLoc() == CodeCompletionFileLoc)) 
     // Inserting the code-completion point increases the source buffer by 1,
     // but the main FileID was created before inserting the point.
     // Compensate by reducing the EOF location by 1, otherwise the location
     // will point to the next FileID.
     // FIXME: This is hacky, the code-completion point should probably be
     // inserted before the main FileID is created.
-    if (CurLexer->getFileLoc() == CodeCompletionFileLoc)
-      Result.setLocation(Result.getLocation().getLocWithOffset(-1));
-  }
+    Result.setLocation(Result.getLocation().getLocWithOffset(-1));
+  
 
   if (creatingPCHWithThroughHeader() && !LeavingPCHThroughHeader) {
     // Reached the end of the compilation without finding the through header.

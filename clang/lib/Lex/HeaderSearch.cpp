@@ -151,15 +151,15 @@ std::vector<bool> HeaderSearch::collectVFSUsageAndClear() const {
   //       `createVFSFromOverlayFiles`. But at least exclude the ones with null
   //       OverlayFileDir.
   RootFS.visit([&](llvm::vfs::FileSystem &FS) {
-    if (auto *RFS = dyn_cast<llvm::vfs::RedirectingFileSystem>(&FS)) {
+    if (auto *RFS = dyn_cast<llvm::vfs::RedirectingFileSystem>(&FS); RFS && (!RFS->getOverlayFileDir().empty())) 
       // Skip a `RedirectingFileSystem` with null OverlayFileDir which indicates
       // that they aren't created by createVFSFromOverlayFiles from the overlays
       // in HeaderSearchOption::VFSOverlayFiles.
-      if (!RFS->getOverlayFileDir().empty()) {
+      {
         VFSUsage.push_back(RFS->hasBeenUsed());
         RFS->clearHasBeenUsed();
       }
-    }
+    
   });
   assert(VFSUsage.size() == getHeaderSearchOpts().VFSOverlayFiles.size() &&
          "A different number of RedirectingFileSystem's were present than "
@@ -1585,17 +1585,17 @@ bool HeaderSearch::ShouldEnterIncludeFile(Preprocessor &PP,
   // the file's contents, and the include would have no effect other than to
   // waste time opening and reading a file.
   if (const IdentifierInfo *ControllingMacro =
-          FileInfo.getControllingMacro(ExternalLookup)) {
+          FileInfo.getControllingMacro(ExternalLookup); ControllingMacro && (M ? PP.isMacroDefinedInLocalModule(ControllingMacro, M)
+          : PP.isMacroDefined(ControllingMacro))) 
     // If the header corresponds to a module, check whether the macro is already
     // defined in that module rather than checking all visible modules. This is
     // mainly to cover corner cases where the same controlling macro is used in
     // different files in multiple modules.
-    if (M ? PP.isMacroDefinedInLocalModule(ControllingMacro, M)
-          : PP.isMacroDefined(ControllingMacro)) {
+    {
       ++NumMultiIncludeFileOptzn;
       return false;
     }
-  }
+  
 
   IsFirstIncludeOfFile = PP.markIncluded(File);
   return true;

@@ -284,10 +284,9 @@ void BCECmpBlock::split(BasicBlock *NewParent, AliasAnalysis &AA) const {
 
 bool BCECmpBlock::canSplit(AliasAnalysis &AA) const {
   for (Instruction &Inst : *BB) {
-    if (!BlockInsts.count(&Inst)) {
-      if (!canSinkBCECmpInst(&Inst, AA))
-        return false;
-    }
+    if ((!BlockInsts.count(&Inst)) && (!canSinkBCECmpInst(&Inst, AA))) 
+      return false;
+    
   }
   return true;
 }

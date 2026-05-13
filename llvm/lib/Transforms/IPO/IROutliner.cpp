@@ -752,9 +752,8 @@ static void findConstants(IRSimilarityCandidate &C, DenseSet<unsigned> &NotSame,
       // Since these are stored before any outlining, they will be in the
       // global value numbering.
       unsigned GVN = *C.getGVN(V);
-      if (isa<Constant>(V))
-        if (NotSame.contains(GVN) && Seen.insert(GVN).second)
-          Inputs.push_back(GVN);
+      if ((isa<Constant>(V)) && (NotSame.contains(GVN) && Seen.insert(GVN).second))
+        Inputs.push_back(GVN);
     }
   }
 }
@@ -2340,11 +2339,10 @@ void IROutliner::pruneIncompatibleRegions(
   IRSimilarityCandidate &FirstCandidate = CandidateVec[0];
   // Since outlining a call and a branch instruction will be the same as only
   // outlinining a call instruction, we ignore it as a space saving.
-  if (FirstCandidate.getLength() == 2) {
-    if (isa<CallInst>(FirstCandidate.front()->Inst) &&
-        isa<UncondBrInst, CondBrInst>(FirstCandidate.back()->Inst))
-      return;
-  }
+  if ((FirstCandidate.getLength() == 2) && (isa<CallInst>(FirstCandidate.front()->Inst) &&
+        isa<UncondBrInst, CondBrInst>(FirstCandidate.back()->Inst))) 
+    return;
+  
 
   unsigned CurrentEndIdx = 0;
   for (IRSimilarityCandidate &IRSC : CandidateVec) {

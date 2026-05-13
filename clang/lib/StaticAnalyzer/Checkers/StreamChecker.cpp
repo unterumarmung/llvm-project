@@ -770,9 +770,8 @@ protected:
     auto Matches =
         match(findAll(callExpr().bind("call")), *FD->getBody(), ACtx);
     for (BoundNodes Match : Matches) {
-      if (const auto *Call = Match.getNodeAs<CallExpr>("call"))
-        if (isClosingCallAsWritten(*Call))
-          return true;
+      if (const auto *Call = Match.getNodeAs<CallExpr>("call"); Call && (isClosingCallAsWritten(*Call)))
+        return true;
     }
     // TODO: Ownership might change with an attempt to store stream object, not
     // only through closing it. Check for attempted stores as well.
@@ -2110,12 +2109,12 @@ getGlobalStreamPointerByName(const TranslationUnitDecl *TU, StringRef VarName) {
 
   auto LookupRes = TU->lookup(&Ctx.Idents.get(VarName));
   for (const Decl *D : LookupRes) {
-    if (auto *VD = dyn_cast_or_null<VarDecl>(D)) {
-      if (SM.isInSystemHeader(VD->getLocation()) && VD->hasExternalStorage() &&
-          VD->getType().getCanonicalType() == FilePtrTy) {
+    if (auto *VD = dyn_cast_or_null<VarDecl>(D); VD && (SM.isInSystemHeader(VD->getLocation()) && VD->hasExternalStorage() &&
+          VD->getType().getCanonicalType() == FilePtrTy)) 
+      {
         return VD;
       }
-    }
+    
   }
   return nullptr;
 }

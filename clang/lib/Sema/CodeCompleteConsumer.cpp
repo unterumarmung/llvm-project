@@ -386,10 +386,9 @@ StringRef CodeCompletionTUInfo::getParentName(const DeclContext *DC) {
   // Find the interesting names.
   SmallVector<const DeclContext *, 2> Contexts;
   while (DC && !DC->isFunctionOrMethod()) {
-    if (const auto *ND = dyn_cast<NamedDecl>(DC)) {
-      if (ND->getIdentifier())
-        Contexts.push_back(DC);
-    }
+    if (const auto *ND = dyn_cast<NamedDecl>(DC); ND && (ND->getIdentifier())) 
+      Contexts.push_back(DC);
+    
 
     DC = DC->getParent();
   }
@@ -575,9 +574,8 @@ CodeCompleteConsumer::OverloadCandidate::getParamType(unsigned N) const {
   }
 
   if (const auto *FT = getFunctionType())
-    if (const auto *FPT = dyn_cast<FunctionProtoType>(FT))
-      if (N < FPT->getNumParams())
-        return FPT->getParamType(N);
+    if (const auto *FPT = dyn_cast<FunctionProtoType>(FT); FPT && (N < FPT->getNumParams()))
+      return FPT->getParamType(N);
   return QualType();
 }
 
@@ -606,11 +604,11 @@ CodeCompleteConsumer::OverloadCandidate::getParamDecl(unsigned N) const {
   if (const auto *FD = getFunction()) {
     if (N < FD->param_size())
       return FD->getParamDecl(N);
-  } else if (Kind == CK_FunctionProtoTypeLoc) {
-    if (N < ProtoTypeLoc.getNumParams()) {
+  } else if ((Kind == CK_FunctionProtoTypeLoc) && (N < ProtoTypeLoc.getNumParams())) 
+    {
       return ProtoTypeLoc.getParam(N);
     }
-  }
+  
 
   return nullptr;
 }
@@ -797,9 +795,8 @@ void CodeCompletionResult::computeCursorKindAndAvailability(bool Accessible) {
       break;
     }
 
-    if (const auto *Function = dyn_cast<FunctionDecl>(Declaration))
-      if (Function->isDeleted())
-        Availability = CXAvailability_NotAvailable;
+    if (const auto *Function = dyn_cast<FunctionDecl>(Declaration); Function && (Function->isDeleted()))
+      Availability = CXAvailability_NotAvailable;
 
     CursorKind = getCursorKindForDecl(Declaration);
     if (CursorKind == CXCursor_UnexposedDecl) {

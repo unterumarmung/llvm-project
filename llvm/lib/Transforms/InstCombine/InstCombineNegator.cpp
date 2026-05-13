@@ -274,9 +274,9 @@ std::array<Value *, 2> Negator::getSortedOperandsOfBinOp(Instruction *I) {
     // `sdiv` is negatible if divisor is not undef/INT_MIN/1.
     // While this is normally not behind a use-check,
     // let's consider division to be special since it's costly.
-    if (auto *Op1C = dyn_cast<Constant>(I->getOperand(1))) {
-      if (!Op1C->containsUndefOrPoisonElement() &&
-          Op1C->isNotMinSignedValue() && Op1C->isNotOneValue()) {
+    if (auto *Op1C = dyn_cast<Constant>(I->getOperand(1)); Op1C && (!Op1C->containsUndefOrPoisonElement() &&
+          Op1C->isNotMinSignedValue() && Op1C->isNotOneValue())) 
+      {
         Value *BO =
             Builder.CreateSDiv(I->getOperand(0), ConstantExpr::getNeg(Op1C),
                                I->getName() + ".neg");
@@ -284,7 +284,7 @@ std::array<Value *, 2> Negator::getSortedOperandsOfBinOp(Instruction *I) {
           NewInstr->setIsExact(I->isExact());
         return BO;
       }
-    }
+    
     break;
   }
 
@@ -458,13 +458,13 @@ std::array<Value *, 2> Negator::getSortedOperandsOfBinOp(Instruction *I) {
     std::array<Value *, 2> Ops = getSortedOperandsOfBinOp(I);
     // `xor` is negatible if one of its operands is invertible.
     // FIXME: InstCombineInverter? But how to connect Inverter and Negator?
-    if (auto *C = dyn_cast<Constant>(Ops[1])) {
-      if (IsTrulyNegation) {
+    if (auto *C = dyn_cast<Constant>(Ops[1]); C && (IsTrulyNegation)) 
+      {
         Value *Xor = Builder.CreateXor(Ops[0], ConstantExpr::getNot(C));
         return Builder.CreateAdd(Xor, ConstantInt::get(Xor->getType(), 1),
                                  I->getName() + ".neg");
       }
-    }
+    
     return nullptr;
   }
   case Instruction::Mul: {

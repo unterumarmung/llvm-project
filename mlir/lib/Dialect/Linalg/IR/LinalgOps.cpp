@@ -1280,10 +1280,9 @@ ParseResult GenericOp::parse(OpAsmParser &parser, OperationState &result) {
     return failure();
 
   // Optional attributes may be added.
-  if (succeeded(parser.parseOptionalKeyword("attrs")))
-    if (failed(parser.parseEqual()) ||
-        failed(parser.parseOptionalAttrDict(result.attributes)))
-      return failure();
+  if ((succeeded(parser.parseOptionalKeyword("attrs"))) && (failed(parser.parseEqual()) ||
+        failed(parser.parseOptionalAttrDict(result.attributes))))
+    return failure();
 
   std::unique_ptr<Region> region = std::make_unique<Region>();
   if (parser.parseRegion(*region, {}))

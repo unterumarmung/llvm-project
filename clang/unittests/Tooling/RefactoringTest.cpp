@@ -752,11 +752,11 @@ public:
       if (const auto *NS =
               dyn_cast<NamespaceDecl>(NNSLoc.getNestedNameSpecifier()
                                           .getAsNamespaceAndPrefix()
-                                          .Namespace)) {
-        if (NS->getName() == "a") {
+                                          .Namespace); NS && (NS->getName() == "a")) 
+        {
           Replace = Replacement(*SM, &NNSLoc, "", Context->getLangOpts());
         }
-      }
+      
     }
     return TestVisitor::TraverseNestedNameSpecifierLoc(NNSLoc);
   }

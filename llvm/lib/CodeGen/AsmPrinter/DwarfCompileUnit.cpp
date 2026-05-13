@@ -1320,9 +1320,8 @@ DwarfCompileUnit::getOrCreateAbstractSubprogramContextDIE(
   bool IgnoreScope = shouldPlaceInUnitDIE(SP, Minimal);
   DIE *ContextDIE = getOrCreateSubprogramContextDIE(SP, IgnoreScope);
 
-  if (auto *SPDecl = SP->getDeclaration())
-    if (!Minimal)
-      getOrCreateSubprogramDIE(SPDecl, nullptr);
+  if (auto *SPDecl = SP->getDeclaration(); SPDecl && (!Minimal))
+    getOrCreateSubprogramDIE(SPDecl, nullptr);
 
   // The scope may be shared with a subprogram that has already been
   // constructed in another CU, in which case we need to construct this

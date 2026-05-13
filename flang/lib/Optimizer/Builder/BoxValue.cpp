@@ -200,10 +200,9 @@ bool fir::MutableBoxValue::verify() const {
   if (isCharacter()) {
     if (nParams > 1)
       return false;
-  } else if (!isDerived()) {
-    if (nParams != 0)
-      return false;
-  }
+  } else if ((!isDerived()) && (nParams != 0)) 
+    return false;
+  
   return true;
 }
 

@@ -302,12 +302,12 @@ TokenSequence Definition::Apply(const std::vector<TokenSequence> &args,
         char ch{token.OnlyNonBlank()};
         if (ch == '(') {
           ++parenthesesNesting;
-        } else if (ch == ')') {
-          if (--parenthesesNesting == 0) {
+        } else if ((ch == ')') && (--parenthesesNesting == 0)) 
+          {
             skipping = false;
             continue;
           }
-        }
+        
       }
       result.AppendRange(replacement_, j);
     }
@@ -396,8 +396,8 @@ TokenSequence Preprocessor::TokenizeMacroBody(const std::string &str) {
       }
       if (at < end) {
         ch = ToUpperCaseLetter(str.at(at));
-        if (ch == 'E' || ch == 'D' || ch == 'Q') {
-          if (++at < end) {
+        if ((ch == 'E' || ch == 'D' || ch == 'Q') && (++at < end)) 
+          {
             ch = str.at(at);
             if (ch == '+' || ch == '-') {
               ++at;
@@ -405,7 +405,7 @@ TokenSequence Preprocessor::TokenizeMacroBody(const std::string &str) {
             for (; at < end && IsDecimalDigit(str.at(at)); ++at) {
             }
           }
-        }
+        
       }
     } else if (ch == '\'' || ch == '"') {
       for (++at; at < end && str.at(at) != ch; ++at) {

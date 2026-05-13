@@ -290,15 +290,15 @@ RESULT DecodeString(const std::string &s, bool backslashEscapes) {
   for (auto bytes{s.size()}; bytes != 0;) {
     DecodedCharacter decoded{
         DecodeCharacter<ENCODING>(p, bytes, backslashEscapes)};
-    if (decoded.bytes > 0) {
-      if (static_cast<std::size_t>(decoded.bytes) <= bytes) {
+    if ((decoded.bytes > 0) && (static_cast<std::size_t>(decoded.bytes) <= bytes)) 
+      {
         result.append(
             1, static_cast<typename RESULT::value_type>(decoded.codepoint));
         bytes -= decoded.bytes;
         p += decoded.bytes;
         continue;
       }
-    }
+    
     result.append(1, static_cast<uint8_t>(*p));
     ++p;
     --bytes;

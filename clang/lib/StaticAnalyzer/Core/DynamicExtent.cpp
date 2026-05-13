@@ -130,9 +130,8 @@ ProgramStateRef setDynamicExtent(ProgramStateRef State, const MemRegion *MR,
 
 void markAllDynamicExtentLive(ProgramStateRef State, SymbolReaper &SymReaper) {
   for (const auto &I : State->get<DynamicExtentMap>())
-    if (SymbolRef Sym = I.second.getAsSymbol())
-      if (SymReaper.isLiveRegion(I.first))
-        SymReaper.markLive(Sym);
+    if (SymbolRef Sym = I.second.getAsSymbol(); Sym && (SymReaper.isLiveRegion(I.first)))
+      SymReaper.markLive(Sym);
 }
 
 } // namespace ento

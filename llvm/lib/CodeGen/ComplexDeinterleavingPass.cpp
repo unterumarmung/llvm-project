@@ -956,10 +956,9 @@ ComplexDeinterleavingGraph::identifySymmetricOperation(ComplexValues &Vals) {
         !isInstructionPotentiallySymmetric(Imag))
       return nullptr;
 
-    if (isa<FPMathOperator>(FirstReal))
-      if (Real->getFastMathFlags() != FirstReal->getFastMathFlags() ||
-          Imag->getFastMathFlags() != FirstReal->getFastMathFlags())
-        return nullptr;
+    if ((isa<FPMathOperator>(FirstReal)) && (Real->getFastMathFlags() != FirstReal->getFastMathFlags() ||
+          Imag->getFastMathFlags() != FirstReal->getFastMathFlags()))
+      return nullptr;
   }
 
   ComplexValues OpVals;
@@ -1913,10 +1912,9 @@ bool ComplexDeinterleavingGraph::checkNodes() {
       continue;
 
     for (Value *Op : I->operands()) {
-      if (auto *OpI = dyn_cast<Instruction>(Op)) {
-        if (!FinalInstructions.count(I))
-          Worklist.emplace_back(OpI);
-      }
+      if (auto *OpI = dyn_cast<Instruction>(Op); OpI && (!FinalInstructions.count(I))) 
+        Worklist.emplace_back(OpI);
+      
     }
   }
 
@@ -2430,10 +2428,9 @@ void ComplexDeinterleavingGraph::processReductionSingle(
   IRBuilder<> Builder(Incoming->getTerminator());
 
   Value *NewInit = nullptr;
-  if (auto *C = dyn_cast<Constant>(Init)) {
-    if (C->isNullValue())
-      NewInit = Constant::getNullValue(NewVTy);
-  }
+  if (auto *C = dyn_cast<Constant>(Init); C && (C->isNullValue())) 
+    NewInit = Constant::getNullValue(NewVTy);
+  
 
   if (!NewInit)
     NewInit =

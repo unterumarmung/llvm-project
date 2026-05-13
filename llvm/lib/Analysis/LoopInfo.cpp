@@ -182,9 +182,8 @@ PHINode *Loop::getCanonicalInductionVariable() const {
   for (BasicBlock::iterator I = H->begin(); isa<PHINode>(I); ++I) {
     PHINode *PN = cast<PHINode>(I);
     if (ConstantInt *CI =
-            dyn_cast<ConstantInt>(PN->getIncomingValueForBlock(Incoming)))
-      if (CI->isZero())
-        if (Instruction *Inc =
+            dyn_cast<ConstantInt>(PN->getIncomingValueForBlock(Incoming)); CI && (CI->isZero()))
+      if (Instruction *Inc =
                 dyn_cast<Instruction>(PN->getIncomingValueForBlock(Backedge)))
           if (Inc->getOpcode() == Instruction::Add && Inc->getOperand(0) == PN)
             if (ConstantInt *CI = dyn_cast<ConstantInt>(Inc->getOperand(1)))
@@ -369,9 +368,8 @@ bool Loop::isAuxiliaryInductionVariable(PHINode &AuxIndVar,
 
   // No uses outside of the loop
   for (User *U : AuxIndVar.users())
-    if (const Instruction *I = dyn_cast<Instruction>(U))
-      if (!contains(I))
-        return false;
+    if (const Instruction *I = dyn_cast<Instruction>(U); I && (!contains(I)))
+      return false;
 
   InductionDescriptor IndDesc;
   if (!InductionDescriptor::isInductionPHI(&AuxIndVar, this, &SE, IndDesc))
@@ -513,9 +511,8 @@ bool Loop::isSafeToClone() const {
       return false;
 
     for (Instruction &I : *BB)
-      if (auto *CB = dyn_cast<CallBase>(&I))
-        if (CB->cannotDuplicate())
-          return false;
+      if (auto *CB = dyn_cast<CallBase>(&I); CB && (CB->cannotDuplicate()))
+        return false;
   }
   return true;
 }

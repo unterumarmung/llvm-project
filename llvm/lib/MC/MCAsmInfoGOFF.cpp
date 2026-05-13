@@ -145,12 +145,11 @@ void MCAsmInfoGOFF::printSwitchToSection(const MCSection &Section,
                 Sec.EDAttributes.Alignment, Sec.EDAttributes.LoadBehavior,
                 GOFF::ESD_EXE_Unspecified, Sec.EDAttributes.IsReadOnly, 0,
                 Sec.EDAttributes.FillByteValue, StringRef());
-      if (auto *BeginSym = static_cast<MCSymbolGOFF *>(Sec.getBeginSymbol())) {
-        if (BeginSym->getADA())
-          emitXATTR(OS, BeginSym->getName(), BeginSym->getADA(),
+      if (auto *BeginSym = static_cast<MCSymbolGOFF *>(Sec.getBeginSymbol()); BeginSym && (BeginSym->getADA())) 
+        emitXATTR(OS, BeginSym->getName(), BeginSym->getADA(),
                     GOFF::ESD_LT_XPLink, GOFF::ESD_EXE_Unspecified,
                     GOFF::ESD_BSC_Section);
-      }
+      
       Sec.Emitted = true;
       EmitExternalName();
     } else

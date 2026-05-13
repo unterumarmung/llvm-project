@@ -138,8 +138,8 @@ bool InOrderIssueStage::canExecute(const InstRef &IR) {
     return false;
   }
 
-  if (LastWriteBackCycle) {
-    if (!IR.getInstruction()->getRetireOOO()) {
+  if ((LastWriteBackCycle) && (!IR.getInstruction()->getRetireOOO())) 
+    {
       unsigned NextWriteBackCycle = findFirstWriteBackCycle(IR);
       // Delay the instruction to ensure that writes happen in program order.
       if (NextWriteBackCycle < LastWriteBackCycle) {
@@ -148,7 +148,7 @@ bool InOrderIssueStage::canExecute(const InstRef &IR) {
         return false;
       }
     }
-  }
+  
 
   return true;
 }

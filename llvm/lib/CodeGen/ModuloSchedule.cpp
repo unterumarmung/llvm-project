@@ -482,9 +482,8 @@ void ModuloScheduleExpander::generateExistingPhis(
         PhiOp1 = InitVal;
       // If this references a generated Phi in the kernel, get the Phi operand
       // from the incoming block.
-      if (MachineInstr *InstOp1 = MRI.getVRegDef(PhiOp1))
-        if (InstOp1->isPHI() && InstOp1->getParent() == KernelBB)
-          PhiOp1 = getInitPhiReg(*InstOp1, KernelBB);
+      if (MachineInstr *InstOp1 = MRI.getVRegDef(PhiOp1); InstOp1 && (InstOp1->isPHI() && InstOp1->getParent() == KernelBB))
+        PhiOp1 = getInitPhiReg(*InstOp1, KernelBB);
 
       MachineInstr *PhiInst = MRI.getVRegDef(LoopVal);
       bool LoopDefIsPhi = PhiInst && PhiInst->isPHI();
@@ -660,9 +659,8 @@ void ModuloScheduleExpander::generatePhis(
       Register PhiOp2;
       if (InKernel) {
         PhiOp2 = VRMap[PrevStage][Def];
-        if (MachineInstr *InstOp2 = MRI.getVRegDef(PhiOp2))
-          if (InstOp2->isPHI() && InstOp2->getParent() == NewBB)
-            PhiOp2 = getLoopPhiReg(*InstOp2, BB2);
+        if (MachineInstr *InstOp2 = MRI.getVRegDef(PhiOp2); InstOp2 && (InstOp2->isPHI() && InstOp2->getParent() == NewBB))
+          PhiOp2 = getLoopPhiReg(*InstOp2, BB2);
       }
       // The number of Phis can't exceed the number of prolog stages. The
       // prolog stage number is zero based.
@@ -1652,10 +1650,10 @@ void PeelingModuloScheduleExpander::moveStageBetweenBlocks(
   DenseMap<Register, Register> Remaps;
   for (MachineInstr &MI : llvm::make_early_inc_range(
            llvm::make_range(SourceBB->getFirstNonPHI(), SourceBB->end()))) {
-    if (MI.isPHI()) {
+    if ((MI.isPHI()) && (getStage(&MI) != Stage)) 
       // This is an illegal PHI. If we move any instructions using an illegal
       // PHI, we need to create a legal Phi.
-      if (getStage(&MI) != Stage) {
+      {
         // The legal Phi is not necessary if the illegal phi's stage
         // is being moved.
         Register PhiR = MI.getOperand(0).getReg();
@@ -1669,7 +1667,7 @@ void PeelingModuloScheduleExpander::moveStageBetweenBlocks(
         CanonicalMIs[NI] = CanonicalMIs[&MI];
         Remaps[PhiR] = NR;
       }
-    }
+    
     if (getStage(&MI) != Stage)
       continue;
     MI.removeFromParent();

@@ -484,9 +484,8 @@ static unsigned getJumpThreadDuplicationCost(const TargetTransformInfo *TTI,
 
     // Blocks with NoDuplicate are modelled as having infinite cost, so they
     // are never duplicated.
-    if (const CallInst *CI = dyn_cast<CallInst>(I))
-      if (CI->cannotDuplicate() || CI->isConvergent())
-        return ~0U;
+    if (const CallInst *CI = dyn_cast<CallInst>(I); CI && (CI->cannotDuplicate() || CI->isConvergent()))
+      return ~0U;
 
     if (TTI->getInstructionCost(&*I, TargetTransformInfo::TCK_SizeAndLatency) ==
         TargetTransformInfo::TCC_Free)
@@ -688,12 +687,11 @@ bool JumpThreadingPass::computeValueKnownInPredecessorsImpl(
           LHSKnownBBs.insert(LHSVal.second);
         }
       for (const auto &RHSVal : RHSVals)
-        if (RHSVal.first == InterestingVal || isa<UndefValue>(RHSVal.first)) {
+        if ((RHSVal.first == InterestingVal || isa<UndefValue>(RHSVal.first)) && (!LHSKnownBBs.count(RHSVal.second))) 
           // If we already inferred a value for this block on the LHS, don't
           // re-add it.
-          if (!LHSKnownBBs.count(RHSVal.second))
-            Result.emplace_back(InterestingVal, RHSVal.second);
-        }
+          Result.emplace_back(InterestingVal, RHSVal.second);
+        
 
       return !Result.empty();
     }
@@ -814,10 +812,10 @@ bool JumpThreadingPass::computeValueKnownInPredecessorsImpl(
 
         Value *AddLHS;
         ConstantInt *AddConst;
-        if (isa<ConstantInt>(CmpConst) &&
-            match(CmpLHS, m_Add(m_Value(AddLHS), m_ConstantInt(AddConst)))) {
-          if (!isa<Instruction>(AddLHS) ||
-              cast<Instruction>(AddLHS)->getParent() != BB) {
+        if ((isa<ConstantInt>(CmpConst) &&
+            match(CmpLHS, m_Add(m_Value(AddLHS), m_ConstantInt(AddConst)))) && (!isa<Instruction>(AddLHS) ||
+              cast<Instruction>(AddLHS)->getParent() != BB)) 
+          {
             for (BasicBlock *P : predecessors(BB)) {
               // If the value is known by LazyValueInfo to be a ConstantRange in
               // a predecessor, use that information to try to thread this
@@ -844,7 +842,7 @@ bool JumpThreadingPass::computeValueKnownInPredecessorsImpl(
 
             return !Result.empty();
           }
-        }
+        
       }
 
       // Try to find a constant value for the LHS of a comparison,
@@ -1072,7 +1070,7 @@ bool JumpThreadingPass::processBlock(BasicBlock *BB) {
           LVI->getPredicateAt(CondCmp->getPredicate(), CondCmp->getOperand(0),
                               CondConst, BB->getTerminator(),
                               /*UseBlockValue=*/false);
-      if (Res) {
+      if ((Res) && (replaceFoldableUses(CondCmp, Res, BB))) 
         // We can safely replace *some* uses of the CondInst if it has
         // exactly one value as returned by LVI. RAUW is incorrect in the
         // presence of guards and assumes, that have the `Cond` as the use. This
@@ -1080,9 +1078,8 @@ bool JumpThreadingPass::processBlock(BasicBlock *BB) {
         // at the end of block, but RAUW unconditionally replaces all uses
         // including the guards/assumes themselves and the uses before the
         // guard/assume.
-        if (replaceFoldableUses(CondCmp, Res, BB))
-          return true;
-      }
+        return true;
+      
 
       // We did not manage to simplify this branch, try to see whether
       // CondCmp depends on a known phi-select pattern.
@@ -1091,9 +1088,8 @@ bool JumpThreadingPass::processBlock(BasicBlock *BB) {
     }
   }
 
-  if (SwitchInst *SI = dyn_cast<SwitchInst>(BB->getTerminator()))
-    if (tryToUnfoldSelect(SI, BB))
-      return true;
+  if (SwitchInst *SI = dyn_cast<SwitchInst>(BB->getTerminator()); SI && (tryToUnfoldSelect(SI, BB)))
+    return true;
 
   // Check for some cases that are worth simplifying.  Right now we want to look
   // for loads that are used by a switch or by the condition for the branch.  If
@@ -1101,20 +1097,17 @@ bool JumpThreadingPass::processBlock(BasicBlock *BB) {
   // which can then be used to thread the values.
   Value *SimplifyValue = CondWithoutFreeze;
 
-  if (CmpInst *CondCmp = dyn_cast<CmpInst>(SimplifyValue))
-    if (isa<Constant>(CondCmp->getOperand(1)))
-      SimplifyValue = CondCmp->getOperand(0);
+  if (CmpInst *CondCmp = dyn_cast<CmpInst>(SimplifyValue); CondCmp && (isa<Constant>(CondCmp->getOperand(1))))
+    SimplifyValue = CondCmp->getOperand(0);
 
   // TODO: There are other places where load PRE would be profitable, such as
   // more complex comparisons.
-  if (LoadInst *LoadI = dyn_cast<LoadInst>(SimplifyValue))
-    if (simplifyPartiallyRedundantLoad(LoadI))
-      return true;
+  if (LoadInst *LoadI = dyn_cast<LoadInst>(SimplifyValue); LoadI && (simplifyPartiallyRedundantLoad(LoadI)))
+    return true;
 
   // Before threading, try to propagate profile data backwards:
-  if (PHINode *PN = dyn_cast<PHINode>(CondInst))
-    if (PN->getParent() == BB && isa<CondBrInst>(BB->getTerminator()))
-      updatePredecessorProfileMetadata(PN, BB);
+  if (PHINode *PN = dyn_cast<PHINode>(CondInst); PN && (PN->getParent() == BB && isa<CondBrInst>(BB->getTerminator())))
+    updatePredecessorProfileMetadata(PN, BB);
 
   // Handle a variety of cases where we are branching on something derived from
   // a PHI node in the current block.  If we can prove that any predecessors
@@ -1209,9 +1202,8 @@ bool JumpThreadingPass::processImpliedCondition(BasicBlock *BB) {
 
 /// Return true if Op is an instruction defined in the given block.
 static bool isOpDefinedInBlock(Value *Op, BasicBlock *BB) {
-  if (Instruction *OpInst = dyn_cast<Instruction>(Op))
-    if (OpInst->getParent() == BB)
-      return true;
+  if (Instruction *OpInst = dyn_cast<Instruction>(Op); OpInst && (OpInst->getParent() == BB))
+    return true;
   return false;
 }
 
@@ -1648,8 +1640,8 @@ bool JumpThreadingPass::processThreadableEdges(Value *Cond, BasicBlock *BB,
   // If all the predecessors go to a single known successor, we want to fold,
   // not thread. By doing so, we do not need to duplicate the current block and
   // also miss potential opportunities in case we dont/cant duplicate.
-  if (OnlyDest && OnlyDest != MultipleDestSentinel) {
-    if (BB->hasNPredecessors(PredToDestList.size())) {
+  if ((OnlyDest && OnlyDest != MultipleDestSentinel) && (BB->hasNPredecessors(PredToDestList.size()))) 
+    {
       bool SeenFirstBranchToOnlyDest = false;
       std::vector <DominatorTree::UpdateType> Updates;
       Updates.reserve(BB->getTerminator()->getNumSuccessors() - 1);
@@ -1689,7 +1681,7 @@ bool JumpThreadingPass::processThreadableEdges(Value *Cond, BasicBlock *BB,
       }
       return true;
     }
-  }
+  
 
   // Determine which is the most common successor.  If we have many inputs and
   // this block is a switch, we want to start by threading the batch that goes
@@ -2965,18 +2957,18 @@ bool JumpThreadingPass::tryToUnfoldSelectInCurrBB(BasicBlock *BB) {
         // condition of a Select.
         if (Cmp->getParent() == BB && Cmp->hasOneUse() &&
             isa<ConstantInt>(Cmp->getOperand(1 - U.getOperandNo())))
-          if (SelectInst *SelectI = dyn_cast<SelectInst>(Cmp->user_back()))
-            if (isUnfoldCandidate(SelectI, Cmp->use_begin()->get())) {
+          if (SelectInst *SelectI = dyn_cast<SelectInst>(Cmp->user_back()); SelectI && (isUnfoldCandidate(SelectI, Cmp->use_begin()->get())))
+            {
               SI = SelectI;
               break;
             }
-      } else if (SelectInst *SelectI = dyn_cast<SelectInst>(U.getUser())) {
+      } else if (SelectInst *SelectI = dyn_cast<SelectInst>(U.getUser()); SelectI && (isUnfoldCandidate(SelectI, U.get()))) 
         // Look for a Select in BB that uses PN as condition.
-        if (isUnfoldCandidate(SelectI, U.get())) {
+        {
           SI = SelectI;
           break;
         }
-      }
+      
     }
 
     if (!SI)

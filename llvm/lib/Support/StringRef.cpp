@@ -597,10 +597,9 @@ bool StringRef::getAsDouble(double &Result, bool AllowInexact) const {
     return true;
 
   APFloat::opStatus Status = *StatusOrErr;
-  if (Status != APFloat::opOK) {
-    if (!AllowInexact || !(Status & APFloat::opInexact))
-      return true;
-  }
+  if ((Status != APFloat::opOK) && (!AllowInexact || !(Status & APFloat::opInexact))) 
+    return true;
+  
 
   Result = F.convertToDouble();
   return false;

@@ -1347,11 +1347,11 @@ OpenACCClause *SemaOpenACCClauseVisitor::VisitVectorClause(
     }
   }
 
-  if (Clause.getDirectiveKind() == OpenACCDirectiveKind::Loop) {
+  if ((Clause.getDirectiveKind() == OpenACCDirectiveKind::Loop) && (SemaRef.LoopVectorClauseLoc.isValid())) 
     // OpenACC 3.3 2.9.4: The region of a loop with a 'vector' clause may not
     // contain a loop with a gang, worker, or vector clause unless within a
     // nested compute region.
-    if (SemaRef.LoopVectorClauseLoc.isValid()) {
+    {
       // This handles the 'inner loop' diagnostic, but we cannot set that we're
       // on one of these until we get to the end of the construct.
       SemaRef.Diag(Clause.getBeginLoc(), diag::err_acc_clause_in_clause_region)
@@ -1362,7 +1362,7 @@ OpenACCClause *SemaOpenACCClauseVisitor::VisitVectorClause(
           << "vector";
       return nullptr;
     }
-  }
+  
 
   return OpenACCVectorClause::Create(Ctx, Clause.getBeginLoc(),
                                      Clause.getLParenLoc(), IntExpr,
@@ -1862,11 +1862,10 @@ SemaOpenACC::ActOnClause(ArrayRef<const OpenACCClause *> ExistingClauses,
 
   if (const auto *DevTypeClause = llvm::find_if(
           ExistingClauses, llvm::IsaPred<OpenACCDeviceTypeClause>);
-      DevTypeClause != ExistingClauses.end()) {
-    if (checkValidAfterDeviceType(
-            *this, *cast<OpenACCDeviceTypeClause>(*DevTypeClause), Clause))
-      return nullptr;
-  }
+      (DevTypeClause != ExistingClauses.end()) && (checkValidAfterDeviceType(
+            *this, *cast<OpenACCDeviceTypeClause>(*DevTypeClause), Clause))) 
+    return nullptr;
+  
 
   SemaOpenACCClauseVisitor Visitor{*this, ExistingClauses};
   OpenACCClause *Result = Visitor.Visit(Clause);

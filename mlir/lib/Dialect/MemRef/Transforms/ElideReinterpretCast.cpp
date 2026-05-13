@@ -100,11 +100,10 @@ static bool isScalarSlice(memref::ReinterpretCastOp rc) {
     return false;
 
   // Rank-1 special case
-  if (srcRank == 1) {
+  if ((srcRank == 1) && (rcOutputTy.getDimSize(0) > 1)) 
     // Reject non-scalar output
-    if (rcOutputTy.getDimSize(0) > 1)
-      return false;
-  }
+    return false;
+  
 
   int nonUnitCount =
       std::count_if(rcInputTy.getShape().begin(), rcInputTy.getShape().end(),

@@ -1426,9 +1426,8 @@ ACLEIntrinsic::ACLEIntrinsic(EmitterBase &ME, const Record *R,
     const Init *TypeInit = ArgsDag->getArg(i);
 
     bool Promote = true;
-    if (const auto *TypeDI = dyn_cast<DefInit>(TypeInit))
-      if (TypeDI->getDef()->isSubClassOf("unpromoted"))
-        Promote = false;
+    if (const auto *TypeDI = dyn_cast<DefInit>(TypeInit); TypeDI && (TypeDI->getDef()->isSubClassOf("unpromoted")))
+      Promote = false;
 
     // Work out the type of the argument, for use in the function prototype in
     // the header file.

@@ -7850,13 +7850,13 @@ AArch64InstructionSelector::selectExtractHigh(MachineOperand &Root) const {
   if (!Extract)
     return std::nullopt;
 
-  if (auto *Unmerge = dyn_cast<GUnmerge>(Extract->MI)) {
-    if (Unmerge->getNumDefs() == 2 &&
-        Extract->Reg == Unmerge->getOperand(1).getReg()) {
+  if (auto *Unmerge = dyn_cast<GUnmerge>(Extract->MI); Unmerge && (Unmerge->getNumDefs() == 2 &&
+        Extract->Reg == Unmerge->getOperand(1).getReg())) 
+    {
       Register ExtReg = Unmerge->getSourceReg();
       return {{[=](MachineInstrBuilder &MIB) { MIB.addUse(ExtReg); }}};
     }
-  }
+  
   if (auto *ExtElt = dyn_cast<GExtractVectorElement>(Extract->MI)) {
     LLT SrcTy = MRI.getType(ExtElt->getVectorReg());
     auto LaneIdx =

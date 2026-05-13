@@ -206,12 +206,12 @@ void ProfiledBinary::warnNoFuncEntry() {
       continue;
     bool hasFuncEntry = false;
     for (auto &R : F.second.Ranges) {
-      if (FuncRange *FR = findFuncRangeForStartAddr(R.first)) {
-        if (FR->IsFuncEntry) {
+      if (FuncRange *FR = findFuncRangeForStartAddr(R.first); FR && (FR->IsFuncEntry)) 
+        {
           hasFuncEntry = true;
           break;
         }
-      }
+      
     }
 
     if (!hasFuncEntry) {

@@ -297,13 +297,11 @@ static bool isIntExtFree(const Instruction *I) {
          "Unexpected value type.");
   bool IsZExt = isa<ZExtInst>(I);
 
-  if (const auto *LI = dyn_cast<LoadInst>(I->getOperand(0)))
-    if (LI->hasOneUse())
-      return true;
+  if (const auto *LI = dyn_cast<LoadInst>(I->getOperand(0)); LI && (LI->hasOneUse()))
+    return true;
 
-  if (const auto *Arg = dyn_cast<Argument>(I->getOperand(0)))
-    if ((IsZExt && Arg->hasZExtAttr()) || (!IsZExt && Arg->hasSExtAttr()))
-      return true;
+  if (const auto *Arg = dyn_cast<Argument>(I->getOperand(0)); Arg && ((IsZExt && Arg->hasZExtAttr()) || (!IsZExt && Arg->hasSExtAttr())))
+    return true;
 
   return false;
 }
@@ -573,12 +571,10 @@ Register AArch64FastISel::fastMaterializeFloatZero(const ConstantFP *CFP) {
 /// Check if the multiply is by a power-of-2 constant.
 static bool isMulPowOf2(const Value *I) {
   if (const auto *MI = dyn_cast<MulOperator>(I)) {
-    if (const auto *C = dyn_cast<ConstantInt>(MI->getOperand(0)))
-      if (C->getValue().isPowerOf2())
-        return true;
-    if (const auto *C = dyn_cast<ConstantInt>(MI->getOperand(1)))
-      if (C->getValue().isPowerOf2())
-        return true;
+    if (const auto *C = dyn_cast<ConstantInt>(MI->getOperand(0)); C && (C->getValue().isPowerOf2()))
+      return true;
+    if (const auto *C = dyn_cast<ConstantInt>(MI->getOperand(1)); C && (C->getValue().isPowerOf2()))
+      return true;
   }
   return false;
 }
@@ -742,8 +738,8 @@ bool AArch64FastISel::computeAddress(const Value *Obj, Address &Addr, Type *Ty)
     Addr.setExtendType(AArch64_AM::LSL);
 
     const Value *Src = U->getOperand(0);
-    if (const auto *I = dyn_cast<Instruction>(Src)) {
-      if (FuncInfo.getMBB(I->getParent()) == FuncInfo.MBB) {
+    if (const auto *I = dyn_cast<Instruction>(Src); I && (FuncInfo.getMBB(I->getParent()) == FuncInfo.MBB)) 
+      {
         // Fold the zext or sext when it won't become a noop.
         if (const auto *ZE = dyn_cast<ZExtInst>(I)) {
           if (!isIntExtFree(ZE) &&
@@ -751,27 +747,26 @@ bool AArch64FastISel::computeAddress(const Value *Obj, Address &Addr, Type *Ty)
             Addr.setExtendType(AArch64_AM::UXTW);
             Src = ZE->getOperand(0);
           }
-        } else if (const auto *SE = dyn_cast<SExtInst>(I)) {
-          if (!isIntExtFree(SE) &&
-              SE->getOperand(0)->getType()->isIntegerTy(32)) {
+        } else if (const auto *SE = dyn_cast<SExtInst>(I); SE && (!isIntExtFree(SE) &&
+              SE->getOperand(0)->getType()->isIntegerTy(32))) 
+          {
             Addr.setExtendType(AArch64_AM::SXTW);
             Src = SE->getOperand(0);
           }
-        }
+        
       }
-    }
+    
 
-    if (const auto *AI = dyn_cast<BinaryOperator>(Src))
-      if (AI->getOpcode() == Instruction::And) {
+    if (const auto *AI = dyn_cast<BinaryOperator>(Src); AI && (AI->getOpcode() == Instruction::And))
+      {
         const Value *LHS = AI->getOperand(0);
         const Value *RHS = AI->getOperand(1);
 
-        if (const auto *C = dyn_cast<ConstantInt>(LHS))
-          if (C->getValue() == 0xffffffff)
-            std::swap(LHS, RHS);
+        if (const auto *C = dyn_cast<ConstantInt>(LHS); C && (C->getValue() == 0xffffffff))
+          std::swap(LHS, RHS);
 
-        if (const auto *C = dyn_cast<ConstantInt>(RHS))
-          if (C->getValue() == 0xffffffff) {
+        if (const auto *C = dyn_cast<ConstantInt>(RHS); C && (C->getValue() == 0xffffffff))
+          {
             Addr.setExtendType(AArch64_AM::UXTW);
             Register Reg = getRegForValue(LHS);
             if (!Reg)
@@ -799,9 +794,8 @@ bool AArch64FastISel::computeAddress(const Value *Obj, Address &Addr, Type *Ty)
     const Value *RHS = U->getOperand(1);
 
     // Canonicalize power-of-2 value to the RHS.
-    if (const auto *C = dyn_cast<ConstantInt>(LHS))
-      if (C->getValue().isPowerOf2())
-        std::swap(LHS, RHS);
+    if (const auto *C = dyn_cast<ConstantInt>(LHS); C && (C->getValue().isPowerOf2()))
+      std::swap(LHS, RHS);
 
     assert(isa<ConstantInt>(RHS) && "Expected an ConstantInt.");
     const auto *C = cast<ConstantInt>(RHS);
@@ -824,8 +818,8 @@ bool AArch64FastISel::computeAddress(const Value *Obj, Address &Addr, Type *Ty)
     Addr.setExtendType(AArch64_AM::LSL);
 
     const Value *Src = LHS;
-    if (const auto *I = dyn_cast<Instruction>(Src)) {
-      if (FuncInfo.getMBB(I->getParent()) == FuncInfo.MBB) {
+    if (const auto *I = dyn_cast<Instruction>(Src); I && (FuncInfo.getMBB(I->getParent()) == FuncInfo.MBB)) 
+      {
         // Fold the zext or sext when it won't become a noop.
         if (const auto *ZE = dyn_cast<ZExtInst>(I)) {
           if (!isIntExtFree(ZE) &&
@@ -833,15 +827,15 @@ bool AArch64FastISel::computeAddress(const Value *Obj, Address &Addr, Type *Ty)
             Addr.setExtendType(AArch64_AM::UXTW);
             Src = ZE->getOperand(0);
           }
-        } else if (const auto *SE = dyn_cast<SExtInst>(I)) {
-          if (!isIntExtFree(SE) &&
-              SE->getOperand(0)->getType()->isIntegerTy(32)) {
+        } else if (const auto *SE = dyn_cast<SExtInst>(I); SE && (!isIntExtFree(SE) &&
+              SE->getOperand(0)->getType()->isIntegerTy(32))) 
+          {
             Addr.setExtendType(AArch64_AM::SXTW);
             Src = SE->getOperand(0);
           }
-        }
+        
       }
-    }
+    
 
     Register Reg = getRegForValue(Src);
     if (!Reg)
@@ -859,12 +853,11 @@ bool AArch64FastISel::computeAddress(const Value *Obj, Address &Addr, Type *Ty)
     const Value *LHS = U->getOperand(0);
     const Value *RHS = U->getOperand(1);
 
-    if (const auto *C = dyn_cast<ConstantInt>(LHS))
-      if (C->getValue() == 0xffffffff)
-        std::swap(LHS, RHS);
+    if (const auto *C = dyn_cast<ConstantInt>(LHS); C && (C->getValue() == 0xffffffff))
+      std::swap(LHS, RHS);
 
-    if (const auto *C = dyn_cast<ConstantInt>(RHS))
-      if (C->getValue() == 0xffffffff) {
+    if (const auto *C = dyn_cast<ConstantInt>(RHS); C && (C->getValue() == 0xffffffff))
+      {
         Addr.setShift(0);
         Addr.setExtendType(AArch64_AM::LSL);
         Addr.setExtendType(AArch64_AM::UXTW);
@@ -890,12 +883,12 @@ bool AArch64FastISel::computeAddress(const Value *Obj, Address &Addr, Type *Ty)
         Addr.setExtendType(AArch64_AM::UXTW);
         Src = ZE->getOperand(0);
       }
-    } else if (const auto *SE = dyn_cast<SExtInst>(U)) {
-      if (!isIntExtFree(SE) && SE->getOperand(0)->getType()->isIntegerTy(32)) {
+    } else if (const auto *SE = dyn_cast<SExtInst>(U); SE && (!isIntExtFree(SE) && SE->getOperand(0)->getType()->isIntegerTy(32))) 
+      {
         Addr.setExtendType(AArch64_AM::SXTW);
         Src = SE->getOperand(0);
       }
-    }
+    
 
     if (!Src)
       break;
@@ -1187,18 +1180,15 @@ Register AArch64FastISel::emitAddSub(bool UseAdd, MVT RetVT, const Value *LHS,
     std::swap(LHS, RHS);
 
   // Canonicalize mul by power of 2 to the RHS.
-  if (UseAdd && LHS->hasOneUse() && isValueAvailable(LHS))
-    if (isMulPowOf2(LHS))
-      std::swap(LHS, RHS);
+  if ((UseAdd && LHS->hasOneUse() && isValueAvailable(LHS)) && (isMulPowOf2(LHS)))
+    std::swap(LHS, RHS);
 
   // Canonicalize shift immediate to the RHS.
   if (UseAdd && LHS->hasOneUse() && isValueAvailable(LHS))
-    if (const auto *SI = dyn_cast<BinaryOperator>(LHS))
-      if (isa<ConstantInt>(SI->getOperand(1)))
-        if (SI->getOpcode() == Instruction::Shl  ||
+    if (const auto *SI = dyn_cast<BinaryOperator>(LHS); SI && (isa<ConstantInt>(SI->getOperand(1))) && (SI->getOpcode() == Instruction::Shl  ||
             SI->getOpcode() == Instruction::LShr ||
-            SI->getOpcode() == Instruction::AShr   )
-          std::swap(LHS, RHS);
+            SI->getOpcode() == Instruction::AShr   ))
+      std::swap(LHS, RHS);
 
   Register LHSReg = getRegForValue(LHS);
   if (!LHSReg)
@@ -1216,9 +1206,8 @@ Register AArch64FastISel::emitAddSub(bool UseAdd, MVT RetVT, const Value *LHS,
     else
       ResultReg = emitAddSub_ri(UseAdd, RetVT, LHSReg, Imm, SetFlags,
                                 WantResult);
-  } else if (const auto *C = dyn_cast<Constant>(RHS))
-    if (C->isNullValue())
-      ResultReg = emitAddSub_ri(UseAdd, RetVT, LHSReg, 0, SetFlags, WantResult);
+  } else if (const auto *C = dyn_cast<Constant>(RHS); C && (C->isNullValue()))
+    ResultReg = emitAddSub_ri(UseAdd, RetVT, LHSReg, 0, SetFlags, WantResult);
 
   if (ResultReg)
     return ResultReg;
@@ -1234,14 +1223,13 @@ Register AArch64FastISel::emitAddSub(bool UseAdd, MVT RetVT, const Value *LHS,
   }
 
   // Check if the mul can be folded into the instruction.
-  if (RHS->hasOneUse() && isValueAvailable(RHS)) {
-    if (isMulPowOf2(RHS)) {
+  if ((RHS->hasOneUse() && isValueAvailable(RHS)) && (isMulPowOf2(RHS))) 
+    {
       const Value *MulLHS = cast<MulOperator>(RHS)->getOperand(0);
       const Value *MulRHS = cast<MulOperator>(RHS)->getOperand(1);
 
-      if (const auto *C = dyn_cast<ConstantInt>(MulLHS))
-        if (C->getValue().isPowerOf2())
-          std::swap(MulLHS, MulRHS);
+      if (const auto *C = dyn_cast<ConstantInt>(MulLHS); C && (C->getValue().isPowerOf2()))
+        std::swap(MulLHS, MulRHS);
 
       assert(isa<ConstantInt>(MulRHS) && "Expected a ConstantInt.");
       uint64_t ShiftVal = cast<ConstantInt>(MulRHS)->getValue().logBase2();
@@ -1253,7 +1241,7 @@ Register AArch64FastISel::emitAddSub(bool UseAdd, MVT RetVT, const Value *LHS,
       if (ResultReg)
         return ResultReg;
     }
-  }
+  
 
   // Check if the shift can be folded into the instruction.
   if (RHS->hasOneUse() && isValueAvailable(RHS)) {
@@ -1500,9 +1488,8 @@ bool AArch64FastISel::emitFCmp(MVT RetVT, const Value *LHS, const Value *RHS) {
   // Check to see if the 2nd operand is a constant that we can encode directly
   // in the compare.
   bool UseImm = false;
-  if (const auto *CFP = dyn_cast<ConstantFP>(RHS))
-    if (CFP->isZero() && !CFP->isNegative())
-      UseImm = true;
+  if (const auto *CFP = dyn_cast<ConstantFP>(RHS); CFP && (CFP->isZero() && !CFP->isNegative()))
+    UseImm = true;
 
   Register LHSReg = getRegForValue(LHS);
   if (!LHSReg)
@@ -1582,15 +1569,13 @@ Register AArch64FastISel::emitLogicalOp(unsigned ISDOpc, MVT RetVT,
     std::swap(LHS, RHS);
 
   // Canonicalize mul by power-of-2 to the RHS.
-  if (LHS->hasOneUse() && isValueAvailable(LHS))
-    if (isMulPowOf2(LHS))
-      std::swap(LHS, RHS);
+  if ((LHS->hasOneUse() && isValueAvailable(LHS)) && (isMulPowOf2(LHS)))
+    std::swap(LHS, RHS);
 
   // Canonicalize shift immediate to the RHS.
   if (LHS->hasOneUse() && isValueAvailable(LHS))
-    if (const auto *SI = dyn_cast<ShlOperator>(LHS))
-      if (isa<ConstantInt>(SI->getOperand(1)))
-        std::swap(LHS, RHS);
+    if (const auto *SI = dyn_cast<ShlOperator>(LHS); SI && (isa<ConstantInt>(SI->getOperand(1))))
+      std::swap(LHS, RHS);
 
   Register LHSReg = getRegForValue(LHS);
   if (!LHSReg)
@@ -1605,14 +1590,13 @@ Register AArch64FastISel::emitLogicalOp(unsigned ISDOpc, MVT RetVT,
     return ResultReg;
 
   // Check if the mul can be folded into the instruction.
-  if (RHS->hasOneUse() && isValueAvailable(RHS)) {
-    if (isMulPowOf2(RHS)) {
+  if ((RHS->hasOneUse() && isValueAvailable(RHS)) && (isMulPowOf2(RHS))) 
+    {
       const Value *MulLHS = cast<MulOperator>(RHS)->getOperand(0);
       const Value *MulRHS = cast<MulOperator>(RHS)->getOperand(1);
 
-      if (const auto *C = dyn_cast<ConstantInt>(MulLHS))
-        if (C->getValue().isPowerOf2())
-          std::swap(MulLHS, MulRHS);
+      if (const auto *C = dyn_cast<ConstantInt>(MulLHS); C && (C->getValue().isPowerOf2()))
+        std::swap(MulLHS, MulRHS);
 
       assert(isa<ConstantInt>(MulRHS) && "Expected a ConstantInt.");
       uint64_t ShiftVal = cast<ConstantInt>(MulRHS)->getValue().logBase2();
@@ -1624,7 +1608,7 @@ Register AArch64FastISel::emitLogicalOp(unsigned ISDOpc, MVT RetVT,
       if (ResultReg)
         return ResultReg;
     }
-  }
+  
 
   // Check if the shift can be folded into the instruction.
   if (RHS->hasOneUse() && isValueAvailable(RHS)) {
@@ -1948,15 +1932,13 @@ bool AArch64FastISel::selectLoad(const Instruction *I) {
   if (TLI.supportSwiftError()) {
     // Swifterror values can come from either a function parameter with
     // swifterror attribute or an alloca with swifterror attribute.
-    if (const Argument *Arg = dyn_cast<Argument>(SV)) {
-      if (Arg->hasSwiftErrorAttr())
-        return false;
-    }
+    if (const Argument *Arg = dyn_cast<Argument>(SV); Arg && (Arg->hasSwiftErrorAttr())) 
+      return false;
+    
 
-    if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(SV)) {
-      if (Alloca->isSwiftError())
-        return false;
-    }
+    if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(SV); Alloca && (Alloca->isSwiftError())) 
+      return false;
+    
   }
 
   // See if we can handle this address.
@@ -2149,15 +2131,13 @@ bool AArch64FastISel::selectStore(const Instruction *I) {
   if (TLI.supportSwiftError()) {
     // Swifterror values can come from either a function parameter with
     // swifterror attribute or an alloca with swifterror attribute.
-    if (const Argument *Arg = dyn_cast<Argument>(PtrV)) {
-      if (Arg->hasSwiftErrorAttr())
-        return false;
-    }
+    if (const Argument *Arg = dyn_cast<Argument>(PtrV); Arg && (Arg->hasSwiftErrorAttr())) 
+      return false;
+    
 
-    if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(PtrV)) {
-      if (Alloca->isSwiftError())
-        return false;
-    }
+    if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(PtrV); Alloca && (Alloca->isSwiftError())) 
+      return false;
+    
   }
 
   // Get the value to be stored into a register. Use the zero register directly
@@ -2166,12 +2146,12 @@ bool AArch64FastISel::selectStore(const Instruction *I) {
   if (const auto *CI = dyn_cast<ConstantInt>(Op0)) {
     if (CI->isZero())
       SrcReg = (VT == MVT::i64) ? AArch64::XZR : AArch64::WZR;
-  } else if (const auto *CF = dyn_cast<ConstantFP>(Op0)) {
-    if (CF->isZero() && !CF->isNegative()) {
+  } else if (const auto *CF = dyn_cast<ConstantFP>(Op0); CF && (CF->isZero() && !CF->isNegative())) 
+    {
       VT = MVT::getIntegerVT(VT.getSizeInBits());
       SrcReg = (VT == MVT::i64) ? AArch64::XZR : AArch64::WZR;
     }
-  }
+  
 
   if (!SrcReg)
     SrcReg = getRegForValue(Op0);
@@ -2297,17 +2277,16 @@ bool AArch64FastISel::emitCompareAndBranch(const CondBrInst *BI) {
     if (!isa<Constant>(RHS) || !cast<Constant>(RHS)->isNullValue())
       return false;
 
-    if (const auto *AI = dyn_cast<BinaryOperator>(LHS))
-      if (AI->getOpcode() == Instruction::And && isValueAvailable(AI)) {
+    if (const auto *AI = dyn_cast<BinaryOperator>(LHS); AI && (AI->getOpcode() == Instruction::And && isValueAvailable(AI)))
+      {
         const Value *AndLHS = AI->getOperand(0);
         const Value *AndRHS = AI->getOperand(1);
 
-        if (const auto *C = dyn_cast<ConstantInt>(AndLHS))
-          if (C->getValue().isPowerOf2())
-            std::swap(AndLHS, AndRHS);
+        if (const auto *C = dyn_cast<ConstantInt>(AndLHS); C && (C->getValue().isPowerOf2()))
+          std::swap(AndLHS, AndRHS);
 
-        if (const auto *C = dyn_cast<ConstantInt>(AndRHS))
-          if (C->getValue().isPowerOf2()) {
+        if (const auto *C = dyn_cast<ConstantInt>(AndRHS); C && (C->getValue().isPowerOf2()))
+          {
             TestBit = C->getValue().logBase2();
             LHS = AndLHS;
           }
@@ -3378,14 +3357,12 @@ bool AArch64FastISel::foldXALUIntrinsic(AArch64CC::CondCode &CC,
   default:
     break;
   case Intrinsic::smul_with_overflow:
-    if (const auto *C = dyn_cast<ConstantInt>(RHS))
-      if (C->getValue() == 2)
-        IID = Intrinsic::sadd_with_overflow;
+    if (const auto *C = dyn_cast<ConstantInt>(RHS); C && (C->getValue() == 2))
+      IID = Intrinsic::sadd_with_overflow;
     break;
   case Intrinsic::umul_with_overflow:
-    if (const auto *C = dyn_cast<ConstantInt>(RHS))
-      if (C->getValue() == 2)
-        IID = Intrinsic::uadd_with_overflow;
+    if (const auto *C = dyn_cast<ConstantInt>(RHS); C && (C->getValue() == 2))
+      IID = Intrinsic::uadd_with_overflow;
     break;
   }
 
@@ -3671,15 +3648,15 @@ bool AArch64FastISel::fastLowerIntrinsicCall(const IntrinsicInst *II) {
     default:
       break;
     case Intrinsic::smul_with_overflow:
-      if (const auto *C = dyn_cast<ConstantInt>(RHS))
-        if (C->getValue() == 2) {
+      if (const auto *C = dyn_cast<ConstantInt>(RHS); C && (C->getValue() == 2))
+        {
           IID = Intrinsic::sadd_with_overflow;
           RHS = LHS;
         }
       break;
     case Intrinsic::umul_with_overflow:
-      if (const auto *C = dyn_cast<ConstantInt>(RHS))
-        if (C->getValue() == 2) {
+      if (const auto *C = dyn_cast<ConstantInt>(RHS); C && (C->getValue() == 2))
+        {
           IID = Intrinsic::uadd_with_overflow;
           RHS = LHS;
         }
@@ -4534,8 +4511,8 @@ bool AArch64FastISel::selectIntExt(const Instruction *I) {
 
   // Try to optimize already sign-/zero-extended values from function arguments.
   bool IsZExt = isa<ZExtInst>(I);
-  if (const auto *Arg = dyn_cast<Argument>(I->getOperand(0))) {
-    if ((IsZExt && Arg->hasZExtAttr()) || (!IsZExt && Arg->hasSExtAttr())) {
+  if (const auto *Arg = dyn_cast<Argument>(I->getOperand(0)); Arg && ((IsZExt && Arg->hasZExtAttr()) || (!IsZExt && Arg->hasSExtAttr()))) 
+    {
       if (RetVT == MVT::i64 && SrcVT != MVT::i64) {
         Register ResultReg = createResultReg(&AArch64::GPR64RegClass);
         BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, MIMD,
@@ -4548,7 +4525,7 @@ bool AArch64FastISel::selectIntExt(const Instruction *I) {
       updateValueMap(I, SrcReg);
       return true;
     }
-  }
+  
 
   Register ResultReg = emitIntExt(SrcVT, SrcReg, RetVT, IsZExt);
   if (!ResultReg)
@@ -4609,13 +4586,12 @@ bool AArch64FastISel::selectMul(const Instruction *I) {
 
   const Value *Src0 = I->getOperand(0);
   const Value *Src1 = I->getOperand(1);
-  if (const auto *C = dyn_cast<ConstantInt>(Src0))
-    if (C->getValue().isPowerOf2())
-      std::swap(Src0, Src1);
+  if (const auto *C = dyn_cast<ConstantInt>(Src0); C && (C->getValue().isPowerOf2()))
+    std::swap(Src0, Src1);
 
   // Try to simplify to a shift instruction.
-  if (const auto *C = dyn_cast<ConstantInt>(Src1))
-    if (C->getValue().isPowerOf2()) {
+  if (const auto *C = dyn_cast<ConstantInt>(Src1); C && (C->getValue().isPowerOf2()))
+    {
       uint64_t ShiftVal = C->getValue().logBase2();
       MVT SrcVT = VT;
       bool IsZExt = true;
@@ -4628,8 +4604,8 @@ bool AArch64FastISel::selectMul(const Instruction *I) {
             Src0 = ZExt->getOperand(0);
           }
         }
-      } else if (const auto *SExt = dyn_cast<SExtInst>(Src0)) {
-        if (!isIntExtFree(SExt)) {
+      } else if (const auto *SExt = dyn_cast<SExtInst>(Src0); SExt && (!isIntExtFree(SExt))) 
+        {
           MVT VT;
           if (isValueAvailable(SExt) && isTypeSupported(SExt->getSrcTy(), VT)) {
             SrcVT = VT;
@@ -4637,7 +4613,7 @@ bool AArch64FastISel::selectMul(const Instruction *I) {
             Src0 = SExt->getOperand(0);
           }
         }
-      }
+      
 
       Register Src0Reg = getRegForValue(Src0);
       if (!Src0Reg)
@@ -4691,8 +4667,8 @@ bool AArch64FastISel::selectShift(const Instruction *I) {
           Op0 = ZExt->getOperand(0);
         }
       }
-    } else if (const auto *SExt = dyn_cast<SExtInst>(Op0)) {
-      if (!isIntExtFree(SExt)) {
+    } else if (const auto *SExt = dyn_cast<SExtInst>(Op0); SExt && (!isIntExtFree(SExt))) 
+      {
         MVT TmpVT;
         if (isValueAvailable(SExt) && isTypeSupported(SExt->getSrcTy(), TmpVT)) {
           SrcVT = TmpVT;
@@ -4700,7 +4676,7 @@ bool AArch64FastISel::selectShift(const Instruction *I) {
           Op0 = SExt->getOperand(0);
         }
       }
-    }
+    
 
     Register Op0Reg = getRegForValue(Op0);
     if (!Op0Reg)

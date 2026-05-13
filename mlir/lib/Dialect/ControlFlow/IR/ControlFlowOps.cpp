@@ -658,13 +658,12 @@ static ParseResult parseSwitchOpCases(
     if (failed(parser.parseColon()) ||
         failed(parser.parseSuccessor(destination)))
       return failure();
-    if (succeeded(parser.parseOptionalLParen())) {
-      if (failed(parser.parseOperandList(operands,
+    if ((succeeded(parser.parseOptionalLParen())) && (failed(parser.parseOperandList(operands,
                                          OpAsmParser::Delimiter::None)) ||
           failed(parser.parseColonTypeList(operandTypes)) ||
-          failed(parser.parseRParen()))
-        return failure();
-    }
+          failed(parser.parseRParen()))) 
+      return failure();
+    
     caseDestinations.push_back(destination);
     caseOperands.emplace_back(operands);
     caseOperandTypes.emplace_back(operandTypes);

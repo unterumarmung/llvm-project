@@ -74,9 +74,8 @@ bool LLCDiagnosticHandler::handleDiagnostics(const DiagnosticInfo &DI) {
     return true;
   }
 
-  if (auto *Remark = dyn_cast<DiagnosticInfoOptimizationBase>(&DI))
-    if (!Remark->isEnabled())
-      return true;
+  if (auto *Remark = dyn_cast<DiagnosticInfoOptimizationBase>(&DI); Remark && (!Remark->isEnabled()))
+    return true;
 
   DiagnosticPrinterRawOStream DP(errs());
   errs() << LLVMContext::getDiagnosticMessagePrefix(DI.getSeverity()) << ": ";

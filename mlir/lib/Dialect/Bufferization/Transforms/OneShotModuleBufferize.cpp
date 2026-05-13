@@ -174,13 +174,13 @@ aliasingFuncOpBBArgsAnalysis(FuncOp funcOp, OneShotAnalysisState &state,
     if (!isa<TensorLikeType>(v.getType()))
       return std::nullopt;
     for (BlockArgument bbArg : funcOp.getArguments()) {
-      if (isa<TensorLikeType>(bbArg.getType())) {
-        if (state.areEquivalentBufferizedValues(v, bbArg)) {
+      if ((isa<TensorLikeType>(bbArg.getType())) && (state.areEquivalentBufferizedValues(v, bbArg))) 
+        {
           if (state.getOptions().testAnalysisOnly)
             annotateEquivalentReturnBbArg(opOperand, bbArg);
           return bbArg.getArgNumber();
         }
-      }
+      
     }
     return std::nullopt;
   };

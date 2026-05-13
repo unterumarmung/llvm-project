@@ -44,9 +44,8 @@ STATISTIC(ObjectSizeIntrinsicsHandled,
           "Number of 'objectsize' intrinsic calls handled");
 
 static Value *lowerIsConstantIntrinsic(IntrinsicInst *II) {
-  if (auto *C = dyn_cast<Constant>(II->getOperand(0)))
-    if (C->isManifestConstant())
-      return ConstantInt::getTrue(II->getType());
+  if (auto *C = dyn_cast<Constant>(II->getOperand(0)); C && (C->isManifestConstant()))
+    return ConstantInt::getTrue(II->getType());
   return ConstantInt::getFalse(II->getType());
 }
 

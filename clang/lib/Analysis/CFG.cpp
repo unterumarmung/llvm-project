@@ -1128,15 +1128,15 @@ private:
 
     auto CheckLogicalOpWithNegatedVariable = [this, B](const Expr *E1,
                                                        const Expr *E2) {
-      if (const auto *Negate = dyn_cast<UnaryOperator>(E1)) {
-        if (Negate->getOpcode() == UO_LNot &&
-            Expr::isSameComparisonOperand(Negate->getSubExpr(), E2)) {
+      if (const auto *Negate = dyn_cast<UnaryOperator>(E1); Negate && (Negate->getOpcode() == UO_LNot &&
+            Expr::isSameComparisonOperand(Negate->getSubExpr(), E2))) 
+        {
           bool AlwaysTrue = B->getOpcode() == BO_LOr;
           if (BuildOpts.Observer)
             BuildOpts.Observer->logicAlwaysTrue(B, AlwaysTrue);
           return TryResult(AlwaysTrue);
         }
-      }
+      
       return TryResult();
     };
 
@@ -1287,12 +1287,11 @@ private:
             L2.convert(L1.getSemantics(), llvm::APFloat::rmNearestTiesToEven,
                        &Ignored))
           return {};
-      } else if (Order < 0)
-        // type rank L1 < L2:
-        if (llvm::APFloat::opOK !=
+      } else if ((Order < 0) && (llvm::APFloat::opOK !=
             L1.convert(L2.getSemantics(), llvm::APFloat::rmNearestTiesToEven,
-                       &Ignored))
-          return {};
+                       &Ignored)))
+        // type rank L1 < L2:
+        return {};
 
       llvm::APFloat MidValue = L1;
       MidValue.add(L2, llvm::APFloat::rmNearestTiesToEven);
@@ -1512,9 +1511,8 @@ bool CFGBuilder::alwaysAdd(const Stmt *stmt) {
 // Does it even make sense to build a CFG for an uninstantiated template?
 static const VariableArrayType *FindVA(const Type *t) {
   while (const ArrayType *vt = dyn_cast<ArrayType>(t)) {
-    if (const VariableArrayType *vat = dyn_cast<VariableArrayType>(vt))
-      if (vat->getSizeExpr())
-        return vat;
+    if (const VariableArrayType *vat = dyn_cast<VariableArrayType>(vt); vat && (vat->getSizeExpr()))
+      return vat;
 
     t = vt->getElementType().getTypePtr();
   }
@@ -2186,8 +2184,8 @@ void CFGBuilder::addImplicitDtorsForDestructor(const CXXDestructorDecl *DD) {
       QT = AT->getElementType();
     }
 
-    if (const CXXRecordDecl *CD = QT->getAsCXXRecordDecl())
-      if (!CD->hasTrivialDestructor()) {
+    if (const CXXRecordDecl *CD = QT->getAsCXXRecordDecl(); CD && (!CD->hasTrivialDestructor()))
+      {
         autoCreateBlock();
         appendMemberDtor(Block, FI);
       }
@@ -2697,8 +2695,8 @@ CFGBuilder::VisitLogicalOperator(BinaryOperator *B,
   CFGBlock *RHSBlock, *ExitBlock;
 
   do {
-    if (BinaryOperator *B_RHS = dyn_cast<BinaryOperator>(RHS))
-      if (B_RHS->isLogicalOp()) {
+    if (BinaryOperator *B_RHS = dyn_cast<BinaryOperator>(RHS); B_RHS && (B_RHS->isLogicalOp()))
+      {
         std::tie(RHSBlock, ExitBlock) =
           VisitLogicalOperator(B_RHS, Term, TrueBlock, FalseBlock);
         break;
@@ -2738,8 +2736,8 @@ CFGBuilder::VisitLogicalOperator(BinaryOperator *B,
   // Generate the blocks for evaluating the LHS.
   Expr *LHS = B->getLHS()->IgnoreParens();
 
-  if (BinaryOperator *B_LHS = dyn_cast<BinaryOperator>(LHS))
-    if (B_LHS->isLogicalOp()) {
+  if (BinaryOperator *B_LHS = dyn_cast<BinaryOperator>(LHS); B_LHS && (B_LHS->isLogicalOp()))
+    {
       if (B->getOpcode() == BO_LOr)
         FalseBlock = RHSBlock;
       else
@@ -2852,10 +2850,9 @@ static bool CanThrow(Expr *E, ASTContext &Ctx) {
 
   const FunctionType *FT = Ty->getAs<FunctionType>();
   if (FT) {
-    if (const FunctionProtoType *Proto = dyn_cast<FunctionProtoType>(FT))
-      if (!isUnresolvedExceptionSpec(Proto->getExceptionSpecType()) &&
-          Proto->isNothrow())
-        return false;
+    if (const FunctionProtoType *Proto = dyn_cast<FunctionProtoType>(FT); Proto && (!isUnresolvedExceptionSpec(Proto->getExceptionSpecType()) &&
+          Proto->isNothrow()))
+      return false;
   }
   return true;
 }
@@ -2887,10 +2884,9 @@ CFGBlock *CFGBuilder::VisitCallExpr(CallExpr *C, AddStmtChoice asc) {
   bool AddEHEdge = false;
 
   // Languages without exceptions are assumed to not throw.
-  if (Context->getLangOpts().Exceptions) {
-    if (BuildOpts.AddEHEdges)
-      AddEHEdge = true;
-  }
+  if ((Context->getLangOpts().Exceptions) && (BuildOpts.AddEHEdges)) 
+    AddEHEdge = true;
+  
 
   // If this is a call to a builtin function, it might not actually evaluate
   // its arguments. Don't add them to the CFG if this is the case.
@@ -3056,9 +3052,8 @@ CFGBlock *CFGBuilder::VisitConditionalOperator(AbstractConditionalOperator *C,
 
   // If the condition is a logical '&&' or '||', build a more accurate CFG.
   if (BinaryOperator *Cond =
-        dyn_cast<BinaryOperator>(C->getCond()->IgnoreParens()))
-    if (Cond->isLogicalOp())
-      return VisitLogicalOperator(Cond, C, LHSBlock, RHSBlock).first;
+        dyn_cast<BinaryOperator>(C->getCond()->IgnoreParens()); Cond && (Cond->isLogicalOp()))
+    return VisitLogicalOperator(Cond, C, LHSBlock, RHSBlock).first;
 
   // Create the block that will contain the condition.
   Block = createBlock(false);
@@ -3302,10 +3297,9 @@ CFGBlock *CFGBuilder::VisitIfStmt(IfStmt *I) {
 
     if (!ElseBlock) // Can occur when the Else body has all NullStmts.
       ElseBlock = sv.get();
-    else if (Block) {
-      if (badCFG)
-        return nullptr;
-    }
+    else if ((Block) && (badCFG)) 
+      return nullptr;
+    
   }
 
   // Process the true branch.
@@ -3329,10 +3323,9 @@ CFGBlock *CFGBuilder::VisitIfStmt(IfStmt *I) {
       // branches in path-sensitive analyses.
       ThenBlock = createBlock(false);
       addSuccessor(ThenBlock, sv.get());
-    } else if (Block) {
-      if (badCFG)
-        return nullptr;
-    }
+    } else if ((Block) && (badCFG)) 
+      return nullptr;
+    
   }
 
   // Specially handle "if (expr1 || ...)" and "if (expr1 && ...)" by
@@ -3786,8 +3779,8 @@ CFGBlock *CFGBuilder::VisitForStmt(ForStmt *F) {
     // Specially handle logical operators, which have a slightly
     // more optimal CFG representation.
     if (BinaryOperator *Cond =
-            dyn_cast_or_null<BinaryOperator>(C ? C->IgnoreParens() : nullptr))
-      if (Cond->isLogicalOp()) {
+            dyn_cast_or_null<BinaryOperator>(C ? C->IgnoreParens() : nullptr); Cond && (Cond->isLogicalOp()))
+      {
         std::tie(EntryConditionBlock, ExitConditionBlock) =
           VisitLogicalOperator(Cond, F, BodyBlock, LoopSuccessor);
         break;
@@ -3968,10 +3961,9 @@ CFGBlock *CFGBuilder::VisitObjCForCollectionStmt(ObjCForCollectionStmt *S) {
 
     if (!BodyBlock)
       BodyBlock = ContinueJumpTarget.block; // can happen for "for (X in Y) ;"
-    else if (Block) {
-      if (badCFG)
-        return nullptr;
-    }
+    else if ((Block) && (badCFG)) 
+      return nullptr;
+    
 
     // This new body block is a successor to our "exit" condition block.
     addSuccessor(ExitConditionBlock, BodyBlock);
@@ -4115,8 +4107,8 @@ CFGBlock *CFGBuilder::VisitWhileStmt(WhileStmt *W) {
 
     // Specially handle logical operators, which have a slightly
     // more optimal CFG representation.
-    if (BinaryOperator *Cond = dyn_cast<BinaryOperator>(C->IgnoreParens()))
-      if (Cond->isLogicalOp()) {
+    if (BinaryOperator *Cond = dyn_cast<BinaryOperator>(C->IgnoreParens()); Cond && (Cond->isLogicalOp()))
+      {
         std::tie(EntryConditionBlock, ExitConditionBlock) =
             VisitLogicalOperator(Cond, W, BodyBlock, LoopSuccessor);
         break;
@@ -4381,10 +4373,9 @@ CFGBlock *CFGBuilder::VisitDoStmt(DoStmt *D) {
   if (Stmt *C = D->getCond()) {
     Block = ExitConditionBlock;
     EntryConditionBlock = addStmt(C);
-    if (Block) {
-      if (badCFG)
-        return nullptr;
-    }
+    if ((Block) && (badCFG)) 
+      return nullptr;
+    
   }
 
   // The condition block is the implicit successor for the loop body.
@@ -4422,10 +4413,9 @@ CFGBlock *CFGBuilder::VisitDoStmt(DoStmt *D) {
 
     if (!BodyBlock)
       BodyBlock = EntryConditionBlock; // can happen for "do ; while(...)"
-    else if (Block) {
-      if (badCFG)
-        return nullptr;
-    }
+    else if ((Block) && (badCFG)) 
+      return nullptr;
+    
 
     // Add an intermediate block between the BodyBlock and the
     // ExitConditionBlock to represent the "loop back" transition.  Create an
@@ -4577,10 +4567,9 @@ CFGBlock *CFGBuilder::VisitSwitchStmt(SwitchStmt *Terminator) {
     addLocalScopeAndDtors(Terminator->getBody());
 
   addStmt(Terminator->getBody());
-  if (Block) {
-    if (badCFG)
-      return nullptr;
-  }
+  if ((Block) && (badCFG)) 
+    return nullptr;
+  
 
   // If we have no "default:" case, the default transition is to the code
   // following the switch body.  Moreover, take into account if all the
@@ -5061,10 +5050,9 @@ CFGBlock *CFGBuilder::VisitCXXDeleteExpr(CXXDeleteExpr *DE,
   if (!DTy.isNull()) {
     DTy = DTy.getNonReferenceType();
     CXXRecordDecl *RD = Context->getBaseElementType(DTy)->getAsCXXRecordDecl();
-    if (RD) {
-      if (RD->isCompleteDefinition() && !RD->hasTrivialDestructor())
-        appendDeleteDtor(Block, RD, DE);
-    }
+    if ((RD) && (RD->isCompleteDefinition() && !RD->hasTrivialDestructor())) 
+      appendDeleteDtor(Block, RD, DE);
+    
   }
 
   return VisitChildren(DE);
@@ -5611,13 +5599,13 @@ bool CFGBlock::FilterEdge(const CFGBlock::FilterOptions &F,
     // If the 'To' has no label or is labeled but the label isn't a
     // CaseStmt then filter this edge.
     if (const SwitchStmt *S =
-        dyn_cast_or_null<SwitchStmt>(From->getTerminatorStmt())) {
-      if (S->isAllEnumCasesCovered()) {
+        dyn_cast_or_null<SwitchStmt>(From->getTerminatorStmt()); S && (S->isAllEnumCasesCovered())) 
+      {
         const Stmt *L = To->getLabel();
         if (!L || !isa<CaseStmt>(L))
           return true;
       }
-    }
+    
   }
 
   return false;
@@ -6011,15 +5999,15 @@ static void print_elem(raw_ostream &OS, StmtPrinterHelper &Helper,
       }
     }
     // special printing for comma expressions.
-    if (const BinaryOperator* B = dyn_cast<BinaryOperator>(S)) {
-      if (B->getOpcode() == BO_Comma) {
+    if (const BinaryOperator* B = dyn_cast<BinaryOperator>(S); B && (B->getOpcode() == BO_Comma)) 
+      {
         OS << "... , ";
         Helper.handledStmt(B->getRHS(),OS);
         if (TerminateWithNewLine)
           OS << '\n';
         return;
       }
-    }
+    
     S->printPretty(OS, &Helper, PrintingPolicy(Helper.getLangOpts()));
 
     if (auto VTC = E.getAs<CFGCXXRecordTypedCall>()) {
@@ -6470,13 +6458,13 @@ bool CFGBlock::isInevitablySinking() const {
       return false;
 
     for (const auto &Succ : Blk->succs()) {
-      if (const CFGBlock *SuccBlk = Succ.getReachableBlock()) {
-        if (!isImmediateSinkBlock(SuccBlk) && !Visited.count(SuccBlk)) {
+      if (const CFGBlock *SuccBlk = Succ.getReachableBlock(); SuccBlk && (!isImmediateSinkBlock(SuccBlk) && !Visited.count(SuccBlk))) 
+        {
           // If the block has reachable child blocks that aren't no-return,
           // add them to the worklist.
           DFSWorkList.push_back(SuccBlk);
         }
-      }
+      
     }
   }
 

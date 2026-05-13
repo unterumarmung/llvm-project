@@ -142,18 +142,16 @@ bool unlikelyExecuted(BasicBlock &BB) {
   // The block is cold if it calls/invokes a cold function. However, do not
   // mark sanitizer traps as cold.
   for (Instruction &I : BB)
-    if (auto *CB = dyn_cast<CallBase>(&I))
-      if (CB->hasFnAttr(Attribute::Cold) &&
-          !CB->getMetadata(LLVMContext::MD_nosanitize))
-        return true;
+    if (auto *CB = dyn_cast<CallBase>(&I); CB && (CB->hasFnAttr(Attribute::Cold) &&
+          !CB->getMetadata(LLVMContext::MD_nosanitize)))
+      return true;
 
   // The block is cold if it has an unreachable terminator, unless it's
   // preceded by a call to a (possibly warm) noreturn call (e.g. longjmp).
   if (blockEndsInUnreachable(BB)) {
     if (auto *CI =
-            dyn_cast_or_null<CallInst>(BB.getTerminator()->getPrevNode()))
-      if (CI->hasFnAttr(Attribute::NoReturn))
-        return false;
+            dyn_cast_or_null<CallInst>(BB.getTerminator()->getPrevNode()); CI && (CI->hasFnAttr(Attribute::NoReturn)))
+      return false;
     return true;
   }
 
@@ -273,9 +271,8 @@ bool HotColdSplitting::shouldOutlineFrom(const Function &F) const {
     return false;
 
   // Do not outline scoped EH personality functions.
-  if (F.hasPersonalityFn())
-    if (isScopedEHPersonality(classifyEHPersonality(F.getPersonalityFn())))
-      return false;
+  if ((F.hasPersonalityFn()) && (isScopedEHPersonality(classifyEHPersonality(F.getPersonalityFn()))))
+    return false;
 
   return true;
 }

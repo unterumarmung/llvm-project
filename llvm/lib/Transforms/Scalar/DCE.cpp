@@ -74,9 +74,8 @@ static bool DCEInstruction(Instruction *I,
       // If the operand is an instruction that became dead as we nulled out the
       // operand, and if it is 'trivially' dead, delete it in a future loop
       // iteration.
-      if (Instruction *OpI = dyn_cast<Instruction>(OpV))
-        if (isInstructionTriviallyDead(OpI, TLI))
-          WorkList.insert(OpI);
+      if (Instruction *OpI = dyn_cast<Instruction>(OpV); OpI && (isInstructionTriviallyDead(OpI, TLI)))
+        WorkList.insert(OpI);
     }
 
     I->eraseFromParent();

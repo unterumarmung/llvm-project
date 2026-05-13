@@ -2359,11 +2359,11 @@ LogicalResult transform::PadOp::verify() {
                             "integers, found "
                          << getPaddingDimensions();
   }
-  if (!getMixedPadToMultipleOf().empty()) {
-    if (getMixedPadToMultipleOf().size() != paddingDimensions.size()) {
+  if ((!getMixedPadToMultipleOf().empty()) && (getMixedPadToMultipleOf().size() != paddingDimensions.size())) 
+    {
       return emitOpError() << "expects as many multiples as padding_dimensions";
     }
-  }
+  
   ArrayAttr transposes = getTransposePaddings();
   for (Attribute attr : transposes) {
     SmallVector<int64_t> transpose = extractFromIntegerArrayAttr<int64_t>(attr);

@@ -358,10 +358,9 @@ static bool lowerExpectIntrinsic(Function &F) {
     if (CondBrInst *BI = dyn_cast<CondBrInst>(BB.getTerminator())) {
       if (handleBrSelExpect<CondBrInst>(*BI))
         ExpectIntrinsicsHandled++;
-    } else if (SwitchInst *SI = dyn_cast<SwitchInst>(BB.getTerminator())) {
-      if (handleSwitchExpect(*SI))
-        ExpectIntrinsicsHandled++;
-    }
+    } else if (SwitchInst *SI = dyn_cast<SwitchInst>(BB.getTerminator()); SI && (handleSwitchExpect(*SI))) 
+      ExpectIntrinsicsHandled++;
+    
 
     // Remove llvm.expect intrinsics. Iterate backwards in order
     // to process select instructions before the intrinsic gets
@@ -369,10 +368,9 @@ static bool lowerExpectIntrinsic(Function &F) {
     for (Instruction &Inst : llvm::make_early_inc_range(llvm::reverse(BB))) {
       CallInst *CI = dyn_cast<CallInst>(&Inst);
       if (!CI) {
-        if (SelectInst *SI = dyn_cast<SelectInst>(&Inst)) {
-          if (handleBrSelExpect(*SI))
-            ExpectIntrinsicsHandled++;
-        }
+        if (SelectInst *SI = dyn_cast<SelectInst>(&Inst); SI && (handleBrSelExpect(*SI))) 
+          ExpectIntrinsicsHandled++;
+        
         continue;
       }
 

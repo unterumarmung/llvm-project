@@ -470,8 +470,8 @@ public:
     // Because of the type rules of C, we often end up computing a
     // logical value, then zero extending it to int, then wanting it
     // as a logical value again.  Optimize this common case.
-    if (llvm::ZExtInst *ZI = dyn_cast<llvm::ZExtInst>(V)) {
-      if (ZI->getOperand(0)->getType() == Builder.getInt1Ty()) {
+    if (llvm::ZExtInst *ZI = dyn_cast<llvm::ZExtInst>(V); ZI && (ZI->getOperand(0)->getType() == Builder.getInt1Ty())) 
+      {
         Value *Result = ZI->getOperand(0);
         // If there aren't any more uses, zap the instruction to save space.
         // Note that there can be more uses, for example if this
@@ -480,7 +480,7 @@ public:
           ZI->eraseFromParent();
         return Result;
       }
-    }
+    
 
     return Builder.CreateIsNotNull(V, "tobool");
   }
@@ -1236,10 +1236,9 @@ void ScalarExprEmitter::EmitIntegerTruncationCheck(Value *Src, QualType SrcType,
 
   // Consider OverflowBehaviorTypes which override SSCL type entries for
   // truncation sanitizers.
-  if (const auto *OBT = DstType->getAs<OverflowBehaviorType>()) {
-    if (OBT->isWrapKind())
-      return;
-  }
+  if (const auto *OBT = DstType->getAs<OverflowBehaviorType>(); OBT && (OBT->isWrapKind())) 
+    return;
+  
   if (ignoredBySanitizer && !OBTrapInvolved)
     return;
 
@@ -2510,9 +2509,8 @@ static bool isDeclRefKnownNonNull(CodeGenFunction &CGF, const ValueDecl *D) {
 static bool isLValueKnownNonNull(CodeGenFunction &CGF, const Expr *E) {
   E = E->IgnoreParens();
 
-  if (const auto *UO = dyn_cast<UnaryOperator>(E))
-    if (UO->getOpcode() == UO_Deref)
-      return CGF.isPointerKnownNonNull(UO->getSubExpr());
+  if (const auto *UO = dyn_cast<UnaryOperator>(E); UO && (UO->getOpcode() == UO_Deref))
+    return CGF.isPointerKnownNonNull(UO->getSubExpr());
 
   if (const auto *DRE = dyn_cast<DeclRefExpr>(E))
     return isDeclRefKnownNonNull(CGF, DRE->getDecl());
@@ -2536,14 +2534,12 @@ bool CodeGenFunction::isPointerKnownNonNull(const Expr *E) {
   if (isa<CXXThisExpr>(E))
     return true;
 
-  if (const auto *UO = dyn_cast<UnaryOperator>(E))
-    if (UO->getOpcode() == UO_AddrOf)
-      return isLValueKnownNonNull(*this, UO->getSubExpr());
+  if (const auto *UO = dyn_cast<UnaryOperator>(E); UO && (UO->getOpcode() == UO_AddrOf))
+    return isLValueKnownNonNull(*this, UO->getSubExpr());
 
-  if (const auto *CE = dyn_cast<CastExpr>(E))
-    if (CE->getCastKind() == CK_FunctionToPointerDecay ||
-        CE->getCastKind() == CK_ArrayToPointerDecay)
-      return isLValueKnownNonNull(*this, CE->getSubExpr());
+  if (const auto *CE = dyn_cast<CastExpr>(E); CE && (CE->getCastKind() == CK_FunctionToPointerDecay ||
+        CE->getCastKind() == CK_ArrayToPointerDecay))
+    return isLValueKnownNonNull(*this, CE->getSubExpr());
 
   // Maybe honor __nonnull?
 
@@ -2561,11 +2557,10 @@ bool CodeGenFunction::ShouldNullCheckClassCastValue(const CastExpr *CE) {
     return false;
   }
 
-  if (const ImplicitCastExpr *ICE = dyn_cast<ImplicitCastExpr>(CE)) {
+  if (const ImplicitCastExpr *ICE = dyn_cast<ImplicitCastExpr>(CE); ICE && (ICE->isGLValue())) 
     // And that glvalue casts are never null.
-    if (ICE->isGLValue())
-      return false;
-  }
+    return false;
+  
 
   return true;
 }
@@ -2747,15 +2742,15 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
     }
 
     // Update heapallocsite metadata when there is an explicit pointer cast.
-    if (auto *CI = dyn_cast<llvm::CallBase>(Src)) {
-      if (CI->getMetadata("heapallocsite") && isa<ExplicitCastExpr>(CE) &&
-          !isa<CastExpr>(E)) {
+    if (auto *CI = dyn_cast<llvm::CallBase>(Src); CI && (CI->getMetadata("heapallocsite") && isa<ExplicitCastExpr>(CE) &&
+          !isa<CastExpr>(E))) 
+      {
         QualType PointeeType = DestTy->getPointeeType();
         if (!PointeeType.isNull())
           CGF.getDebugInfo()->addHeapAllocSiteMetadata(CI, PointeeType,
                                                        CE->getExprLoc());
       }
-    }
+    
 
     // If Src is a fixed vector and Dst is a scalable vector, and both have the
     // same element type, use the llvm.vector.insert intrinsic to perform the
@@ -2977,12 +2972,11 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
 
     auto *IntToPtr = Builder.CreateIntToPtr(IntResult, DestLLVMTy);
 
-    if (CGF.CGM.getCodeGenOpts().StrictVTablePointers) {
+    if ((CGF.CGM.getCodeGenOpts().StrictVTablePointers) && (DestTy.mayBeDynamicClass())) 
       // Going from integer to pointer that could be dynamic requires reloading
       // dynamic information from invariant.group.
-      if (DestTy.mayBeDynamicClass())
-        IntToPtr = Builder.CreateLaunderInvariantGroup(IntToPtr);
-    }
+      IntToPtr = Builder.CreateLaunderInvariantGroup(IntToPtr);
+    
 
     IntToPtr = CGF.authPointerToPointerCast(IntToPtr, E->getType(), DestTy);
     return IntToPtr;
@@ -3059,10 +3053,9 @@ Value *ScalarExprEmitter::VisitCastExpr(CastExpr *CE) {
                                    "conv");
     }
     ScalarConversionOpts Opts;
-    if (auto *ICE = dyn_cast<ImplicitCastExpr>(CE)) {
-      if (!ICE->isPartOfExplicitCast())
-        Opts = ScalarConversionOpts(CGF.SanOpts);
-    }
+    if (auto *ICE = dyn_cast<ImplicitCastExpr>(CE); ICE && (!ICE->isPartOfExplicitCast())) 
+      Opts = ScalarConversionOpts(CGF.SanOpts);
+    
     return EmitScalarConversion(Visit(E), E->getType(), DestTy,
                                 CE->getExprLoc(), Opts);
   }
@@ -4660,65 +4653,65 @@ static Value* tryEmitFMulAdd(const BinOpInfo &op,
   // Peek through fneg to look for fmul. Make sure fneg has no users, and that
   // it is the only use of its operand.
   bool NegLHS = false;
-  if (auto *LHSUnOp = dyn_cast<llvm::UnaryOperator>(LHS)) {
-    if (LHSUnOp->getOpcode() == llvm::Instruction::FNeg &&
-        LHSUnOp->use_empty() && LHSUnOp->getOperand(0)->hasOneUse()) {
+  if (auto *LHSUnOp = dyn_cast<llvm::UnaryOperator>(LHS); LHSUnOp && (LHSUnOp->getOpcode() == llvm::Instruction::FNeg &&
+        LHSUnOp->use_empty() && LHSUnOp->getOperand(0)->hasOneUse())) 
+    {
       LHS = LHSUnOp->getOperand(0);
       NegLHS = true;
     }
-  }
+  
 
   bool NegRHS = false;
-  if (auto *RHSUnOp = dyn_cast<llvm::UnaryOperator>(RHS)) {
-    if (RHSUnOp->getOpcode() == llvm::Instruction::FNeg &&
-        RHSUnOp->use_empty() && RHSUnOp->getOperand(0)->hasOneUse()) {
+  if (auto *RHSUnOp = dyn_cast<llvm::UnaryOperator>(RHS); RHSUnOp && (RHSUnOp->getOpcode() == llvm::Instruction::FNeg &&
+        RHSUnOp->use_empty() && RHSUnOp->getOperand(0)->hasOneUse())) 
+    {
       RHS = RHSUnOp->getOperand(0);
       NegRHS = true;
     }
-  }
+  
 
   // We have a potentially fusable op. Look for a mul on one of the operands.
   // Also, make sure that the mul result isn't used directly. In that case,
   // there's no point creating a muladd operation.
-  if (auto *LHSBinOp = dyn_cast<llvm::BinaryOperator>(LHS)) {
-    if (LHSBinOp->getOpcode() == llvm::Instruction::FMul &&
-        (LHSBinOp->use_empty() || NegLHS)) {
+  if (auto *LHSBinOp = dyn_cast<llvm::BinaryOperator>(LHS); LHSBinOp && (LHSBinOp->getOpcode() == llvm::Instruction::FMul &&
+        (LHSBinOp->use_empty() || NegLHS))) 
+    {
       // If we looked through fneg, erase it.
       if (NegLHS)
         cast<llvm::Instruction>(op.LHS)->eraseFromParent();
       return buildFMulAdd(LHSBinOp, op.RHS, CGF, Builder, NegLHS, isSub);
     }
-  }
-  if (auto *RHSBinOp = dyn_cast<llvm::BinaryOperator>(RHS)) {
-    if (RHSBinOp->getOpcode() == llvm::Instruction::FMul &&
-        (RHSBinOp->use_empty() || NegRHS)) {
+  
+  if (auto *RHSBinOp = dyn_cast<llvm::BinaryOperator>(RHS); RHSBinOp && (RHSBinOp->getOpcode() == llvm::Instruction::FMul &&
+        (RHSBinOp->use_empty() || NegRHS))) 
+    {
       // If we looked through fneg, erase it.
       if (NegRHS)
         cast<llvm::Instruction>(op.RHS)->eraseFromParent();
       return buildFMulAdd(RHSBinOp, op.LHS, CGF, Builder, isSub ^ NegRHS, false);
     }
-  }
+  
 
-  if (auto *LHSBinOp = dyn_cast<llvm::CallBase>(LHS)) {
-    if (LHSBinOp->getIntrinsicID() ==
+  if (auto *LHSBinOp = dyn_cast<llvm::CallBase>(LHS); LHSBinOp && (LHSBinOp->getIntrinsicID() ==
             llvm::Intrinsic::experimental_constrained_fmul &&
-        (LHSBinOp->use_empty() || NegLHS)) {
+        (LHSBinOp->use_empty() || NegLHS))) 
+    {
       // If we looked through fneg, erase it.
       if (NegLHS)
         cast<llvm::Instruction>(op.LHS)->eraseFromParent();
       return buildFMulAdd(LHSBinOp, op.RHS, CGF, Builder, NegLHS, isSub);
     }
-  }
-  if (auto *RHSBinOp = dyn_cast<llvm::CallBase>(RHS)) {
-    if (RHSBinOp->getIntrinsicID() ==
+  
+  if (auto *RHSBinOp = dyn_cast<llvm::CallBase>(RHS); RHSBinOp && (RHSBinOp->getIntrinsicID() ==
             llvm::Intrinsic::experimental_constrained_fmul &&
-        (RHSBinOp->use_empty() || NegRHS)) {
+        (RHSBinOp->use_empty() || NegRHS))) 
+    {
       // If we looked through fneg, erase it.
       if (NegRHS)
         cast<llvm::Instruction>(op.RHS)->eraseFromParent();
       return buildFMulAdd(RHSBinOp, op.LHS, CGF, Builder, isSub ^ NegRHS, false);
     }
-  }
+  
 
   return nullptr;
 }

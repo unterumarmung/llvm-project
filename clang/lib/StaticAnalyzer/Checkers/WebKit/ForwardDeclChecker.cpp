@@ -266,12 +266,12 @@ public:
     while (ArgExpr) {
       ArgExpr = ArgExpr->IgnoreParenCasts();
       if (auto *InnerCE = dyn_cast<CallExpr>(ArgExpr)) {
-        if (auto *InnerCallee = InnerCE->getDirectCallee()) {
-          if (isStdOrWTFMove(InnerCallee) && InnerCE->getNumArgs() == 1) {
+        if (auto *InnerCallee = InnerCE->getDirectCallee(); InnerCallee && (isStdOrWTFMove(InnerCallee) && InnerCE->getNumArgs() == 1)) 
+          {
             ArgExpr = InnerCE->getArg(0);
             continue;
           }
-        }
+        
       }
       if (auto *UO = dyn_cast<UnaryOperator>(ArgExpr)) {
         auto OpCode = UO->getOpcode();
@@ -283,17 +283,15 @@ public:
       break;
     }
 
-    if (auto *MemberCallExpr = dyn_cast<CXXMemberCallExpr>(ArgExpr)) {
-      if (isOwnerPtrType(MemberCallExpr->getObjectType()))
-        return;
-    }
+    if (auto *MemberCallExpr = dyn_cast<CXXMemberCallExpr>(ArgExpr); MemberCallExpr && (isOwnerPtrType(MemberCallExpr->getObjectType()))) 
+      return;
+    
 
     if (auto *OpCE = dyn_cast<CXXOperatorCallExpr>(ArgExpr)) {
       auto *Method = dyn_cast_or_null<CXXMethodDecl>(OpCE->getDirectCallee());
-      if (Method && isOwnerPtr(safeGetName(Method->getParent()))) {
-        if (OpCE->getOperator() == OO_Star && OpCE->getNumArgs() == 1)
-          return;
-      }
+      if ((Method && isOwnerPtr(safeGetName(Method->getParent()))) && (OpCE->getOperator() == OO_Star && OpCE->getNumArgs() == 1)) 
+        return;
+      
     }
 
     if (isNullPtr(ArgExpr) || isa<IntegerLiteral>(ArgExpr) ||
@@ -301,10 +299,9 @@ public:
       return;
 
     if (auto *DRE = dyn_cast<DeclRefExpr>(ArgExpr)) {
-      if (auto *ValDecl = DRE->getDecl()) {
-        if (isa<ParmVarDecl>(ValDecl))
-          return;
-      }
+      if (auto *ValDecl = DRE->getDecl(); ValDecl && (isa<ParmVarDecl>(ValDecl))) 
+        return;
+      
     }
 
     QualType ArgType = Param->getType();

@@ -1018,7 +1018,7 @@ Decl *Sema::ActOnFinishExportDecl(Scope *S, Decl *D, SourceLocation RBraceLoc) {
         ED->hasBraces() ? ED->getBeginLoc() : SourceLocation();
     for (auto *Child : ED->decls()) {
       checkExportedDecl(*this, Child, BlockStart);
-      if (auto *FD = dyn_cast<FunctionDecl>(Child)) {
+      if (auto *FD = dyn_cast<FunctionDecl>(Child); FD && (FD->isInlineSpecified() && !FD->isDefined())) 
         // [dcl.inline]/7
         // If an inline function or variable that is attached to a named module
         // is declared in a definition domain, it shall be defined in that
@@ -1026,9 +1026,8 @@ Decl *Sema::ActOnFinishExportDecl(Scope *S, Decl *D, SourceLocation RBraceLoc) {
         // So, if the current declaration does not have a definition, we must
         // check at the end of the TU (or when the PMF starts) to see that we
         // have a definition at that point.
-        if (FD->isInlineSpecified() && !FD->isDefined())
-          PendingInlineFuncDecls.insert(FD);
-      }
+        PendingInlineFuncDecls.insert(FD);
+      
     }
   }
 

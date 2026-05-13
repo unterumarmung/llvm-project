@@ -646,9 +646,9 @@ Fortran::lower::genCallOpAndResult(
   fir::FortranProcedureFlagsEnumAttr procAttrs =
       caller.getProcedureAttrs(builder.getContext());
 
-  if (converter.getLoweringOptions().getCUDARuntimeCheck()) {
-    if (caller.getCallDescription().chevrons().empty() &&
-        !cuf::isCUDADeviceContext(builder.getRegion())) {
+  if ((converter.getLoweringOptions().getCUDARuntimeCheck()) && (caller.getCallDescription().chevrons().empty() &&
+        !cuf::isCUDADeviceContext(builder.getRegion()))) 
+    {
       for (auto [oper, arg] :
            llvm::zip(operands, caller.getPassedArguments())) {
         if (arg.testTKR(Fortran::common::IgnoreTKR::Contiguous))
@@ -660,7 +660,7 @@ Fortran::lower::genCallOpAndResult(
         }
       }
     }
-  }
+  
 
   if (!caller.getCallDescription().chevrons().empty()) {
     // A call to a CUDA kernel with the chevron syntax.
@@ -2260,9 +2260,9 @@ genIntrinsicRefCore(Fortran::lower::PreparedActualArguments &loweredActuals,
       continue;
     case fir::LowerIntrinsicArgAs::Inquired:
       if (const Fortran::lower::SomeExpr *expr =
-              callContext.procRef.UnwrapArgExpr(arg.index())) {
-        if (Fortran::evaluate::UnwrapExpr<Fortran::evaluate::NullPointer>(
-                *expr)) {
+              callContext.procRef.UnwrapArgExpr(arg.index()); expr && (Fortran::evaluate::UnwrapExpr<Fortran::evaluate::NullPointer>(
+                *expr))) 
+        {
           // NULL() pointer without a MOLD must be passed as a deallocated
           // pointer (see table 16.5 in Fortran 2018 standard).
           // !fir.box<!fir.ptr<none>> should always be valid in this context.
@@ -2278,7 +2278,7 @@ genIntrinsicRefCore(Fortran::lower::PreparedActualArguments &loweredActuals,
               loc, builder, nullBoxEntity, stmtCtx));
           continue;
         }
-      }
+      
       // Place hlfir.expr in memory, and unbox fir.boxchar. Other entities
       // are translated to fir::ExtendedValue without transformation (notably,
       // pointers/allocatable are not dereferenced).
@@ -2755,10 +2755,9 @@ public:
   mlir::Value computeDynamicCharacterResultLength(
       Fortran::lower::PreparedActualArguments &loweredActuals,
       CallContext &callContext) {
-    if (intrinsic)
-      if (intrinsic->name == "adjustr" || intrinsic->name == "adjustl" ||
-          intrinsic->name == "merge")
-        return loweredActuals[0].value().genCharLength(
+    if ((intrinsic) && (intrinsic->name == "adjustr" || intrinsic->name == "adjustl" ||
+          intrinsic->name == "merge"))
+      return loweredActuals[0].value().genCharLength(
             callContext.loc, callContext.getBuilder());
     // Character MIN/MAX result length is the length of the longest
     // argument that is present.
@@ -3166,12 +3165,12 @@ genProcedureRef(CallContext &callContext) {
         continue;
       }
 
-      if (Fortran::evaluate::UnwrapExpr<Fortran::evaluate::NullPointer>(
-              *expr)) {
-        if ((arg.passBy !=
+      if ((Fortran::evaluate::UnwrapExpr<Fortran::evaluate::NullPointer>(
+              *expr)) && ((arg.passBy !=
              Fortran::lower::CallerInterface::PassEntityBy::MutableBox) &&
             (arg.passBy !=
-             Fortran::lower::CallerInterface::PassEntityBy::BoxProcRef)) {
+             Fortran::lower::CallerInterface::PassEntityBy::BoxProcRef))) 
+        {
           assert(
               arg.isOptional() &&
               "NULL must be passed only to pointer, allocatable, or OPTIONAL");
@@ -3181,7 +3180,7 @@ genProcedureRef(CallContext &callContext) {
           loweredActuals.emplace_back(std::nullopt);
           continue;
         }
-      }
+      
 
       if (isElemental && !arg.hasValueAttribute() &&
           Fortran::evaluate::IsVariable(*expr) &&

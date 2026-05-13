@@ -130,15 +130,15 @@ void RewriteMutator::OpenMPSimdOnly(parser::SpecificationPart &specPart) {
     if (auto *specConstr{std::get_if<parser::SpecificationConstruct>(&it->u)}) {
       if (auto *ompDecl{std::get_if<
               common::Indirection<parser::OpenMPDeclarativeConstruct>>(
-              &specConstr->u)}) {
-        if (std::holds_alternative<parser::OmpThreadprivateDirective>(
+              &specConstr->u)}; ompDecl && (std::holds_alternative<parser::OmpThreadprivateDirective>(
                 ompDecl->value().u) ||
             std::holds_alternative<parser::OmpDeclareMapperDirective>(
-                ompDecl->value().u)) {
+                ompDecl->value().u))) 
+        {
           it = list.erase(it);
           continue;
         }
-      }
+      
     }
     ++it;
   }
@@ -461,12 +461,12 @@ template <typename READ_OR_WRITE>
 void FixMisparsedUntaggedNamelistName(READ_OR_WRITE &x) {
   if (x.iounit && x.format &&
       std::holds_alternative<parser::Expr>(x.format->u)) {
-    if (const parser::Name * name{parser::Unwrap<parser::Name>(x.format)}) {
-      if (name->symbol && name->symbol->GetUltimate().has<NamelistDetails>()) {
+    if (const parser::Name * name{parser::Unwrap<parser::Name>(x.format)}; name && (name->symbol && name->symbol->GetUltimate().has<NamelistDetails>())) 
+      {
         x.controls.emplace_front(parser::IoControlSpec{std::move(*name)});
         x.format.reset();
       }
-    }
+    
   }
 }
 

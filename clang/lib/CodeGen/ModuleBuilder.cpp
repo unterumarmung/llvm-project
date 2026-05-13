@@ -253,12 +253,12 @@ namespace {
       assert(Ctx && "Initialize() not called");
       if (Ctx->getTargetInfo().getCXXABI().isMicrosoft()) {
         for (Decl *Member : D->decls()) {
-          if (VarDecl *VD = dyn_cast<VarDecl>(Member)) {
-            if (Ctx->isMSStaticDataMemberInlineDefinition(VD) &&
-                Ctx->DeclMustBeEmitted(VD)) {
+          if (VarDecl *VD = dyn_cast<VarDecl>(Member); VD && (Ctx->isMSStaticDataMemberInlineDefinition(VD) &&
+                Ctx->DeclMustBeEmitted(VD))) 
+            {
               Builder->EmitGlobal(VD);
             }
-          }
+          
         }
       }
 
@@ -282,10 +282,9 @@ namespace {
           if (auto *DRD = dyn_cast<OMPDeclareReductionDecl>(Member)) {
             if (Ctx->DeclMustBeEmitted(DRD))
               Builder->EmitGlobal(DRD);
-          } else if (auto *DMD = dyn_cast<OMPDeclareMapperDecl>(Member)) {
-            if (Ctx->DeclMustBeEmitted(DMD))
-              Builder->EmitGlobal(DMD);
-          }
+          } else if (auto *DMD = dyn_cast<OMPDeclareMapperDecl>(Member); DMD && (Ctx->DeclMustBeEmitted(DMD))) 
+            Builder->EmitGlobal(DMD);
+          
         }
       }
     }

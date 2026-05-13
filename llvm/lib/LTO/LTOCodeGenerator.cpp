@@ -327,9 +327,8 @@ bool LTOCodeGenerator::compileOptimizedToFile(const char **Name) {
   else if (AreStatisticsEnabled())
     PrintStatistics();
 
-  if (useAIXSystemAssembler())
-    if (!runAIXSystemAssembler(Filename))
-      return false;
+  if ((useAIXSystemAssembler()) && (!runAIXSystemAssembler(Filename)))
+    return false;
 
   NativeObjectPath = Filename.c_str();
   *Name = NativeObjectPath.c_str();

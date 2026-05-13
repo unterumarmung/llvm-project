@@ -145,11 +145,11 @@ TagDecl *HeuristicResolverImpl::resolveTypeToTagDecl(QualType QT) {
   if (auto *TD = T->getAsTagDecl()) {
     // Template might not be instantiated yet, fall back to primary template
     // in such cases.
-    if (const auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(TD)) {
-      if (CTSD->getTemplateSpecializationKind() == TSK_Undeclared) {
+    if (const auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(TD); CTSD && (CTSD->getTemplateSpecializationKind() == TSK_Undeclared)) 
+      {
         return CTSD->getSpecializedTemplate()->getTemplatedDecl();
       }
-    }
+    
     return TD;
   }
 
@@ -221,22 +221,22 @@ QualType HeuristicResolverImpl::simplifyType(QualType Type, const Expr *E,
       // Does not count as "unwrap pointer".
       return {RT->getPointeeType()};
     }
-    if (const auto *BT = T.Type->getAs<BuiltinType>()) {
+    if (const auto *BT = T.Type->getAs<BuiltinType>(); BT && (T.E && BT->getKind() == BuiltinType::Dependent)) 
       // If BaseType is the type of a dependent expression, it's just
       // represented as BuiltinType::Dependent which gives us no information. We
       // can get further by analyzing the dependent expression.
-      if (T.E && BT->getKind() == BuiltinType::Dependent) {
+      {
         return {resolveExprToType(T.E), T.E};
       }
-    }
-    if (const auto *AT = T.Type->getContainedAutoType()) {
+    
+    if (const auto *AT = T.Type->getContainedAutoType(); AT && (T.E && AT->isUndeducedAutoType())) 
       // If T contains a dependent `auto` type, deduction will not have
       // been performed on it yet. In simple cases (e.g. `auto` variable with
       // initializer), get the approximate type that would result from
       // deduction.
       // FIXME: A more accurate implementation would propagate things like the
       // `const` in `const auto`.
-      if (T.E && AT->isUndeducedAutoType()) {
+      {
         if (const auto *DRE = dyn_cast<DeclRefExpr>(T.E)) {
           if (const auto *VD = dyn_cast<VarDecl>(DRE->getDecl())) {
             if (auto *Init = VD->getInit())
@@ -244,20 +244,20 @@ QualType HeuristicResolverImpl::simplifyType(QualType Type, const Expr *E,
           }
         }
       }
-    }
+    
     if (const auto *TTPT = dyn_cast_if_present<TemplateTypeParmType>(T.Type)) {
       // We can't do much useful with a template parameter (e.g. we cannot look
       // up member names inside it). However, if the template parameter has a
       // default argument, as a heuristic we can replace T with the default
       // argument type.
-      if (const auto *TTPD = TTPT->getDecl()) {
-        if (TTPD->hasDefaultArgument()) {
+      if (const auto *TTPD = TTPT->getDecl(); TTPD && (TTPD->hasDefaultArgument())) 
+        {
           const auto &DefaultArg = TTPD->getDefaultArgument().getArgument();
           if (DefaultArg.getKind() == TemplateArgument::Type) {
             return {DefaultArg.getAsType()};
           }
         }
-      }
+      
     }
 
     // Similarly, heuristically replace a template template parameter with its
@@ -265,8 +265,8 @@ QualType HeuristicResolverImpl::simplifyType(QualType Type, const Expr *E,
     if (const auto *TST =
             dyn_cast_if_present<TemplateSpecializationType>(T.Type)) {
       if (const auto *TTPD = dyn_cast_if_present<TemplateTemplateParmDecl>(
-              TST->getTemplateName().getAsTemplateDecl())) {
-        if (TTPD->hasDefaultArgument()) {
+              TST->getTemplateName().getAsTemplateDecl()); TTPD && (TTPD->hasDefaultArgument())) 
+        {
           const auto &DefaultArg = TTPD->getDefaultArgument().getArgument();
           if (DefaultArg.getKind() == TemplateArgument::Template) {
             if (const auto *CTD = dyn_cast_if_present<ClassTemplateDecl>(
@@ -275,7 +275,7 @@ QualType HeuristicResolverImpl::simplifyType(QualType Type, const Expr *E,
             }
           }
         }
-      }
+      
     }
 
     // Check if the expression refers to an explicit object parameter of
@@ -458,14 +458,14 @@ QualType HeuristicResolverImpl::resolveExprToType(const Expr *E) {
 
   // Similarly, unwrapping a unary dereference operation does not work via
   // resolveExprToDecls.
-  if (const auto *UO = dyn_cast<UnaryOperator>(E->IgnoreParenCasts())) {
-    if (UO->getOpcode() == UnaryOperatorKind::UO_Deref) {
+  if (const auto *UO = dyn_cast<UnaryOperator>(E->IgnoreParenCasts()); UO && (UO->getOpcode() == UnaryOperatorKind::UO_Deref)) 
+    {
       if (auto Pointee = getPointeeType(resolveExprToType(UO->getSubExpr()));
           !Pointee.isNull()) {
         return Pointee;
       }
     }
-  }
+  
 
   std::vector<const NamedDecl *> Decls = resolveExprToDecls(E);
   if (!Decls.empty())

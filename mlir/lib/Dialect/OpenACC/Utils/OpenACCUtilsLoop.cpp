@@ -249,9 +249,8 @@ scf::ForOp convertACCLoopToSCFFor(LoopOp loopOp, RewriterBase &rewriter,
   }
 
   // Optionally collapse nested loops
-  if (enableCollapse && forOps.size() > 1)
-    if (failed(coalesceLoops(rewriter, forOps)))
-      loopOp.emitError("failed to collapse acc.loop");
+  if ((enableCollapse && forOps.size() > 1) && (failed(coalesceLoops(rewriter, forOps))))
+    loopOp.emitError("failed to collapse acc.loop");
 
   return forOps.front();
 }

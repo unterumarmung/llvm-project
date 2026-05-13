@@ -895,12 +895,11 @@ const AsmToken &AsmParser::Lex() {
     Error(Lexer.getErrLoc(), Lexer.getErr());
 
   // if it's a end of statement with a comment in it
-  if (getTok().is(AsmToken::EndOfStatement)) {
+  if ((getTok().is(AsmToken::EndOfStatement)) && (!getTok().getString().empty() && getTok().getString().front() != '\n' &&
+        getTok().getString().front() != '\r' && MAI.preserveAsmComments())) 
     // if this is a line comment output it.
-    if (!getTok().getString().empty() && getTok().getString().front() != '\n' &&
-        getTok().getString().front() != '\r' && MAI.preserveAsmComments())
-      Out.addExplicitComment(Twine(getTok().getString()));
-  }
+    Out.addExplicitComment(Twine(getTok().getString()));
+  
 
   const AsmToken *tok = &Lexer.Lex();
 
@@ -1152,10 +1151,10 @@ bool AsmParser::parsePrimaryExpr(const MCExpr *&Res, SMLoc &EndLoc,
   case AsmToken::String:
   case AsmToken::Identifier: {
     StringRef Identifier;
-    if (parseIdentifier(Identifier)) {
+    if ((parseIdentifier(Identifier)) && (getTok().is(AsmToken::Dollar) || getTok().is(AsmToken::Star))) 
       // We may have failed but '$'|'*' may be a valid token in context of
       // the current PC.
-      if (getTok().is(AsmToken::Dollar) || getTok().is(AsmToken::Star)) {
+      {
         bool ShouldGenerateTempSymbol = false;
         if ((getTok().is(AsmToken::Dollar) && MAI.getDollarIsPC()) ||
             (getTok().is(AsmToken::Star) && MAI.isHLASM()))
@@ -1174,7 +1173,7 @@ bool AsmParser::parsePrimaryExpr(const MCExpr *&Res, SMLoc &EndLoc,
         EndLoc = FirstTokenLoc;
         return false;
       }
-    }
+    
     // Parse an optional relocation specifier.
     std::pair<StringRef, StringRef> Split;
     if (MAI.useAtForSpecifier()) {
@@ -1750,12 +1749,12 @@ bool AsmParser::parseStatement(ParseStatementInfo &Info,
     } else {
       IDVal = getTok().getString();
       Lex(); // Consume the integer token to be used as an identifier token.
-      if (Lexer.getKind() != AsmToken::Colon) {
-        if (!TheCondState.Ignore) {
+      if ((Lexer.getKind() != AsmToken::Colon) && (!TheCondState.Ignore)) 
+        {
           Lex(); // always eat a token
           return Error(IDLoc, "unexpected token at start of statement");
         }
-      }
+      
     }
   } else if (Lexer.is(AsmToken::Dot)) {
     // Treat '.' as a valid identifier in this context.
@@ -2652,8 +2651,8 @@ bool AsmParser::parseMacroArgument(MCAsmMacroArgument &MA, bool Vararg) {
       // Spaces can delimit parameters, but could also be part an expression.
       // If the token after a space is an operator, add the token and the next
       // one into this argument
-      if (!IsDarwin) {
-        if (isOperator(Lexer.getKind())) {
+      if ((!IsDarwin) && (isOperator(Lexer.getKind()))) 
+        {
           MA.push_back(getTok());
           Lexer.Lex();
 
@@ -2661,7 +2660,7 @@ bool AsmParser::parseMacroArgument(MCAsmMacroArgument &MA, bool Vararg) {
           parseOptionalToken(AsmToken::Space);
           continue;
         }
-      }
+      
       if (SpaceEaten)
         break;
     }
@@ -3352,9 +3351,8 @@ bool AsmParser::parseDirectiveOrg() {
 
   // Parse optional fill expression.
   int64_t FillExpr = 0;
-  if (parseOptionalToken(AsmToken::Comma))
-    if (parseAbsoluteExpression(FillExpr))
-      return true;
+  if ((parseOptionalToken(AsmToken::Comma)) && (parseAbsoluteExpression(FillExpr)))
+    return true;
   if (parseEOL())
     return true;
 
@@ -3385,10 +3383,9 @@ bool AsmParser::parseDirectiveAlign(bool IsPow2, uint8_t ValueSize) {
         if (parseTokenLoc(FillExprLoc) || parseAbsoluteExpression(FillExpr))
           return true;
       }
-      if (parseOptionalToken(AsmToken::Comma))
-        if (parseTokenLoc(MaxBytesLoc) ||
-            parseAbsoluteExpression(MaxBytesToFill))
-          return true;
+      if ((parseOptionalToken(AsmToken::Comma)) && (parseTokenLoc(MaxBytesLoc) ||
+            parseAbsoluteExpression(MaxBytesToFill)))
+        return true;
     }
     return parseEOL();
   };
@@ -3782,15 +3779,14 @@ bool AsmParser::parseDirectiveCVFile() {
             "unexpected token in '.cv_file' directive") ||
       parseEscapedString(Filename))
     return true;
-  if (!parseOptionalToken(AsmToken::EndOfStatement)) {
-    if (check(getTok().isNot(AsmToken::String),
+  if ((!parseOptionalToken(AsmToken::EndOfStatement)) && (check(getTok().isNot(AsmToken::String),
               "unexpected token in '.cv_file' directive") ||
         parseEscapedString(Checksum) ||
         parseIntToken(ChecksumKind,
                       "expected checksum kind in '.cv_file' directive") ||
-        parseEOL())
-      return true;
-  }
+        parseEOL())) 
+    return true;
+  
 
   Checksum = fromHex(Checksum);
   void *CKMem = Ctx.allocate(Checksum.size(), 1);
@@ -4247,12 +4243,11 @@ bool AsmParser::parseDirectiveCFIStartProc() {
   CFIStartProcLoc = StartTokLoc;
 
   StringRef Simple;
-  if (!parseOptionalToken(AsmToken::EndOfStatement)) {
-    if (check(parseIdentifier(Simple) || Simple != "simple",
+  if ((!parseOptionalToken(AsmToken::EndOfStatement)) && (check(parseIdentifier(Simple) || Simple != "simple",
               "unexpected token") ||
-        parseEOL())
-      return true;
-  }
+        parseEOL())) 
+    return true;
+  
 
   // TODO(kristina): Deal with a corner case of incorrect diagnostic context
   // being produced if this directive is emitted as part of preprocessor macro
@@ -4886,9 +4881,8 @@ bool AsmParser::parseDirectiveSpace(StringRef IDVal) {
     return true;
 
   int64_t FillExpr = 0;
-  if (parseOptionalToken(AsmToken::Comma))
-    if (parseAbsoluteExpression(FillExpr))
-      return true;
+  if ((parseOptionalToken(AsmToken::Comma)) && (parseAbsoluteExpression(FillExpr)))
+    return true;
   if (parseEOL())
     return true;
 
@@ -5145,10 +5139,9 @@ bool AsmParser::parseDirectiveIncbin() {
   if (parseOptionalToken(AsmToken::Comma)) {
     // The skip expression can be omitted while specifying the count, e.g:
     //  .incbin "filename",,4
-    if (getTok().isNot(AsmToken::Comma)) {
-      if (parseTokenLoc(SkipLoc) || parseAbsoluteExpression(Skip))
-        return true;
-    }
+    if ((getTok().isNot(AsmToken::Comma)) && (parseTokenLoc(SkipLoc) || parseAbsoluteExpression(Skip))) 
+      return true;
+    
     if (parseOptionalToken(AsmToken::Comma)) {
       CountLoc = getTok().getLoc();
       if (parseExpression(Count))
@@ -5396,12 +5389,12 @@ bool AsmParser::parseDirectiveEnd(SMLoc DirectiveLoc) {
 ///   ::= .err
 ///   ::= .error [string]
 bool AsmParser::parseDirectiveError(SMLoc L, bool WithMessage) {
-  if (!TheCondStack.empty()) {
-    if (TheCondStack.back().Ignore) {
+  if ((!TheCondStack.empty()) && (TheCondStack.back().Ignore)) 
+    {
       eatToEndOfStatement();
       return false;
     }
-  }
+  
 
   if (!WithMessage)
     return Error(L, ".err encountered");
@@ -5421,12 +5414,12 @@ bool AsmParser::parseDirectiveError(SMLoc L, bool WithMessage) {
 /// parseDirectiveWarning
 ///   ::= .warning [string]
 bool AsmParser::parseDirectiveWarning(SMLoc L) {
-  if (!TheCondStack.empty()) {
-    if (TheCondStack.back().Ignore) {
+  if ((!TheCondStack.empty()) && (TheCondStack.back().Ignore)) 
+    {
       eatToEndOfStatement();
       return false;
     }
-  }
+  
 
   StringRef Message = ".warning directive invoked in source file";
 
@@ -6341,27 +6334,27 @@ bool HLASMAsmParser::parseStatement(ParseStatementInfo &Info,
   // If we see a new line or carriage return as the first operand,
   // after lexing leading spaces, emit the new line and lex the
   // EndOfStatement token.
-  if (Lexer.is(AsmToken::EndOfStatement)) {
-    if (getTok().getString().front() == '\n' ||
-        getTok().getString().front() == '\r') {
+  if ((Lexer.is(AsmToken::EndOfStatement)) && (getTok().getString().front() == '\n' ||
+        getTok().getString().front() == '\r')) 
+    {
       Out.addBlankLine();
       Lex();
       return false;
     }
-  }
+  
 
   // Handle the label first if we have to before processing the rest
   // of the tokens as a machine instruction.
-  if (ShouldParseAsHLASMLabel) {
+  if ((ShouldParseAsHLASMLabel) && (parseAsHLASMLabel(Info, SI))) 
     // If there were any errors while handling and emitting the label,
     // early return.
-    if (parseAsHLASMLabel(Info, SI)) {
+    {
       // If we know we've failed in parsing, simply eat until end of the
       // statement. This ensures that we don't process any other statements.
       eatToEndOfStatement();
       return true;
     }
-  }
+  
 
   return parseAsMachineInstruction(Info, SI);
 }

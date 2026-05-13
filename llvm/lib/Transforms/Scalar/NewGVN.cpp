@@ -382,10 +382,9 @@ public:
         std::tie(Other->StoreCount, Other->RepLeader, Other->RepStoredValue,
                  Other->RepMemoryAccess))
       return false;
-    if (DefiningExpr != Other->DefiningExpr)
-      if (!DefiningExpr || !Other->DefiningExpr ||
-          *DefiningExpr != *Other->DefiningExpr)
-        return false;
+    if ((DefiningExpr != Other->DefiningExpr) && (!DefiningExpr || !Other->DefiningExpr ||
+          *DefiningExpr != *Other->DefiningExpr))
+      return false;
 
     if (Members.size() != Other->Members.size())
       return false;
@@ -932,9 +931,8 @@ bool StoreExpression::equals(const Expression &Other) const {
   if (!equalsLoadStoreHelper(*this, Other))
     return false;
   // Make sure that store vs store includes the value operand.
-  if (const auto *S = dyn_cast<StoreExpression>(&Other))
-    if (getStoredValue() != S->getStoredValue())
-      return false;
+  if (const auto *S = dyn_cast<StoreExpression>(&Other); S && (getStoredValue() != S->getStoredValue()))
+    return false;
   return true;
 }
 
@@ -1002,9 +1000,8 @@ void NewGVN::deleteExpression(const Expression *E) const {
 
 // If V is a predicateinfo copy, get the thing it is a copy of.
 static Value *getCopyOf(const Value *V) {
-  if (auto *BC = dyn_cast<BitCastInst>(V))
-    if (BC->getType() == BC->getOperand(0)->getType())
-      return BC->getOperand(0);
+  if (auto *BC = dyn_cast<BitCastInst>(V); BC && (BC->getType() == BC->getOperand(0)->getType()))
+    return BC->getOperand(0);
   return nullptr;
 }
 
@@ -1055,9 +1052,8 @@ PHIExpression *NewGVN::createPHIExpression(ArrayRef<ValPair> PHIOperands,
   // Filter out unreachable phi operands.
   auto Filtered = make_filter_range(PHIOperands, [&](const ValPair &P) {
     auto *BB = P.second;
-    if (auto *PHIOp = dyn_cast<PHINode>(I))
-      if (isCopyOfPHI(P.first, PHIOp))
-        return false;
+    if (auto *PHIOp = dyn_cast<PHINode>(I); PHIOp && (isCopyOfPHI(P.first, PHIOp)))
+      return false;
     if (!ReachableEdges.count({BB, PHIBlock}))
       return false;
     // Things in TOPClass are equivalent to everything.
@@ -1106,14 +1102,13 @@ const Expression *NewGVN::createBinaryExpression(unsigned Opcode, Type *T,
   E->setType(T);
   E->setOpcode(Opcode);
   E->allocateOperands(ArgRecycler, ExpressionAllocator);
-  if (Instruction::isCommutative(Opcode)) {
+  if ((Instruction::isCommutative(Opcode)) && (shouldSwapOperands(Arg1, Arg2))) 
     // Ensure that commutative instructions that only differ by a permutation
     // of their operands get the same value number by sorting the operand value
     // numbers.  Since all commutative instructions have two operands it is more
     // efficient to sort by hand rather than using, say, std::sort.
-    if (shouldSwapOperands(Arg1, Arg2))
-      std::swap(Arg1, Arg2);
-  }
+    std::swap(Arg1, Arg2);
+  
   E->op_push_back(lookupOperandLeader(Arg1));
   E->op_push_back(lookupOperandLeader(Arg2));
 
@@ -1455,12 +1450,11 @@ const Expression *NewGVN::performSymbolicStoreEvaluation(Instruction *I) const {
     // location, and the memory state is the same as it was then (otherwise, it
     // could have been overwritten later. See test32 in
     // transforms/DeadStoreElimination/simple.ll).
-    if (auto *LI = dyn_cast<LoadInst>(LastStore->getStoredValue()))
-      if ((lookupOperandLeader(LI->getPointerOperand()) ==
+    if (auto *LI = dyn_cast<LoadInst>(LastStore->getStoredValue()); LI && ((lookupOperandLeader(LI->getPointerOperand()) ==
            LastStore->getOperand(0)) &&
           (lookupMemoryLeader(getMemoryAccess(LI)->getDefiningAccess()) ==
-           StoreRHS))
-        return LastStore;
+           StoreRHS)))
+      return LastStore;
     deleteExpression(LastStore);
   }
 
@@ -1522,14 +1516,14 @@ NewGVN::performSymbolicLoadCoercion(Type *LoadType, Value *LoadPtr,
     }
   }
 
-  if (auto *II = dyn_cast<IntrinsicInst>(DepInst)) {
-    if (II->getIntrinsicID() == Intrinsic::lifetime_start) {
+  if (auto *II = dyn_cast<IntrinsicInst>(DepInst); II && (II->getIntrinsicID() == Intrinsic::lifetime_start)) 
+    {
       auto *LifetimePtr = II->getOperand(0);
       if (LoadPtr == lookupOperandLeader(LifetimePtr) ||
           AA->isMustAlias(LoadPtr, LifetimePtr))
         return createConstantExpression(UndefValue::get(LoadType));
     }
-  }
+  
 
   // All of the below are only true if the loaded pointer is produced
   // by the dependent instruction.
@@ -1830,9 +1824,8 @@ NewGVN::performSymbolicPHIEvaluation(ArrayRef<ValPair> PHIOps,
         return E;
 
       // Only have to check for instructions
-      if (auto *AllSameInst = dyn_cast<Instruction>(AllSameValue))
-        if (!someEquivalentDominates(AllSameInst, I))
-          return E;
+      if (auto *AllSameInst = dyn_cast<Instruction>(AllSameValue); AllSameInst && (!someEquivalentDominates(AllSameInst, I)))
+        return E;
     }
     // Can't simplify to something that comes later in the iteration.
     // Otherwise, when and if it changes congruence class, we will never catch
@@ -2342,10 +2335,9 @@ void NewGVN::moveValueToNewCongruenceClass(Instruction *I, const Expression *E,
     // Note that this is basically clean up for the expression removal that
     // happens below.  If we remove stores from a class, we may leave it as a
     // class of equivalent memory phis.
-    if (OldClass->getStoreCount() == 0) {
-      if (OldClass->getStoredValue())
-        OldClass->setStoredValue(nullptr);
-    }
+    if ((OldClass->getStoreCount() == 0) && (OldClass->getStoredValue())) 
+      OldClass->setStoredValue(nullptr);
+    
     OldClass->setLeader({getNextValueLeader(OldClass),
                          InstrToDFSNum(getNextValueLeader(OldClass))});
     OldClass->resetNextLeader();
@@ -2807,10 +2799,9 @@ NewGVN::makePossiblePHIOfOps(Instruction *I,
           Op = Op->DoPHITranslation(PHIBlock, PredBB);
           if (Op != OrigOp && Op != I)
             CurrentDeps.insert(Op);
-        } else if (auto *ValuePHI = RealToTemp.lookup(Op)) {
-          if (getBlockForValue(ValuePHI) == PHIBlock)
-            Op = ValuePHI->getIncomingValueForBlock(PredBB);
-        }
+        } else if (auto *ValuePHI = RealToTemp.lookup(Op); ValuePHI && (getBlockForValue(ValuePHI) == PHIBlock)) 
+          Op = ValuePHI->getIncomingValueForBlock(PredBB);
+        
         // If we phi-translated the op, it must be safe.
         SafeForPHIOfOps =
             SafeForPHIOfOps &&
@@ -2942,9 +2933,8 @@ void NewGVN::initializeCongruenceClasses(Function &F) {
     for (auto &I : *BB) {
       if (isa<PHINode>(&I))
         for (auto *U : I.users())
-          if (auto *UInst = dyn_cast<Instruction>(U))
-            if (InstrToDFSNum(UInst) != 0 && okayForPHIOfOps(UInst))
-              PHINodeUses.insert(UInst);
+          if (auto *UInst = dyn_cast<Instruction>(U); UInst && (InstrToDFSNum(UInst) != 0 && okayForPHIOfOps(UInst)))
+            PHINodeUses.insert(UInst);
       // Don't insert void terminators into the class. We don't value number
       // them, and they just end up sitting in TOP.
       if (I.isTerminator() && I.getType()->isVoidTy())
@@ -3244,10 +3234,9 @@ void NewGVN::verifyMemoryCongruency() const {
         // so we don't process them.
         if (auto *MemPHI = dyn_cast<MemoryPhi>(Pair.first)) {
           for (const auto &U : MemPHI->incoming_values()) {
-            if (auto *I = dyn_cast<Instruction>(&*U)) {
-              if (!isInstructionTriviallyDead(I))
-                return true;
-            }
+            if (auto *I = dyn_cast<Instruction>(&*U); I && (!isInstructionTriviallyDead(I))) 
+              return true;
+            
           }
           return false;
         }
@@ -3308,10 +3297,9 @@ void NewGVN::verifyIterationSettled(Function &F) {
   std::map<const Value *, CongruenceClass> BeforeIteration;
 
   for (auto &KV : ValueToClass) {
-    if (auto *I = dyn_cast<Instruction>(KV.first))
+    if (auto *I = dyn_cast<Instruction>(KV.first); I && (InstrToDFSNum(I) == 0))
       // Skip unused/dead instructions.
-      if (InstrToDFSNum(I) == 0)
-        continue;
+      continue;
     BeforeIteration.insert({KV.first, *KV.second});
   }
 
@@ -3323,10 +3311,9 @@ void NewGVN::verifyIterationSettled(Function &F) {
   DenseSet<std::pair<const CongruenceClass *, const CongruenceClass *>>
       EqualClasses;
   for (const auto &KV : ValueToClass) {
-    if (auto *I = dyn_cast<Instruction>(KV.first))
+    if (auto *I = dyn_cast<Instruction>(KV.first); I && (InstrToDFSNum(I) == 0))
       // Skip unused/dead instructions.
-      if (InstrToDFSNum(I) == 0)
-        continue;
+      continue;
     // We could sink these uses, but i think this adds a bit of clarity here as
     // to what we are comparing.
     auto *BeforeCC = &BeforeIteration.find(KV.first)->second;
@@ -4114,13 +4101,13 @@ bool NewGVN::eliminateInstructions(Function &F) {
           Value *DominatingLeader = EliminationStack.back();
 
           Instruction *SSACopy = nullptr;
-          if (auto *BC = dyn_cast<BitCastInst>(DominatingLeader)) {
-            if (BC->getType() == BC->getOperand(0)->getType() &&
-                PredInfo->getPredicateInfoFor(DominatingLeader)) {
+          if (auto *BC = dyn_cast<BitCastInst>(DominatingLeader); BC && (BC->getType() == BC->getOperand(0)->getType() &&
+                PredInfo->getPredicateInfoFor(DominatingLeader))) 
+            {
               SSACopy = BC;
               DominatingLeader = BC->getOperand(0);
             }
-          }
+          
 
           // Don't replace our existing users with ourselves.
           if (U->get() == DominatingLeader)

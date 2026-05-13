@@ -93,10 +93,9 @@ OpOperand *WarpDistributionPattern::getWarpResult(
   for (OpOperand &yieldOperand : yield->getOpOperands()) {
     Value yieldValues = yieldOperand.get();
     Operation *definedOp = yieldValues.getDefiningOp();
-    if (definedOp && fn(definedOp)) {
-      if (!warpOp.getResult(yieldOperand.getOperandNumber()).use_empty())
-        return &yieldOperand;
-    }
+    if ((definedOp && fn(definedOp)) && (!warpOp.getResult(yieldOperand.getOperandNumber()).use_empty())) 
+      return &yieldOperand;
+    
   }
   return nullptr;
 }

@@ -150,18 +150,18 @@ static bool refineInstruction(SCCPSolver &Solver,
 
     auto Range = GetRange(Inst.getOperand(0));
     uint64_t DestWidth = TI->getDestTy()->getScalarSizeInBits();
-    if (!TI->hasNoUnsignedWrap()) {
-      if (Range.getActiveBits() <= DestWidth) {
+    if ((!TI->hasNoUnsignedWrap()) && (Range.getActiveBits() <= DestWidth)) 
+      {
         TI->setHasNoUnsignedWrap(true);
         Changed = true;
       }
-    }
-    if (!TI->hasNoSignedWrap()) {
-      if (Range.getMinSignedBits() <= DestWidth) {
+    
+    if ((!TI->hasNoSignedWrap()) && (Range.getMinSignedBits() <= DestWidth)) 
+      {
         TI->setHasNoSignedWrap(true);
         Changed = true;
       }
-    }
+    
   } else if (auto *GEP = dyn_cast<GetElementPtrInst>(&Inst)) {
     if (GEP->hasNoUnsignedWrap() || !GEP->hasNoUnsignedSignedWrap())
       return false;
@@ -829,15 +829,15 @@ public:
 
     for (BasicBlock &BB : F) {
       for (Instruction &Inst : llvm::make_early_inc_range(BB)) {
-        if (auto *BC = dyn_cast<BitCastInst>(&Inst)) {
-          if (BC->getType() == BC->getOperand(0)->getType()) {
-            if (It->second->getPredicateInfoFor(&Inst)) {
+        if (auto *BC = dyn_cast<BitCastInst>(&Inst); BC && (BC->getType() == BC->getOperand(0)->getType()) && (It->second->getPredicateInfoFor(&Inst))) 
+          
+            {
               Value *Op = BC->getOperand(0);
               Inst.replaceAllUsesWith(Op);
               Inst.eraseFromParent();
             }
-          }
-        }
+          
+        
       }
     }
   }
@@ -1454,9 +1454,8 @@ void SCCPInstVisitor::visitReturnInst(ReturnInst &I) {
 
   // Handle functions that return multiple values.
   if (!TrackedMultipleRetVals.empty()) {
-    if (auto *STy = dyn_cast<StructType>(ResultOp->getType()))
-      if (MRVFunctionsTracked.count(F))
-        for (unsigned i = 0, e = STy->getNumElements(); i != e; ++i)
+    if (auto *STy = dyn_cast<StructType>(ResultOp->getType()); STy && (MRVFunctionsTracked.count(F)))
+      for (unsigned i = 0, e = STy->getNumElements(); i != e; ++i)
           mergeInValue(TrackedMultipleRetVals[std::make_pair(F, i)], F,
                        getStructValueState(ResultOp, i));
   }
@@ -1480,14 +1479,14 @@ void SCCPInstVisitor::visitCastInst(CastInst &I) {
   if (ValueState[&I].isOverdefined())
     return;
 
-  if (auto *BC = dyn_cast<BitCastInst>(&I)) {
-    if (BC->getType() == BC->getOperand(0)->getType()) {
+  if (auto *BC = dyn_cast<BitCastInst>(&I); BC && (BC->getType() == BC->getOperand(0)->getType())) 
+    {
       if (const PredicateBase *PI = getPredicateInfoFor(&I)) {
         handlePredicate(&I, I.getOperand(0), PI);
         return;
       }
     }
-  }
+  
 
   const ValueLatticeElement &OpSt = getValueState(I.getOperand(0));
   if (OpSt.isUnknownOrUndef())
@@ -1918,8 +1917,8 @@ void SCCPInstVisitor::visitLoadInst(LoadInst &I) {
     }
 
     // Transform load (constant global) into the value loaded.
-    if (auto *GV = dyn_cast<GlobalVariable>(Ptr)) {
-      if (!TrackedGlobals.empty()) {
+    if (auto *GV = dyn_cast<GlobalVariable>(Ptr); GV && (!TrackedGlobals.empty())) 
+      {
         // If we are tracking this global, merge in the known value for it.
         auto It = TrackedGlobals.find(GV);
         if (It != TrackedGlobals.end()) {
@@ -1927,7 +1926,7 @@ void SCCPInstVisitor::visitLoadInst(LoadInst &I) {
           return;
         }
       }
-    }
+    
 
     // Transform load from a constant into a constant if possible.
     if (Constant *C = ConstantFoldLoadFromConstPtr(Ptr, I.getType(), DL))
@@ -2233,9 +2232,8 @@ bool SCCPInstVisitor::resolvedUndef(Instruction &I) {
 
     // Tracked calls must never be marked overdefined in resolvedUndefsIn.
     if (auto *CB = dyn_cast<CallBase>(&I))
-      if (Function *F = CB->getCalledFunction())
-        if (MRVFunctionsTracked.count(F))
-          return false;
+      if (Function *F = CB->getCalledFunction(); F && (MRVFunctionsTracked.count(F)))
+        return false;
 
     // extractvalue and insertvalue don't need to be marked; they are
     // tracked as precisely as their operands.
@@ -2263,9 +2261,8 @@ bool SCCPInstVisitor::resolvedUndef(Instruction &I) {
   // Because of the way we solve return values, tracked calls must
   // never be marked overdefined in resolvedUndefsIn.
   if (auto *CB = dyn_cast<CallBase>(&I))
-    if (Function *F = CB->getCalledFunction())
-      if (TrackedRetVals.count(F))
-        return false;
+    if (Function *F = CB->getCalledFunction(); F && (TrackedRetVals.count(F)))
+      return false;
 
   if (isa<LoadInst>(I)) {
     // A load here means one of two things: a load of undef from a global,

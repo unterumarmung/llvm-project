@@ -321,8 +321,8 @@ static void diagnosePossiblyInvalidConstraint(LLVMContext &Ctx, const Value *V,
   if (!I)
     return Ctx.emitError(ErrMsg);
 
-  if (const CallInst *CI = dyn_cast<CallInst>(I))
-    if (CI->isInlineAsm()) {
+  if (const CallInst *CI = dyn_cast<CallInst>(I); CI && (CI->isInlineAsm()))
+    {
       return Ctx.diagnose(DiagnosticInfoInlineAsm(
           *CI, ErrMsg + ", possible invalid constraint for vector type"));
     }
@@ -993,9 +993,8 @@ void RegsForValue::getCopyToRegs(SDValue Val, SelectionDAG &DAG,
                                *DAG.getContext(), *CallConv, RegVTs[Value])
                          : RegVTs[Value];
 
-    if (ExtendKind == ISD::ANY_EXTEND)
-      if (TLI.isZExtFree(peekThroughFreeze(Val), RegisterVT))
-        ExtendKind = ISD::ZERO_EXTEND;
+    if ((ExtendKind == ISD::ANY_EXTEND) && (TLI.isZExtFree(peekThroughFreeze(Val), RegisterVT)))
+      ExtendKind = ISD::ZERO_EXTEND;
 
     getCopyToParts(DAG, dl, Val.getValue(Val.getResNo() + Value), &Parts[Part],
                    NumParts, RegisterVT, V, CallConv, ExtendKind);
@@ -1650,8 +1649,8 @@ bool SelectionDAGBuilder::handleDebugValue(ArrayRef<const Value *> Values,
     }
 
     // Look through IntToPtr constants.
-    if (auto *CE = dyn_cast<ConstantExpr>(V))
-      if (CE->getOpcode() == Instruction::IntToPtr) {
+    if (auto *CE = dyn_cast<ConstantExpr>(V); CE && (CE->getOpcode() == Instruction::IntToPtr))
+      {
         LocationOps.emplace_back(SDDbgOperand::fromConst(CE->getOperand(0)));
         continue;
       }
@@ -2460,13 +2459,13 @@ SelectionDAGBuilder::EmitBranchForMergedCondition(const Value *Cond,
 
   // If the leaf of the tree is a comparison, merge the condition into
   // the caseblock.
-  if (const CmpInst *BOp = dyn_cast<CmpInst>(Cond)) {
+  if (const CmpInst *BOp = dyn_cast<CmpInst>(Cond); BOp && (CurBB == SwitchBB ||
+        (isExportableFromCurrentBlock(BOp->getOperand(0), BB) &&
+         isExportableFromCurrentBlock(BOp->getOperand(1), BB)))) 
     // The operands of the cmp have to be in this block.  We don't know
     // how to export them from some other block.  If this is the first block
     // of the sequence, no exporting is needed.
-    if (CurBB == SwitchBB ||
-        (isExportableFromCurrentBlock(BOp->getOperand(0), BB) &&
-         isExportableFromCurrentBlock(BOp->getOperand(1), BB))) {
+    {
       ISD::CondCode Condition;
       if (const ICmpInst *IC = dyn_cast<ICmpInst>(Cond)) {
         ICmpInst::Predicate Pred =
@@ -2490,7 +2489,7 @@ SelectionDAGBuilder::EmitBranchForMergedCondition(const Value *Cond,
       SL->SwitchCases.push_back(CB);
       return;
     }
-  }
+  
 
   // Create a CaseBlock record representing this branch.
   ISD::CondCode Opc = InvertCond ? ISD::SETNE : ISD::SETEQ;
@@ -2513,12 +2512,11 @@ static bool collectInstructionDeps(
   if (I == nullptr)
     return true;
 
-  if (Necessary != nullptr) {
+  if ((Necessary != nullptr) && (Necessary->contains(I))) 
     // This instruction is necessary for the other side of the condition so
     // don't count it.
-    if (Necessary->contains(I))
-      return true;
-  }
+    return true;
+  
 
   // Already added this dep.
   if (!Deps->try_emplace(I, false).second)
@@ -2583,9 +2581,8 @@ bool SelectionDAGBuilder::shouldKeepJumpConditionsTogether(
   if (!collectInstructionDeps(&RhsDeps, Rhs, &LhsDeps))
     return false;
   // Add the compare instruction itself unless its a dependency on the LHS.
-  if (const auto *RhsI = dyn_cast<Instruction>(Rhs))
-    if (!LhsDeps.contains(RhsI))
-      RhsDeps.try_emplace(RhsI, false);
+  if (const auto *RhsI = dyn_cast<Instruction>(Rhs); RhsI && (!LhsDeps.contains(RhsI)))
+    RhsDeps.try_emplace(RhsI, false);
 
   InstructionCost CostOfIncluding = 0;
   // See if this instruction will need to computed independently of whether RHS
@@ -2594,9 +2591,8 @@ bool SelectionDAGBuilder::shouldKeepJumpConditionsTogether(
   auto ShouldCountInsn = [&RhsDeps, &BrCond](const Instruction *Ins) {
     for (const auto *U : Ins->users()) {
       // If user is independent of RHS calculation we don't need to count it.
-      if (auto *UIns = dyn_cast<Instruction>(U))
-        if (UIns != BrCond && !RhsDeps.contains(UIns))
-          return false;
+      if (auto *UIns = dyn_cast<Instruction>(U); UIns && (UIns != BrCond && !RhsDeps.contains(UIns)))
+        return false;
     }
     return true;
   };
@@ -4695,15 +4691,13 @@ void SelectionDAGBuilder::visitLoad(const LoadInst &I) {
   if (TLI.supportSwiftError()) {
     // Swifterror values can come from either a function parameter with
     // swifterror attribute or an alloca with swifterror attribute.
-    if (const Argument *Arg = dyn_cast<Argument>(SV)) {
-      if (Arg->hasSwiftErrorAttr())
-        return visitLoadFromSwiftError(I);
-    }
+    if (const Argument *Arg = dyn_cast<Argument>(SV); Arg && (Arg->hasSwiftErrorAttr())) 
+      return visitLoadFromSwiftError(I);
+    
 
-    if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(SV)) {
-      if (Alloca->isSwiftError())
-        return visitLoadFromSwiftError(I);
-    }
+    if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(SV); Alloca && (Alloca->isSwiftError())) 
+      return visitLoadFromSwiftError(I);
+    
   }
 
   SDValue Ptr = getValue(SV);
@@ -4877,15 +4871,13 @@ void SelectionDAGBuilder::visitStore(const StoreInst &I) {
   if (TLI.supportSwiftError()) {
     // Swifterror values can come from either a function parameter with
     // swifterror attribute or an alloca with swifterror attribute.
-    if (const Argument *Arg = dyn_cast<Argument>(PtrV)) {
-      if (Arg->hasSwiftErrorAttr())
-        return visitStoreToSwiftError(I);
-    }
+    if (const Argument *Arg = dyn_cast<Argument>(PtrV); Arg && (Arg->hasSwiftErrorAttr())) 
+      return visitStoreToSwiftError(I);
+    
 
-    if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(PtrV)) {
-      if (Alloca->isSwiftError())
-        return visitStoreToSwiftError(I);
-    }
+    if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(PtrV); Alloca && (Alloca->isSwiftError())) 
+      return visitStoreToSwiftError(I);
+    
   }
 
   SmallVector<EVT, 4> ValueVTs, MemVTs;
@@ -8645,12 +8637,11 @@ static unsigned getISDForVPIntrinsic(const VPIntrinsic &VPIntrin) {
     llvm_unreachable(
         "Inconsistency: no SDNode available for this VPIntrinsic!");
 
-  if (*ResOPC == ISD::VP_REDUCE_SEQ_FADD ||
-      *ResOPC == ISD::VP_REDUCE_SEQ_FMUL) {
-    if (VPIntrin.getFastMathFlags().allowReassoc())
-      return *ResOPC == ISD::VP_REDUCE_SEQ_FADD ? ISD::VP_REDUCE_FADD
+  if ((*ResOPC == ISD::VP_REDUCE_SEQ_FADD ||
+      *ResOPC == ISD::VP_REDUCE_SEQ_FMUL) && (VPIntrin.getFastMathFlags().allowReassoc())) 
+    return *ResOPC == ISD::VP_REDUCE_SEQ_FADD ? ISD::VP_REDUCE_FADD
                                                 : ISD::VP_REDUCE_FMUL;
-  }
+  
 
   return *ResOPC;
 }
@@ -9871,10 +9862,9 @@ void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(
 
   // Look through ptrauth constants to find the raw callee.
   // Do a direct unauthenticated call if we found it and everything matches.
-  if (const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CalleeV))
-    if (CalleeCPA->isKnownCompatibleWith(Key, Discriminator,
-                                         DAG.getDataLayout()))
-      return LowerCallTo(CB, getValue(CalleeCPA->getPointer()), CB.isTailCall(),
+  if (const auto *CalleeCPA = dyn_cast<ConstantPtrAuth>(CalleeV); CalleeCPA && (CalleeCPA->isKnownCompatibleWith(Key, Discriminator,
+                                         DAG.getDataLayout())))
+    return LowerCallTo(CB, getValue(CalleeCPA->getPointer()), CB.isTailCall(),
                          CB.isMustTailCall(), EHPadBB);
 
   // Functions should never be ptrauth-called directly.
@@ -10040,16 +10030,16 @@ getRegistersForValue(SelectionDAG &DAG, const SDLoc &DL,
   // remember that AX is actually i16 to get the right extension.
   const MVT RegVT = *TRI.legalclasstypes_begin(*RC);
 
-  if (OpInfo.ConstraintVT != MVT::Other && RegVT != MVT::Untyped) {
+  if ((OpInfo.ConstraintVT != MVT::Other && RegVT != MVT::Untyped) && ((OpInfo.Type == InlineAsm::isOutput ||
+         OpInfo.Type == InlineAsm::isInput) &&
+        !TRI.isTypeLegalForClass(*RC, OpInfo.ConstraintVT))) 
     // If this is an FP operand in an integer register (or visa versa), or more
     // generally if the operand value disagrees with the register class we plan
     // to stick it in, fix the operand type.
     //
     // If this is an input value, the bitcast to the new type is done now.
     // Bitcast for output value is done at the end of visitInlineAsm().
-    if ((OpInfo.Type == InlineAsm::isOutput ||
-         OpInfo.Type == InlineAsm::isInput) &&
-        !TRI.isTypeLegalForClass(*RC, OpInfo.ConstraintVT)) {
+    {
       // Try to convert to the first EVT that the reg class contains.  If the
       // types are identical size, use a bitcast to convert (e.g. two differing
       // vector types).  Note: output bitcast is done at the end of
@@ -10073,7 +10063,7 @@ getRegistersForValue(SelectionDAG &DAG, const SDLoc &DL,
         OpInfo.ConstraintVT = VT;
       }
     }
-  }
+  
 
   // No need to allocate a matching input constraint since the constraint it's
   // matching to has already been allocated.
@@ -10475,8 +10465,8 @@ static bool prepareDAGLevelOperands(ConstraintDecisionInfo &Info,
         TLI.LowerAsmOperandForConstraint(InOperandVal, OpInfo.ConstraintCode,
                                           Ops, DAG);
         if (Ops.empty()) {
-          if (OpInfo.ConstraintType == TargetLowering::C_Immediate)
-            if (isa<ConstantSDNode>(InOperandVal)) {
+          if ((OpInfo.ConstraintType == TargetLowering::C_Immediate) && (isa<ConstantSDNode>(InOperandVal)))
+            {
               Info.ErrorMsg << "value out of range for constraint '"
                             << OpInfo.ConstraintCode << "'";
               return true;

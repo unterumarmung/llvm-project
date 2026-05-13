@@ -2842,9 +2842,8 @@ void CodeGenFunction::EmitOMPSimdInit(const OMPLoopDirective &D) {
   const Stmt *AssociatedStmt = D.getAssociatedStmt();
   applyConservativeSimdOrderedDirective(*AssociatedStmt, LoopStack);
   emitSimdlenSafelenClause(*this, D);
-  if (const auto *C = D.getSingleClause<OMPOrderClause>())
-    if (C->getKind() == OMPC_ORDER_concurrent)
-      LoopStack.setParallel(/*Enable=*/true);
+  if (const auto *C = D.getSingleClause<OMPOrderClause>(); C && (C->getKind() == OMPC_ORDER_concurrent))
+    LoopStack.setParallel(/*Enable=*/true);
   OpenMPDirectiveKind EKind = getEffectiveDirectiveKind(D);
   if ((EKind == OMPD_simd ||
        (getLangOpts().OpenMPSimd && isOpenMPSimdDirective(EKind))) &&
@@ -3153,11 +3152,11 @@ static void emitOMPSimdDirective(const OMPLoopDirective &S,
           Safelen = Val;
         }
         llvm::omp::OrderKind Order = llvm::omp::OrderKind::OMP_ORDER_unknown;
-        if (const auto *C = S.getSingleClause<OMPOrderClause>()) {
-          if (C->getKind() == OpenMPOrderClauseKind::OMPC_ORDER_concurrent) {
+        if (const auto *C = S.getSingleClause<OMPOrderClause>(); C && (C->getKind() == OpenMPOrderClauseKind::OMPC_ORDER_concurrent)) 
+          {
             Order = llvm::omp::OrderKind::OMP_ORDER_concurrent;
           }
-        }
+        
         // Add simd metadata to the collapsed loop. Do not generate
         // another loop for if clause. Support for if clause is done earlier.
         OMPBuilder.applySimd(CLI, AlignedVars,
@@ -3362,9 +3361,8 @@ void CodeGenFunction::EmitOMPOuterLoop(
         // with dynamic/guided scheduling and without ordered clause.
         if (!isOpenMPSimdDirective(EKind)) {
           CGF.LoopStack.setParallel(!IsMonotonic);
-          if (const auto *C = S.getSingleClause<OMPOrderClause>())
-            if (C->getKind() == OMPC_ORDER_concurrent)
-              CGF.LoopStack.setParallel(/*Enable=*/true);
+          if (const auto *C = S.getSingleClause<OMPOrderClause>(); C && (C->getKind() == OMPC_ORDER_concurrent))
+            CGF.LoopStack.setParallel(/*Enable=*/true);
         } else {
           CGF.EmitOMPSimdInit(S);
         }
@@ -3897,10 +3895,9 @@ bool CodeGenFunction::EmitOMPWorksharingLoop(
             [&S, EKind](CodeGenFunction &CGF, PrePostActionTy &) {
               if (isOpenMPSimdDirective(EKind)) {
                 CGF.EmitOMPSimdInit(S);
-              } else if (const auto *C = S.getSingleClause<OMPOrderClause>()) {
-                if (C->getKind() == OMPC_ORDER_concurrent)
-                  CGF.LoopStack.setParallel(/*Enable=*/true);
-              }
+              } else if (const auto *C = S.getSingleClause<OMPOrderClause>(); C && (C->getKind() == OMPC_ORDER_concurrent)) 
+                CGF.LoopStack.setParallel(/*Enable=*/true);
+              
             },
             [IVSize, IVSigned, Ordered, IL, LB, UB, ST, StaticChunkedOne, Chunk,
              &S, ScheduleKind, LoopExit, EKind,
@@ -4437,11 +4434,10 @@ static void emitOMPForDirective(const OMPLoopDirective &S, CodeGenFunction &CGF,
                                                 HasCancel);
   }
 
-  if (!UseOMPIRBuilder) {
+  if ((!UseOMPIRBuilder) && (!S.getSingleClause<OMPNowaitClause>() || HasLastprivates)) 
     // Emit an implicit barrier at the end.
-    if (!S.getSingleClause<OMPNowaitClause>() || HasLastprivates)
-      CGM.getOpenMPRuntime().emitBarrierCall(CGF, S.getBeginLoc(), OMPD_for);
-  }
+    CGM.getOpenMPRuntime().emitBarrierCall(CGF, S.getBeginLoc(), OMPD_for);
+  
   // Check for outer lastprivate conditional update.
   checkForLastprivateConditionalUpdate(CGF, S);
 }
@@ -5109,9 +5105,8 @@ public:
       return;
     // Need to privatize only local vars, static locals can be processed as is.
     for (const Decl *D : S->decls()) {
-      if (const auto *VD = dyn_cast_or_null<VarDecl>(D))
-        if (VD->hasLocalStorage())
-          PrivateDecls.push_back(VD);
+      if (const auto *VD = dyn_cast_or_null<VarDecl>(D); VD && (VD->hasLocalStorage()))
+        PrivateDecls.push_back(VD);
     }
   }
   void VisitOMPExecutableDirective(const OMPExecutableDirective *) {}
@@ -5413,9 +5408,8 @@ void CodeGenFunction::EmitOMPTaskBasedDirective(
             CGF.ConvertTypeForMem(Pair.first->getType().getNonReferenceType()),
             CGF.getContext().getDeclAlign(Pair.first));
         Scope.addPrivate(Pair.first, Replacement);
-        if (auto *DI = CGF.getDebugInfo())
-          if (CGF.CGM.getCodeGenOpts().hasReducedDebugInfo())
-            (void)DI->EmitDeclareOfAutoVariable(
+        if (auto *DI = CGF.getDebugInfo(); DI && (CGF.CGM.getCodeGenOpts().hasReducedDebugInfo()))
+          (void)DI->EmitDeclareOfAutoVariable(
                 Pair.first, Pair.second.getBasePointer(), CGF.Builder,
                 /*UsePointerValue*/ true);
       }
@@ -8793,11 +8787,10 @@ void CodeGenFunction::EmitSimpleOMPExecutableDirective(
             LValue GlobLVal = CGF.EmitLValue(E);
             GlobalsScope.addPrivate(VD, GlobLVal.getAddress());
           }
-          if (isa<OMPCapturedExprDecl>(VD)) {
+          if ((isa<OMPCapturedExprDecl>(VD)) && (!CGF.LocalDeclMap.count(VD))) 
             // Emit only those that were not explicitly referenced in clauses.
-            if (!CGF.LocalDeclMap.count(VD))
-              CGF.EmitVarDecl(*VD);
-          }
+            CGF.EmitVarDecl(*VD);
+          
         }
         for (const auto *C : D.getClausesOfKind<OMPOrderedClause>()) {
           if (!C->getNumForLoops())
@@ -8806,11 +8799,10 @@ void CodeGenFunction::EmitSimpleOMPExecutableDirective(
                         E = C->getLoopNumIterations().size();
                I < E; ++I) {
             if (const auto *VD = dyn_cast<OMPCapturedExprDecl>(
-                    cast<DeclRefExpr>(C->getLoopCounter(I))->getDecl())) {
+                    cast<DeclRefExpr>(C->getLoopCounter(I))->getDecl()); VD && (!CGF.LocalDeclMap.count(VD))) 
               // Emit only those that were not explicitly referenced in clauses.
-              if (!CGF.LocalDeclMap.count(VD))
-                CGF.EmitVarDecl(*VD);
-            }
+              CGF.EmitVarDecl(*VD);
+            
           }
         }
       }

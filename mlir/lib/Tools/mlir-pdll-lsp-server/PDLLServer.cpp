@@ -1228,13 +1228,12 @@ void PDLDocument::getInlayHintsFor(
     return;
 
   // Check to see if the variable has an initializer.
-  if (const ast::Expr *expr = decl->getInitExpr()) {
+  if (const ast::Expr *expr = decl->getInitExpr(); expr && (isa<ast::OperationExpr>(expr))) 
     // Don't add hints for operation expression initialized variables given that
     // the type of the variable is easily inferred by the expression operation
     // name.
-    if (isa<ast::OperationExpr>(expr))
-      return;
-  }
+    return;
+  
 
   llvm::lsp::InlayHint hint(llvm::lsp::InlayHintKind::Type,
                             llvm::lsp::Position(sourceMgr, decl->getLoc().End));

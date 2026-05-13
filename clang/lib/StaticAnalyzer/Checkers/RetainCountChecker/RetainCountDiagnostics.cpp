@@ -124,9 +124,8 @@ findArgIdxOfSymbol(ProgramStateRef CurrSt, const LocationContext *LCtx,
 
   for (unsigned Idx = 0; Idx < (*CE)->getNumArgs(); Idx++)
     if (const MemRegion *MR = (*CE)->getArgSVal(Idx).getAsRegion())
-      if (const auto *TR = dyn_cast<TypedValueRegion>(MR))
-        if (CurrSt->getSVal(MR, TR->getValueType()).getAsSymbol() == Sym)
-          return Idx;
+      if (const auto *TR = dyn_cast<TypedValueRegion>(MR); TR && (CurrSt->getSVal(MR, TR->getValueType()).getAsSymbol() == Sym))
+        return Idx;
 
   return std::nullopt;
 }
@@ -515,13 +514,13 @@ RefCountReportVisitor::VisitNode(const ExplodedNode *N, BugReporterContext &BRC,
         DeallocSent = true;
       }
     } else if (const ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(S)) {
-      if (const Expr *receiver = ME->getInstanceReceiver()) {
-        if (CurrSt->getSValAsScalarOrLoc(receiver, LCtx)
-              .getAsLocSymbol() == Sym) {
+      if (const Expr *receiver = ME->getInstanceReceiver(); receiver && (CurrSt->getSValAsScalarOrLoc(receiver, LCtx)
+              .getAsLocSymbol() == Sym)) 
+        {
           // The symbol we are tracking is the receiver.
           DeallocSent = true;
         }
-      }
+      
     }
   }
 
@@ -539,8 +538,8 @@ RefCountReportVisitor::VisitNode(const ExplodedNode *N, BugReporterContext &BRC,
   // Add the range by scanning the children of the statement for any bindings
   // to Sym.
   for (const Stmt *Child : S->children())
-    if (const Expr *Exp = dyn_cast_or_null<Expr>(Child))
-      if (CurrSt->getSValAsScalarOrLoc(Exp, LCtx).getAsLocSymbol() == Sym) {
+    if (const Expr *Exp = dyn_cast_or_null<Expr>(Child); Exp && (CurrSt->getSValAsScalarOrLoc(Exp, LCtx).getAsLocSymbol() == Sym))
+      {
         P->addRange(Exp->getSourceRange());
         break;
       }
@@ -636,9 +635,8 @@ static AllocationInfo GetAllocationSite(ProgramStateManager &StateMgr,
       const MemRegion *R = FB.getRegion();
       // Do not show local variables belonging to a function other than
       // where the error is reported.
-      if (const auto *MR = R->getMemorySpaceAs<StackSpaceRegion>(St))
-        if (MR->getStackFrame() == LeakContext->getStackFrame())
-          FirstBinding = R;
+      if (const auto *MR = R->getMemorySpaceAs<StackSpaceRegion>(St); MR && (MR->getStackFrame() == LeakContext->getStackFrame()))
+        FirstBinding = R;
     }
 
     // AllocationNode is the last node in which the symbol was tracked.
@@ -677,9 +675,8 @@ static AllocationInfo GetAllocationSite(ProgramStateManager &StateMgr,
   if (InitMethodContext) {
     const ProgramPoint AllocPP = AllocationNode->getLocation();
     if (std::optional<StmtPoint> SP = AllocPP.getAs<StmtPoint>())
-      if (const ObjCMessageExpr *ME = SP->getStmtAs<ObjCMessageExpr>())
-        if (ME->getMethodFamily() == OMF_alloc)
-          InterestingMethodContext = InitMethodContext;
+      if (const ObjCMessageExpr *ME = SP->getStmtAs<ObjCMessageExpr>(); ME && (ME->getMethodFamily() == OMF_alloc))
+        InterestingMethodContext = InitMethodContext;
   }
 
   // If allocation happened in a function different from the leak node context,

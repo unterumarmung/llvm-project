@@ -187,9 +187,9 @@ Constant *FoldBitCast(Constant *C, Type *DestTy, const DataLayout &DL) {
   if (Constant *Res = ConstantFoldLoadFromUniformValue(C, DestTy, DL))
     return Res;
 
-  if (auto *VTy = dyn_cast<VectorType>(C->getType())) {
+  if (auto *VTy = dyn_cast<VectorType>(C->getType()); VTy && (isa<IntegerType>(DestTy) || DestTy->isFloatingPointTy())) 
     // Handle a vector->scalar integer/fp cast.
-    if (isa<IntegerType>(DestTy) || DestTy->isFloatingPointTy()) {
+    {
       unsigned NumSrcElts = cast<FixedVectorType>(VTy)->getNumElements();
       Type *SrcEltTy = VTy->getElementType();
 
@@ -219,7 +219,7 @@ Constant *FoldBitCast(Constant *C, Type *DestTy, const DataLayout &DL) {
       APFloat FP(DestTy->getFltSemantics(), Result);
       return ConstantFP::get(DestTy->getContext(), FP);
     }
-  }
+  
 
   // The code below only handles casts to vectors currently.
   auto *DestVTy = dyn_cast<VectorType>(DestTy);
@@ -519,9 +519,8 @@ Constant *llvm::ConstantFoldLoadThroughBitcast(Constant *C, Type *DestTy,
     } else {
       // For non-byte-sized vector elements, the first element is not
       // necessarily located at the vector base address.
-      if (auto *VT = dyn_cast<VectorType>(SrcTy))
-        if (!DL.typeSizeEqualsStoreSize(VT->getElementType()))
-          return nullptr;
+      if (auto *VT = dyn_cast<VectorType>(SrcTy); VT && (!DL.typeSizeEqualsStoreSize(VT->getElementType())))
+        return nullptr;
 
       C = C->getAggregateElement(0u);
     }
@@ -666,9 +665,9 @@ bool ReadDataFromGlobal(Constant *C, uint64_t ByteOffset, unsigned char *CurPtr,
     return true;
   }
 
-  if (auto *CE = dyn_cast<ConstantExpr>(C)) {
-    if (CE->getOpcode() == Instruction::IntToPtr &&
-        CE->getOperand(0)->getType() == DL.getIntPtrType(CE->getType())) {
+  if (auto *CE = dyn_cast<ConstantExpr>(C); CE && (CE->getOpcode() == Instruction::IntToPtr &&
+        CE->getOperand(0)->getType() == DL.getIntPtrType(CE->getType()))) 
+    {
       // Folding byte loads through the integer operand would rebuild the result
       // as a `ConstantByte`, dropping the pointer's provenance.
       if (IsByteLoad)
@@ -676,7 +675,7 @@ bool ReadDataFromGlobal(Constant *C, uint64_t ByteOffset, unsigned char *CurPtr,
       return ReadDataFromGlobal(CE->getOperand(0), ByteOffset, CurPtr,
                                 BytesLeft, DL, IsByteLoad);
     }
-  }
+  
 
   // Otherwise, unknown initializer type.
   return false;
@@ -958,8 +957,8 @@ Constant *SymbolicallyEvaluateBinop(unsigned Opc, Constant *Op0, Constant *Op1,
     GlobalValue *GV1, *GV2;
     APInt Offs1, Offs2;
 
-    if (IsConstantOffsetFromGlobal(Op0, GV1, Offs1, DL))
-      if (IsConstantOffsetFromGlobal(Op1, GV2, Offs2, DL) && GV1 == GV2) {
+    if ((IsConstantOffsetFromGlobal(Op0, GV1, Offs1, DL)) && (IsConstantOffsetFromGlobal(Op1, GV2, Offs2, DL) && GV1 == GV2))
+      {
         unsigned OpSize = DL.getTypeSizeInBits(Op0->getType());
 
         // (&GV+C1) - (&GV+C2) -> C1-C2, pointer arithmetic cannot overflow.
@@ -1086,12 +1085,12 @@ Constant *SymbolicallyEvaluateGEP(const GEPOperator *GEP,
   // If the base value for this address is a literal integer value, fold the
   // getelementptr to the resulting integer value casted to the pointer type.
   APInt BaseIntVal(DL.getPointerTypeSizeInBits(Ptr->getType()), 0);
-  if (auto *CE = dyn_cast<ConstantExpr>(Ptr)) {
-    if (CE->getOpcode() == Instruction::IntToPtr) {
+  if (auto *CE = dyn_cast<ConstantExpr>(Ptr); CE && (CE->getOpcode() == Instruction::IntToPtr)) 
+    {
       if (auto *Base = dyn_cast<ConstantInt>(CE->getOperand(0)))
         BaseIntVal = Base->getValue().zextOrTrunc(BaseIntVal.getBitWidth());
     }
-  }
+  
 
   if ((Ptr->isNullValue() || BaseIntVal != 0) &&
       !DL.mustNotIntroduceIntToPtr(Ptr->getType())) {
@@ -1368,8 +1367,8 @@ Constant *llvm::ConstantFoldCompareInstOperands(
       }
     }
 
-    if (auto *CE1 = dyn_cast<ConstantExpr>(Ops1)) {
-      if (CE0->getOpcode() == CE1->getOpcode()) {
+    if (auto *CE1 = dyn_cast<ConstantExpr>(Ops1); CE1 && (CE0->getOpcode() == CE1->getOpcode())) 
+      {
         if (CE0->getOpcode() == Instruction::IntToPtr) {
           Type *IntPtrTy = DL.getIntPtrType(CE0->getType());
 
@@ -1395,7 +1394,7 @@ Constant *llvm::ConstantFoldCompareInstOperands(
           }
         }
       }
-    }
+    
 
     // Convert pointer comparison (base+offset1) pred (base+offset2) into
     // offset1 pred offset2, for the case where the offset is inbounds. This
@@ -1587,10 +1586,9 @@ Constant *llvm::ConstantFoldFPInstOperands(unsigned Opcode, Constant *LHS,
     // may change due to future optimization. Don't constant fold them if
     // non-deterministic results are not allowed.
     if (!AllowNonDeterministic)
-      if (auto *FP = dyn_cast_or_null<FPMathOperator>(I))
-        if (FP->hasNoSignedZeros() || FP->hasAllowReassoc() ||
-            FP->hasAllowContract() || FP->hasAllowReciprocal())
-          return nullptr;
+      if (auto *FP = dyn_cast_or_null<FPMathOperator>(I); FP && (FP->hasNoSignedZeros() || FP->hasAllowReassoc() ||
+            FP->hasAllowContract() || FP->hasAllowReciprocal()))
+        return nullptr;
 
     // Calculate constant result.
     Constant *C = ConstantFoldBinaryOpOperands(Opcode, Op0, Op1, DL);
@@ -1617,9 +1615,8 @@ Constant *llvm::ConstantFoldCastOperand(unsigned Opcode, Constant *C,
                                         Type *DestTy, const DataLayout &DL) {
   assert(Instruction::isCast(Opcode));
 
-  if (auto *CE = dyn_cast<ConstantExpr>(C))
-    if (CE->isCast())
-      if (unsigned NewOp = CastInst::isEliminableCastPair(
+  if (auto *CE = dyn_cast<ConstantExpr>(C); CE && (CE->isCast()))
+    if (unsigned NewOp = CastInst::isEliminableCastPair(
               Instruction::CastOps(CE->getOpcode()),
               Instruction::CastOps(Opcode), CE->getOperand(0)->getType(),
               C->getType(), DestTy, &DL))
@@ -1680,8 +1677,8 @@ Constant *llvm::ConstantFoldCastOperand(unsigned Opcode, Constant *C,
     // the int size is >= the ptr size and the address spaces are the same.
     // This requires knowing the width of a pointer, so it can't be done in
     // ConstantExpr::getCast.
-    if (auto *CE = dyn_cast<ConstantExpr>(C)) {
-      if (CE->getOpcode() == Instruction::PtrToInt) {
+    if (auto *CE = dyn_cast<ConstantExpr>(C); CE && (CE->getOpcode() == Instruction::PtrToInt)) 
+      {
         Constant *SrcPtr = CE->getOperand(0);
         unsigned SrcPtrSize = DL.getPointerTypeSizeInBits(SrcPtr->getType());
         unsigned MidIntSize = CE->getType()->getScalarSizeInBits();
@@ -1692,7 +1689,7 @@ Constant *llvm::ConstantFoldCastOperand(unsigned Opcode, Constant *C,
             return FoldBitCast(CE->getOperand(0), DestTy, DL);
         }
       }
-    }
+    
     break;
   case Instruction::Trunc:
   case Instruction::ZExt:
@@ -2569,10 +2566,10 @@ static Constant *ConstantFoldScalarCall1(StringRef Name,
       return Operands[0];
   }
 
-  if (isa<ConstantPointerNull>(Operands[0])) {
+  if ((isa<ConstantPointerNull>(Operands[0])) && (IntrinsicID == Intrinsic::launder_invariant_group ||
+        IntrinsicID == Intrinsic::strip_invariant_group)) 
     // launder(null) == null == strip(null) iff in addrspace 0
-    if (IntrinsicID == Intrinsic::launder_invariant_group ||
-        IntrinsicID == Intrinsic::strip_invariant_group) {
+    {
       // If instruction is not yet put in a basic block (e.g. when cloning
       // a function during inlining), Call's caller may not be available.
       // So check Call's BB first before querying Call->getCaller.
@@ -2585,7 +2582,7 @@ static Constant *ConstantFoldScalarCall1(StringRef Name,
       }
       return nullptr;
     }
-  }
+  
 
   if (auto *Op = dyn_cast<ConstantFP>(Operands[0])) {
     APFloat U = Op->getValueAPF();
@@ -4864,10 +4861,9 @@ bool llvm::isMathLibCallNoop(const CallBase *Call,
         // FIXME: Stop using the host math library.
         // FIXME: The computation isn't done in the right precision.
         Type *Ty = Op0C->getType();
-        if (Ty->isDoubleTy() || Ty->isFloatTy() || Ty->isHalfTy()) {
-          if (Ty == Op1C->getType())
-            return ConstantFoldBinaryFP(pow, Op0, Op1, Ty) != nullptr;
-        }
+        if ((Ty->isDoubleTy() || Ty->isFloatTy() || Ty->isHalfTy()) && (Ty == Op1C->getType())) 
+          return ConstantFoldBinaryFP(pow, Op0, Op1, Ty) != nullptr;
+        
         break;
       }
 

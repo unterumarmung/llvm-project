@@ -1308,15 +1308,13 @@ static Value *findDominatingValue(const MemoryLocation &Loc, Type *LoadTy,
         return nullptr;
       if (isModSet(BatchAA.getModRefInfo(Inst, Loc))) {
         // A simple store to the exact location can forward its value.
-        if (auto *SI = dyn_cast<StoreInst>(Inst))
-          if (SI->isSimple() && SI->getPointerOperand() == Loc.Ptr &&
-              SI->getValueOperand()->getType() == LoadTy)
-            return SI->getValueOperand();
+        if (auto *SI = dyn_cast<StoreInst>(Inst); SI && (SI->isSimple() && SI->getPointerOperand() == Loc.Ptr &&
+              SI->getValueOperand()->getType() == LoadTy))
+          return SI->getValueOperand();
         return nullptr;
       }
-      if (auto *LI = dyn_cast<LoadInst>(Inst))
-        if (LI->getPointerOperand() == Loc.Ptr && LI->getType() == LoadTy)
-          return LI;
+      if (auto *LI = dyn_cast<LoadInst>(Inst); LI && (LI->getPointerOperand() == Loc.Ptr && LI->getType() == LoadTy))
+        return LI;
     }
   return nullptr;
 }
@@ -1334,26 +1332,26 @@ GVNPass::AnalyzeLoadAvailability(LoadInst *Load, MemDepResult DepInfo,
     // If the dependence is to a store that writes to a superset of the bits
     // read by the load, we can extract the bits we need for the load from the
     // stored value.
-    if (StoreInst *DepSI = dyn_cast<StoreInst>(DepInst)) {
+    if (StoreInst *DepSI = dyn_cast<StoreInst>(DepInst); DepSI && (Address && Load->isAtomic() <= DepSI->isAtomic())) 
       // Can't forward from non-atomic to atomic without violating memory model.
-      if (Address && Load->isAtomic() <= DepSI->isAtomic()) {
+      {
         int Offset =
             analyzeLoadFromClobberingStore(Load->getType(), Address, DepSI, DL);
         if (Offset != -1)
           return AvailableValue::get(DepSI->getValueOperand(), Offset);
       }
-    }
+    
 
     // Check to see if we have something like this:
     //    load i32* P
     //    load i8* (P+1)
     // if we have this, replace the later with an extraction from the former.
-    if (LoadInst *DepLoad = dyn_cast<LoadInst>(DepInst)) {
+    if (LoadInst *DepLoad = dyn_cast<LoadInst>(DepInst); DepLoad && (DepLoad != Load && Address &&
+          Load->isAtomic() <= DepLoad->isAtomic())) 
       // If this is a clobber and L is the first instruction in its block, then
       // we have the first instruction in the entry block.
       // Can't forward from non-atomic to atomic without violating memory model.
-      if (DepLoad != Load && Address &&
-          Load->isAtomic() <= DepLoad->isAtomic()) {
+      {
         Type *LoadType = Load->getType();
         int Offset = -1;
 
@@ -1373,18 +1371,18 @@ GVNPass::AnalyzeLoadAvailability(LoadInst *Load, MemDepResult DepInfo,
         if (Offset != -1)
           return AvailableValue::getLoad(DepLoad, Offset);
       }
-    }
+    
 
     // If the clobbering value is a memset/memcpy/memmove, see if we can
     // forward a value on from it.
-    if (MemIntrinsic *DepMI = dyn_cast<MemIntrinsic>(DepInst)) {
-      if (Address && !Load->isAtomic()) {
+    if (MemIntrinsic *DepMI = dyn_cast<MemIntrinsic>(DepInst); DepMI && (Address && !Load->isAtomic())) 
+      {
         int Offset = analyzeLoadFromClobberingMemInst(Load->getType(), Address,
                                                       DepMI, DL);
         if (Offset != -1)
           return AvailableValue::getMI(DepMI, Offset);
       }
-    }
+    
 
     // Nothing known about this clobber, have to be conservative.
     LLVM_DEBUG(
@@ -1598,9 +1596,8 @@ void GVNPass::eliminatePartiallyRedundantLoad(
     if (auto *NoFPClassMD = Load->getMetadata(LLVMContext::MD_nofpclass))
       NewLoad->setMetadata(LLVMContext::MD_nofpclass, NoFPClassMD);
 
-    if (auto *AccessMD = Load->getMetadata(LLVMContext::MD_access_group))
-      if (LI->getLoopFor(Load->getParent()) == LI->getLoopFor(UnavailableBlock))
-        NewLoad->setMetadata(LLVMContext::MD_access_group, AccessMD);
+    if (auto *AccessMD = Load->getMetadata(LLVMContext::MD_access_group); AccessMD && (LI->getLoopFor(Load->getParent()) == LI->getLoopFor(UnavailableBlock)))
+      NewLoad->setMetadata(LLVMContext::MD_access_group, AccessMD);
 
     // We do not propagate the old load's debug location, because the new
     // load now lives in a different BB, and we want to avoid a jumpy line
@@ -1753,8 +1750,8 @@ bool GVNPass::PerformLoadPRE(LoadInst *Load, AvailValInBlkVect &ValuesPerBlock,
       }
 
       // Do not split backedge as it will break the canonical loop form.
-      if (!isLoadPRESplitBackedgeEnabled())
-        if (DT->dominates(LoadBB, Pred)) {
+      if ((!isLoadPRESplitBackedgeEnabled()) && (DT->dominates(LoadBB, Pred)))
+        {
           LLVM_DEBUG(
               dbgs()
               << "COULD NOT PRE LOAD BECAUSE OF A BACKEDGE CRITICAL EDGE '"
@@ -1790,10 +1787,9 @@ bool GVNPass::PerformLoadPRE(LoadInst *Load, AvailValInBlkVect &ValuesPerBlock,
   // Now we know where we will insert load. We must ensure that it is safe
   // to speculatively execute the load at that points.
   if (MustEnsureSafetyOfSpeculativeExecution) {
-    if (CriticalEdgePredSplit.size())
-      if (!isSafeToSpeculativelyExecute(Load, &*LoadBB->getFirstNonPHIIt(), AC,
-                                        DT))
-        return false;
+    if ((CriticalEdgePredSplit.size()) && (!isSafeToSpeculativelyExecute(Load, &*LoadBB->getFirstNonPHIIt(), AC,
+                                        DT)))
+      return false;
     for (auto &PL : PredLoads)
       if (!isSafeToSpeculativelyExecute(Load, PL.first->getTerminator(), AC,
                                         DT))
@@ -2111,8 +2107,8 @@ bool GVNPass::processAssumeIntrinsic(AssumeInst *IntrinsicI) {
         // found.
         if (AL) {
           for (const auto &Acc : *AL) {
-            if (auto *Current = dyn_cast<MemoryUseOrDef>(&Acc))
-              if (!Current->getMemoryInst()->comesBefore(NewS)) {
+            if (auto *Current = dyn_cast<MemoryUseOrDef>(&Acc); Current && (!Current->getMemoryInst()->comesBefore(NewS)))
+              {
                 FirstNonDom = Current;
                 break;
               }
@@ -2963,11 +2959,10 @@ bool GVNPass::performScalarPRE(Instruction *CurInst) {
   if (isa<GetElementPtrInst>(CurInst))
     return false;
 
-  if (auto *CallB = dyn_cast<CallBase>(CurInst)) {
+  if (auto *CallB = dyn_cast<CallBase>(CurInst); CallB && (CallB->isInlineAsm())) 
     // We don't currently value number ANY inline asm calls.
-    if (CallB->isInlineAsm())
-      return false;
-  }
+    return false;
+  
 
   uint32_t ValNo = VN.lookup(CurInst);
 
@@ -3029,14 +3024,13 @@ bool GVNPass::performScalarPRE(Instruction *CurInst) {
   Instruction *PREInstr = nullptr;
 
   if (NumWithout != 0) {
-    if (!isSafeToSpeculativelyExecute(CurInst)) {
+    if ((!isSafeToSpeculativelyExecute(CurInst)) && (ICF->isDominatedByICFIFromSameBlock(CurInst))) 
       // It is only valid to insert a new instruction if the current instruction
       // is always executed. An instruction with implicit control flow could
       // prevent us from doing it. If we cannot speculate the execution, then
       // PRE should be prohibited.
-      if (ICF->isDominatedByICFIFromSameBlock(CurInst))
-        return false;
-    }
+      return false;
+    
 
     // Don't do PRE across indirect branch.
     if (isa<IndirectBrInst>(PREPred->getTerminator()))

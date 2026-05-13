@@ -165,9 +165,8 @@ CapabilityExpr SExprBuilder::translateAttrExpr(const Expr *AttrExp,
   // are an exception: "this" on or in a lambda call operator doesn't refer
   // to the lambda, but to captured "this" in the context it was created in.
   // This can happen for operator calls and member calls, so fix it up here.
-  if (const auto *CMD = dyn_cast<CXXMethodDecl>(D))
-    if (CMD->getParent()->isLambda())
-      Ctx.SelfArg = nullptr;
+  if (const auto *CMD = dyn_cast<CXXMethodDecl>(D); CMD && (CMD->getParent()->isLambda()))
+    Ctx.SelfArg = nullptr;
 
   if (Self) {
     assert(!Ctx.SelfArg && "Ambiguous self argument");
@@ -223,12 +222,12 @@ CapabilityExpr SExprBuilder::translateAttrExpr(const Expr *AttrExp,
       AttrExp = OE->getArg(0);
     }
   }
-  else if (const auto *UO = dyn_cast<UnaryOperator>(AttrExp)) {
-    if (UO->getOpcode() == UO_LNot) {
+  else if (const auto *UO = dyn_cast<UnaryOperator>(AttrExp); UO && (UO->getOpcode() == UO_LNot)) 
+    {
       Neg = true;
       AttrExp = UO->getSubExpr()->IgnoreImplicit();
     }
-  }
+  
 
   const til::SExpr *E = translate(AttrExp, Ctx);
 
@@ -238,10 +237,9 @@ CapabilityExpr SExprBuilder::translateAttrExpr(const Expr *AttrExp,
     return CapabilityExpr();
 
   // Hack to deal with smart pointers -- strip off top-level pointer casts.
-  if (const auto *CE = dyn_cast<til::Cast>(E)) {
-    if (CE->castOpcode() == til::CAST_objToPtr)
-      E = CE->expr();
-  }
+  if (const auto *CE = dyn_cast<til::Cast>(E); CE && (CE->castOpcode() == til::CAST_objToPtr)) 
+    E = CE->expr();
+  
   return CapabilityExpr(E, AttrExp->getType(), Neg);
 }
 
@@ -567,15 +565,15 @@ til::SExpr *SExprBuilder::translateCallExpr(const CallExpr *CE,
 
 til::SExpr *SExprBuilder::translateCXXMemberCallExpr(
     const CXXMemberCallExpr *ME, CallingContext *Ctx) {
-  if (CapabilityExprMode) {
+  if ((CapabilityExprMode) && (ME->getMethodDecl()->getNameAsString() == "get" &&
+        ME->getNumArgs() == 0)) 
     // Ignore calls to get() on smart pointers.
-    if (ME->getMethodDecl()->getNameAsString() == "get" &&
-        ME->getNumArgs() == 0) {
+    {
       auto *E = translate(ME->getImplicitObjectArgument(), Ctx);
       return new (Arena) til::Cast(til::CAST_objToPtr, E);
       // return E;
     }
-  }
+  
   return translateCallExpr(cast<CallExpr>(ME), Ctx,
                            ME->getImplicitObjectArgument());
 }
@@ -606,14 +604,14 @@ til::SExpr *SExprBuilder::translateUnaryOperator(const UnaryOperator *UO,
   case UO_AddrOf:
     if (CapabilityExprMode) {
       // interpret &Graph::mu_ as an existential.
-      if (const auto *DRE = dyn_cast<DeclRefExpr>(UO->getSubExpr())) {
-        if (DRE->getDecl()->isCXXInstanceMember()) {
+      if (const auto *DRE = dyn_cast<DeclRefExpr>(UO->getSubExpr()); DRE && (DRE->getDecl()->isCXXInstanceMember())) 
+        {
           // This is a pointer-to-member expression, e.g. &MyClass::mu_.
           // We interpret this syntax specially, as a wildcard.
           auto *W = new (Arena) til::Wildcard();
           return new (Arena) til::Project(W, DRE->getDecl());
         }
-      }
+      
     }
     // otherwise, & is a no-op
     return translate(UO->getSubExpr(), Ctx);
@@ -835,10 +833,9 @@ til::SExpr *SExprBuilder::lookupVarDecl(const ValueDecl *VD) {
 static void maybeUpdateVD(til::SExpr *E, const ValueDecl *VD) {
   if (!E)
     return;
-  if (auto *V = dyn_cast<til::Variable>(E)) {
-    if (!V->clangDecl())
-      V->setClangDecl(VD);
-  }
+  if (auto *V = dyn_cast<til::Variable>(E); V && (!V->clangDecl())) 
+    V->setClangDecl(VD);
+  
 }
 
 // Adds a new variable declaration.

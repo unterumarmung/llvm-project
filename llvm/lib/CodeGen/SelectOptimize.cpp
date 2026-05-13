@@ -571,14 +571,14 @@ void SelectOptimizeImpl::convertProfitableSIGroups(SelectGroups &ProfSIGroups) {
         maxTrueSliceLen = std::max(maxTrueSliceLen, TrueSlice.size());
         TrueSlices.push_back(TrueSlice);
       }
-      if (auto *FI = dyn_cast_or_null<Instruction>(SI.getFalseValue())) {
-        if (isa<SelectInst>(SI.getI()) || !FI->hasOneUse()) {
+      if (auto *FI = dyn_cast_or_null<Instruction>(SI.getFalseValue()); FI && (isa<SelectInst>(SI.getI()) || !FI->hasOneUse())) 
+        {
           std::stack<Instruction *> FalseSlice;
           getExclBackwardsSlice(FI, FalseSlice, SI.getI(), true);
           maxFalseSliceLen = std::max(maxFalseSliceLen, FalseSlice.size());
           FalseSlices.push_back(FalseSlice);
         }
-      }
+      
     }
     // In the case of multiple select instructions in the same group, the order
     // of non-dependent instructions (instructions of different dependence

@@ -25,9 +25,8 @@ SmallVector<const BasicBlock *, 8> findBBwithCalls(const Function &F,
   SmallVector<const BasicBlock *, 8> BBs;
 
   auto findCallInst = [&IndirectCall](const Instruction &I) {
-    if (auto Call = dyn_cast<CallBase>(&I))
-      if (!isa<PseudoProbeInst>(Call))
-        return Call->isIndirectCall() ? IndirectCall : true;
+    if (auto Call = dyn_cast<CallBase>(&I); Call && (!isa<PseudoProbeInst>(Call)))
+      return Call->isIndirectCall() ? IndirectCall : true;
     return false;
   };
   for (auto &BB : F)

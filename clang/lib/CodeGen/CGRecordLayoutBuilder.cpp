@@ -620,11 +620,10 @@ CGRecordLowering::accumulateBitFields(bool isNonVirtualBaseType,
             // structure.
             InstallBest = true;
 
-          if (InstallBest && BestEnd == Field)
+          if ((InstallBest && BestEnd == Field) && (getSize(Type) == AccessSize))
             // We're installing the first span, whose clipping was presumed
             // above. Compute it correctly.
-            if (getSize(Type) == AccessSize)
-              BestClipped = false;
+            BestClipped = false;
         }
 
         if (!InstallBest) {
@@ -823,12 +822,12 @@ void CGRecordLowering::computeVolatileBitfields() {
       // fields after and before it should be race condition free.
       // The AAPCS acknowledges it and imposes no restritions when the
       // natural container overlaps a zero-length bit-field.
-      if (F->isZeroLengthBitField()) {
-        if (End > FOffset && StorageOffset < FOffset) {
+      if ((F->isZeroLengthBitField()) && (End > FOffset && StorageOffset < FOffset)) 
+        {
           Conflict = true;
           break;
         }
-      }
+      
 
       const CharUnits FEnd =
           FOffset +

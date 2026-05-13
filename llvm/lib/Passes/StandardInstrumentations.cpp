@@ -1412,13 +1412,13 @@ void PreservedCFGCheckerInstrumentation::registerCallbacks(
 
     for (Function *F : GetFunctions(IR)) {
       if (auto *HashBefore =
-              FAM.getCachedResult<PreservedFunctionHashAnalysis>(*F)) {
-        if (HashBefore->Hash != StructuralHash(*F)) {
+              FAM.getCachedResult<PreservedFunctionHashAnalysis>(*F); HashBefore && (HashBefore->Hash != StructuralHash(*F))) 
+        {
           report_fatal_error(formatv(
               "Function @{0} changed by {1} without invalidating analyses",
               F->getName(), P));
         }
-      }
+      
 
       auto CheckCFG = [](StringRef Pass, StringRef FuncName,
                          const CFG &GraphBefore, const CFG &GraphAfter) {
@@ -1442,12 +1442,12 @@ void PreservedCFGCheckerInstrumentation::registerCallbacks(
     if (const auto *MPtr = unwrapIR<Module>(IR)) {
       auto &M = *const_cast<Module *>(MPtr);
       if (auto *HashBefore =
-              MAM.getCachedResult<PreservedModuleHashAnalysis>(M)) {
-        if (HashBefore->Hash != StructuralHash(M)) {
+              MAM.getCachedResult<PreservedModuleHashAnalysis>(M); HashBefore && (HashBefore->Hash != StructuralHash(M))) 
+        {
           report_fatal_error(formatv(
               "Module changed by {0} without invalidating analyses", P));
         }
-      }
+      
     }
   });
 }

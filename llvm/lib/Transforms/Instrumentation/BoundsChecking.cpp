@@ -218,11 +218,10 @@ static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
         Or =
             getBoundsCheckCond(AI->getPointerOperand(), AI->getCompareOperand(),
                                DL, TLI, ObjSizeEval, IRB, SE);
-    } else if (AtomicRMWInst *AI = dyn_cast<AtomicRMWInst>(&I)) {
-      if (!AI->isVolatile())
-        Or = getBoundsCheckCond(AI->getPointerOperand(), AI->getValOperand(),
+    } else if (AtomicRMWInst *AI = dyn_cast<AtomicRMWInst>(&I); AI && (!AI->isVolatile())) 
+      Or = getBoundsCheckCond(AI->getPointerOperand(), AI->getValOperand(),
                                 DL, TLI, ObjSizeEval, IRB, SE);
-    }
+    
     if (Or) {
       if (Opts.GuardKind) {
         llvm::Value *Allow = IRB.CreateIntrinsic(

@@ -170,9 +170,8 @@ public:
                             const LoanID &loanID) {
     const Loan *L = Analysis.getFactManager().getLoanMgr().getLoan(loanID);
     for (const Fact *F : FactsInBlock) {
-      if (auto const *CurrentEF = F->getAs<ExpireFact>())
-        if (CurrentEF->getAccessPath() == L->getAccessPath())
-          return CurrentEF;
+      if (auto const *CurrentEF = F->getAs<ExpireFact>(); CurrentEF && (CurrentEF->getAccessPath() == L->getAccessPath()))
+        return CurrentEF;
     }
     return nullptr;
   }

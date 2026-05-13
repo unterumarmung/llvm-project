@@ -2705,8 +2705,8 @@ std::optional<SpecificCall> IntrinsicInterface::Match(
     case Rank::scalarIfDim:
       if (dummy[*dimArg].optionality == Optionality::required) {
         if (const Symbol *whole{
-                UnwrapWholeSymbolOrComponentDataRef(actualForDummy[*dimArg])}) {
-          if (IsOptional(*whole) || IsAllocatableOrObjectPointer(whole)) {
+                UnwrapWholeSymbolOrComponentDataRef(actualForDummy[*dimArg])}; whole && (IsOptional(*whole) || IsAllocatableOrObjectPointer(whole))) 
+          {
             if (rank == Rank::scalarIfDim || arrayRank.value_or(-1) == 1) {
               context.Warn(common::UsageWarning::OptionalMustBePresent,
                   "The actual argument for DIM= is optional, pointer, or allocatable, and it is assumed to be present and equal to 1 at execution time"_warn_en_US);
@@ -2715,7 +2715,7 @@ std::optional<SpecificCall> IntrinsicInterface::Match(
                   "The actual argument for DIM= is optional, pointer, or allocatable, and may not be absent during execution; parenthesize to silence this warning"_warn_en_US);
             }
           }
-        }
+        
       }
       break;
     default:;
@@ -3770,14 +3770,14 @@ static bool ApplySpecificChecks(SpecificCall &call, FoldingContext &context) {
     for (int i{2}; i < 4; ++i) {
       const auto &arg{call.arguments[i]};
       if (arg) {
-        if (const auto *expr{arg->UnwrapExpr()}) {
-          if (!IsAllocatableDesignator(*expr)) {
+        if (const auto *expr{arg->UnwrapExpr()}; expr && (!IsAllocatableDesignator(*expr))) 
+          {
             ok = false;
             context.messages().Say(arg->sourceLocation(),
                 "'%s=' argument to 'tokenize' must be ALLOCATABLE"_err_en_US,
                 dummies[i].name);
           }
-        }
+        
       }
     }
   }
@@ -3839,10 +3839,10 @@ std::optional<SpecificCall> IntrinsicProcTable::Implementation::Probe(
       return HandleC_Devloc(arguments, context);
     } else if (call.name == "null") {
       return HandleNull(arguments, context);
-    } else if (call.name == "allocated") {
-      if (context.languageFeatures().IsEnabled(
+    } else if ((call.name == "allocated") && (context.languageFeatures().IsEnabled(
               common::LanguageFeature::AllocatedForAssociated) &&
-          arguments.size() == 1 && arguments[0].has_value()) {
+          arguments.size() == 1 && arguments[0].has_value())) 
+      {
         auto &arg{*arguments[0]};
         if (const Expr<SomeType> *expr{arg.UnwrapExpr()};
             expr && IsObjectPointer(*expr)) {
@@ -3854,7 +3854,7 @@ std::optional<SpecificCall> IntrinsicProcTable::Implementation::Probe(
           return Probe(newCall, arguments, context);
         }
       }
-    }
+    
   }
 
   // Find the specific subroutine and match the actual arguments against its
@@ -4041,8 +4041,8 @@ std::optional<SpecificCall> IntrinsicProcTable::Implementation::Probe(
     for (auto specIter{specificRange.first}; specIter != specificRange.second;
          ++specIter) {
       // We only need to check the cases with distinct generic names.
-      if (const char *genericName{specIter->second->generic}) {
-        if (specIter->second->useGenericAndForceResultType) {
+      if (const char *genericName{specIter->second->generic}; genericName && (specIter->second->useGenericAndForceResultType)) 
+        {
           auto genericRange{genericFuncs_.equal_range(genericName)};
           for (auto genIter{genericRange.first}; genIter != genericRange.second;
                ++genIter) {
@@ -4074,7 +4074,7 @@ std::optional<SpecificCall> IntrinsicProcTable::Implementation::Probe(
             }
           }
         }
-      }
+      
     }
   }
 

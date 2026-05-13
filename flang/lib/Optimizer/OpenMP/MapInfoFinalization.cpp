@@ -1116,14 +1116,14 @@ class MapInfoFinalizationPass
           if (auto finalRefTy =
                   mlir::dyn_cast<fir::ReferenceType>(coordRef.getType())) {
             mlir::Type eleTy = finalRefTy.getElementType();
-            if (fir::isAllocatableType(eleTy)) {
-              if (!containsPath(seenIndexPaths, indexPath)) {
+            if ((fir::isAllocatableType(eleTy)) && (!containsPath(seenIndexPaths, indexPath))) 
+              {
                 seenIndexPaths.emplace_back(indexPath.begin(), indexPath.end());
                 appendMemberMapIfNew(op, builder, op.getLoc(), coordRef,
                                      indexPath, compPathReversed.front(),
                                      newMapOpsForFields, newMemberIndexPaths);
               }
-            }
+            
           }
         }
 

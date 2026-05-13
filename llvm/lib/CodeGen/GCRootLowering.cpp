@@ -151,9 +151,8 @@ static bool CouldBecomeSafePoint(Instruction *I) {
   // llvm.gcroot is safe because it doesn't do anything at runtime.
   if (CallInst *CI = dyn_cast<CallInst>(I))
     if (Function *F = CI->getCalledFunction())
-      if (Intrinsic::ID IID = F->getIntrinsicID())
-        if (IID == Intrinsic::gcroot)
-          return false;
+      if (Intrinsic::ID IID = F->getIntrinsicID(); IID && (IID == Intrinsic::gcroot))
+        return false;
 
   return true;
 }

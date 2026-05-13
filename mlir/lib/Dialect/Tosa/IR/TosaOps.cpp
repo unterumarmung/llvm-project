@@ -2447,13 +2447,12 @@ LogicalResult tosa::SliceOp::verify() {
 
   SmallVector<int64_t> startValues;
   tosa::getConstShapeValues(start.getDefiningOp(), startValues);
-  if (startValues.size()) {
-    if (llvm::any_of(startValues, [](const int64_t v) {
+  if ((startValues.size()) && (llvm::any_of(startValues, [](const int64_t v) {
           return v < 0 && v != kInferableDimSize;
-        }))
-      return emitOpError("start values must be non-negative, got [")
+        }))) 
+    return emitOpError("start values must be non-negative, got [")
              << startValues << "]";
-  }
+  
 
   SmallVector<int64_t> sizeValues;
   if (!tosa::getConstShapeValues(size.getDefiningOp(), sizeValues))
@@ -3741,10 +3740,9 @@ LogicalResult tosa::ScatterOp::inferReturnTypeComponents(
   }
 
   ShapeAdaptor indicesShape(adaptor.getIndices().getType());
-  if (indicesShape.hasRank()) {
-    if (outputShape[0] == ShapedType::kDynamic)
-      outputShape[0] = indicesShape.getDimSize(0);
-  }
+  if ((indicesShape.hasRank()) && (outputShape[0] == ShapedType::kDynamic)) 
+    outputShape[0] = indicesShape.getDimSize(0);
+  
 
   ShapeAdaptor inputShape(adaptor.getInput().getType());
   if (inputShape.hasRank()) {
@@ -4444,26 +4442,23 @@ LogicalResult Conv2DBlockScaledOp::verify() {
 
   // Verify pad/stride/dilation values
   SmallVector<int64_t> padValues;
-  if (tosa::getConstShapeValues(getPad().getDefiningOp(), padValues)) {
-    if (llvm::any_of(padValues, [](int64_t p) { return p < 0; }))
-      return emitOpError("expect all padding values to be >= 0, got ")
+  if ((tosa::getConstShapeValues(getPad().getDefiningOp(), padValues)) && (llvm::any_of(padValues, [](int64_t p) { return p < 0; }))) 
+    return emitOpError("expect all padding values to be >= 0, got ")
              << padValues;
-  }
+  
 
   SmallVector<int64_t> strideValues;
-  if (tosa::getConstShapeValues(getStride().getDefiningOp(), strideValues)) {
-    if (llvm::any_of(strideValues, [](int64_t s) { return s < 1; }))
-      return emitOpError("expect all stride values to be >= 1, got ")
+  if ((tosa::getConstShapeValues(getStride().getDefiningOp(), strideValues)) && (llvm::any_of(strideValues, [](int64_t s) { return s < 1; }))) 
+    return emitOpError("expect all stride values to be >= 1, got ")
              << strideValues;
-  }
+  
 
   SmallVector<int64_t> dilationValues;
-  if (tosa::getConstShapeValues(getDilation().getDefiningOp(),
-                                dilationValues)) {
-    if (llvm::any_of(dilationValues, [](int64_t d) { return d < 1; }))
-      return emitOpError("expect all dilation values to be >= 1, got ")
+  if ((tosa::getConstShapeValues(getDilation().getDefiningOp(),
+                                dilationValues)) && (llvm::any_of(dilationValues, [](int64_t d) { return d < 1; }))) 
+    return emitOpError("expect all dilation values to be >= 1, got ")
              << dilationValues;
-  }
+  
 
   // Verify output shape compatibility
   const ShapeAdaptor outputShape(getOutput().getType());
@@ -4822,32 +4817,30 @@ LogicalResult TransposeConv2DOp::verify() {
     const int64_t kernelHeight = weightType.getDimSize(1);
     const int64_t outputHeight = outputType.getDimSize(1);
 
-    if (ShapedType::isStatic(inputHeight) &&
-        ShapedType::isStatic(outputHeight)) {
-      if (outputHeight !=
-          (inputHeight - 1) * strideY + outPadTop + outPadBottom + kernelHeight)
-        return emitOpError(
+    if ((ShapedType::isStatic(inputHeight) &&
+        ShapedType::isStatic(outputHeight)) && (outputHeight !=
+          (inputHeight - 1) * strideY + outPadTop + outPadBottom + kernelHeight)) 
+      return emitOpError(
                    "dimension mismatch: expected OH == (IH - 1) * stride_y "
                    "+ out_pad_top + out_pad_bottom + KH, but got ")
                << outputHeight << " != (" << inputHeight << " - 1) * "
                << strideY << " + " << outPadTop << " + " << outPadBottom
                << " + " << kernelHeight;
-    }
+    
 
     const int64_t inputWidth = inputType.getDimSize(2);
     const int64_t kernelWidth = weightType.getDimSize(2);
     const int64_t outputWidth = outputType.getDimSize(2);
 
-    if (ShapedType::isStatic(inputWidth) && ShapedType::isStatic(outputWidth)) {
-      if (outputWidth !=
-          (inputWidth - 1) * strideX + outPadLeft + outPadRight + kernelWidth)
-        return emitOpError(
+    if ((ShapedType::isStatic(inputWidth) && ShapedType::isStatic(outputWidth)) && (outputWidth !=
+          (inputWidth - 1) * strideX + outPadLeft + outPadRight + kernelWidth)) 
+      return emitOpError(
                    "dimension mismatch: expected OW == (IW - 1) * stride_x "
                    "+ out_pad_left + out_pad_right + KW, but got ")
                << outputWidth << " != (" << inputWidth << " - 1) * " << strideX
                << " + " << outPadLeft << " + " << outPadRight << " + "
                << kernelWidth;
-    }
+    
   }
 
   const auto biasType = llvm::dyn_cast<RankedTensorType>(getBias().getType());
@@ -4939,11 +4932,10 @@ LogicalResult RescaleOp::verify() {
     numChannels = inputType.getDimSize(inputType.getRank() - 1);
   }
 
-  if (outputType.hasRank()) {
-    if (failed(verifyOutputShapeCompatibleWithExpected(
-            getOperation(), outputType, inputType.getShape())))
-      return failure();
-  }
+  if ((outputType.hasRank()) && (failed(verifyOutputShapeCompatibleWithExpected(
+            getOperation(), outputType, inputType.getShape())))) 
+    return failure();
+  
 
   if (multiplierType.hasRank()) {
     ArrayRef<int64_t> multiplierShape = multiplierType.getShape();

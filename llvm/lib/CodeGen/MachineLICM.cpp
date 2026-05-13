@@ -435,10 +435,9 @@ static bool InstructionStoresToFI(const MachineInstr *MI, int FI) {
     if (!MemOp->isStore() || !MemOp->getPseudoValue())
       continue;
     if (const FixedStackPseudoSourceValue *Value =
-        dyn_cast<FixedStackPseudoSourceValue>(MemOp->getPseudoValue())) {
-      if (Value->getFrameIndex() == FI)
-        return true;
-    }
+        dyn_cast<FixedStackPseudoSourceValue>(MemOp->getPseudoValue()); Value && (Value->getFrameIndex() == FI)) 
+      return true;
+    
   }
   return false;
 }
@@ -996,9 +995,8 @@ static bool mayLoadFromGOTOrConstantPool(MachineInstr &MI) {
     return true;
 
   for (MachineMemOperand *MemOp : MI.memoperands())
-    if (const PseudoSourceValue *PSV = MemOp->getPseudoValue())
-      if (PSV->isGOT() || PSV->isConstantPool())
-        return true;
+    if (const PseudoSourceValue *PSV = MemOp->getPseudoValue(); PSV && (PSV->isGOT() || PSV->isConstantPool()))
+      return true;
 
   return false;
 }
@@ -1645,12 +1643,12 @@ unsigned MachineLICMImpl::Hoist(MachineInstr *MI, MachineBasicBlock *Preheader,
     if (MDTU->getDomTree().dominates(Map.first, MI->getParent())) {
       DenseMap<unsigned, std::vector<MachineInstr *>>::iterator CI =
           Map.second.find(Opcode);
-      if (CI != Map.second.end()) {
-        if (EliminateCSE(MI, CI)) {
+      if ((CI != Map.second.end()) && (EliminateCSE(MI, CI))) 
+        {
           HasCSEDone = true;
           break;
         }
-      }
+      
     }
   }
 

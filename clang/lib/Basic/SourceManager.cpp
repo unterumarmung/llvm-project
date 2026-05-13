@@ -1135,10 +1135,9 @@ unsigned SourceManager::getColumnNumber(FileID FID, unsigned FilePos,
       // A line ends with separator LF or CR+LF on Windows.
       // FilePos might point to the last separator,
       // but we need a column number at most 1 + the last column.
-      if (FilePos + 1 == LineEnd && FilePos > LineStart) {
-        if (Buf[FilePos - 1] == '\r' || Buf[FilePos - 1] == '\n')
-          --FilePos;
-      }
+      if ((FilePos + 1 == LineEnd && FilePos > LineStart) && (Buf[FilePos - 1] == '\r' || Buf[FilePos - 1] == '\n')) 
+        --FilePos;
+      
       return (FilePos - LineStart) + 1;
     }
   }
@@ -1338,10 +1337,9 @@ unsigned SourceManager::getLineNumber(FileID FID, unsigned FilePos,
         else if (SourceLineCache+10 < SourceLineCacheEnd) {
           if (SourceLineCache[10] > QueriedFilePos)
             SourceLineCacheEnd = SourceLineCache+10;
-          else if (SourceLineCache+20 < SourceLineCacheEnd) {
-            if (SourceLineCache[20] > QueriedFilePos)
-              SourceLineCacheEnd = SourceLineCache+20;
-          }
+          else if ((SourceLineCache+20 < SourceLineCacheEnd) && (SourceLineCache[20] > QueriedFilePos)) 
+            SourceLineCacheEnd = SourceLineCache+20;
+          
         }
       }
     } else {
@@ -1521,9 +1519,8 @@ bool SourceManager::isInMainFile(SourceLocation Loc) const {
   // Check if there is a line directive for this location.
   if (FI.hasLineDirectives())
     if (const LineEntry *Entry =
-            LineTable->FindNearestLineEntry(LocInfo.first, LocInfo.second))
-      if (Entry->IncludeOffset)
-        return false;
+            LineTable->FindNearestLineEntry(LocInfo.first, LocInfo.second); Entry && (Entry->IncludeOffset))
+      return false;
 
   return FI.getIncludeLoc().isInvalid();
 }
@@ -1580,10 +1577,9 @@ FileID SourceManager::translateFile(const FileEntry *SourceFile) const {
     if (Invalid)
       return FileID();
 
-    if (MainSLoc.isFile()) {
-      if (MainSLoc.getFile().getContentCache().OrigEntry == SourceFile)
-        return MainFileID;
-    }
+    if ((MainSLoc.isFile()) && (MainSLoc.getFile().getContentCache().OrigEntry == SourceFile)) 
+      return MainFileID;
+    
   }
 
   // The location we're looking for isn't in the main file; look
@@ -1722,10 +1718,9 @@ void SourceManager::computeMacroArgsCache(MacroArgsMap &MacroArgsCache,
 
     const ExpansionInfo &ExpInfo = Entry.getExpansion();
 
-    if (ExpInfo.getExpansionLocStart().isFileID()) {
-      if (!isInFileID(ExpInfo.getExpansionLocStart(), FID))
-        return; // No more files/macros that may be "contained" in this file.
-    }
+    if ((ExpInfo.getExpansionLocStart().isFileID()) && (!isInFileID(ExpInfo.getExpansionLocStart(), FID))) 
+      return; // No more files/macros that may be "contained" in this file.
+    
 
     if (!ExpInfo.isMacroArgExpansion())
       continue;

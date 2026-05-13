@@ -39,8 +39,8 @@ bool BaseIndexOffset::equalBaseIndex(const BaseIndexOffset &Other,
 
     // Match GlobalAddresses
     if (auto *A = dyn_cast<GlobalAddressSDNode>(Base)) {
-      if (auto *B = dyn_cast<GlobalAddressSDNode>(Other.Base))
-        if (A->getGlobal() == B->getGlobal()) {
+      if (auto *B = dyn_cast<GlobalAddressSDNode>(Other.Base); B && (A->getGlobal() == B->getGlobal()))
+        {
           Off += B->getOffset() - A->getOffset();
           return true;
         }
@@ -223,8 +223,8 @@ static BaseIndexOffset matchLSNode(const LSBaseSDNode *N,
     switch (Base->getOpcode()) {
     case ISD::OR:
       // Only consider ORs which act as adds.
-      if (auto *C = dyn_cast<ConstantSDNode>(Base->getOperand(1)))
-        if (DAG.MaskedValueIsZero(Base->getOperand(0), C->getAPIntValue())) {
+      if (auto *C = dyn_cast<ConstantSDNode>(Base->getOperand(1)); C && (DAG.MaskedValueIsZero(Base->getOperand(0), C->getAPIntValue())))
+        {
           Offset += C->getSExtValue();
           Base = DAG.getTargetLoweringInfo().unwrapAddress(Base->getOperand(0));
           continue;

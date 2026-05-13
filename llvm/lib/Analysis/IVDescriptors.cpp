@@ -174,9 +174,8 @@ static void collectCastInstrs(Loop *TheLoop, Instruction *Exit,
     // Add all operands to the work list if they are loop-varying values that
     // we haven't yet visited.
     for (Value *O : cast<User>(Val)->operands())
-      if (auto *I = dyn_cast<Instruction>(O))
-        if (TheLoop->contains(I) && !Visited.count(I))
-          Worklist.push_back(I);
+      if (auto *I = dyn_cast<Instruction>(O); I && (TheLoop->contains(I) && !Visited.count(I)))
+        Worklist.push_back(I);
   }
 }
 
@@ -641,8 +640,8 @@ bool RecurrenceDescriptor::AddReductionVar(
 
     // All inputs to a PHI node must be a reduction value, unless the phi is a
     // "FindLast-like" phi (described below).
-    if (IsAPhi && Cur != Phi) {
-      if (!areAllUsesIn(Cur, VisitedInsts)) {
+    if ((IsAPhi && Cur != Phi) && (!areAllUsesIn(Cur, VisitedInsts))) 
+      {
         // A "FindLast-like" phi acts like a conditional select between the
         // previous reduction value, and an arbitrary value. Note: Multiple
         // "FindLast-like" phis are not supported see:
@@ -653,7 +652,7 @@ bool RecurrenceDescriptor::AddReductionVar(
         if (!FoundFindLastLikePhi)
           return false;
       }
-    }
+    
 
     if (isAnyOfRecurrenceKind(Kind) && IsASelect)
       ++NumCmpSelectPatternInst;
@@ -671,9 +670,8 @@ bool RecurrenceDescriptor::AddReductionVar(
 
       // If the user is a call to llvm.fmuladd then the instruction can only be
       // the final operand.
-      if (isFMulAddIntrinsic(UI))
-        if (Cur == UI->getOperand(0) || Cur == UI->getOperand(1))
-          return false;
+      if ((isFMulAddIntrinsic(UI)) && (Cur == UI->getOperand(0) || Cur == UI->getOperand(1)))
+        return false;
 
       // Check if we found the exit user.
       BasicBlock *Parent = UI->getParent();
@@ -1435,17 +1433,15 @@ bool InductionDescriptor::isFPInductionPHI(PHINode *Phi, const Loop *TheLoop,
       Addend = BOp->getOperand(1);
     else if (BOp->getOperand(1) == Phi)
       Addend = BOp->getOperand(0);
-  } else if (BOp->getOpcode() == Instruction::FSub)
-    if (BOp->getOperand(0) == Phi)
-      Addend = BOp->getOperand(1);
+  } else if ((BOp->getOpcode() == Instruction::FSub) && (BOp->getOperand(0) == Phi))
+    Addend = BOp->getOperand(1);
 
   if (!Addend)
     return false;
 
   // The addend should be loop invariant
-  if (auto *I = dyn_cast<Instruction>(Addend))
-    if (TheLoop->contains(I))
-      return false;
+  if (auto *I = dyn_cast<Instruction>(Addend); I && (TheLoop->contains(I)))
+    return false;
 
   // FP Step has unknown SCEV
   const SCEV *Step = SE->getUnknown(Addend);
@@ -1544,9 +1540,8 @@ static bool getCastsForInductionPHI(PredicatedScalarEvolution &PSE,
     if (InCastSequence) {
       // Only the last instruction in the cast sequence is expected to have
       // uses outside the induction def-use chain.
-      if (!CastInsts.empty())
-        if (!Inst->hasOneUse())
-          return false;
+      if ((!CastInsts.empty()) && (!Inst->hasOneUse()))
+        return false;
       CastInsts.push_back(Inst);
     }
     Val = getDef(Val);

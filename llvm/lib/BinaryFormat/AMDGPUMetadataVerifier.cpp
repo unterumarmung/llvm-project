@@ -45,9 +45,8 @@ bool MetadataVerifier::verifyScalar(
 }
 
 bool MetadataVerifier::verifyInteger(msgpack::DocNode &Node) {
-  if (!verifyScalar(Node, msgpack::Type::UInt))
-    if (!verifyScalar(Node, msgpack::Type::Int))
-      return false;
+  if ((!verifyScalar(Node, msgpack::Type::UInt)) && (!verifyScalar(Node, msgpack::Type::Int)))
+    return false;
   return true;
 }
 

@@ -1105,9 +1105,8 @@ computeInstrHeights(const MachineBasicBlock *MBB) {
     // loop header, get loop-carried dependencies from PHIs in the header. For
     // that purpose, pretend that all the loop header PHIs have height 0.
     if (!Succ)
-      if (const MachineLoop *Loop = getLoopFor(MBB))
-        if (MBB->isSuccessor(Loop->getHeader()))
-          Succ = Loop->getHeader();
+      if (const MachineLoop *Loop = getLoopFor(MBB); Loop && (MBB->isSuccessor(Loop->getHeader())))
+        Succ = Loop->getHeader();
 
     if (Succ) {
       for (const auto &PHI : *Succ) {

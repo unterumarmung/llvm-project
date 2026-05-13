@@ -54,10 +54,9 @@ bool tryToFindPtrOrigin(
         break;
       }
     }
-    if (auto *TempExpr = dyn_cast<CXXUnresolvedConstructExpr>(E)) {
-      if (isSafePtrType(TempExpr->getTypeAsWritten()))
-        return callback(TempExpr, true);
-    }
+    if (auto *TempExpr = dyn_cast<CXXUnresolvedConstructExpr>(E); TempExpr && (isSafePtrType(TempExpr->getTypeAsWritten()))) 
+      return callback(TempExpr, true);
+    
     if (auto *POE = dyn_cast<PseudoObjectExpr>(E)) {
       if (auto *RF = POE->getResultExpr()) {
         E = RF;
@@ -83,10 +82,9 @@ bool tryToFindPtrOrigin(
     if (auto *cast = dyn_cast<CastExpr>(E)) {
       if (StopAtFirstRefCountedObj) {
         if (auto *ConversionFunc =
-                dyn_cast_or_null<FunctionDecl>(cast->getConversionFunction())) {
-          if (isCtorOfSafePtr(ConversionFunc))
-            return callback(E, true);
-        }
+                dyn_cast_or_null<FunctionDecl>(cast->getConversionFunction()); ConversionFunc && (isCtorOfSafePtr(ConversionFunc))) 
+          return callback(E, true);
+        
         if (isa<CXXFunctionalCastExpr>(E) && isSafePtrType(cast->getType()))
           return callback(E, true);
       }
@@ -96,13 +94,13 @@ bool tryToFindPtrOrigin(
       continue;
     }
     if (auto *call = dyn_cast<CallExpr>(E)) {
-      if (auto *Callee = call->getCalleeDecl()) {
-        if (Callee->hasAttr<CFReturnsRetainedAttr>() ||
+      if (auto *Callee = call->getCalleeDecl(); Callee && (Callee->hasAttr<CFReturnsRetainedAttr>() ||
             Callee->hasAttr<NSReturnsRetainedAttr>() ||
-            Callee->hasAttr<NSReturnsAutoreleasedAttr>()) {
+            Callee->hasAttr<NSReturnsAutoreleasedAttr>())) 
+        {
           return callback(E, true);
         }
-      }
+      
 
       if (auto *memberCall = dyn_cast<CXXMemberCallExpr>(call)) {
         if (auto *decl = memberCall->getMethodDecl()) {
@@ -120,15 +118,15 @@ bool tryToFindPtrOrigin(
       if (auto *operatorCall = dyn_cast<CXXOperatorCallExpr>(E)) {
         if (auto *Callee = operatorCall->getDirectCallee()) {
           auto ClsName = safeGetName(Callee->getParent());
-          if (isRefType(ClsName) || isCheckedPtr(ClsName) ||
+          if ((isRefType(ClsName) || isCheckedPtr(ClsName) ||
               isRetainPtrOrOSPtr(ClsName) || ClsName == "unique_ptr" ||
               ClsName == "UniqueRef" || ClsName == "WeakPtr" ||
-              ClsName == "WeakRef") {
-            if (operatorCall->getNumArgs() == 1) {
+              ClsName == "WeakRef") && (operatorCall->getNumArgs() == 1)) 
+            {
               E = operatorCall->getArg(0);
               continue;
             }
-          }
+          
         }
       }
 
@@ -169,10 +167,9 @@ bool tryToFindPtrOrigin(
             Name == "NSStringFromProtocol" || Name == "NSProtocolFromString")
           return callback(E, true);
       } else if (auto *CalleeE = call->getCallee()) {
-        if (auto *E = dyn_cast<DeclRefExpr>(CalleeE->IgnoreParenCasts())) {
-          if (isSingleton(E->getFoundDecl()))
-            return callback(E, true);
-        }
+        if (auto *E = dyn_cast<DeclRefExpr>(CalleeE->IgnoreParenCasts()); E && (isSingleton(E->getFoundDecl()))) 
+          return callback(E, true);
+        
 
         if (auto *MemberExpr = dyn_cast<CXXDependentScopeMemberExpr>(CalleeE)) {
           auto *Base = MemberExpr->getBase();
@@ -192,9 +189,8 @@ bool tryToFindPtrOrigin(
           if (auto *Subst = dyn_cast<SubstTemplateTypeParmType>(RetType)) {
             if (auto *SubstType = Subst->desugar().getTypePtr()) {
               if (auto *RD = dyn_cast<RecordType>(SubstType)) {
-                if (auto *CXX = dyn_cast<CXXRecordDecl>(RD->getDecl()))
-                  if (isSafePtr(CXX))
-                    return callback(E, true);
+                if (auto *CXX = dyn_cast<CXXRecordDecl>(RD->getDecl()); CXX && (isSafePtr(CXX)))
+                  return callback(E, true);
               }
             }
           }
@@ -202,10 +198,9 @@ bool tryToFindPtrOrigin(
       }
     }
     if (auto *ObjCMsgExpr = dyn_cast<ObjCMessageExpr>(E)) {
-      if (auto *Method = ObjCMsgExpr->getMethodDecl()) {
-        if (isSafePtrType(Method->getReturnType()))
-          return callback(E, true);
-      }
+      if (auto *Method = ObjCMsgExpr->getMethodDecl(); Method && (isSafePtrType(Method->getReturnType()))) 
+        return callback(E, true);
+      
       auto Selector = ObjCMsgExpr->getSelector();
       auto NameForFirstSlot = Selector.getNameForSlot(0);
       if ((NameForFirstSlot == "class" || NameForFirstSlot == "superclass") &&
@@ -270,10 +265,9 @@ bool isASafeCallArg(const Expr *E) {
 bool isNullPtr(const clang::Expr *E) {
   if (isa<CXXNullPtrLiteralExpr>(E) || isa<GNUNullExpr>(E))
     return true;
-  if (auto *Int = dyn_cast_or_null<IntegerLiteral>(E)) {
-    if (Int->getValue().isZero())
-      return true;
-  }
+  if (auto *Int = dyn_cast_or_null<IntegerLiteral>(E); Int && (Int->getValue().isZero())) 
+    return true;
+  
   return false;
 }
 
@@ -286,10 +280,9 @@ bool isConstOwnerPtrMemberExpr(const clang::Expr *E) {
       if (isa<CXXConversionDecl>(Callee))
         E = MCE->getImplicitObjectArgument();
     }
-  } else if (auto *OCE = dyn_cast<CXXOperatorCallExpr>(E)) {
-    if (OCE->getOperator() == OO_Star && OCE->getNumArgs() == 1)
-      E = OCE->getArg(0);
-  }
+  } else if (auto *OCE = dyn_cast<CXXOperatorCallExpr>(E); OCE && (OCE->getOperator() == OO_Star && OCE->getNumArgs() == 1)) 
+    E = OCE->getArg(0);
+  
   const ValueDecl *D = nullptr;
   if (auto *ME = dyn_cast<MemberExpr>(E))
     D = ME->getMemberDecl();
@@ -338,10 +331,9 @@ bool isAllocInit(const Expr *E, const Expr **InnerExpr) {
   if (NameForFirstSlot.starts_with("alloc") ||
       NameForFirstSlot.starts_with("copy") ||
       NameForFirstSlot.starts_with("mutableCopy")) {
-    if (auto *MD = ObjCMsgExpr->getMethodDecl()) {
-      if (MD->getReturnType()->isVoidType())
-        return false;
-    }
+    if (auto *MD = ObjCMsgExpr->getMethodDecl(); MD && (MD->getReturnType()->isVoidType())) 
+      return false;
+    
     return true;
   }
   if (!NameForFirstSlot.starts_with("init") &&
@@ -361,12 +353,12 @@ bool isAllocInit(const Expr *E, const Expr **InnerExpr) {
   } else if (auto *CE = dyn_cast<CallExpr>(Receiver)) {
     if (InnerExpr)
       *InnerExpr = CE;
-    if (auto *Callee = CE->getDirectCallee()) {
-      if (Callee->getDeclName().isIdentifier()) {
+    if (auto *Callee = CE->getDirectCallee(); Callee && (Callee->getDeclName().isIdentifier())) 
+      {
         auto CalleeName = Callee->getName();
         return CalleeName.starts_with("alloc");
       }
-    }
+    
   }
   return false;
 }

@@ -413,13 +413,13 @@ Error PerfReaderBase::parseDataAccessPerfTraces(
 
     MMapEvent MMap;
     if (Line.contains("PERF_RECORD_MMAP2")) {
-      if (PerfScriptReader::extractMMapEventForBinary(Binary, Line, MMap)) {
-        if (!MMap.MemProtectionFlag.contains("x")) {
+      if ((PerfScriptReader::extractMMapEventForBinary(Binary, Line, MMap)) && (!MMap.MemProtectionFlag.contains("x"))) 
+        {
           if (Error E = Binary->addMMapNonTextEvent(MMap)) {
             return E;
           }
         }
-      }
+      
       continue;
     }
 

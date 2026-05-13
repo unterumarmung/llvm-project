@@ -179,11 +179,10 @@ void MCMachOStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
   MCValue Res;
 
   if (Value->evaluateAsRelocatable(Res, nullptr)) {
-    if (const auto *SymA = Res.getAddSym()) {
-      if (!Res.getSubSym() &&
-          (SymA->getName().empty() || Res.getConstant() != 0))
-        static_cast<MCSymbolMachO *>(Symbol)->setAltEntry();
-    }
+    if (const auto *SymA = Res.getAddSym(); SymA && (!Res.getSubSym() &&
+          (SymA->getName().empty() || Res.getConstant() != 0))) 
+      static_cast<MCSymbolMachO *>(Symbol)->setAltEntry();
+    
   }
   MCObjectStreamer::emitAssignment(Symbol, Value);
 }

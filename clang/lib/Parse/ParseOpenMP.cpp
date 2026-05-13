@@ -962,10 +962,9 @@ void Parser::parseOMPContextProperty(OMPTraitSelector &TISelector,
   OMPTraitProperty TIProperty;
   parseOMPTraitPropertyKind(TIProperty, Set, TISelector.Kind, Seen);
 
-  if (TISelector.Kind == llvm::omp::TraitSelector::implementation_extension)
-    if (!checkExtensionProperty(*this, Tok.getLocation(), TIProperty,
-                                TISelector, Seen))
-      TIProperty.Kind = TraitProperty::invalid;
+  if ((TISelector.Kind == llvm::omp::TraitSelector::implementation_extension) && (!checkExtensionProperty(*this, Tok.getLocation(), TIProperty,
+                                TISelector, Seen)))
+    TIProperty.Kind = TraitProperty::invalid;
 
   // If we have an invalid property here we already issued a warning.
   if (TIProperty.Kind == TraitProperty::invalid) {
@@ -2155,11 +2154,10 @@ Parser::DeclGroupPtrTy Parser::ParseOpenMPDeclarativeDirectiveWithExtDecl(
   }
   case OMPD_begin_declare_variant: {
     ConsumeToken();
-    if (!ParseOpenMPDeclareBeginVariantDirective(Loc)) {
+    if ((!ParseOpenMPDeclareBeginVariantDirective(Loc)) && (!isEofOrEom())) 
       // Skip the last annot_pragma_openmp_end.
-      if (!isEofOrEom())
-        ConsumeAnnotationToken();
-    }
+      ConsumeAnnotationToken();
+    
     return nullptr;
   }
   case OMPD_end_declare_variant: {
@@ -2876,11 +2874,10 @@ StmtResult Parser::ParseOpenMPDeclarativeOrExecutableDirective(
   }
   case OMPD_begin_declare_variant: {
     ConsumeToken();
-    if (!ParseOpenMPDeclareBeginVariantDirective(Loc)) {
+    if ((!ParseOpenMPDeclareBeginVariantDirective(Loc)) && (!isEofOrEom())) 
       // Skip the last annot_pragma_openmp_end.
-      if (!isEofOrEom())
-        ConsumeAnnotationToken();
-    }
+      ConsumeAnnotationToken();
+    
     return Directive;
   }
   case OMPD_end_declare_variant: {
@@ -4820,8 +4817,8 @@ bool Parser::ParseOpenMPVarList(OpenMPDirectiveKind DKind,
       Data.ReductionOrMapperId =
           Actions.GetNameFromUnqualifiedId(UnqualifiedReductionId);
   } else if (Kind == OMPC_depend || Kind == OMPC_doacross) {
-    if (getLangOpts().OpenMP >= 50) {
-      if (Tok.is(tok::identifier) && PP.getSpelling(Tok) == "iterator") {
+    if ((getLangOpts().OpenMP >= 50) && (Tok.is(tok::identifier) && PP.getSpelling(Tok) == "iterator")) 
+      {
         // Handle optional dependence modifier.
         // iterator(iterators-definition)
         // where iterators-definition is iterator-specifier [,
@@ -4835,7 +4832,7 @@ bool Parser::ParseOpenMPVarList(OpenMPDirectiveKind DKind,
         // Parse ','
         ExpectAndConsume(tok::comma);
       }
-    }
+    
     // Handle dependency type for depend clause.
     ColonProtectionRAIIObject ColonRAII(*this);
     Data.ExtraModifier = getOpenMPSimpleClauseType(
@@ -4891,14 +4888,14 @@ bool Parser::ParseOpenMPVarList(OpenMPDirectiveKind DKind,
           }
         }
       }
-      if (Data.ExtraModifier == OMPC_DOACROSS_source_omp_cur_iteration) {
-        if (Tok.isNot(tok::r_paren)) {
+      if ((Data.ExtraModifier == OMPC_DOACROSS_source_omp_cur_iteration) && (Tok.isNot(tok::r_paren))) 
+        {
           Diag(Tok, diag::err_omp_sink_and_source_iteration_not_allowd)
               << getOpenMPClauseName(Kind) << 1 << 1;
           SkipUntil(tok::r_paren);
           return false;
         }
-      }
+      
       // Only the 'sink' case has the expression list.
       if (Kind == OMPC_doacross &&
           (Data.ExtraModifier == OMPC_DOACROSS_source ||
@@ -4968,11 +4965,10 @@ bool Parser::ParseOpenMPVarList(OpenMPDirectiveKind DKind,
     // Check for presence of a colon in the map clause.
     TentativeParsingAction TPA(*this);
     bool ColonPresent = false;
-    if (SkipUntil(tok::colon, tok::r_paren, tok::annot_pragma_openmp_end,
-                  StopBeforeMatch)) {
-      if (Tok.is(tok::colon))
-        ColonPresent = true;
-    }
+    if ((SkipUntil(tok::colon, tok::r_paren, tok::annot_pragma_openmp_end,
+                  StopBeforeMatch)) && (Tok.is(tok::colon))) 
+      ColonPresent = true;
+    
     TPA.Revert();
     // Only parse map-type-modifier[s] and map-type if a colon is present in
     // the map clause.
@@ -5100,10 +5096,10 @@ bool Parser::ParseOpenMPVarList(OpenMPDirectiveKind DKind,
       ConsumeToken();
       if (Tok.is(tok::colon))
         Data.ColonLoc = Tok.getLocation();
-      if (getLangOpts().OpenMP >= 61) {
+      if ((getLangOpts().OpenMP >= 61) && (Tok.is(tok::l_paren))) 
         // Handle the optional fallback argument for the need_device_ptr
         // modifier.
-        if (Tok.is(tok::l_paren)) {
+        {
           BalancedDelimiterTracker T(*this, tok::l_paren);
           T.consumeOpen();
           if (Tok.is(tok::identifier)) {
@@ -5132,7 +5128,7 @@ bool Parser::ParseOpenMPVarList(OpenMPDirectiveKind DKind,
             Data.NeedDevicePtrModifier = OMPC_NEED_DEVICE_PTR_unknown;
           }
         }
-      }
+      
       ExpectAndConsume(tok::colon, diag::warn_pragma_expected_colon,
                        "adjust-op");
     }

@@ -128,12 +128,12 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
 
-  if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles,
-                   options::OPT_r)) {
-    if (!Args.hasArg(options::OPT_shared)) {
+  if ((!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles,
+                   options::OPT_r)) && (!Args.hasArg(options::OPT_shared))) 
+    {
       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("Scrt1.o")));
     }
-  }
+  
 
   Args.addAllArgs(CmdArgs, {options::OPT_L, options::OPT_u});
 
@@ -157,8 +157,8 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     if (Args.hasArg(options::OPT_static))
       CmdArgs.push_back("-Bdynamic");
 
-    if (D.CCCIsCXX()) {
-      if (ToolChain.ShouldLinkCXXStdlib(Args)) {
+    if ((D.CCCIsCXX()) && (ToolChain.ShouldLinkCXXStdlib(Args))) 
+      {
         CmdArgs.push_back("--push-state");
         CmdArgs.push_back("--as-needed");
         if (OnlyLibstdcxxStatic)
@@ -169,7 +169,7 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
         CmdArgs.push_back("-lm");
         CmdArgs.push_back("--pop-state");
       }
-    }
+    
 
     // Note that Fuchsia never needs to link in sanitizer runtime deps.  Any
     // sanitizer runtimes with system dependencies use the `.deplibs` feature

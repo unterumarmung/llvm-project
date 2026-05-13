@@ -1744,11 +1744,11 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
           } else {
             ArgExprs.push_back(Idx.get());
           }
-        } else if (Tok.isNot(tok::r_square)) {
-          if (ParseExpressionList(ArgExprs)) {
+        } else if ((Tok.isNot(tok::r_square)) && (ParseExpressionList(ArgExprs))) 
+          {
             HasError = true;
           }
-        }
+        
       }
 
       // Handle OpenACC first, since 'AllowOpenACCArraySections' is only enabled
@@ -1878,21 +1878,20 @@ Parser::ParsePostfixExpressionSuffix(ExprResult LHS) {
         return PreferredType;
       };
       bool ExpressionListIsInvalid = false;
-      if (OpKind == tok::l_paren || !LHS.isInvalid()) {
-        if (Tok.isNot(tok::r_paren)) {
-          if ((ExpressionListIsInvalid = ParseExpressionList(ArgExprs, [&] {
+      if ((OpKind == tok::l_paren || !LHS.isInvalid()) && (Tok.isNot(tok::r_paren)) && ((ExpressionListIsInvalid = ParseExpressionList(ArgExprs, [&] {
                  PreferredType.enterFunctionArgument(Tok.getLocation(),
                                                      RunSignatureHelp);
-               }))) {
+               }))) && (PP.isCodeCompletionReached() && !CalledSignatureHelp)) 
+        
+          
             // If we got an error when parsing expression list, we don't call
             // the CodeCompleteCall handler inside the parser. So call it here
             // to make sure we get overload suggestions even when we are in the
             // middle of a parameter.
-            if (PP.isCodeCompletionReached() && !CalledSignatureHelp)
-              RunSignatureHelp();
-          }
-        }
-      }
+            RunSignatureHelp();
+          
+        
+      
 
       // Match the ')'.
       if (LHS.isInvalid()) {
@@ -2094,9 +2093,9 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
   if (Tok.isNot(tok::l_paren)) {
     // If construct allows a form without parenthesis, user may forget to put
     // pathenthesis around type name.
-    if (OpTok.isOneOf(tok::kw_sizeof, tok::kw___datasizeof, tok::kw___alignof,
-                      tok::kw_alignof, tok::kw__Alignof)) {
-      if (isTypeIdUnambiguously()) {
+    if ((OpTok.isOneOf(tok::kw_sizeof, tok::kw___datasizeof, tok::kw___alignof,
+                      tok::kw_alignof, tok::kw__Alignof)) && (isTypeIdUnambiguously())) 
+      {
         DeclSpec DS(AttrFactory);
         ParseSpecifierQualifierList(DS);
         Declarator DeclaratorInfo(DS, ParsedAttributesView::none(),
@@ -2117,7 +2116,7 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
         isCastExpr = true;
         return ExprEmpty();
       }
-    }
+    
 
     isCastExpr = false;
     if (OpTok.isOneOf(tok::kw_typeof, tok::kw_typeof_unqual) &&
@@ -2174,15 +2173,14 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
       return ExprEmpty();
     }
 
-    if (getLangOpts().CPlusPlus ||
-        !OpTok.isOneOf(tok::kw_typeof, tok::kw_typeof_unqual)) {
+    if ((getLangOpts().CPlusPlus ||
+        !OpTok.isOneOf(tok::kw_typeof, tok::kw_typeof_unqual)) && (!Operand.isInvalid())) 
       // GNU typeof in C requires the expression to be parenthesized. Not so for
       // sizeof/alignof or in C++. Therefore, the parenthesized expression is
       // the start of a unary-expression, but doesn't include any postfix
       // pieces. Parse these now if present.
-      if (!Operand.isInvalid())
-        Operand = ParsePostfixExpressionSuffix(Operand.get());
-    }
+      Operand = ParsePostfixExpressionSuffix(Operand.get());
+    
   }
 
   // If we get here, the operand to the typeof/sizeof/alignof was an expression.
@@ -2807,9 +2805,8 @@ Parser::ParseParenExpression(ParenParseOption &ExprType, bool StopIfCastExpr,
         return ParseCompoundLiteralExpression(Ty.get(), OpenLoc, RParenLoc);
       }
 
-      if (ParenBehavior == ParenExprKind::Unknown && Tok.is(tok::l_paren)) {
+      if ((ParenBehavior == ParenExprKind::Unknown && Tok.is(tok::l_paren)) && (getLangOpts().OpenCL)) 
         // This could be OpenCL vector Literals
-        if (getLangOpts().OpenCL)
         {
           TypeResult Ty;
           {
@@ -2848,7 +2845,7 @@ Parser::ParseParenExpression(ParenParseOption &ExprType, bool StopIfCastExpr,
             return Result;
           }
         }
-      }
+      
 
       if (ExprType == ParenParseOption::CastExpr) {
         // We parsed '(' type-name ')' and the thing after it wasn't a '{'.

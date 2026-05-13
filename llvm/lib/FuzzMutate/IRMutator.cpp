@@ -337,11 +337,11 @@ void InstModificationIRStrategy::mutate(Instruction &Inst,
     // Verify that the after shuffle the second operand is not
     // constant 0.
     Value *Operand = Inst.getOperand(0);
-    if (Constant *C = dyn_cast<Constant>(Operand)) {
-      if (!C->isNullValue()) {
+    if (Constant *C = dyn_cast<Constant>(Operand); C && (!C->isNullValue())) 
+      {
         ShuffleItems = {0, 1};
       }
-    }
+    
     break;
   }
   case Instruction::Select:

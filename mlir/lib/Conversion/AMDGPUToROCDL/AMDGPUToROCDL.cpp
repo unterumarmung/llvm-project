@@ -1170,10 +1170,9 @@ wmmaOpToIntrinsicRDNA(Type elemSourceType, Type elemBSourceType,
   }
 
   // Handle k == 32 for RDNA4.
-  if (k == 32 && !isRDNA3) {
-    if (elemSourceType.isInteger(4) && elemDestType.isInteger(32))
-      return ROCDL::wmma_i32_16x16x32_iu4::getOperationName();
-  }
+  if ((k == 32 && !isRDNA3) && (elemSourceType.isInteger(4) && elemDestType.isInteger(32))) 
+    return ROCDL::wmma_i32_16x16x32_iu4::getOperationName();
+  
 
   return std::nullopt;
 }
@@ -1468,13 +1467,12 @@ sparseWMMAOpToIntrinsic(SparseWMMAOp swmmac, Chipset chipset) {
             ROCDL::swmmac_f32_16x16x32_bf8_bf8::getOperationName(), false,
             false, false};
     }
-    if (k == 64) {
-      if (destElem.isInteger(32) && sourceAElem.isInteger(4) &&
-          sourceBElem.isInteger(4))
-        return SparseWMMAOpInfo{
+    if ((k == 64) && (destElem.isInteger(32) && sourceAElem.isInteger(4) &&
+          sourceBElem.isInteger(4))) 
+      return SparseWMMAOpInfo{
             ROCDL::swmmac_i32_16x16x64_iu4::getOperationName(), true, false,
             true};
-    }
+    
   }
 
   const bool isGFX1250 = chipset == kGfx1250;

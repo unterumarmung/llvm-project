@@ -234,9 +234,8 @@ static bool findArrayDimensionsRec(ScalarEvolution &SE,
   // Remove all SCEVConstants.
   erase_if(Terms, [](const SCEV *E) { return isa<SCEVConstant>(E); });
 
-  if (Terms.size() > 0)
-    if (!findArrayDimensionsRec(SE, Terms, Sizes))
-      return false;
+  if ((Terms.size() > 0) && (!findArrayDimensionsRec(SE, Terms, Sizes)))
+    return false;
 
   Sizes.push_back(Step);
   return true;
@@ -348,9 +347,8 @@ void llvm::computeAccessFunctions(ScalarEvolution &SE, const SCEV *Expr,
   if (Sizes.empty())
     return;
 
-  if (auto *AR = dyn_cast<SCEVAddRecExpr>(Expr))
-    if (!AR->isAffine())
-      return;
+  if (auto *AR = dyn_cast<SCEVAddRecExpr>(Expr); AR && (!AR->isAffine()))
+    return;
 
   // Clear output vector.
   Subscripts.clear();
@@ -765,8 +763,8 @@ bool llvm::getIndexExpressionsFromGEP(ScalarEvolution &SE,
     const SCEV *Expr = SE.getSCEV(GEP->getOperand(i));
     if (i == 1) {
       Ty = GEP->getSourceElementType();
-      if (auto *Const = dyn_cast<SCEVConstant>(Expr))
-        if (Const->getValue()->isZero()) {
+      if (auto *Const = dyn_cast<SCEVConstant>(Expr); Const && (Const->getValue()->isZero()))
+        {
           DroppedFirstDim = true;
           continue;
         }

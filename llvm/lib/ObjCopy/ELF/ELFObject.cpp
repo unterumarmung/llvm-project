@@ -1419,15 +1419,14 @@ template <class ELFT> void ELFBuilder<ELFT>::setParentSegment(Segment &Child) {
   for (Segment &Parent : Obj.segments()) {
     // Every segment will overlap with itself but we don't want a segment to
     // be its own parent so we avoid that situation.
-    if (&Child != &Parent && segmentOverlapsSegment(Child, Parent)) {
+    if ((&Child != &Parent && segmentOverlapsSegment(Child, Parent)) && (compareSegmentsByOffset(&Parent, &Child)) && (Child.ParentSegment == nullptr ||
+            compareSegmentsByOffset(&Parent, Child.ParentSegment))) 
       // We want a canonical "most parental" segment but this requires
       // inspecting the ParentSegment.
-      if (compareSegmentsByOffset(&Parent, &Child))
-        if (Child.ParentSegment == nullptr ||
-            compareSegmentsByOffset(&Parent, Child.ParentSegment)) {
+      {
           Child.ParentSegment = &Parent;
         }
-    }
+    
   }
 }
 

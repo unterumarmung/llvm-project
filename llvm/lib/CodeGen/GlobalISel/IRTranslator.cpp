@@ -1407,12 +1407,12 @@ bool IRTranslator::translateLoad(const User &U, MachineIRBuilder &MIRBuilder) {
 
   MachineMemOperand::Flags Flags =
       TLI->getLoadMemOperandFlags(LI, *DL, AC, LibInfo, OptLevel);
-  if (AA && !(Flags & MachineMemOperand::MOInvariant)) {
-    if (AA->pointsToConstantMemory(
-            MemoryLocation(Ptr, LocationSize::precise(StoreSize), AAInfo))) {
+  if ((AA && !(Flags & MachineMemOperand::MOInvariant)) && (AA->pointsToConstantMemory(
+            MemoryLocation(Ptr, LocationSize::precise(StoreSize), AAInfo)))) 
+    {
       Flags |= MachineMemOperand::MOInvariant;
     }
-  }
+  
 
   // Fast-path the common single-register load.
   if (Regs.size() == 1) {
@@ -2233,14 +2233,14 @@ bool IRTranslator::translateConvergenceControlIntrinsic(
 
 bool IRTranslator::translateKnownIntrinsic(const CallInst &CI, Intrinsic::ID ID,
                                            MachineIRBuilder &MIRBuilder) {
-  if (auto *MI = dyn_cast<AnyMemIntrinsic>(&CI)) {
-    if (ORE->enabled()) {
-      if (MemoryOpRemark::canHandle(MI, *LibInfo)) {
+  if (auto *MI = dyn_cast<AnyMemIntrinsic>(&CI); MI && (ORE->enabled()) && (MemoryOpRemark::canHandle(MI, *LibInfo))) 
+    
+      {
         MemoryOpRemark R(*ORE, "gisel-irtranslator-memsize", *DL, *LibInfo);
         R.visit(MI);
       }
-    }
-  }
+    
+  
 
   // If this is a simple intrinsic (that is, we just need to add a def of
   // a vreg, and uses for each arg operand, then translate it.
@@ -2768,14 +2768,14 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
     Args.push_back(getOrCreateVRegs(*Arg));
   }
 
-  if (auto *CI = dyn_cast<CallInst>(&CB)) {
-    if (ORE->enabled()) {
-      if (MemoryOpRemark::canHandle(CI, *LibInfo)) {
+  if (auto *CI = dyn_cast<CallInst>(&CB); CI && (ORE->enabled()) && (MemoryOpRemark::canHandle(CI, *LibInfo))) 
+    
+      {
         MemoryOpRemark R(*ORE, "gisel-irtranslator-memsize", *DL, *LibInfo);
         R.visit(CI);
       }
-    }
-  }
+    
+  
 
   std::optional<CallLowering::PtrAuthInfo> PAI;
   if (auto Bundle = CB.getOperandBundle(LLVMContext::OB_ptrauth)) {
@@ -3300,13 +3300,13 @@ bool IRTranslator::translateInsertElement(const User &U,
   Register Elt = getOrCreateVReg(*U.getOperand(1));
   unsigned PreferredVecIdxWidth = TLI->getVectorIdxWidth(*DL);
   Register Idx;
-  if (auto *CI = dyn_cast<ConstantInt>(U.getOperand(2))) {
-    if (CI->getBitWidth() != PreferredVecIdxWidth) {
+  if (auto *CI = dyn_cast<ConstantInt>(U.getOperand(2)); CI && (CI->getBitWidth() != PreferredVecIdxWidth)) 
+    {
       APInt NewIdx = CI->getValue().zextOrTrunc(PreferredVecIdxWidth);
       auto *NewIdxCI = ConstantInt::get(CI->getContext(), NewIdx);
       Idx = getOrCreateVReg(*NewIdxCI);
     }
-  }
+  
   if (!Idx)
     Idx = getOrCreateVReg(*U.getOperand(2));
   if (MRI->getType(Idx).getSizeInBits() != PreferredVecIdxWidth) {
@@ -3374,21 +3374,20 @@ bool IRTranslator::translateExtractElement(const User &U,
   // If it is a <1 x Ty> vector, use the scalar as it is
   // not a legal vector type in LLT.
   if (const FixedVectorType *FVT =
-          dyn_cast<FixedVectorType>(U.getOperand(0)->getType()))
-    if (FVT->getNumElements() == 1)
-      return translateCopy(U, *U.getOperand(0), MIRBuilder);
+          dyn_cast<FixedVectorType>(U.getOperand(0)->getType()); FVT && (FVT->getNumElements() == 1))
+    return translateCopy(U, *U.getOperand(0), MIRBuilder);
 
   Register Res = getOrCreateVReg(U);
   Register Val = getOrCreateVReg(*U.getOperand(0));
   unsigned PreferredVecIdxWidth = TLI->getVectorIdxWidth(*DL);
   Register Idx;
-  if (auto *CI = dyn_cast<ConstantInt>(U.getOperand(1))) {
-    if (CI->getBitWidth() != PreferredVecIdxWidth) {
+  if (auto *CI = dyn_cast<ConstantInt>(U.getOperand(1)); CI && (CI->getBitWidth() != PreferredVecIdxWidth)) 
+    {
       APInt NewIdx = CI->getValue().zextOrTrunc(PreferredVecIdxWidth);
       auto *NewIdxCI = ConstantInt::get(CI->getContext(), NewIdx);
       Idx = getOrCreateVReg(*NewIdxCI);
     }
-  }
+  
   if (!Idx)
     Idx = getOrCreateVReg(*U.getOperand(1));
   if (MRI->getType(Idx).getSizeInBits() != PreferredVecIdxWidth) {
@@ -4029,10 +4028,9 @@ bool IRTranslator::finalizeBasicBlock(const BasicBlock &BB,
 
     // CodeGen Failure MBB if we have not codegened it yet.
     MachineBasicBlock *FailureMBB = SPDescriptor.getFailureMBB();
-    if (FailureMBB->empty()) {
-      if (!emitSPDescriptorFailure(SPDescriptor, FailureMBB))
-        return false;
-    }
+    if ((FailureMBB->empty()) && (!emitSPDescriptorFailure(SPDescriptor, FailureMBB))) 
+      return false;
+    
 
     // Clear the Per-BB State.
     SPDescriptor.resetPerBBState();
@@ -4299,9 +4297,8 @@ bool IRTranslator::runOnMachineFunction(MachineFunction &CurMF) {
     // hasAddressTaken flag may be stale if the BlockAddress was optimized away
     // but the constant still exists in the uniquing table.
     if (BB.hasAddressTaken()) {
-      if (BlockAddress *BA = BlockAddress::lookup(&BB))
-        if (!BA->hasZeroLiveUses())
-          MBB->setAddressTakenIRBlock(const_cast<BasicBlock *>(&BB));
+      if (BlockAddress *BA = BlockAddress::lookup(&BB); BA && (!BA->hasZeroLiveUses()))
+        MBB->setAddressTakenIRBlock(const_cast<BasicBlock *>(&BB));
     }
 
     if (!HasMustTailInVarArgFn)

@@ -1091,9 +1091,8 @@ StrOffsetsContributionDescriptor::validateContributionSize(
   // the section we validate for a multiple of the entry size.
   uint64_t ValidationSize = alignTo(Size, EntrySize);
   // Guard against overflow.
-  if (ValidationSize >= Size)
-    if (DA.isValidOffsetForDataOfSize((uint32_t)Base, ValidationSize))
-      return *this;
+  if ((ValidationSize >= Size) && (DA.isValidOffsetForDataOfSize((uint32_t)Base, ValidationSize)))
+    return *this;
   return createStringError(errc::invalid_argument, "length exceeds section size");
 }
 

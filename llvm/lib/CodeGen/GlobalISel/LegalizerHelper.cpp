@@ -5017,11 +5017,10 @@ static Register clampVectorIndex(MachineIRBuilder &B, Register IdxReg,
   unsigned NElts = VecTy.getNumElements();
 
   int64_t IdxVal;
-  if (mi_match(IdxReg, *B.getMRI(), m_ICst(IdxVal))) {
-    if (IdxVal < VecTy.getNumElements())
-      return IdxReg;
+  if ((mi_match(IdxReg, *B.getMRI(), m_ICst(IdxVal))) && (IdxVal < VecTy.getNumElements())) 
+    return IdxReg;
     // If a constant index would be out of bounds, clamp it as well.
-  }
+  
 
   if (isPowerOf2_32(NElts)) {
     APInt Imm = APInt::getLowBitsSet(IdxTy.getSizeInBits(), Log2_32(NElts));
@@ -10265,17 +10264,17 @@ LegalizerHelper::lowerISFPCLASS(MachineInstr &MI) {
     Mask &= ~fcNegFinite;
   }
 
-  if (FPClassTest PartialCheck = Mask & (fcZero | fcSubnormal)) {
+  if (FPClassTest PartialCheck = Mask & (fcZero | fcSubnormal); PartialCheck && (PartialCheck == (fcZero | fcSubnormal))) 
     // fcZero | fcSubnormal => test all exponent bits are 0
     // TODO: Handle sign bit specific cases
     // TODO: Handle inverted case
-    if (PartialCheck == (fcZero | fcSubnormal)) {
+    {
       auto ExpBits = MIRBuilder.buildAnd(IntTy, AsInt, ExpMaskC);
       appendToRes(MIRBuilder.buildICmp(CmpInst::Predicate::ICMP_EQ, DstTy,
                                        ExpBits, ZeroC));
       Mask &= ~PartialCheck;
     }
-  }
+  
 
   // Check for individual classes.
   if (FPClassTest PartialCheck = Mask & fcZero) {

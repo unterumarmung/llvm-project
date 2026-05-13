@@ -477,9 +477,8 @@ static void computeFunctionSummary(
         // get linker errors due to cloned declarations for implementation
         // functions. As a simple fix, just mark F as not eligible for import.
         // Non-local ifunc is not cloned and does not have the issue.
-        if (auto *GI = dyn_cast_if_present<GlobalIFunc>(CalledValue))
-          if (GI->hasLocalLinkage())
-            HasLocalIFuncCallOrRef = true;
+        if (auto *GI = dyn_cast_if_present<GlobalIFunc>(CalledValue); GI && (GI->hasLocalLinkage()))
+          HasLocalIFuncCallOrRef = true;
         // Skip inline assembly calls.
         if (CI && CI->isInlineAsm())
           continue;

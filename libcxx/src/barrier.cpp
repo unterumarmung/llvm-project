@@ -46,11 +46,10 @@ public:
         } else if (__state_[__current].__tickets[__round].__phase.compare_exchange_strong(
                        expect, __half_step, memory_order_acq_rel)) {
           return false; // I'm 1 in 2, done with arrival
-        } else if (expect == __half_step) {
-          if (__state_[__current].__tickets[__round].__phase.compare_exchange_strong(
-                  expect, __full_step, memory_order_acq_rel))
-            break; // I'm 2 in 2, go to next __round
-        }
+        } else if ((expect == __half_step) && (__state_[__current].__tickets[__round].__phase.compare_exchange_strong(
+                  expect, __full_step, memory_order_acq_rel))) 
+          break; // I'm 2 in 2, go to next __round
+        
       }
       __current_expected = __last_node + 1;
       __current >>= 1;

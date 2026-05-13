@@ -147,8 +147,7 @@ bool llvm::isSafeToMoveBefore(Instruction &I, Instruction &InsertPoint,
 
   // Check if there exists instructions which may throw, may synchonize, or may
   // never return, from I to InsertPoint.
-  if (!isSafeToSpeculativelyExecute(&I))
-    if (llvm::any_of(InstsToCheck, [](Instruction *I) {
+  if ((!isSafeToSpeculativelyExecute(&I)) && (llvm::any_of(InstsToCheck, [](Instruction *I) {
           if (I->mayThrow())
             return true;
 
@@ -161,7 +160,8 @@ bool llvm::isSafeToMoveBefore(Instruction &I, Instruction &InsertPoint,
             return true;
 
           return false;
-        })) {
+        })))
+    {
       return reportInvalidCandidate(I, MayThrowException);
     }
 

@@ -56,10 +56,9 @@ void DynamicThreadPoolTaskDispatcher::dispatch(std::unique_ptr<Task> T) {
 
       // Otherwise record that we have a materialization task running.
       ++NumMaterializationThreads;
-    } else if (TaskKind == Idle) {
-      if (!canRunIdleTaskNow())
-        return IdleTaskQueue.push_back(std::move(T));
-    }
+    } else if ((TaskKind == Idle) && (!canRunIdleTaskNow())) 
+      return IdleTaskQueue.push_back(std::move(T));
+    
 
     ++Outstanding;
   }

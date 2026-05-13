@@ -251,9 +251,8 @@ void ValueMapping::map(const Value *V) {
   if (IDs.lookup(V))
     return;
 
-  if (auto *C = dyn_cast<Constant>(V))
-    if (!isa<GlobalValue>(C))
-      for (const Value *Op : C->operands())
+  if (auto *C = dyn_cast<Constant>(V); C && (!isa<GlobalValue>(C)))
+    for (const Value *Op : C->operands())
         map(Op);
 
   Values.push_back(V);
@@ -404,9 +403,8 @@ static void shuffleValueUseLists(Value *V, std::minstd_rand0 &Gen,
   if (!Seen.insert(V).second)
     return;
 
-  if (auto *C = dyn_cast<Constant>(V))
-    if (!isa<GlobalValue>(C))
-      for (Value *Op : C->operands())
+  if (auto *C = dyn_cast<Constant>(V); C && (!isa<GlobalValue>(C)))
+    for (Value *Op : C->operands())
         shuffleValueUseLists(Op, Gen, Seen);
 
   if (V->use_empty() || std::next(V->use_begin()) == V->use_end())
@@ -449,9 +447,8 @@ static void reverseValueUseLists(Value *V, DenseSet<Value *> &Seen) {
   if (!Seen.insert(V).second)
     return;
 
-  if (auto *C = dyn_cast<Constant>(V))
-    if (!isa<GlobalValue>(C))
-      for (Value *Op : C->operands())
+  if (auto *C = dyn_cast<Constant>(V); C && (!isa<GlobalValue>(C)))
+    for (Value *Op : C->operands())
         reverseValueUseLists(Op, Seen);
 
   if (V->use_empty() || std::next(V->use_begin()) == V->use_end())

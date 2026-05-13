@@ -329,9 +329,9 @@ void MatcherGen::EmitOperatorMatchCode(const TreePatternNode &N,
        N.getOperator()->getName() == "or") &&
       N.getChild(1).isLeaf() && N.getChild(1).getPredicateCalls().empty() &&
       N.getPredicateCalls().empty()) {
-    if (const IntInit *II = dyn_cast<IntInit>(N.getChild(1).getLeafValue())) {
-      if (!llvm::has_single_bit<uint32_t>(
-              II->getValue())) { // Don't bother with single bits.
+    if (const IntInit *II = dyn_cast<IntInit>(N.getChild(1).getLeafValue()); II && (!llvm::has_single_bit<uint32_t>(
+              II->getValue()))) 
+      { // Don't bother with single bits.
         // If this is at the root of the pattern, we emit a redundant
         // CheckOpcode so that the following checks get factored properly under
         // a single opcode check.
@@ -350,7 +350,7 @@ void MatcherGen::EmitOperatorMatchCode(const TreePatternNode &N,
         AddMatcher(new MoveParentMatcher());
         return;
       }
-    }
+    
   }
 
   // Check that the current opcode lines up.
@@ -508,10 +508,9 @@ void MatcherGen::EmitMatchCode(const TreePatternNode &N,
         ("pred:" + Twine(Name.getScope()) + ":" + Name.getIdentifier()).str());
   }
 
-  if (!Names.empty()) {
-    if (!recordUniqueNode(Names))
-      return;
-  }
+  if ((!Names.empty()) && (!recordUniqueNode(Names))) 
+    return;
+  
 
   if (N.isLeaf())
     EmitLeafMatchCode(N);

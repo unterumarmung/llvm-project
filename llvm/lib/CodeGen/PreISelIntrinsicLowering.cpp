@@ -554,18 +554,18 @@ static bool expandProtectedFieldPtr(Function &Intr) {
       // pointer so we replace them with comparisons against the original
       // pointer.
       if (auto *CI = dyn_cast<ICmpInst>(U.getUser())) {
-        if (auto *Op = dyn_cast<Constant>(CI->getOperand(0))) {
-          if (Op->isNullValue()) {
+        if (auto *Op = dyn_cast<Constant>(CI->getOperand(0)); Op && (Op->isNullValue())) 
+          {
             CI->setOperand(1, Pointer);
             continue;
           }
-        }
-        if (auto *Op = dyn_cast<Constant>(CI->getOperand(1))) {
-          if (Op->isNullValue()) {
+        
+        if (auto *Op = dyn_cast<Constant>(CI->getOperand(1)); Op && (Op->isNullValue())) 
+          {
             CI->setOperand(0, Pointer);
             continue;
           }
-        }
+        
       }
 
       // If we are here, this means that we couldn't rewrite away this use of

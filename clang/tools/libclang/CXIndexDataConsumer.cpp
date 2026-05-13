@@ -171,22 +171,22 @@ bool CXIndexDataConsumer::handleDeclOccurrence(
     if (!ND)
       return true;
 
-    if (auto *ObjCID = dyn_cast_or_null<ObjCInterfaceDecl>(ASTNode.OrigD)) {
-      if (!ObjCID->isThisDeclarationADefinition() &&
-          ObjCID->getLocation() == Loc) {
+    if (auto *ObjCID = dyn_cast_or_null<ObjCInterfaceDecl>(ASTNode.OrigD); ObjCID && (!ObjCID->isThisDeclarationADefinition() &&
+          ObjCID->getLocation() == Loc)) 
+      {
         // The libclang API treats this as ObjCClassRef declaration.
         IndexingDeclVisitor(*this, Loc, nullptr).Visit(ObjCID);
         return true;
       }
-    }
-    if (auto *ObjCPD = dyn_cast_or_null<ObjCProtocolDecl>(ASTNode.OrigD)) {
-      if (!ObjCPD->isThisDeclarationADefinition() &&
-          ObjCPD->getLocation() == Loc) {
+    
+    if (auto *ObjCPD = dyn_cast_or_null<ObjCProtocolDecl>(ASTNode.OrigD); ObjCPD && (!ObjCPD->isThisDeclarationADefinition() &&
+          ObjCPD->getLocation() == Loc)) 
+      {
         // The libclang API treats this as ObjCProtocolRef declaration.
         IndexingDeclVisitor(*this, Loc, nullptr).Visit(ObjCPD);
         return true;
       }
-    }
+    
 
     CXIdxEntityRefKind Kind = CXIdxEntityRef_Direct;
     if (Roles & (unsigned)SymbolRole::Implicit) {
@@ -501,9 +501,8 @@ void CXIndexDataConsumer::importedModule(const ImportDecl *ImportD) {
   // indexing, it doesn't correspond to an imported AST file.
   // FIXME: This assumes that AST files and top-level modules directly
   // correspond, which is unlikely to remain true forever.
-  if (Module *SrcMod = ImportD->getImportedOwningModule())
-    if (SrcMod->getTopLevelModule() == Mod->getTopLevelModule())
-      return;
+  if (Module *SrcMod = ImportD->getImportedOwningModule(); SrcMod && (SrcMod->getTopLevelModule() == Mod->getTopLevelModule()))
+    return;
 
   OptionalFileEntryRef FE;
   if (const ModuleFileName *ASTFileName = Mod->getASTFileName()) {
@@ -926,10 +925,9 @@ bool CXIndexDataConsumer::handleReference(const NamedDecl *D, SourceLocation Loc
   if (D->isImplicit() && shouldIgnoreIfImplicit(D))
     return false;
 
-  if (shouldSuppressRefs()) {
-    if (markEntityOccurrenceInFile(D, Loc))
-      return false; // already occurred.
-  }
+  if ((shouldSuppressRefs()) && (markEntityOccurrenceInFile(D, Loc))) 
+    return false; // already occurred.
+  
 
   ScratchAlloc SA(*this);
   EntityInfo RefEntity, ParentEntity;

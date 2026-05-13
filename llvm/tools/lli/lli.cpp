@@ -685,8 +685,8 @@ int main(int argc, char **argv, char * const *envp) {
     // If the program didn't call exit explicitly, we should call it now.
     // This ensures that any atexit handlers get called correctly.
     if (Function *ExitF =
-            dyn_cast<Function>(Exit.getCallee()->stripPointerCasts())) {
-      if (ExitF->getFunctionType() == Exit.getFunctionType()) {
+            dyn_cast<Function>(Exit.getCallee()->stripPointerCasts()); ExitF && (ExitF->getFunctionType() == Exit.getFunctionType())) 
+      {
         std::vector<GenericValue> Args;
         GenericValue ResultGV;
         ResultGV.IntVal = APInt(32, Result);
@@ -696,7 +696,7 @@ int main(int argc, char **argv, char * const *envp) {
             << "exit(" << Result << ") returned!\n";
         abort();
       }
-    }
+    
     WithColor::error(errs(), argv[0]) << "exit defined with wrong prototype!\n";
     abort();
   } else {

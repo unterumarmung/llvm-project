@@ -252,23 +252,20 @@ makeValidForAction(std::optional<mlir::omp::ClauseMemoryOrderKind> memOrder,
     // "acq_rel" decays to "acquire"
     if (*memOrder == mlir::omp::ClauseMemoryOrderKind::Acq_rel)
       return mlir::omp::ClauseMemoryOrderKind::Acquire;
-  } else if (action == Analysis::Write) {
+  } else if ((action == Analysis::Write) && (*memOrder == mlir::omp::ClauseMemoryOrderKind::Acq_rel)) 
     // "acq_rel" decays to "release"
-    if (*memOrder == mlir::omp::ClauseMemoryOrderKind::Acq_rel)
-      return mlir::omp::ClauseMemoryOrderKind::Release;
-  }
+    return mlir::omp::ClauseMemoryOrderKind::Release;
+  
 
   if (version > 50) {
-    if (action == Analysis::Read) {
+    if ((action == Analysis::Read) && (*memOrder == mlir::omp::ClauseMemoryOrderKind::Release)) 
       // "release" prohibited
-      if (*memOrder == mlir::omp::ClauseMemoryOrderKind::Release)
-        return mlir::omp::ClauseMemoryOrderKind::Relaxed;
-    }
-    if (action == Analysis::Write) {
+      return mlir::omp::ClauseMemoryOrderKind::Relaxed;
+    
+    if ((action == Analysis::Write) && (*memOrder == mlir::omp::ClauseMemoryOrderKind::Acquire)) 
       // "acquire" prohibited
-      if (*memOrder == mlir::omp::ClauseMemoryOrderKind::Acquire)
-        return mlir::omp::ClauseMemoryOrderKind::Relaxed;
-    }
+      return mlir::omp::ClauseMemoryOrderKind::Relaxed;
+    
   } else {
     if (action == Analysis::Read) {
       // "release" prohibited
@@ -279,11 +276,10 @@ makeValidForAction(std::optional<mlir::omp::ClauseMemoryOrderKind> memOrder,
         // "acquire" prohibited
         if (*memOrder == mlir::omp::ClauseMemoryOrderKind::Acquire)
           return mlir::omp::ClauseMemoryOrderKind::Relaxed;
-        if (action == Analysis::Update) {
+        if ((action == Analysis::Update) && (*memOrder == mlir::omp::ClauseMemoryOrderKind::Acq_rel)) 
           // "acq_rel" prohibited
-          if (*memOrder == mlir::omp::ClauseMemoryOrderKind::Acq_rel)
-            return mlir::omp::ClauseMemoryOrderKind::Relaxed;
-        }
+          return mlir::omp::ClauseMemoryOrderKind::Relaxed;
+        
       }
     }
   }

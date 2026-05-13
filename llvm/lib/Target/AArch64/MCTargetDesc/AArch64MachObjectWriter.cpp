@@ -315,10 +315,9 @@ void AArch64MachObjectWriter::recordRelocation(
     // possible. This seems to be done because the debugger doesn't fully
     // understand relocation entries and expects to find values that
     // have already been fixed up.
-    if (Symbol->isInSection()) {
-      if (Section.hasAttribute(MachO::S_ATTR_DEBUG))
-        Base = nullptr;
-    }
+    if ((Symbol->isInSection()) && (Section.hasAttribute(MachO::S_ATTR_DEBUG))) 
+      Base = nullptr;
+    
 
     // AArch64 uses external relocations as much as possible. For debug
     // sections, and for pointer-sized relocations (.quad), we allow section

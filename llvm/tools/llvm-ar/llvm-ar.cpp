@@ -454,13 +454,11 @@ static ArchiveOperation parseCommandLine() {
     badUsage("only one operation may be specified");
   if (NumPositional > 1)
     badUsage("you may only specify one of 'a', 'b', and 'i' modifiers");
-  if (AddAfter || AddBefore)
-    if (Operation != Move && Operation != ReplaceOrInsert)
-      badUsage("the 'a', 'b' and 'i' modifiers can only be specified with "
+  if ((AddAfter || AddBefore) && (Operation != Move && Operation != ReplaceOrInsert))
+    badUsage("the 'a', 'b' and 'i' modifiers can only be specified with "
                "the 'm' or 'r' operations");
-  if (CountParam)
-    if (Operation != Extract && Operation != Delete)
-      badUsage("the 'N' modifier can only be specified with the 'x' or 'd' "
+  if ((CountParam) && (Operation != Extract && Operation != Delete))
+    badUsage("the 'N' modifier can only be specified with the 'x' or 'd' "
                "operations");
   if (OriginalDates && Operation != Extract)
     badUsage("the 'o' modifier is only applicable to the 'x' operation");

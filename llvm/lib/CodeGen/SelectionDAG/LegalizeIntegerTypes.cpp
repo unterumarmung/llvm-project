@@ -5760,9 +5760,9 @@ void DAGTypeLegalizer::IntegerExpandSetCCOperands(SDValue &NewLHS,
 
   // If this is a comparison of the sign bit, just look at the top part.
   // X > -1,  x < 0
-  if (ConstantSDNode *CST = dyn_cast<ConstantSDNode>(NewRHS))
-    if ((CCCode == ISD::SETLT && CST->isZero()) ||    // X < 0
-        (CCCode == ISD::SETGT && CST->isAllOnes())) { // X > -1
+  if (ConstantSDNode *CST = dyn_cast<ConstantSDNode>(NewRHS); CST && ((CCCode == ISD::SETLT && CST->isZero()) ||    // X < 0
+        (CCCode == ISD::SETGT && CST->isAllOnes())))
+    { // X > -1
       NewLHS = LHSHi;
       NewRHS = RHSHi;
       return;

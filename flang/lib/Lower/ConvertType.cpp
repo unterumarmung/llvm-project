@@ -389,9 +389,8 @@ struct TypeBuilderImpl {
     auto rec = fir::RecordType::get(context, converter.mangleName(tySpec));
     // Mark SEQUENCE derived types.
     if (const auto *details =
-            typeSymbol.detailsIf<Fortran::semantics::DerivedTypeDetails>())
-      if (details->sequence())
-        rec.setSequence(true);
+            typeSymbol.detailsIf<Fortran::semantics::DerivedTypeDetails>(); details && (details->sequence()))
+      rec.setSequence(true);
 
     // Maintain the stack of types for recursive references and to speed-up
     // the derived type constructions that can be expensive for derived type
@@ -436,12 +435,12 @@ struct TypeBuilderImpl {
           prev_offset += compSize;
         }
         cs.emplace_back(converter.getRecordTypeFieldName(component), ty);
-        if (rec.isPacked()) {
-          // For the last component, determine if any padding is needed.
-          if (componentName ==
+        if ((rec.isPacked()) && (componentName ==
               typeSymbol.get<Fortran::semantics::DerivedTypeDetails>()
                   .componentNames()
-                  .back()) {
+                  .back())) 
+          // For the last component, determine if any padding is needed.
+          {
             auto compEnd{component.offset() + component.size()};
             if (compEnd < derivedScope.size()) {
               size_t pad{derivedScope.size() - compEnd};
@@ -452,7 +451,7 @@ struct TypeBuilderImpl {
                               padTy);
             }
           }
-        }
+        
       }
     }
 

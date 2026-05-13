@@ -61,12 +61,11 @@ llvm::Error clang::tooling::validateRange(const CharSourceRange &Range,
     return llvm::make_error<StringError>(
         errc::invalid_argument, "Range starts or ends in a macro expansion");
 
-  if (!AllowSystemHeaders) {
-    if (SM.isInSystemHeader(Range.getBegin()) ||
-        SM.isInSystemHeader(Range.getEnd()))
-      return llvm::make_error<StringError>(errc::invalid_argument,
+  if ((!AllowSystemHeaders) && (SM.isInSystemHeader(Range.getBegin()) ||
+        SM.isInSystemHeader(Range.getEnd()))) 
+    return llvm::make_error<StringError>(errc::invalid_argument,
                                            "Range is in system header");
-  }
+  
 
   FileIDAndOffset BeginInfo = SM.getDecomposedLoc(Range.getBegin());
   FileIDAndOffset EndInfo = SM.getDecomposedLoc(Range.getEnd());
@@ -435,13 +434,11 @@ CharSourceRange tooling::getAssociatedRange(const Decl &Decl,
 
   // First, expand to the start of the template<> declaration if necessary.
   if (const auto *Record = llvm::dyn_cast<CXXRecordDecl>(&Decl)) {
-    if (const auto *T = Record->getDescribedClassTemplate())
-      if (SM.isBeforeInTranslationUnit(T->getBeginLoc(), Range.getBegin()))
-        Range.setBegin(T->getBeginLoc());
+    if (const auto *T = Record->getDescribedClassTemplate(); T && (SM.isBeforeInTranslationUnit(T->getBeginLoc(), Range.getBegin())))
+      Range.setBegin(T->getBeginLoc());
   } else if (const auto *F = llvm::dyn_cast<FunctionDecl>(&Decl)) {
-    if (const auto *T = F->getDescribedFunctionTemplate())
-      if (SM.isBeforeInTranslationUnit(T->getBeginLoc(), Range.getBegin()))
-        Range.setBegin(T->getBeginLoc());
+    if (const auto *T = F->getDescribedFunctionTemplate(); T && (SM.isBeforeInTranslationUnit(T->getBeginLoc(), Range.getBegin())))
+      Range.setBegin(T->getBeginLoc());
   }
 
   // Next, expand the end location past trailing comments to include a potential
@@ -454,19 +451,19 @@ CharSourceRange tooling::getAssociatedRange(const Decl &Decl,
   // that are not preceeding the decl, since we've already skipped trailing
   // comments with getEntityEndLoc.
   if (const RawComment *Comment =
-          Decl.getASTContext().getRawCommentForDeclNoCache(&Decl))
+          Decl.getASTContext().getRawCommentForDeclNoCache(&Decl); Comment && (SM.isBeforeInTranslationUnit(Comment->getBeginLoc(),
+                                     Range.getBegin()) &&
+        !atOrBeforeSeparation(
+            SM, skipWhitespaceAndNewline(SM, Comment->getEndLoc(), LangOpts),
+            LangOpts) &&
+        atOrBeforeSeparation(SM, Range.getEnd(), LangOpts)))
     // Only include a preceding comment if:
     // * it is *not* separate from the declaration (not including any newline
     //   that immediately follows the comment),
     // * the decl *is* separate from any following entity (so, there are no
     //   other entities the comment could refer to), and
     // * it is not a IfThisThenThat lint check.
-    if (SM.isBeforeInTranslationUnit(Comment->getBeginLoc(),
-                                     Range.getBegin()) &&
-        !atOrBeforeSeparation(
-            SM, skipWhitespaceAndNewline(SM, Comment->getEndLoc(), LangOpts),
-            LangOpts) &&
-        atOrBeforeSeparation(SM, Range.getEnd(), LangOpts)) {
+    {
       const StringRef CommentText = Comment->getRawText(SM);
       if (!CommentText.contains("LINT.IfChange") &&
           !CommentText.contains("LINT.ThenChange"))

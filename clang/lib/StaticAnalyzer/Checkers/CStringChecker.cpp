@@ -2288,26 +2288,25 @@ void CStringChecker::evalStrcpyCommon(CheckerContext &C, const CallEvent &Call,
     state = invalidateSourceBuffer(C, state, Call.getCFGElementRef(), srcVal);
 
     // Set the C string length of the destination, if we know it.
-    if (IsBounded && (appendK == ConcatFnKind::none)) {
+    if ((IsBounded && (appendK == ConcatFnKind::none)) && (amountCopied != strLength)) 
       // strncpy is annoying in that it doesn't guarantee to null-terminate
       // the result string. If the original string didn't fit entirely inside
       // the bound (including the null-terminator), we don't know how long the
       // result is.
-      if (amountCopied != strLength)
-        finalStrLength = UnknownVal();
-    }
+      finalStrLength = UnknownVal();
+    
     state = setCStringLength(state, dstRegVal->getRegion(), finalStrLength);
   }
 
   assert(state);
 
-  if (returnPtr) {
+  if ((returnPtr) && (ReturnEnd && Result.isUnknown())) 
     // If this is a stpcpy-style copy, but we were unable to check for a buffer
     // overflow, we still need a result. Conjure a return value.
-    if (ReturnEnd && Result.isUnknown()) {
+    {
       Result = svalBuilder.conjureSymbolVal(Call, C.blockCount());
     }
-  }
+  
   // Set the return value.
   state = state->BindExpr(Call.getOriginExpr(), LCtx, Result);
   C.addTransition(state);
@@ -2969,10 +2968,9 @@ void CStringChecker::checkDeadSymbols(SymbolReaper &SR,
 
   CStringLengthTy::Factory &F = state->get_context<CStringLength>();
   for (auto [Reg, Len] : Entries) {
-    if (SymbolRef Sym = Len.getAsSymbol()) {
-      if (SR.isDead(Sym))
-        Entries = F.remove(Entries, Reg);
-    }
+    if (SymbolRef Sym = Len.getAsSymbol(); Sym && (SR.isDead(Sym))) 
+      Entries = F.remove(Entries, Reg);
+    
   }
 
   state = state->set<CStringLength>(Entries);

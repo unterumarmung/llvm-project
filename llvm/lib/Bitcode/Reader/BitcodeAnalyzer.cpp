@@ -34,10 +34,9 @@ GetBlockName(unsigned BlockID, const BitstreamBlockInfo &BlockInfo,
 
   // Check to see if we have a blockinfo record for this block, with a name.
   if (const BitstreamBlockInfo::BlockInfo *Info =
-          BlockInfo.getBlockInfo(BlockID)) {
-    if (!Info->Name.empty())
-      return Info->Name.c_str();
-  }
+          BlockInfo.getBlockInfo(BlockID); Info && (!Info->Name.empty())) 
+    return Info->Name.c_str();
+  
 
   if (CurStreamType != LLVMIRBitstream)
     return std::nullopt;

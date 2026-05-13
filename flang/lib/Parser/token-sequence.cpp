@@ -398,11 +398,11 @@ bool TokenSequence::BadlyNestedParentheses() const {
     char ch{token.OnlyNonBlank()};
     if (ch == '(') {
       ++nesting;
-    } else if (ch == ')') {
-      if (nesting-- == 0) {
+    } else if ((ch == ')') && (nesting-- == 0)) 
+      {
         break;
       }
-    }
+    
   }
   return nesting != 0;
 }

@@ -692,11 +692,10 @@ void VarMapBuilder::VisitCallExpr(const CallExpr *CE) {
   // Heuristic for likely-benign functions that pass by mutable reference. This
   // is needed to avoid a slew of false positives due to mutable reference
   // passing where the captured reference is usually passed on by-value.
-  if (const IdentifierInfo *II = FD->getIdentifier()) {
+  if (const IdentifierInfo *II = FD->getIdentifier(); II && (II->isStr("bind") || II->isStr("bind_front"))) 
     // Any kind of std::bind-like functions.
-    if (II->isStr("bind") || II->isStr("bind_front"))
-      return;
-  }
+    return;
+  
 
   // Invalidate local variable definitions that are passed by non-const
   // reference or non-const pointer.
@@ -717,13 +716,13 @@ void VarMapBuilder::VisitCallExpr(const CallExpr *CE) {
     } else if (ParamType->isPointerType() &&
                !ParamType->getPointeeType().isConstQualified()) {
       Arg = Arg->IgnoreParenCasts();
-      if (const auto *UO = dyn_cast<UnaryOperator>(Arg)) {
-        if (UO->getOpcode() == UO_AddrOf) {
+      if (const auto *UO = dyn_cast<UnaryOperator>(Arg); UO && (UO->getOpcode() == UO_AddrOf)) 
+        {
           const Expr *SubE = UO->getSubExpr()->IgnoreParenCasts();
           if (const auto *DRE = dyn_cast<DeclRefExpr>(SubE))
             VDec = DRE->getDecl();
         }
-      }
+      
     }
 
     if (VDec)
@@ -1397,12 +1396,12 @@ void BeforeSet::checkBeforeAfter(const ValueDecl* StartVd,
         Analyzer.Handler.handleLockAcquiredBefore(CapKind, L1, L2, Loc);
       }
       // Transitively search other before sets, and warn on cycles.
-      if (traverse(Vdb)) {
-        if (CycMap.try_emplace(Vd, true).second) {
+      if ((traverse(Vdb)) && (CycMap.try_emplace(Vd, true).second)) 
+        {
           StringRef L1 = Vd->getName();
           Analyzer.Handler.handleBeforeAfterCycle(L1, Vd->getLocation());
         }
-      }
+      
     }
     Info->Visited = 2;
     return false;
@@ -2010,14 +2009,14 @@ void ThreadSafetyAnalyzer::checkPtAccess(const FactSet &FSet, const Expr *Exp,
     break;
   }
 
-  if (const auto *UO = dyn_cast<UnaryOperator>(Exp)) {
-    if (UO->getOpcode() == UO_AddrOf) {
+  if (const auto *UO = dyn_cast<UnaryOperator>(Exp); UO && (UO->getOpcode() == UO_AddrOf)) 
+    {
       // Pointer access via pointer taken of variable, so the dereferenced
       // variable is not actually a pointer.
       checkAccess(FSet, UO->getSubExpr(), AK, POK);
       return;
     }
-  }
+  
 
   // Pass by reference/pointer warnings are under a different flag.
   ProtectedOperationKind PtPOK = POK_VarDereference;
@@ -2459,13 +2458,11 @@ void BuildLockset::VisitCXXConstructExpr(const CXXConstructExpr *Exp) {
 }
 
 static const Expr *UnpackConstruction(const Expr *E) {
-  if (auto *CE = dyn_cast<CastExpr>(E))
-    if (CE->getCastKind() == CK_NoOp)
-      E = CE->getSubExpr()->IgnoreParens();
-  if (auto *CE = dyn_cast<CastExpr>(E))
-    if (CE->getCastKind() == CK_ConstructorConversion ||
-        CE->getCastKind() == CK_UserDefinedConversion)
-      E = CE->getSubExpr();
+  if (auto *CE = dyn_cast<CastExpr>(E); CE && (CE->getCastKind() == CK_NoOp))
+    E = CE->getSubExpr()->IgnoreParens();
+  if (auto *CE = dyn_cast<CastExpr>(E); CE && (CE->getCastKind() == CK_ConstructorConversion ||
+        CE->getCastKind() == CK_UserDefinedConversion))
+    E = CE->getSubExpr();
   if (auto *BTE = dyn_cast<CXXBindTemporaryExpr>(E))
     E = BTE->getSubExpr();
   return E;

@@ -24,12 +24,11 @@ std::optional<Pointer> MemberPointer::toPointer(const Context &Ctx) const {
 
   unsigned BlockMDSize = Base.block()->getDescriptor()->getMetadataSize();
 
-  if (PtrOffset >= 0) {
+  if ((PtrOffset >= 0) && (Base.BS.Base < static_cast<unsigned>(PtrOffset) ||
+        (Base.BS.Base - PtrOffset < BlockMDSize))) 
     // If the resulting base would be too small, return nullopt.
-    if (Base.BS.Base < static_cast<unsigned>(PtrOffset) ||
-        (Base.BS.Base - PtrOffset < BlockMDSize))
-      return std::nullopt;
-  }
+    return std::nullopt;
+  
 
   Pointer CastedBase =
       (PtrOffset < 0 ? Base.atField(-PtrOffset) : Base.atFieldSub(PtrOffset));

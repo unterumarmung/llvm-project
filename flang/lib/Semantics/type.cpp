@@ -561,23 +561,23 @@ Symbol *InstantiateHelper::BeginComponentInstantiation(
     }
   } else if (auto *procDetails{newSymbol.detailsIf<ProcEntityDetails>()}) {
     // We have a procedure pointer.  Instantiate its return type
-    if (const DeclTypeSpec * returnType{InstantiateType(newSymbol)}) {
-      if (!procDetails->procInterface()) {
+    if (const DeclTypeSpec * returnType{InstantiateType(newSymbol)}; returnType && (!procDetails->procInterface())) 
+      {
         procDetails->ReplaceType(*returnType);
       }
-    }
+    
   }
   return &newSymbol;
 }
 
 void InstantiateHelper::CompleteComponentInstantiation(Symbol &newSymbol) {
-  if (auto *details{newSymbol.detailsIf<ObjectEntityDetails>()}) {
-    if (IsAllocatableOrPointer(newSymbol)) {
+  if (auto *details{newSymbol.detailsIf<ObjectEntityDetails>()}; details && (IsAllocatableOrPointer(newSymbol))) 
+    {
       if (const DeclTypeSpec *newType{InstantiateType(newSymbol)}) {
         details->ReplaceType(*newType);
       }
     }
-  }
+  
 }
 
 const DeclTypeSpec *InstantiateHelper::InstantiateType(const Symbol &symbol) {

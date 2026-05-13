@@ -753,9 +753,8 @@ PPC64_SVR4_ABIInfo::isPromotableTypeForABI(QualType Ty) const {
       break;
     }
 
-  if (const auto *EIT = Ty->getAs<BitIntType>())
-    if (EIT->getNumBits() < 64)
-      return true;
+  if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && (EIT->getNumBits() < 64))
+    return true;
 
   return false;
 }
@@ -820,22 +819,21 @@ CharUnits PPC64_SVR4_ABIInfo::getParamTypeAlignment(QualType Ty) const {
 bool PPC64_SVR4_ABIInfo::isHomogeneousAggregateBaseType(QualType Ty) const {
   // Homogeneous aggregates for ELFv2 must have base types of float,
   // double, long double, or 128-bit vectors.
-  if (const BuiltinType *BT = Ty->getAs<BuiltinType>()) {
-    if (BT->getKind() == BuiltinType::Float ||
+  if (const BuiltinType *BT = Ty->getAs<BuiltinType>(); BT && (BT->getKind() == BuiltinType::Float ||
         BT->getKind() == BuiltinType::Double ||
         BT->getKind() == BuiltinType::LongDouble ||
         BT->getKind() == BuiltinType::Ibm128 ||
         (getContext().getTargetInfo().hasFloat128Type() &&
-         (BT->getKind() == BuiltinType::Float128))) {
+         (BT->getKind() == BuiltinType::Float128)))) 
+    {
       if (IsSoftFloatABI)
         return false;
       return true;
     }
-  }
-  if (const VectorType *VT = Ty->getAs<VectorType>()) {
-    if (getContext().getTypeSize(VT) == 128)
-      return true;
-  }
+  
+  if (const VectorType *VT = Ty->getAs<VectorType>(); VT && (getContext().getTypeSize(VT) == 128)) 
+    return true;
+  
   return false;
 }
 
@@ -873,9 +871,8 @@ PPC64_SVR4_ABIInfo::classifyArgumentType(QualType Ty) const {
     }
   }
 
-  if (const auto *EIT = Ty->getAs<BitIntType>())
-    if (EIT->getNumBits() > 128)
-      return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace(),
+  if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 128))
+    return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace(),
                                      /*ByVal=*/true);
 
   if (isAggregateTypeForABI(Ty)) {
@@ -954,9 +951,8 @@ PPC64_SVR4_ABIInfo::classifyReturnType(QualType RetTy) const {
     }
   }
 
-  if (const auto *EIT = RetTy->getAs<BitIntType>())
-    if (EIT->getNumBits() > 128)
-      return getNaturalAlignIndirect(
+  if (const auto *EIT = RetTy->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 128))
+    return getNaturalAlignIndirect(
           RetTy, getDataLayout().getAllocaAddrSpace(), /*ByVal=*/false);
 
   if (isAggregateTypeForABI(RetTy)) {

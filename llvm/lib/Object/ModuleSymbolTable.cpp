@@ -222,13 +222,11 @@ uint32_t ModuleSymbolTable::getSymbolFlags(Symbol S) const {
     Res |= BasicSymbolRef::SF_Undefined;
   else if (GV->hasHiddenVisibility() && !GV->hasLocalLinkage())
     Res |= BasicSymbolRef::SF_Hidden;
-  if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GV)) {
-    if (GVar->isConstant())
-      Res |= BasicSymbolRef::SF_Const;
-  }
-  if (const GlobalObject *GO = GV->getAliaseeObject())
-    if (isa<Function>(GO) || isa<GlobalIFunc>(GO))
-      Res |= BasicSymbolRef::SF_Executable;
+  if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GV); GVar && (GVar->isConstant())) 
+    Res |= BasicSymbolRef::SF_Const;
+  
+  if (const GlobalObject *GO = GV->getAliaseeObject(); GO && (isa<Function>(GO) || isa<GlobalIFunc>(GO)))
+    Res |= BasicSymbolRef::SF_Executable;
   if (isa<GlobalAlias>(GV))
     Res |= BasicSymbolRef::SF_Indirect;
   if (GV->hasPrivateLinkage())
@@ -243,10 +241,9 @@ uint32_t ModuleSymbolTable::getSymbolFlags(Symbol S) const {
 
   if (GV->getName().starts_with("llvm."))
     Res |= BasicSymbolRef::SF_FormatSpecific;
-  else if (auto *Var = dyn_cast<GlobalVariable>(GV)) {
-    if (Var->getSection() == "llvm.metadata")
-      Res |= BasicSymbolRef::SF_FormatSpecific;
-  }
+  else if (auto *Var = dyn_cast<GlobalVariable>(GV); Var && (Var->getSection() == "llvm.metadata")) 
+    Res |= BasicSymbolRef::SF_FormatSpecific;
+  
 
   return Res;
 }

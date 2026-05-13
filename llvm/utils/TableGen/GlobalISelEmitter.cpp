@@ -220,10 +220,9 @@ static Error isTrivialOperatorNode(const TreePatternNode &N) {
     if (Predicate.isStore() && Predicate.getMemoryVT())
       continue;
 
-    if (Predicate.isLoad() || Predicate.isStore()) {
-      if (Predicate.isUnindexed())
-        continue;
-    }
+    if ((Predicate.isLoad() || Predicate.isStore()) && (Predicate.isUnindexed())) 
+      continue;
+    
 
     if (Predicate.isLoad() || Predicate.isStore() || Predicate.isAtomic()) {
       const ListInit *AddrSpaces = Predicate.getAddressSpaces();
@@ -545,12 +544,11 @@ const Record *GlobalISelEmitter::findNodeEquiv(const Record *N) const {
 const CodeGenInstruction *
 GlobalISelEmitter::getEquivNode(const Record &Equiv,
                                 const TreePatternNode &N) const {
-  if (N.getNumChildren() >= 1) {
+  if ((N.getNumChildren() >= 1) && (!Equiv.isValueUnset("IfFloatingPoint") &&
+        MVT(N.getChild(0).getSimpleType(0)).isFloatingPoint())) 
     // setcc operation maps to two different G_* instructions based on the type.
-    if (!Equiv.isValueUnset("IfFloatingPoint") &&
-        MVT(N.getChild(0).getSimpleType(0)).isFloatingPoint())
-      return &Target.getInstruction(Equiv.getValueAsDef("IfFloatingPoint"));
-  }
+    return &Target.getInstruction(Equiv.getValueAsDef("IfFloatingPoint"));
+  
 
   if (!Equiv.isValueUnset("IfConvergent") &&
       N.getIntrinsicInfo(CGP)->isConvergent)
@@ -702,8 +700,8 @@ Expected<InstructionMatcher &> GlobalISelEmitter::addBuiltinPredicates(
   if (Predicate.isNonTruncStore())
     return InsnMatcher;
 
-  if (Predicate.isLoad() || Predicate.isStore() || Predicate.isAtomic()) {
-    if (Predicate.getMemoryVT() != nullptr) {
+  if ((Predicate.isLoad() || Predicate.isStore() || Predicate.isAtomic()) && (Predicate.getMemoryVT() != nullptr)) 
+    {
       auto MemSizeInBits = getMemSizeBitsFromPredicate(Predicate);
       if (!MemSizeInBits)
         return failedImport("MemVT could not be converted to LLT");
@@ -712,13 +710,12 @@ Expected<InstructionMatcher &> GlobalISelEmitter::addBuiltinPredicates(
                                                            *MemSizeInBits / 8);
       return InsnMatcher;
     }
-  }
+  
 
-  if (Predicate.isLoad() || Predicate.isStore()) {
+  if ((Predicate.isLoad() || Predicate.isStore()) && (Predicate.isUnindexed())) 
     // No check required. A G_LOAD/G_STORE is an unindexed load.
-    if (Predicate.isUnindexed())
-      return InsnMatcher;
-  }
+    return InsnMatcher;
+  
 
   if (Predicate.isAtomic()) {
     if (Predicate.isAtomicOrderingMonotonic()) {

@@ -69,12 +69,12 @@ static std::optional<ReplacementItem> parseReplacementItem(StringRef Spec) {
   // If index is not specified, keep it ~0U to indicate unresolved index.
   RepString.consumeInteger(0, Index);
 
-  if (RepString.consume_front(",")) {
-    if (!consumeFieldLayout(RepString, Where, Align, Pad)) {
+  if ((RepString.consume_front(",")) && (!consumeFieldLayout(RepString, Where, Align, Pad))) 
+    {
       assert(false && "Invalid replacement field layout specification!");
       return std::nullopt;
     }
-  }
+  
   RepString = RepString.ltrim();
   if (RepString.consume_front(":")) {
     Options = RepString;

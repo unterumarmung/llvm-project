@@ -621,7 +621,7 @@ bool ConstantOffsetExtractor::canTraceInto(bool SignExtended, bool ZeroExtended,
   //       1       |      0       | sext(BO) == sext(A) op sext(B)
   //       1       |      1       | zext(sext(BO)) ==
   //               |              |     zext(sext(A)) op zext(sext(B))
-  if (BO->getOpcode() == Instruction::Add && !ZeroExtended && GEP) {
+  if ((BO->getOpcode() == Instruction::Add && !ZeroExtended && GEP) && (canReorderAddSextToGEP(GEP, Idx, BO, DL))) 
     // If a + b >= 0 and (a >= 0 or b >= 0), then
     //   sext(a + b) = sext(a) + sext(b)
     // even if the addition is not marked nsw.
@@ -630,9 +630,8 @@ bool ConstantOffsetExtractor::canTraceInto(bool SignExtended, bool ZeroExtended,
     // index under certain conditions (see canReorderAddSextToGEP).
     //
     // Verified in @sext_add in split-gep.ll.
-    if (canReorderAddSextToGEP(GEP, Idx, BO, DL))
-      return true;
-  }
+    return true;
+  
 
   // For a sext(add nuw), allow tracing through when the enclosing GEP is both
   // inbounds and nuw.
@@ -829,10 +828,9 @@ Value *ConstantOffsetExtractor::removeConstOffset(unsigned ChainIndex) {
 
   // If NextInChain is 0 and not the LHS of a sub, we can simplify the
   // sub-expression to be just TheOther.
-  if (ConstantInt *CI = dyn_cast<ConstantInt>(NextInChain)) {
-    if (CI->isZero() && !(BO->getOpcode() == Instruction::Sub && OpNo == 0))
-      return TheOther;
-  }
+  if (ConstantInt *CI = dyn_cast<ConstantInt>(NextInChain); CI && (CI->isZero() && !(BO->getOpcode() == Instruction::Sub && OpNo == 0))) 
+    return TheOther;
+  
 
   BinaryOperator::BinaryOps NewOp = BO->getOpcode();
   if (BO->getOpcode() == Instruction::Or) {
@@ -920,13 +918,13 @@ bool SeparateConstOffsetFromGEP::canonicalizeArrayIndicesToIndexSize(
   for (User::op_iterator I = GEP->op_begin() + 1, E = GEP->op_end();
        I != E; ++I, ++GTI) {
     // Skip struct member indices which must be i32.
-    if (GTI.isSequential()) {
-      if ((*I)->getType() != PtrIdxTy) {
+    if ((GTI.isSequential()) && ((*I)->getType() != PtrIdxTy)) 
+      {
         *I = CastInst::CreateIntegerCast(*I, PtrIdxTy, true, "idxprom",
                                          GEP->getIterator());
         Changed = true;
       }
-    }
+    
   }
   return Changed;
 }
@@ -999,9 +997,8 @@ void SeparateConstOffsetFromGEP::lowerToSingleIndexGEPs(
     if (GTI.isSequential()) {
       Value *Idx = Variadic->getOperand(I);
       // Skip zero indices.
-      if (ConstantInt *CI = dyn_cast<ConstantInt>(Idx))
-        if (CI->isZero())
-          continue;
+      if (ConstantInt *CI = dyn_cast<ConstantInt>(Idx); CI && (CI->isZero()))
+        continue;
 
       APInt ElementSize = APInt(PtrIndexTy->getIntegerBitWidth(),
                                 GTI.getSequentialElementStride(*DL));
@@ -1380,8 +1377,8 @@ bool SeparateConstOffsetFromGEP::reuniteExts(Instruction *I) {
         return true;
       }
     }
-  } else if (match(I, m_Sub(m_SExt(m_Value(LHS)), m_SExt(m_Value(RHS))))) {
-    if (LHS->getType() == RHS->getType()) {
+  } else if ((match(I, m_Sub(m_SExt(m_Value(LHS)), m_SExt(m_Value(RHS))))) && (LHS->getType() == RHS->getType())) 
+    {
       if (auto *Dom =
               findClosestMatchingDominator({LHS, RHS}, I, DominatingSubs)) {
         Instruction *NewSExt =
@@ -1393,7 +1390,7 @@ bool SeparateConstOffsetFromGEP::reuniteExts(Instruction *I) {
         return true;
       }
     }
-  }
+  
 
   // Add I to DominatingExprs if it's an add/sub that can't sign overflow.
   if (match(I, m_NSWAdd(m_Value(LHS), m_Value(RHS)))) {
@@ -1401,10 +1398,9 @@ bool SeparateConstOffsetFromGEP::reuniteExts(Instruction *I) {
       ExprKey Key = createNormalizedCommutablePair(LHS, RHS);
       DominatingAdds[Key].push_back(I);
     }
-  } else if (match(I, m_NSWSub(m_Value(LHS), m_Value(RHS)))) {
-    if (programUndefinedIfPoison(I))
-      DominatingSubs[{LHS, RHS}].push_back(I);
-  }
+  } else if ((match(I, m_NSWSub(m_Value(LHS), m_Value(RHS)))) && (programUndefinedIfPoison(I))) 
+    DominatingSubs[{LHS, RHS}].push_back(I);
+  
   return false;
 }
 
@@ -1497,10 +1493,8 @@ bool SeparateConstOffsetFromGEP::hasMoreThanOneUseInLoop(Value *V, Loop *L) {
 
   int UsesInLoop = 0;
   for (User *U : V->users()) {
-    if (Instruction *User = dyn_cast<Instruction>(U))
-      if (L->contains(User))
-        if (++UsesInLoop > 1)
-          return true;
+    if (Instruction *User = dyn_cast<Instruction>(U); User && (L->contains(User)) && (++UsesInLoop > 1))
+      return true;
   }
   return false;
 }

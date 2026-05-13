@@ -2768,9 +2768,8 @@ void RuntimeDyldELF::processNewSymbol(const SymbolRef &ObjSymbol, SymbolTableEnt
 
 Error RuntimeDyldELF::finalizeLoad(const ObjectFile &Obj,
                                   ObjSectionToIDMap &SectionMap) {
-  if (IsMipsO32ABI)
-    if (!PendingRelocs.empty())
-      return make_error<RuntimeDyldError>("Can't find matching LO16 reloc");
+  if ((IsMipsO32ABI) && (!PendingRelocs.empty()))
+    return make_error<RuntimeDyldError>("Can't find matching LO16 reloc");
 
   // Create the IFunc stubs if necessary. This must be done before processing
   // the GOT entries, as the IFunc stubs may create some.

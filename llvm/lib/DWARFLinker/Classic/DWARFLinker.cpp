@@ -192,12 +192,12 @@ DWARFLinker::DIECloner::getCanonicalDIEName(DWARFDie Die, const DWARFFile &File,
 
     unsigned SpecIdx = Unit->getOrigUnit().getDIEIndex(Die);
     CompileUnit::DIEInfo &SpecInfo = Unit->getInfo(SpecIdx);
-    if (SpecInfo.Ctxt && SpecInfo.Ctxt->hasCanonicalDIE()) {
-      if (!SpecInfo.Ctxt->getCanonicalName().empty()) {
+    if ((SpecInfo.Ctxt && SpecInfo.Ctxt->hasCanonicalDIE()) && (!SpecInfo.Ctxt->getCanonicalName().empty())) 
+      {
         Name = SpecInfo.Ctxt->getCanonicalName();
         break;
       }
-    }
+    
 
     Name = GetDieName(Die);
     if (!Name.empty())
@@ -995,12 +995,11 @@ void DWARFLinker::lookForDIEsToKeep(AddressesMap &AddressesMap,
     // We need to mark context for the canonical die in the end of normal
     // traversing(not TF_DependencyWalk) or after normal traversing if die
     // was not marked as kept.
-    if (!(Current.Flags & TF_DependencyWalk) ||
-        (MyInfo.ODRMarkingDone && !MyInfo.Keep)) {
-      if (Current.CU.hasODR() || MyInfo.InModuleScope)
-        Worklist.emplace_back(Current.Die, Current.CU,
+    if ((!(Current.Flags & TF_DependencyWalk) ||
+        (MyInfo.ODRMarkingDone && !MyInfo.Keep)) && (Current.CU.hasODR() || MyInfo.InModuleScope)) 
+      Worklist.emplace_back(Current.Die, Current.CU,
                               WorklistItemType::MarkODRCanonicalDie);
-    }
+    
 
     // Finish by looking for child DIEs. Because of the LIFO worklist we need
     // to schedule that work before any subsequent items are added to the

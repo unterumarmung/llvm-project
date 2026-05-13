@@ -953,9 +953,8 @@ EmitSchedule(MachineBasicBlock::iterator &InsertPos) {
       if (HasDbg)
         ProcessSourceNode(N, DAG, Emitter, VRBaseMap, Orders, Seen, NewInsn);
 
-      if (MDNode *MD = DAG->getHeapAllocSite(N))
-        if (NewInsn && NewInsn->isCall())
-          NewInsn->setHeapAllocMarker(MF, MD);
+      if (MDNode *MD = DAG->getHeapAllocSite(N); MD && (NewInsn && NewInsn->isCall()))
+        NewInsn->setHeapAllocMarker(MF, MD);
 
       GluedNodes.pop_back();
     }
@@ -966,10 +965,9 @@ EmitSchedule(MachineBasicBlock::iterator &InsertPos) {
       ProcessSourceNode(SU->getNode(), DAG, Emitter, VRBaseMap, Orders, Seen,
                         NewInsn);
 
-    if (MDNode *MD = DAG->getHeapAllocSite(SU->getNode())) {
-      if (NewInsn && NewInsn->isCall())
-        NewInsn->setHeapAllocMarker(MF, MD);
-    }
+    if (MDNode *MD = DAG->getHeapAllocSite(SU->getNode()); MD && (NewInsn && NewInsn->isCall())) 
+      NewInsn->setHeapAllocMarker(MF, MD);
+    
   }
 
   // Insert all the dbg_values which have not already been inserted in source

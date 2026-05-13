@@ -1142,9 +1142,8 @@ static char getNMSectionTagAndName(SymbolicFile &Obj, basic_symbol_iterator I,
       return 'U';
     return isObject(Obj, I) ? 'v' : 'w';
   }
-  if (isa<ELFObjectFileBase>(&Obj))
-    if (ELFSymbolRef(*I).getELFType() == ELF::STT_GNU_IFUNC)
-      return 'i';
+  if ((isa<ELFObjectFileBase>(&Obj)) && (ELFSymbolRef(*I).getELFType() == ELF::STT_GNU_IFUNC))
+    return 'i';
   if (!isa<MachOObjectFile>(Obj) && (Symflags & object::SymbolRef::SF_Weak))
     return isObject(Obj, I) ? 'V' : 'W';
 
@@ -1741,11 +1740,10 @@ static void getXCOFFExports(XCOFFObjectFile *XCOFFObj,
       continue;
 
     // Check the SymName regex matching with "^__[0-9]+__".
-    if (SymName.size() > 4 && SymName.starts_with("__") &&
-        SymName.ends_with("__")) {
-      if (std::all_of(SymName.begin() + 2, SymName.end() - 2, isDigit))
-        continue;
-    }
+    if ((SymName.size() > 4 && SymName.starts_with("__") &&
+        SymName.ends_with("__")) && (std::all_of(SymName.begin() + 2, SymName.end() - 2, isDigit))) 
+      continue;
+    
 
     if (SymName == "__rsrc" && NoRsrc)
       continue;

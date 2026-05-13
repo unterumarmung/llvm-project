@@ -72,8 +72,8 @@ void AssignmentContext::Analyze(const parser::AssignmentStmt &stmt) {
     if (isDefinedAssignment) {
       flags.set(DefinabilityFlag::AllowEventLockOrNotifyType);
     } else if (const Symbol *
-        whole{evaluate::UnwrapWholeSymbolOrComponentDataRef(lhs)}) {
-      if (IsAllocatable(whole->GetUltimate())) {
+        whole{evaluate::UnwrapWholeSymbolOrComponentDataRef(lhs)}; whole && (IsAllocatable(whole->GetUltimate()))) 
+      {
         flags.set(DefinabilityFlag::PotentialDeallocation);
         if (IsPolymorphic(*whole) && whereDepth_ > 0) {
           Say(lhsLoc,
@@ -81,7 +81,7 @@ void AssignmentContext::Analyze(const parser::AssignmentStmt &stmt) {
               whole->name());
         }
       }
-    }
+    
     if (auto whyNot{WhyNotDefinable(lhsLoc, scope, flags, lhs)}) {
       if (whyNot->IsFatal()) {
         if (auto *msg{Say(lhsLoc,

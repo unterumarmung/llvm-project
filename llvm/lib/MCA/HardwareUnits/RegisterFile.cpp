@@ -298,14 +298,14 @@ void RegisterFile::addRegisterWrite(WriteRef Write,
     // instruction to register RegID.
     const WriteRef &OtherWrite = RegisterMappings[RegID].first;
     const WriteState *OtherWS = OtherWrite.getWriteState();
-    if (OtherWS && OtherWrite.getSourceIndex() == Write.getSourceIndex()) {
-      if (OtherWS->getLatency() > WS.getLatency()) {
+    if ((OtherWS && OtherWrite.getSourceIndex() == Write.getSourceIndex()) && (OtherWS->getLatency() > WS.getLatency())) 
+      {
         // Conservatively keep the slowest write on RegID.
         if (ShouldAllocatePhysRegs)
           allocatePhysRegs(RegisterMappings[RegID].second, UsedPhysRegs);
         return;
       }
-    }
+    
 
     // Update the mapping for register RegID including its sub-registers.
     RegisterMappings[RegID].first = Write;
@@ -422,9 +422,8 @@ bool RegisterFile::canEliminateMove(const WriteState &WS, const ReadState &RS,
   // For now, we assume that there is a strong correlation between registers
   // that allow move elimination, and how those same registers are renamed in
   // hardware.
-  if (RRITo.RenameAs && RRITo.RenameAs != WS.getRegisterID())
-    if (!WS.clearsSuperRegisters())
-      return false;
+  if ((RRITo.RenameAs && RRITo.RenameAs != WS.getRegisterID()) && (!WS.clearsSuperRegisters()))
+    return false;
 
   bool IsZeroMove = ZeroRegisters[RS.getRegisterID()];
   return (!RMT.AllowZeroMoveEliminationOnly || IsZeroMove);
@@ -599,12 +598,12 @@ RegisterFile::checkRAWHazards(const MCSubtargetInfo &STI,
     }
 
     int CyclesLeft = WS->getCyclesLeft() - ReadAdvance;
-    if (CyclesLeft > 0) {
-      if (Hazard.CyclesLeft < CyclesLeft) {
+    if ((CyclesLeft > 0) && (Hazard.CyclesLeft < CyclesLeft)) 
+      {
         Hazard.RegisterID = WR.getRegisterID();
         Hazard.CyclesLeft = CyclesLeft;
       }
-    }
+    
   }
   Writes.clear();
 

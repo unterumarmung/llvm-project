@@ -354,9 +354,8 @@ void InferPedantic::compute(VecOrSet DiagsInPedantic,
     // Check if the group is implicitly in -Wpedantic.  If so,
     // the diagnostic should not be directly included in the -Wpedantic
     // diagnostic group.
-    if (const auto *Group = dyn_cast<DefInit>(R->getValueInit("Group")))
-      if (groupInPedantic(Group->getDef()))
-        continue;
+    if (const auto *Group = dyn_cast<DefInit>(R->getValueInit("Group")); Group && (groupInPedantic(Group->getDef())))
+      continue;
 
     // The diagnostic is not included in a group that is (transitively) in
     // -Wpedantic.  Include it in -Wpedantic directly.
@@ -1852,12 +1851,12 @@ void clang::EmitClangDiagsDefs(const RecordKeeper &Records, raw_ostream &OS,
     }
 
     // Check that all remarks have an associated diagnostic group.
-    if (isRemark(R)) {
-      if (!isa<DefInit>(R.getValueInit("Group"))) {
+    if ((isRemark(R)) && (!isa<DefInit>(R.getValueInit("Group")))) 
+      {
         PrintFatalError(R.getLoc(), "Error " + R.getName() +
                                         " not in any diagnostic group");
       }
-    }
+    
 
     // Filter by component.
     if (!Component.empty() && Component != R.getValueAsString("Component"))

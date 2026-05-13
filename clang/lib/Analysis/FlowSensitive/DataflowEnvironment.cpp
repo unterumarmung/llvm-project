@@ -611,13 +611,12 @@ Environment Environment::pushCall(const CallExpr *Call) const {
   Environment Env(*this);
 
   if (const auto *MethodCall = dyn_cast<CXXMemberCallExpr>(Call)) {
-    if (const Expr *Arg = MethodCall->getImplicitObjectArgument()) {
-      if (!isa<CXXThisExpr>(Arg))
-        Env.ThisPointeeLoc =
+    if (const Expr *Arg = MethodCall->getImplicitObjectArgument(); Arg && (!isa<CXXThisExpr>(Arg))) 
+      Env.ThisPointeeLoc =
             cast<RecordStorageLocation>(getStorageLocation(*Arg));
       // Otherwise (when the argument is `this`), retain the current
       // environment's `ThisPointeeLoc`.
-    }
+    
   }
 
   if (Call->getType()->isRecordType() && Call->isPRValue())
@@ -682,10 +681,9 @@ void Environment::popCall(const CallExpr *Call, const Environment &CalleeEnv) {
   if (Call->isGLValue()) {
     if (CalleeEnv.ReturnLoc != nullptr)
       setStorageLocation(*Call, *CalleeEnv.ReturnLoc);
-  } else if (!Call->getType()->isVoidType()) {
-    if (CalleeEnv.ReturnVal != nullptr)
-      setValue(*Call, *CalleeEnv.ReturnVal);
-  }
+  } else if ((!Call->getType()->isVoidType()) && (CalleeEnv.ReturnVal != nullptr)) 
+    setValue(*Call, *CalleeEnv.ReturnVal);
+  
 }
 
 void Environment::popCall(const CXXConstructExpr *Call,

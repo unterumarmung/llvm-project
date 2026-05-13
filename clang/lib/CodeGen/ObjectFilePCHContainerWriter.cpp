@@ -77,9 +77,8 @@ class PCHContainerGenerator : public ASTConsumer {
       // TagDecls may be deferred until after all decls have been merged and we
       // know the complete type. Pure forward declarations will be skipped, but
       // they don't need to be emitted into the module anyway.
-      if (auto *TD = dyn_cast<TagDecl>(D))
-        if (!TD->isCompleteDefinition())
-          return true;
+      if (auto *TD = dyn_cast<TagDecl>(D); TD && (!TD->isCompleteDefinition()))
+        return true;
 
       if (D->hasAttr<NoDebugAttr>())
         return true;
@@ -220,9 +219,8 @@ public:
     // Defer tag decls until their declcontext is complete.
     auto *DeclCtx = D->getDeclContext();
     while (DeclCtx) {
-      if (auto *D = dyn_cast<TagDecl>(DeclCtx))
-        if (!D->isCompleteDefinition())
-          return;
+      if (auto *D = dyn_cast<TagDecl>(DeclCtx); D && (!D->isCompleteDefinition()))
+        return;
       DeclCtx = DeclCtx->getParent();
     }
 

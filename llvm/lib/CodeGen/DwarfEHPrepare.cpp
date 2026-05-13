@@ -97,8 +97,8 @@ Value *DwarfEHPrepare::GetExceptionObject(ResumeInst *RI) {
   InsertValueInst *ExcIVI = nullptr;
   bool EraseIVIs = false;
 
-  if (SelIVI) {
-    if (SelIVI->getNumIndices() == 1 && *SelIVI->idx_begin() == 1) {
+  if ((SelIVI) && (SelIVI->getNumIndices() == 1 && *SelIVI->idx_begin() == 1)) 
+    {
       ExcIVI = dyn_cast<InsertValueInst>(SelIVI->getOperand(0));
       if (ExcIVI && isa<UndefValue>(ExcIVI->getOperand(0)) &&
           ExcIVI->getNumIndices() == 1 && *ExcIVI->idx_begin() == 0) {
@@ -107,7 +107,7 @@ Value *DwarfEHPrepare::GetExceptionObject(ResumeInst *RI) {
         EraseIVIs = true;
       }
     }
-  }
+  
 
   if (!ExnObj)
     ExnObj = ExtractValueInst::Create(RI->getOperand(0), 0, "exn.obj",
@@ -177,9 +177,8 @@ bool DwarfEHPrepare::InsertUnwindResumeCalls() {
   for (BasicBlock &BB : F) {
     if (auto *RI = dyn_cast<ResumeInst>(BB.getTerminator()))
       Resumes.push_back(RI);
-    if (auto *LP = BB.getLandingPadInst())
-      if (LP->isCleanup())
-        CleanupLPads.push_back(LP);
+    if (auto *LP = BB.getLandingPadInst(); LP && (LP->isCleanup()))
+      CleanupLPads.push_back(LP);
   }
 
   NumCleanupLandingPadsRemaining += CleanupLPads.size();
@@ -200,9 +199,8 @@ bool DwarfEHPrepare::InsertUnwindResumeCalls() {
 #if LLVM_ENABLE_STATS
     unsigned NumRemainingLPs = 0;
     for (BasicBlock &BB : F) {
-      if (auto *LP = BB.getLandingPadInst())
-        if (LP->isCleanup())
-          NumRemainingLPs++;
+      if (auto *LP = BB.getLandingPadInst(); LP && (LP->isCleanup()))
+        NumRemainingLPs++;
     }
     NumCleanupLandingPadsUnreachable += CleanupLPads.size() - NumRemainingLPs;
     NumCleanupLandingPadsRemaining -= CleanupLPads.size() - NumRemainingLPs;

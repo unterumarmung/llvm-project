@@ -613,10 +613,9 @@ ExprDependence clang::computeDependence(DeclRefExpr *E, const ASTContext &Ctx) {
   // effect: any use of a non-static member function name requires either
   // forming a pointer-to-member or providing an object parameter, either of
   // which makes the overall expression value-dependent.
-  if (auto *MD = dyn_cast<CXXMethodDecl>(Decl)) {
-    if (MD->isStatic() && Decl->getDeclContext()->isDependentContext())
-      Deps |= ExprDependence::ValueInstantiation;
-  }
+  if (auto *MD = dyn_cast<CXXMethodDecl>(Decl); MD && (MD->isStatic() && Decl->getDeclContext()->isDependentContext())) 
+    Deps |= ExprDependence::ValueInstantiation;
+  
 
   return Deps;
 }
@@ -692,10 +691,9 @@ ExprDependence clang::computeDependence(MemberExpr *E) {
     // dyn_cast_or_null is used to handle objC variables which do not
     // have a declaration context.
     CXXRecordDecl *RD = dyn_cast_or_null<CXXRecordDecl>(DC);
-    if (RD && RD->isDependentContext() && RD->isCurrentInstantiation(DC)) {
-      if (!E->getType()->isDependentType())
-        D &= ~ExprDependence::Type;
-    }
+    if ((RD && RD->isDependentContext() && RD->isCurrentInstantiation(DC)) && (!E->getType()->isDependentType())) 
+      D &= ~ExprDependence::Type;
+    
 
     // Bitfield with value-dependent width is type-dependent.
     if (FD && FD->isBitField() && FD->getBitWidth()->isValueDependent()) {

@@ -147,9 +147,8 @@ struct MaterializeKnownConstantValues : public RewritePattern {
              getMaybeConstantValue(solver, v).has_value() && !v.use_empty();
     };
     bool hasConstantResults = llvm::any_of(op->getResults(), needsReplacing);
-    if (op->getNumRegions() == 0)
-      if (!hasConstantResults)
-        return failure();
+    if ((op->getNumRegions() == 0) && (!hasConstantResults))
+      return failure();
     bool hasConstantRegionArgs = false;
     for (Region &region : op->getRegions()) {
       for (Block &block : region.getBlocks()) {

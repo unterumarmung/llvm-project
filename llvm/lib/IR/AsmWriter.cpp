@@ -170,9 +170,8 @@ static OrderMap orderModule(const Module *M) {
   };
 
   for (const GlobalVariable &G : M->globals()) {
-    if (G.hasInitializer())
-      if (!isa<GlobalValue>(G.getInitializer()))
-        orderValue(G.getInitializer(), OM);
+    if ((G.hasInitializer()) && (!isa<GlobalValue>(G.getInitializer())))
+      orderValue(G.getInitializer(), OM);
     orderValue(&G, OM);
   }
   for (const GlobalAlias &A : M->aliases()) {
@@ -254,23 +253,20 @@ predictValueUseListOrder(const Value *V, unsigned ID, const OrderMap &OM) {
 
     // If ID is 4, then expect: 7 6 5 1 2 3.
     if (LID < RID) {
-      if (GetsReversed)
-        if (RID <= ID)
-          return true;
+      if ((GetsReversed) && (RID <= ID))
+        return true;
       return false;
     }
     if (RID < LID) {
-      if (GetsReversed)
-        if (LID <= ID)
-          return false;
+      if ((GetsReversed) && (LID <= ID))
+        return false;
       return true;
     }
 
     // LID and RID are equal, so we have different operands of the same user.
     // Assume operands are added in order for all instructions.
-    if (GetsReversed)
-      if (LID <= ID)
-        return LU->getOperandNo() < RU->getOperandNo();
+    if ((GetsReversed) && (LID <= ID))
+      return LU->getOperandNo() < RU->getOperandNo();
     return LU->getOperandNo() > RU->getOperandNo();
   });
 
@@ -1026,9 +1022,8 @@ static SlotTracker *createSlotTracker(const Value *V) {
   if (const auto *FA = dyn_cast<Argument>(V))
     return new SlotTracker(FA->getParent());
 
-  if (const auto *I = dyn_cast<Instruction>(V))
-    if (I->getParent())
-      return new SlotTracker(I->getParent()->getParent());
+  if (const auto *I = dyn_cast<Instruction>(V); I && (I->getParent()))
+    return new SlotTracker(I->getParent()->getParent());
 
   if (const auto *BB = dyn_cast<BasicBlock>(V))
     return new SlotTracker(BB->getParent());
@@ -1269,9 +1264,8 @@ void SlotTracker::processDbgRecordMetadata(const DbgRecord &DR) {
 void SlotTracker::processInstructionMetadata(const Instruction &I) {
   // Process metadata used directly by intrinsics.
   if (const auto *CI = dyn_cast<CallInst>(&I))
-    if (Function *F = CI->getCalledFunction())
-      if (F->isIntrinsic())
-        for (auto &Op : I.operands())
+    if (Function *F = CI->getCalledFunction(); F && (F->isIntrinsic()))
+      for (auto &Op : I.operands())
           if (auto *V = dyn_cast_or_null<MetadataAsValue>(Op))
             if (auto *N = dyn_cast<MDNode>(V->getMetadata()))
               CreateMetadataSlot(N);
@@ -1530,10 +1524,9 @@ static void writeOptimizationInfo(raw_ostream &Out, const User *U) {
       Out << " nuw";
     if (TI->hasNoSignedWrap())
       Out << " nsw";
-  } else if (const auto *ICmp = dyn_cast<ICmpInst>(U)) {
-    if (ICmp->hasSameSign())
-      Out << " samesign";
-  }
+  } else if (const auto *ICmp = dyn_cast<ICmpInst>(U); ICmp && (ICmp->hasSameSign())) 
+    Out << " samesign";
+  
 }
 
 static void WriteFullHexAPInt(raw_ostream &Out, const APInt &Val) {
@@ -1768,15 +1761,15 @@ static void writeConstantInternal(raw_ostream &Out, const Constant *CV,
     // UseConstant{Int,FP}ForFixedLengthSplat.
     // TODO: Remove this block when the UseConstant{Int,FP}ForFixedLengthSplat
     // options are removed.
-    if (auto *SplatVal = CV->getSplatValue()) {
-      if (isa<ConstantInt>(SplatVal) || isa<ConstantFP>(SplatVal) ||
-          isa<ConstantByte>(SplatVal)) {
+    if (auto *SplatVal = CV->getSplatValue(); SplatVal && (isa<ConstantInt>(SplatVal) || isa<ConstantFP>(SplatVal) ||
+          isa<ConstantByte>(SplatVal))) 
+      {
         Out << "splat (";
         writeAsOperandInternal(Out, SplatVal, WriterCtx, /*PrintType=*/true);
         Out << ')';
         return;
       }
-    }
+    
 
     Out << '<';
     ListSeparator LS;
@@ -1825,15 +1818,15 @@ static void writeConstantInternal(raw_ostream &Out, const Constant *CV,
     // TODO: Remove this block when the UseConstant{Int,FP}ForScalableSplat
     // options are removed.
     if (CE->getOpcode() == Instruction::ShuffleVector) {
-      if (auto *SplatVal = CE->getSplatValue()) {
-        if (isa<ConstantInt>(SplatVal) || isa<ConstantFP>(SplatVal) ||
-            isa<ConstantByte>(SplatVal)) {
+      if (auto *SplatVal = CE->getSplatValue(); SplatVal && (isa<ConstantInt>(SplatVal) || isa<ConstantFP>(SplatVal) ||
+            isa<ConstantByte>(SplatVal))) 
+        {
           Out << "splat (";
           writeAsOperandInternal(Out, SplatVal, WriterCtx, /*PrintType=*/true);
           Out << ')';
           return;
         }
-      }
+      
     }
 
     Out << CE->getOpcodeName();
@@ -2790,8 +2783,8 @@ static void writeAsOperandInternal(raw_ostream &Out, const Value *V,
       // If the local value didn't succeed, then we may be referring to a value
       // from a different function.  Translate it, as this can happen when using
       // address of blocks.
-      if (Slot == -1)
-        if ((Machine = createSlotTracker(V))) {
+      if ((Slot == -1) && ((Machine = createSlotTracker(V))))
+        {
           Slot = Machine->getLocalSlot(V);
           delete Machine;
         }
@@ -5154,8 +5147,8 @@ void Type::print(raw_ostream &OS, bool /*IsForDebug*/, bool NoDetails) const {
     return;
 
   // If the type is a named struct type, print the body as well.
-  if (auto *STy = dyn_cast<StructType>(const_cast<Type *>(this)))
-    if (!STy->isLiteral()) {
+  if (auto *STy = dyn_cast<StructType>(const_cast<Type *>(this)); STy && (!STy->isLiteral()))
+    {
       OS << " = type ";
       TP.printStructBody(STy, OS);
     }
@@ -5163,12 +5156,10 @@ void Type::print(raw_ostream &OS, bool /*IsForDebug*/, bool NoDetails) const {
 
 static bool isReferencingMDNode(const Instruction &I) {
   if (const auto *CI = dyn_cast<CallInst>(&I))
-    if (Function *F = CI->getCalledFunction())
-      if (F->isIntrinsic())
-        for (auto &Op : I.operands())
-          if (auto *V = dyn_cast_or_null<MetadataAsValue>(Op))
-            if (isa<MDNode>(V->getMetadata()))
-              return true;
+    if (Function *F = CI->getCalledFunction(); F && (F->isIntrinsic()))
+      for (auto &Op : I.operands())
+          if (auto *V = dyn_cast_or_null<MetadataAsValue>(Op); V && (isa<MDNode>(V->getMetadata())))
+            return true;
   return false;
 }
 
@@ -5316,9 +5307,8 @@ void Value::printAsOperand(raw_ostream &O, bool PrintType,
   if (!M)
     M = getModuleFromVal(this);
 
-  if (!PrintType)
-    if (printWithoutType(*this, O, nullptr, M))
-      return;
+  if ((!PrintType) && (printWithoutType(*this, O, nullptr, M)))
+    return;
 
   SlotTracker Machine(
       M, /* ShouldInitializeAllMetadata */ isa<MetadataAsValue>(this));
@@ -5328,9 +5318,8 @@ void Value::printAsOperand(raw_ostream &O, bool PrintType,
 
 void Value::printAsOperand(raw_ostream &O, bool PrintType,
                            ModuleSlotTracker &MST) const {
-  if (!PrintType)
-    if (printWithoutType(*this, O, MST.getMachine(), MST.getModule()))
-      return;
+  if ((!PrintType) && (printWithoutType(*this, O, MST.getMachine(), MST.getModule())))
+    return;
 
   printAsOperandImpl(*this, O, PrintType, MST);
 }

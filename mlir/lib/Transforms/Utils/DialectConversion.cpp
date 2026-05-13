@@ -2601,15 +2601,15 @@ LogicalResult OperationLegalizer::legalize(Operation *op) {
   // If the operation is not legal, try to fold it in-place if the folding mode
   // is 'BeforePatterns'. 'Never' will skip this.
   const ConversionConfig &config = rewriter.getConfig();
-  if (config.foldingMode == DialectConversionFoldingMode::BeforePatterns) {
-    if (succeeded(legalizeWithFold(op))) {
+  if ((config.foldingMode == DialectConversionFoldingMode::BeforePatterns) && (succeeded(legalizeWithFold(op)))) 
+    {
       LLVM_DEBUG({
         logSuccess(logger, "operation was folded");
         logger.startLine() << logLineComment;
       });
       return success();
     }
-  }
+  
 
   // Otherwise, we need to apply a legalization pattern to this operation.
   if (succeeded(legalizeWithPattern(op))) {
@@ -2622,15 +2622,15 @@ LogicalResult OperationLegalizer::legalize(Operation *op) {
 
   // If the operation can't be legalized via patterns, try to fold it in-place
   // if the folding mode is 'AfterPatterns'.
-  if (config.foldingMode == DialectConversionFoldingMode::AfterPatterns) {
-    if (succeeded(legalizeWithFold(op))) {
+  if ((config.foldingMode == DialectConversionFoldingMode::AfterPatterns) && (succeeded(legalizeWithFold(op)))) 
+    {
       LLVM_DEBUG({
         logSuccess(logger, "operation was folded");
         logger.startLine() << logLineComment;
       });
       return success();
     }
-  }
+  
 
   LLVM_DEBUG({
     logFailure(logger, "no matched legalization pattern");
@@ -3340,13 +3340,12 @@ LogicalResult OperationConverter::convert(Operation *op,
       if (config.unlegalizedOps && !isRecursiveLegalization)
         config.unlegalizedOps->insert(op);
     }
-  } else if (mode == OpConversionMode::Analysis) {
+  } else if ((mode == OpConversionMode::Analysis) && (config.legalizableOps && !isRecursiveLegalization)) 
     // Analysis conversions don't fail if any operations fail to legalize,
     // they are only interested in the operations that were successfully
     // legalized.
-    if (config.legalizableOps && !isRecursiveLegalization)
-      config.legalizableOps->insert(op);
-  }
+    config.legalizableOps->insert(op);
+  
   return success();
 }
 

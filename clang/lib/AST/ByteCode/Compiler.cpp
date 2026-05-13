@@ -1144,10 +1144,9 @@ bool Compiler<Emitter>::VisitBinaryOperator(const BinaryOperator *E) {
     return false;
 
   // Pointer arithmetic special case.
-  if (E->getOpcode() == BO_Add || E->getOpcode() == BO_Sub) {
-    if (isPtrType(*T) || (isPtrType(*LT) && isPtrType(*RT)))
-      return this->VisitPointerArithBinOp(E);
-  }
+  if ((E->getOpcode() == BO_Add || E->getOpcode() == BO_Sub) && (isPtrType(*T) || (isPtrType(*LT) && isPtrType(*RT)))) 
+    return this->VisitPointerArithBinOp(E);
+  
 
   if (E->getOpcode() == BO_Assign)
     return this->visitAssignment(LHS, RHS, E);

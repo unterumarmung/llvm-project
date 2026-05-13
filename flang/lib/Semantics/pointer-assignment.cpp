@@ -563,13 +563,13 @@ static bool CheckPointerBounds(
           },
       },
       assignment.u)};
-  if (numBounds > 0) {
-    if (lhs.Rank() != static_cast<int>(numBounds)) {
+  if ((numBounds > 0) && (lhs.Rank() != static_cast<int>(numBounds))) 
+    {
       messages.Say("Pointer '%s' has rank %d but the number of bounds specified"
                    " is %d"_err_en_US,
           lhs.AsFortran(), lhs.Rank(), numBounds); // C1018
     }
-  }
+  
   if (isBoundsRemapping && rhs.Rank() != 1 &&
       !evaluate::IsSimplyContiguous(rhs, context)) {
     messages.Say("Pointer bounds remapping target must have rank 1 or be"

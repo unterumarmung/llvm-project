@@ -90,10 +90,9 @@ PreservedAnalyses ExtractGVPass::run(Module &M, ModuleAnalysisManager &) {
   // Visit the Functions.
   for (Function &F : M) {
     bool Delete = deleteStuff == (bool)Named.count(&F) && !F.isDeclaration();
-    if (!Delete) {
-      if (F.hasAvailableExternallyLinkage())
-        continue;
-    }
+    if ((!Delete) && (F.hasAvailableExternallyLinkage())) 
+      continue;
+    
 
     makeVisible(F, Delete);
 

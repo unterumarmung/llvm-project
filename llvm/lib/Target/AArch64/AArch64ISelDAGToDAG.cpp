@@ -2049,9 +2049,8 @@ static unsigned SelectOpcodeFromVT(EVT VT, ArrayRef<unsigned> Opcodes) {
 // TODO: Merge these two functions together at some point?
 void AArch64DAGToDAGISel::SelectPExtPair(SDNode *N, unsigned Opc) {
   // Immediate can be either 0 or 1.
-  if (ConstantSDNode *Imm = dyn_cast<ConstantSDNode>(N->getOperand(2)))
-    if (Imm->getZExtValue() > 1)
-      return;
+  if (ConstantSDNode *Imm = dyn_cast<ConstantSDNode>(N->getOperand(2)); Imm && (Imm->getZExtValue() > 1))
+    return;
 
   SDLoc DL(N);
   EVT VT = N->getValueType(0);
@@ -2236,9 +2235,8 @@ void AArch64DAGToDAGISel::SelectMultiVectorLutiLane(SDNode *Node,
                                                     unsigned NumOutVecs,
                                                     unsigned Opc,
                                                     uint32_t MaxImm) {
-  if (ConstantSDNode *Imm = dyn_cast<ConstantSDNode>(Node->getOperand(4)))
-    if (Imm->getZExtValue() > MaxImm)
-      return;
+  if (ConstantSDNode *Imm = dyn_cast<ConstantSDNode>(Node->getOperand(4)); Imm && (Imm->getZExtValue() > MaxImm))
+    return;
 
   SDValue ZtValue;
   if (!ImmToReg<AArch64::ZT0, 0>(Node->getOperand(2), ZtValue))
@@ -3755,7 +3753,7 @@ static bool tryOrrWithShift(SDNode *N, SDValue OrOpd0, SDValue OrOpd1,
   }
 
   uint64_t SrlImm;
-  if (isOpcWithIntImmediate(OrOpd0.getNode(), ISD::SRL, SrlImm)) {
+  if ((isOpcWithIntImmediate(OrOpd0.getNode(), ISD::SRL, SrlImm)) && (OrOpd0.getOperand(0) == OrOpd1)) 
     // Select the following pattern to right-shifted operand rather than BFXIL.
     // %val1 = op ..
     // %val2 = lshr %val1, #imm
@@ -3766,7 +3764,7 @@ static bool tryOrrWithShift(SDNode *N, SDValue OrOpd0, SDValue OrOpd1,
     // BFXIL) 2) OrOpd1 would be the destination operand (i.e., preserved)
     //
     // Instead of selecting N to BFXIL, fold OrOpd0 as a right shift directly.
-    if (OrOpd0.getOperand(0) == OrOpd1) {
+    {
       SDValue Ops[] = {
           OrOpd1, OrOpd1,
           CurDAG->getTargetConstant(
@@ -3774,7 +3772,7 @@ static bool tryOrrWithShift(SDNode *N, SDValue OrOpd0, SDValue OrOpd1,
       CurDAG->SelectNodeTo(N, OrrOpc, VT, Ops);
       return true;
     }
-  }
+  
 
   return false;
 }
@@ -7862,8 +7860,8 @@ bool AArch64DAGToDAGISel::SelectSVERegRegAddrMode(SDValue N, unsigned Scale,
     return false;
 
   const SDValue ShiftRHS = RHS.getOperand(1);
-  if (auto *C = dyn_cast<ConstantSDNode>(ShiftRHS))
-    if (C->getZExtValue() == Scale) {
+  if (auto *C = dyn_cast<ConstantSDNode>(ShiftRHS); C && (C->getZExtValue() == Scale))
+    {
       Base = LHS;
       Offset = RHS.getOperand(0);
       return true;

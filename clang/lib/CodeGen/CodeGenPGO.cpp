@@ -327,10 +327,9 @@ struct MapRegionCounters : public RecursiveASTVisitor<MapRegionCounters> {
   /// order to use MC/DC, count the number of total LHS and RHS conditions.
   bool VisitBinaryOperator(BinaryOperator *S) {
     if (S->isLogicalOp()) {
-      if (CodeGenFunction::isInstrumentedCondition(S->getLHS())) {
-        if (!DecisionStack.empty())
-          DecisionStack.back().Leaves.insert(S->getLHS());
-      }
+      if ((CodeGenFunction::isInstrumentedCondition(S->getLHS())) && (!DecisionStack.empty())) 
+        DecisionStack.back().Leaves.insert(S->getLHS());
+      
 
       if (CodeGenFunction::isInstrumentedCondition(S->getRHS())) {
         if (ProfileVersion >= llvm::IndexedInstrProf::Version7)
@@ -939,10 +938,9 @@ void CodeGenPGO::assignRegionCounters(GlobalDecl GD, llvm::Function *Fn) {
   // If so, instrument only base variant, others are implemented by delegation
   // to the base one, it would be counted twice otherwise.
   if (CGM.getTarget().getCXXABI().hasConstructorVariants()) {
-    if (const auto *CCD = dyn_cast<CXXConstructorDecl>(D))
-      if (GD.getCtorType() != Ctor_Base &&
-          CodeGenFunction::IsConstructorDelegationValid(CCD))
-        return;
+    if (const auto *CCD = dyn_cast<CXXConstructorDecl>(D); CCD && (GD.getCtorType() != Ctor_Base &&
+          CodeGenFunction::IsConstructorDelegationValid(CCD)))
+      return;
   }
   if (isa<CXXDestructorDecl>(D) && GD.getDtorType() != Dtor_Base)
     return;

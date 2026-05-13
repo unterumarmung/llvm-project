@@ -406,13 +406,12 @@ bool Preprocessor::CheckMacroName(Token &MacroNameTok, MacroUse isDefineUndef,
     }
     else if (isDefineUndef == MU_Undef)
       D = shouldWarnOnMacroUndef(*this, II);
-    if (D == MD_KeywordDef) {
+    if ((D == MD_KeywordDef) && (ShadowFlag)) 
       // We do not want to warn on some patterns widely used in configuration
       // scripts.  This requires analyzing next tokens, so do not issue warnings
       // now, only inform caller.
-      if (ShadowFlag)
-        *ShadowFlag = true;
-    }
+      *ShadowFlag = true;
+    
     if (D == MD_ReservedMacro)
       Diag(MacroNameTok, diag::warn_pp_macro_is_reserved_id);
     if (D == MD_ReservedAttributeIdentifier)

@@ -808,10 +808,9 @@ void AggExprEmitter::VisitCompoundLiteralExpr(CompoundLiteralExpr *E) {
 /// cast of the given kind.
 static Expr *findPeephole(Expr *op, CastKind kind, const ASTContext &ctx) {
   op = op->IgnoreParenNoopCasts(ctx);
-  if (auto castE = dyn_cast<CastExpr>(op)) {
-    if (castE->getCastKind() == kind)
-      return castE->getSubExpr();
-  }
+  if (auto castE = dyn_cast<CastExpr>(op); castE && (castE->getCastKind() == kind)) 
+    return castE->getSubExpr();
+  
   return nullptr;
 }
 
@@ -2088,8 +2087,8 @@ static CharUnits GetNumNonZeroBytesInInit(const Expr *E, CodeGenFunction &CGF) {
   // InitListExprs for structs have to be handled carefully.  If there are
   // reference members, we need to consider the size of the reference, not the
   // referencee.  InitListExprs for unions and arrays can't have references.
-  if (const RecordType *RT = E->getType()->getAsCanonical<RecordType>()) {
-    if (!RT->isUnionType()) {
+  if (const RecordType *RT = E->getType()->getAsCanonical<RecordType>(); RT && (!RT->isUnionType())) 
+    {
       RecordDecl *SD = RT->getDecl()->getDefinitionOrSelf();
       CharUnits NumNonZeroBytes = CharUnits::Zero();
 
@@ -2119,7 +2118,7 @@ static CharUnits GetNumNonZeroBytesInInit(const Expr *E, CodeGenFunction &CGF) {
 
       return NumNonZeroBytes;
     }
-  }
+  
 
   // FIXME: This overestimates the number of non-zero bytes for bit-fields.
   CharUnits NumNonZeroBytes = CharUnits::Zero();
@@ -2279,16 +2278,14 @@ void CodeGenFunction::EmitAggregateCopy(LValue Dest, LValue Src, QualType Ty,
       if (getTargetHooks().emitCUDADeviceBuiltinSurfaceDeviceCopy(*this, Dest,
                                                                   Src))
         return;
-    } else if (Ty->isCUDADeviceBuiltinTextureType()) {
-      if (getTargetHooks().emitCUDADeviceBuiltinTextureDeviceCopy(*this, Dest,
-                                                                  Src))
-        return;
-    }
+    } else if ((Ty->isCUDADeviceBuiltinTextureType()) && (getTargetHooks().emitCUDADeviceBuiltinTextureDeviceCopy(*this, Dest,
+                                                                  Src))) 
+      return;
+    
   }
 
-  if (getLangOpts().HLSL && Ty.getAddressSpace() == LangAS::hlsl_constant)
-    if (CGM.getHLSLRuntime().emitBufferCopy(*this, DestPtr, SrcPtr, Ty))
-      return;
+  if ((getLangOpts().HLSL && Ty.getAddressSpace() == LangAS::hlsl_constant) && (CGM.getHLSLRuntime().emitBufferCopy(*this, DestPtr, SrcPtr, Ty)))
+    return;
 
   // Aggregate assignment turns into llvm.memcpy.  This is almost valid per
   // C99 6.5.16.1p3, which states "If the value being stored in an object is
@@ -2355,13 +2352,13 @@ void CodeGenFunction::EmitAggregateCopy(LValue Dest, LValue Src, QualType Ty,
     }
   } else if (Ty->isArrayType()) {
     QualType BaseType = getContext().getBaseElementType(Ty);
-    if (const auto *Record = BaseType->getAsRecordDecl()) {
-      if (Record->hasObjectMember()) {
+    if (const auto *Record = BaseType->getAsRecordDecl(); Record && (Record->hasObjectMember())) 
+      {
         CGM.getObjCRuntime().EmitGCMemmoveCollectable(*this, DestPtr, SrcPtr,
                                                       SizeVal);
         return;
       }
-    }
+    
   }
 
   auto *Inst = Builder.CreateMemCpy(DestPtr, SrcPtr, SizeVal, isVolatile);

@@ -102,11 +102,11 @@ public:
     // Avoiding double visitaiton of default arguments should be handled by the
     // visitor probably with a bit in the AST to indicate if the attached
     // default argument was 'inherited' or written in source.
-    if (auto FD = dyn_cast<FunctionDecl>(D->getDeclContext())) {
-      if (FD->isThisDeclarationADefinition()) {
+    if (auto FD = dyn_cast<FunctionDecl>(D->getDeclContext()); FD && (FD->isThisDeclarationADefinition())) 
+      {
         return traverseParamVarHelper(D);
       }
-    }
+    
 
     return base::TraverseParmVarDecl(D);
   }
@@ -277,8 +277,8 @@ void IndexingContext::indexTagDecl(const TagDecl *D,
   if (!shouldIndexFunctionLocalSymbols() && isFunctionLocalSymbol(D))
     return;
 
-  if (handleDecl(D, /*Roles=*/SymbolRoleSet(), Relations)) {
-    if (D->isThisDeclarationADefinition()) {
+  if ((handleDecl(D, /*Roles=*/SymbolRoleSet(), Relations)) && (D->isThisDeclarationADefinition())) 
+    {
       indexNestedNameSpecifierLoc(D->getQualifierLoc(), D);
       if (auto CXXRD = dyn_cast<CXXRecordDecl>(D)) {
         for (const auto &I : CXXRD->bases()) {
@@ -287,5 +287,5 @@ void IndexingContext::indexTagDecl(const TagDecl *D,
       }
       indexDeclContext(D);
     }
-  }
+  
 }

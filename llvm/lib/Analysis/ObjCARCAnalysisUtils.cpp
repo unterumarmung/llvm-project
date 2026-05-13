@@ -36,9 +36,8 @@ bool llvm::objcarc::IsPotentialRetainableObjPtr(const Value *Op,
     return false;
 
   // Pointers in constant memory are not pointing to reference-counted objects.
-  if (const LoadInst *LI = dyn_cast<LoadInst>(Op))
-    if (AA.pointsToConstantMemory(LI->getPointerOperand()))
-      return false;
+  if (const LoadInst *LI = dyn_cast<LoadInst>(Op); LI && (AA.pointsToConstantMemory(LI->getPointerOperand())))
+    return false;
 
   // Otherwise assume the worst.
   return true;

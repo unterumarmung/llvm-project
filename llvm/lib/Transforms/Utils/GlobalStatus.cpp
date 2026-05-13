@@ -63,9 +63,8 @@ bool llvm::isSafeToDestroyConstant(const Constant *C) {
 
 static bool analyzeGlobalAux(const Value *V, GlobalStatus &GS,
                              SmallPtrSetImpl<const Value *> &VisitedUsers) {
-  if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(V))
-    if (GV->isExternallyInitialized())
-      GS.StoredType = GlobalStatus::StoredOnce;
+  if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(V); GV && (GV->isExternallyInitialized()))
+    GS.StoredType = GlobalStatus::StoredOnce;
 
   for (const Use &U : V->uses()) {
     const User *UR = U.getUser();
@@ -116,12 +115,12 @@ static bool analyzeGlobalAux(const Value *V, GlobalStatus &GS,
           if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(Ptr)) {
             Value *StoredVal = SI->getOperand(0);
 
-            if (Constant *C = dyn_cast<Constant>(StoredVal)) {
-              if (C->isThreadDependent()) {
+            if (Constant *C = dyn_cast<Constant>(StoredVal); C && (C->isThreadDependent())) 
+              {
                 // The stored value changes between threads; don't track it.
                 return true;
               }
-            }
+            
 
             if (GV->hasInitializer() && StoredVal == GV->getInitializer()) {
               if (GS.StoredType < GlobalStatus::InitializerStored)
@@ -153,9 +152,8 @@ static bool analyzeGlobalAux(const Value *V, GlobalStatus &GS,
         // conditionally accessed. Make sure we only visit an instruction
         // once; otherwise, we can get infinite recursion or exponential
         // compile time.
-        if (VisitedUsers.insert(I).second)
-          if (analyzeGlobalAux(I, GS, VisitedUsers))
-            return true;
+        if ((VisitedUsers.insert(I).second) && (analyzeGlobalAux(I, GS, VisitedUsers)))
+          return true;
       } else if (isa<CmpInst>(I)) {
         GS.IsCompared = true;
       } else if (const MemTransferInst *MTI = dyn_cast<MemTransferInst>(I)) {

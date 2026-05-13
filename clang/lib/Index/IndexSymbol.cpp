@@ -142,14 +142,14 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       Info.Kind = SymbolKind::Enum; break;
     }
 
-    if (const CXXRecordDecl *CXXRec = dyn_cast<CXXRecordDecl>(D)) {
-      if (!CXXRec->isCLike()) {
+    if (const CXXRecordDecl *CXXRec = dyn_cast<CXXRecordDecl>(D); CXXRec && (!CXXRec->isCLike())) 
+      {
         Info.Lang = SymbolLanguage::CXX;
         if (CXXRec->getDescribedClassTemplate()) {
           Info.Properties |= (SymbolPropertySet)SymbolProperty::Generic;
         }
       }
-    }
+    
 
     if (isa<ClassTemplatePartialSpecializationDecl>(D)) {
       Info.Properties |= (SymbolPropertySet)SymbolProperty::Generic;
@@ -202,10 +202,9 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
     case Decl::IndirectField:
       Info.Kind = SymbolKind::Field;
       if (const CXXRecordDecl *
-            CXXRec = dyn_cast<CXXRecordDecl>(D->getDeclContext())) {
-        if (!CXXRec->isCLike())
-          Info.Lang = SymbolLanguage::CXX;
-      }
+            CXXRec = dyn_cast<CXXRecordDecl>(D->getDeclContext()); CXXRec && (!CXXRec->isCLike())) 
+        Info.Lang = SymbolLanguage::CXX;
+      
       break;
     case Decl::EnumConstant:
       Info.Kind = SymbolKind::EnumConstant; break;
@@ -257,10 +256,9 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
       Info.Kind = SymbolKind::InstanceProperty;
       Info.Lang = SymbolLanguage::ObjC;
       checkForIBOutlets(D, Info.Properties);
-      if (auto *Annot = D->getAttr<AnnotateAttr>()) {
-        if (Annot->getAnnotation() == "gk_inspectable")
-          Info.Properties |= (SymbolPropertySet)SymbolProperty::GKInspectable;
-      }
+      if (auto *Annot = D->getAttr<AnnotateAttr>(); Annot && (Annot->getAnnotation() == "gk_inspectable")) 
+        Info.Properties |= (SymbolPropertySet)SymbolProperty::GKInspectable;
+      
       break;
     case Decl::ObjCIvar:
       Info.Kind = SymbolKind::Field;
@@ -366,10 +364,9 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
     case Decl::MSProperty:
       Info.Kind = SymbolKind::InstanceProperty;
       if (const CXXRecordDecl *CXXRec =
-              dyn_cast<CXXRecordDecl>(D->getDeclContext())) {
-        if (!CXXRec->isCLike())
-          Info.Lang = SymbolLanguage::CXX;
-      }
+              dyn_cast<CXXRecordDecl>(D->getDeclContext()); CXXRec && (!CXXRec->isCLike())) 
+        Info.Lang = SymbolLanguage::CXX;
+      
       break;
     case Decl::ClassTemplatePartialSpecialization:
     case Decl::ClassTemplateSpecialization:
@@ -407,22 +404,21 @@ SymbolInfo index::getSymbolInfo(const Decl *D) {
   if (Info.Kind == SymbolKind::Unknown)
     return Info;
 
-  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
-    if (FD->getTemplatedKind() ==
-          FunctionDecl::TK_FunctionTemplateSpecialization) {
+  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D); FD && (FD->getTemplatedKind() ==
+          FunctionDecl::TK_FunctionTemplateSpecialization)) 
+    {
       Info.Properties |= (SymbolPropertySet)SymbolProperty::Generic;
       Info.Properties |=
           (SymbolPropertySet)SymbolProperty::TemplateSpecialization;
     }
-  }
+  
 
   if (Info.Properties & (SymbolPropertySet)SymbolProperty::Generic)
     Info.Lang = SymbolLanguage::CXX;
 
-  if (auto *attr = D->getExternalSourceSymbolAttr()) {
-    if (attr->getLanguage() == "Swift")
-      Info.Lang = SymbolLanguage::Swift;
-  }
+  if (auto *attr = D->getExternalSourceSymbolAttr(); attr && (attr->getLanguage() == "Swift")) 
+    Info.Lang = SymbolLanguage::Swift;
+  
 
   return Info;
 }

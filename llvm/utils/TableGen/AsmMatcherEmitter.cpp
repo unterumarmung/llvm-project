@@ -716,10 +716,9 @@ struct MatchableInfo {
     // Tokens and operand kinds are unambiguous (assuming a correct target
     // specific parser).
     for (const auto &[LHSOp, RHSOp] : zip_equal(AsmOperands, RHS.AsmOperands)) {
-      if (LHSOp.Class->Kind != RHSOp.Class->Kind ||
-          LHSOp.Class->Kind == ClassInfo::Token)
-        if (*LHSOp.Class < *RHSOp.Class || *RHSOp.Class < *LHSOp.Class)
-          return false;
+      if ((LHSOp.Class->Kind != RHSOp.Class->Kind ||
+          LHSOp.Class->Kind == ClassInfo::Token) && (*LHSOp.Class < *RHSOp.Class || *RHSOp.Class < *LHSOp.Class))
+        return false;
     }
 
     // Otherwise, this operand could commute if all operands are equivalent, or

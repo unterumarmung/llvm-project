@@ -208,8 +208,8 @@ void GlobalsAAResult::DeletionCallbackHandle::deleted() {
   if (auto *F = dyn_cast<Function>(V))
     GAR->FunctionInfos.erase(F);
 
-  if (GlobalValue *GV = dyn_cast<GlobalValue>(V)) {
-    if (GAR->NonAddressTakenGlobals.erase(GV)) {
+  if (GlobalValue *GV = dyn_cast<GlobalValue>(V); GV && (GAR->NonAddressTakenGlobals.erase(GV))) 
+    {
       // This global might be an indirect global.  If so, remove it and
       // remove any AllocRelatedValues for it.
       if (GAR->IndirectGlobals.erase(GV)) {
@@ -226,7 +226,7 @@ void GlobalsAAResult::DeletionCallbackHandle::deleted() {
       for (auto &FIPair : GAR->FunctionInfos)
         FIPair.second.eraseModRefInfoForGlobal(*GV);
     }
-  }
+  
 
   // If this is an allocation related to an indirect global, remove it.
   GAR->AllocsForIndirectGlobals.erase(V);
@@ -344,14 +344,14 @@ bool GlobalsAAResult::AnalyzeUsesOfPointer(Value *V,
       if (AnalyzeUsesOfPointer(I, Readers, Writers, OkayStoreDest))
         return true;
     } else if (auto *Call = dyn_cast<CallBase>(I)) {
-      if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(I)) {
-        if (II->getIntrinsicID() == Intrinsic::threadlocal_address &&
-            V == II->getArgOperand(0)) {
+      if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(I); II && (II->getIntrinsicID() == Intrinsic::threadlocal_address &&
+            V == II->getArgOperand(0))) 
+        {
           if (AnalyzeUsesOfPointer(II, Readers, Writers))
             return true;
           continue;
         }
-      }
+      
       // Make sure that this is just the function being called, not that it is
       // passing into the function.
       if (Call->isDataOperand(&U)) {
@@ -416,9 +416,8 @@ bool GlobalsAAResult::AnalyzeIndirectGlobalMemory(GlobalVariable *GV) {
   std::vector<Value *> AllocRelatedValues;
 
   // If the initializer is a valid pointer, bail.
-  if (Constant *C = GV->getInitializer())
-    if (!C->isNullValue())
-      return false;
+  if (Constant *C = GV->getInitializer(); C && (!C->isNullValue()))
+    return false;
 
   // Walk the user list of the global.  If we find anything other than a direct
   // load or store, bail out.
@@ -884,13 +883,11 @@ AliasResult GlobalsAAResult::alias(const MemoryLocation &LocA,
   // is a direct load from an indirect global.
   GV1 = GV2 = nullptr;
   if (const LoadInst *LI = dyn_cast<LoadInst>(UV1))
-    if (GlobalVariable *GV = dyn_cast<GlobalVariable>(LI->getOperand(0)))
-      if (IndirectGlobals.count(GV))
-        GV1 = GV;
+    if (GlobalVariable *GV = dyn_cast<GlobalVariable>(LI->getOperand(0)); GV && (IndirectGlobals.count(GV)))
+      GV1 = GV;
   if (const LoadInst *LI = dyn_cast<LoadInst>(UV2))
-    if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(LI->getOperand(0)))
-      if (IndirectGlobals.count(GV))
-        GV2 = GV;
+    if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(LI->getOperand(0)); GV && (IndirectGlobals.count(GV)))
+      GV2 = GV;
 
   // These pointers may also be from an allocation for the indirect global.  If
   // so, also handle them.
@@ -955,11 +952,10 @@ ModRefInfo GlobalsAAResult::getModRefInfo(const CallBase *Call,
   // If we are asking for mod/ref info of a direct call with a pointer to a
   // global we are tracking, return information if we have it.
   if (const GlobalValue *GV =
-          dyn_cast<GlobalValue>(getUnderlyingObject(Loc.Ptr)))
+          dyn_cast<GlobalValue>(getUnderlyingObject(Loc.Ptr)); GV && (GV->hasLocalLinkage() && !UnknownFunctionsWithLocalLinkage))
     // If GV is internal to this IR and there is no function with local linkage
     // that has had their address taken, keep looking for a tighter ModRefInfo.
-    if (GV->hasLocalLinkage() && !UnknownFunctionsWithLocalLinkage)
-      if (const Function *F = Call->getCalledFunction())
+    if (const Function *F = Call->getCalledFunction())
         if (NonAddressTakenGlobals.count(GV))
           if (const FunctionInfo *FI = getFunctionInfo(F))
             Known = FI->getModRefInfoForGlobal(*GV) |

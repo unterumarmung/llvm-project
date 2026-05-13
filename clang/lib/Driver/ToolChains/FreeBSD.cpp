@@ -226,13 +226,13 @@ void freebsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
       CmdArgs.push_back("--no-relax");
   }
 
-  if (Arg *A = Args.getLastArg(options::OPT_G)) {
-    if (ToolChain.getTriple().isMIPS()) {
+  if (Arg *A = Args.getLastArg(options::OPT_G); A && (ToolChain.getTriple().isMIPS())) 
+    {
       StringRef v = A->getValue();
       CmdArgs.push_back(Args.MakeArgString("-G" + v));
       A->claim();
     }
-  }
+  
 
   assert((Output.isFilename() || Output.isNothing()) && "Invalid output.");
   if (Output.isFilename()) {

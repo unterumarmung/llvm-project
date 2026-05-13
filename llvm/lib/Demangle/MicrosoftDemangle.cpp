@@ -1861,10 +1861,9 @@ TypeNode *Demangler::demangleType(std::string_view &MangledName,
   bool IsMember = false;
   if (QMM == QualifierMangleMode::Mangle) {
     std::tie(Quals, IsMember) = demangleQualifiers(MangledName);
-  } else if (QMM == QualifierMangleMode::Result) {
-    if (consumeFront(MangledName, '?'))
-      std::tie(Quals, IsMember) = demangleQualifiers(MangledName);
-  }
+  } else if ((QMM == QualifierMangleMode::Result) && (consumeFront(MangledName, '?'))) 
+    std::tie(Quals, IsMember) = demangleQualifiers(MangledName);
+  
 
   if (MangledName.empty()) {
     Error = true;

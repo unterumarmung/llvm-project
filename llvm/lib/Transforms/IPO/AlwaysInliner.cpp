@@ -89,11 +89,10 @@ bool AlwaysInlineImpl(
     Calls.clear();
 
     for (User *U : F.users())
-      if (auto *CB = dyn_cast<CallBase>(U))
-        if (CB->getCalledFunction() == &F &&
+      if (auto *CB = dyn_cast<CallBase>(U); CB && (CB->getCalledFunction() == &F &&
             CB->hasFnAttr(Attribute::AlwaysInline) &&
-            !CB->getAttributes().hasFnAttr(Attribute::NoInline))
-          Calls.insert(CB);
+            !CB->getAttributes().hasFnAttr(Attribute::NoInline)))
+        Calls.insert(CB);
 
     for (CallBase *CB : Calls) {
       OptimizationRemarkEmitter ORE(CB->getCaller());

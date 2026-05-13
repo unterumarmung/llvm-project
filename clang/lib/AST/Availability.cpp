@@ -53,13 +53,11 @@ static void createInfoForDecl(const clang::Decl *Decl,
           A->getObsoleted(), A->getUnavailable(), false, false));
     }
 
-    if (const auto *A = RD->getAttr<clang::UnavailableAttr>())
-      if (!A->isImplicit())
-        Availabilities.UnconditionallyUnavailable = true;
+    if (const auto *A = RD->getAttr<clang::UnavailableAttr>(); A && (!A->isImplicit()))
+      Availabilities.UnconditionallyUnavailable = true;
 
-    if (const auto *A = RD->getAttr<clang::DeprecatedAttr>())
-      if (!A->isImplicit())
-        Availabilities.UnconditionallyDeprecated = true;
+    if (const auto *A = RD->getAttr<clang::DeprecatedAttr>(); A && (!A->isImplicit()))
+      Availabilities.UnconditionallyDeprecated = true;
   }
 }
 

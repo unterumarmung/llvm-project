@@ -792,15 +792,15 @@ Error JITDylib::replace(MaterializationResponsibility &FromMR,
         // materialize MU immediately.
         for (auto &KV : MU->getSymbols()) {
           auto MII = MaterializingInfos.find(KV.first);
-          if (MII != MaterializingInfos.end()) {
-            if (MII->second.hasQueriesPending()) {
+          if ((MII != MaterializingInfos.end()) && (MII->second.hasQueriesPending())) 
+            {
               MustRunMR = ES.createMaterializationResponsibility(
                   *FromMR.RT, std::move(MU->SymbolFlags),
                   std::move(MU->InitSymbol));
               MustRunMU = std::move(MU);
               return Error::success();
             }
-          }
+          
         }
 
         // Otherwise, make MU responsible for all the symbols.

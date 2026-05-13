@@ -472,11 +472,10 @@ bool Preprocessor::SetCodeCompletionPoint(FileEntryRef File,
 
   // If pointing inside the preamble, adjust the position at the beginning of
   // the file after the preamble.
-  if (SkipMainFilePreamble.first &&
-      SourceMgr.getFileEntryForID(SourceMgr.getMainFileID()) == File) {
-    if (Position - Buffer->getBufferStart() < SkipMainFilePreamble.first)
-      Position = Buffer->getBufferStart() + SkipMainFilePreamble.first;
-  }
+  if ((SkipMainFilePreamble.first &&
+      SourceMgr.getFileEntryForID(SourceMgr.getMainFileID()) == File) && (Position - Buffer->getBufferStart() < SkipMainFilePreamble.first)) 
+    Position = Buffer->getBufferStart() + SkipMainFilePreamble.first;
+  
 
   if (Position > Buffer->getBufferEnd())
     Position = Buffer->getBufferEnd();
@@ -1374,14 +1373,14 @@ bool Preprocessor::HandleModuleContextualKeyword(Token &Result) {
   if (NextTok->is(tok::raw_identifier))
     LookUpIdentifierInfo(*NextTok);
 
-  if (Result.getIdentifierInfo()->isImportKeyword()) {
-    if (NextTok->isOneOf(tok::identifier, tok::less, tok::colon,
-                         tok::header_name)) {
+  if ((Result.getIdentifierInfo()->isImportKeyword()) && (NextTok->isOneOf(tok::identifier, tok::less, tok::colon,
+                         tok::header_name))) 
+    {
       Result.setKind(tok::kw_import);
       ModuleImportLoc = Result.getLocation();
       return true;
     }
-  }
+  
 
   if (Result.getIdentifierInfo()->isModuleKeyword() &&
       NextTok->isOneOf(tok::identifier, tok::colon, tok::semi)) {

@@ -73,9 +73,8 @@ static uint32_t getTypeAlignIfRequired(const Type *Ty, const ASTContext &Ctx) {
 
   // MaxFieldAlignmentAttr is the attribute added to types
   // declared after #pragma pack(n).
-  if (auto *Decl = Ty->getAsRecordDecl())
-    if (Decl->hasAttr<MaxFieldAlignmentAttr>())
-      return TI.Align;
+  if (auto *Decl = Ty->getAsRecordDecl(); Decl && (Decl->hasAttr<MaxFieldAlignmentAttr>()))
+    return TI.Align;
 
   return 0;
 }
@@ -413,9 +412,8 @@ llvm::DIScope *CGDebugInfo::getContextDescriptor(const Decl *Context,
   if (const auto *NSDecl = dyn_cast<NamespaceDecl>(Context))
     return getOrCreateNamespace(NSDecl);
 
-  if (const auto *RDecl = dyn_cast<RecordDecl>(Context))
-    if (!RDecl->isDependentType())
-      return getOrCreateType(CGM.getContext().getCanonicalTagType(RDecl),
+  if (const auto *RDecl = dyn_cast<RecordDecl>(Context); RDecl && (!RDecl->isDependentType()))
+    return getOrCreateType(CGM.getContext().getCanonicalTagType(RDecl),
                              TheCU->getFile());
   return Default;
 }
@@ -521,9 +519,8 @@ StringRef CGDebugInfo::getClassName(const RecordDecl *RD,
         Name = TND->getName();
 
       // Give lambdas a display name based on their name mangling.
-      if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD))
-        if (CXXRD->isLambda())
-          return internString(
+      if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD); CXXRD && (CXXRD->isLambda()))
+        return internString(
               CGM.getCXXABI().getMangleContext().getLambdaString(CXXRD));
 
       if (!Name.empty()) {
@@ -1442,11 +1439,9 @@ static SmallString<256> getTypeIdentifier(const TagType *Ty, CodeGenModule &CGM,
 
   if (!needsTypeIdentifier(TD, CGM, TheCU))
     return Identifier;
-  if (const auto *RD = dyn_cast<CXXRecordDecl>(TD))
-    if (RD->getDefinition())
-      if (RD->isDynamicClass() &&
-          CGM.getVTableLinkage(RD) == llvm::GlobalValue::ExternalLinkage)
-        return Identifier;
+  if (const auto *RD = dyn_cast<CXXRecordDecl>(TD); RD && (RD->getDefinition()) && (RD->isDynamicClass() &&
+          CGM.getVTableLinkage(RD) == llvm::GlobalValue::ExternalLinkage))
+    return Identifier;
 
   // TODO: This is using the RTTI name. Is there a better way to get
   // a unique string for a type?
@@ -1494,10 +1489,9 @@ CGDebugInfo::getOrCreateRecordFwdDecl(const RecordType *Ty,
   // Add flag to nontrivial forward declarations. To be consistent with MSVC,
   // add the flag if a record has no definition because we don't know whether
   // it will be trivial or not.
-  if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD))
-    if (!CXXRD->hasDefinition() ||
-        (CXXRD->hasDefinition() && !CXXRD->isTrivial()))
-      Flags |= llvm::DINode::FlagNonTrivial;
+  if (const CXXRecordDecl *CXXRD = dyn_cast<CXXRecordDecl>(RD); CXXRD && (!CXXRD->hasDefinition() ||
+        (CXXRD->hasDefinition() && !CXXRD->isTrivial())))
+    Flags |= llvm::DINode::FlagNonTrivial;
 
   // Create the type.
   SmallString<256> Identifier;
@@ -2518,10 +2512,9 @@ llvm::DISubprogram *CGDebugInfo::CreateCXXMemberFunction(
   if (const auto *CXXC = dyn_cast<CXXConstructorDecl>(Method)) {
     if (CXXC->isExplicit())
       Flags |= llvm::DINode::FlagExplicit;
-  } else if (const auto *CXXC = dyn_cast<CXXConversionDecl>(Method)) {
-    if (CXXC->isExplicit())
-      Flags |= llvm::DINode::FlagExplicit;
-  }
+  } else if (const auto *CXXC = dyn_cast<CXXConversionDecl>(Method); CXXC && (CXXC->isExplicit())) 
+    Flags |= llvm::DINode::FlagExplicit;
+  
   if (Method->hasPrototype())
     Flags |= llvm::DINode::FlagPrototyped;
   if (Method->getRefQualifier() == RQ_LValue)
@@ -2732,14 +2725,13 @@ CGDebugInfo::CollectTemplateParams(std::optional<TemplateArgs> OArgs,
       llvm::Constant *V = nullptr;
       // Special case member data pointer null values since they're actually -1
       // instead of zero.
-      if (const auto *MPT = dyn_cast<MemberPointerType>(T.getTypePtr()))
+      if (const auto *MPT = dyn_cast<MemberPointerType>(T.getTypePtr()); MPT && (MPT->isMemberDataPointer()))
         // But treat member function pointers as simple zero integers because
         // it's easier than having a special case in LLVM's CodeGen. If LLVM
         // CodeGen grows handling for values of non-null member function
         // pointers then perhaps we could remove this special case and rely on
         // EmitNullMemberPointer for member function pointers.
-        if (MPT->isMemberDataPointer())
-          V = CGM.getCXXABI().EmitNullMemberPointer(MPT);
+        V = CGM.getCXXABI().EmitNullMemberPointer(MPT);
       if (!V)
         V = llvm::ConstantInt::get(CGM.Int8Ty, 0);
       TemplateParams.push_back(DBuilder.createTemplateValueParameter(
@@ -3153,12 +3145,11 @@ static bool isDefinedInClangModule(const RecordDecl *RD) {
 }
 
 void CGDebugInfo::completeClassData(const RecordDecl *RD) {
-  if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD))
-    if (CXXRD->isDynamicClass() &&
+  if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD); CXXRD && (CXXRD->isDynamicClass() &&
         CGM.getVTableLinkage(CXXRD) ==
             llvm::GlobalValue::AvailableExternallyLinkage &&
-        !isClassOrMethodDLLImport(CXXRD))
-      return;
+        !isClassOrMethodDLLImport(CXXRD)))
+    return;
 
   if (DebugTypeExtRefs && isDefinedInClangModule(RD->getDefinition()))
     return;
@@ -3186,10 +3177,9 @@ void CGDebugInfo::completeClass(const RecordDecl *RD) {
 static bool hasExplicitMemberDefinition(CXXRecordDecl::method_iterator I,
                                         CXXRecordDecl::method_iterator End) {
   for (CXXMethodDecl *MD : llvm::make_range(I, End))
-    if (FunctionDecl *Tmpl = MD->getInstantiatedFromMemberFunction())
-      if (!Tmpl->isImplicit() && Tmpl->isThisDeclarationADefinition() &&
-          !MD->getMemberSpecializationInfo()->isExplicitSpecialization())
-        return true;
+    if (FunctionDecl *Tmpl = MD->getInstantiatedFromMemberFunction(); Tmpl && (!Tmpl->isImplicit() && Tmpl->isThisDeclarationADefinition() &&
+          !MD->getMemberSpecializationInfo()->isExplicitSpecialization()))
+      return true;
   return false;
 }
 
@@ -3225,9 +3215,8 @@ static bool shouldOmitDefinition(llvm::codegenoptions::DebugInfoKind DebugKind,
   if (DebugTypeExtRefs && isDefinedInClangModule(RD->getDefinition()))
     return true;
 
-  if (auto *ES = RD->getASTContext().getExternalSource())
-    if (ES->hasExternalDefinitions(RD) == ExternalASTSource::EK_Always)
-      return true;
+  if (auto *ES = RD->getASTContext().getExternalSource(); ES && (ES->hasExternalDefinitions(RD) == ExternalASTSource::EK_Always))
+    return true;
 
   // Only emit forward declarations in line tables only to keep debug info size
   // small. This only applies to CodeView, since we don't emit types in DWARF
@@ -4851,9 +4840,8 @@ llvm::DISubroutineType *CGDebugInfo::getOrCreateFunctionType(const Decl *D,
     QualType SelfDeclTy;
     if (auto *SelfDecl = OMethod->getSelfDecl())
       SelfDeclTy = SelfDecl->getType();
-    else if (auto *FPT = dyn_cast<FunctionProtoType>(FnType))
-      if (FPT->getNumParams() > 1)
-        SelfDeclTy = FPT->getParamType(0);
+    else if (auto *FPT = dyn_cast<FunctionProtoType>(FnType); FPT && (FPT->getNumParams() > 1))
+      SelfDeclTy = FPT->getParamType(0);
     if (!SelfDeclTy.isNull())
       Elts.push_back(
           CreateSelfType(SelfDeclTy, getOrCreateType(SelfDeclTy, F)));
@@ -4874,8 +4862,8 @@ llvm::DISubroutineType *CGDebugInfo::getOrCreateFunctionType(const Decl *D,
 
   // Handle variadic function types; they need an additional
   // unspecified parameter.
-  if (const auto *FD = dyn_cast<FunctionDecl>(D))
-    if (FD->isVariadic()) {
+  if (const auto *FD = dyn_cast<FunctionDecl>(D); FD && (FD->isVariadic()))
+    {
       SmallVector<llvm::Metadata *, 16> EltTys;
       EltTys.push_back(getOrCreateType(FD->getReturnType(), F));
       if (const auto *FPT = dyn_cast<FunctionProtoType>(FnType))
@@ -5367,10 +5355,9 @@ llvm::DILocalVariable *CGDebugInfo::EmitDeclare(const VarDecl *VD,
     if (IPD->getParameterKind() == ImplicitParamKind::CXXThis ||
         IPD->getParameterKind() == ImplicitParamKind::ObjCSelf)
       Flags |= llvm::DINode::FlagObjectPointer;
-  } else if (const auto *PVD = dyn_cast<ParmVarDecl>(VD)) {
-    if (PVD->isExplicitObjectParameter())
-      Flags |= llvm::DINode::FlagObjectPointer;
-  }
+  } else if (const auto *PVD = dyn_cast<ParmVarDecl>(VD); PVD && (PVD->isExplicitObjectParameter())) 
+    Flags |= llvm::DINode::FlagObjectPointer;
+  
 
   // Note: Older versions of clang used to emit byval references with an extra
   // DW_OP_deref, because they referenced the IR arg directly instead of
@@ -5685,9 +5672,8 @@ void CGDebugInfo::EmitDeclareOfBlockDeclRefVariable(
 
   // Self is passed along as an implicit non-arg variable in a
   // block. Mark it as the object pointer.
-  if (const auto *IPD = dyn_cast<ImplicitParamDecl>(VD))
-    if (IPD->getParameterKind() == ImplicitParamKind::ObjCSelf)
-      Ty = CreateSelfType(VD->getType(), Ty);
+  if (const auto *IPD = dyn_cast<ImplicitParamDecl>(VD); IPD && (IPD->getParameterKind() == ImplicitParamKind::ObjCSelf))
+    Ty = CreateSelfType(VD->getType(), Ty);
 
   // Get location information.
   const unsigned Line =
@@ -6317,8 +6303,8 @@ void CGDebugInfo::EmitGlobalVariable(const ValueDecl *VD, const APValue &Init) {
   llvm::DIExpression *InitExpr = createConstantValueExpression(VD, Init);
   llvm::MDTuple *TemplateParameters = nullptr;
 
-  if (isa<VarTemplateSpecializationDecl>(VD))
-    if (VarD) {
+  if ((isa<VarTemplateSpecializationDecl>(VD)) && (VarD))
+    {
       llvm::DINodeArray parameterNodes = CollectVarTemplateParams(VarD, &*Unit);
       TemplateParameters = parameterNodes.get();
     }
@@ -6492,9 +6478,8 @@ void CGDebugInfo::EmitUsingDecl(const UsingDecl &UD) {
     if (const auto *FD = dyn_cast<FunctionDecl>(USD->getUnderlyingDecl()))
       if (const auto *AT = FD->getType()
                                ->castAs<FunctionProtoType>()
-                               ->getContainedAutoType())
-        if (AT->getDeducedType().isNull())
-          continue;
+                               ->getContainedAutoType(); AT && (AT->getDeducedType().isNull()))
+        continue;
 
     EmitUsingShadowDecl(*USD);
     // Emitting one decl is sufficient - debuggers can detect that this is an

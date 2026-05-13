@@ -100,10 +100,9 @@ bool TypeMapTy::recursivelyAddMappingIfTypesAreIsomorphic(Type *DstTy,
   // Okay, we have two types with identical kinds that we haven't seen before.
 
   // Always consider opaque struct types non-isomorphic.
-  if (StructType *SSTy = dyn_cast<StructType>(SrcTy)) {
-    if (SSTy->isOpaque() || cast<StructType>(DstTy)->isOpaque())
-      return false;
-  }
+  if (StructType *SSTy = dyn_cast<StructType>(SrcTy); SSTy && (SSTy->isOpaque() || cast<StructType>(DstTy)->isOpaque())) 
+    return false;
+  
 
   // If the number of subtypes disagree between the two types, then we fail.
   if (SrcTy->getNumContainedTypes() != DstTy->getNumContainedTypes())
@@ -126,10 +125,9 @@ bool TypeMapTy::recursivelyAddMappingIfTypesAreIsomorphic(Type *DstTy,
   } else if (auto *DArrTy = dyn_cast<ArrayType>(DstTy)) {
     if (DArrTy->getNumElements() != cast<ArrayType>(SrcTy)->getNumElements())
       return false;
-  } else if (auto *DVecTy = dyn_cast<VectorType>(DstTy)) {
-    if (DVecTy->getElementCount() != cast<VectorType>(SrcTy)->getElementCount())
-      return false;
-  }
+  } else if (auto *DVecTy = dyn_cast<VectorType>(DstTy); DVecTy && (DVecTy->getElementCount() != cast<VectorType>(SrcTy)->getElementCount())) 
+    return false;
+  
 
   // Recursively check the subelements.
   for (unsigned I = 0, E = SrcTy->getNumContainedTypes(); I != E; ++I)
@@ -141,15 +139,14 @@ bool TypeMapTy::recursivelyAddMappingIfTypesAreIsomorphic(Type *DstTy,
   [[maybe_unused]] auto Res = MappedTypes.insert({SrcTy, DstTy});
   assert(!Res.second && "Recursive type?");
 
-  if (auto *STy = dyn_cast<StructType>(SrcTy)) {
+  if (auto *STy = dyn_cast<StructType>(SrcTy); STy && (STy->hasName())) 
     // We clear name of SrcTy to lower amount of renaming in LLVM context.
     // Renaming occurs because we load all source modules to the same context
     // and declaration with existing name gets renamed (i.e Foo -> Foo.42).
     // As a result we may get several different types in the destination
     // module, which are in fact the same.
-    if (STy->hasName())
-      STy->setName("");
-  }
+    STy->setName("");
+  
 
   return true;
 }
@@ -377,9 +374,8 @@ class IRLinker {
 
     // If we found an intrinsic declaration with mismatching prototypes, we
     // probably had a nameclash. Don't use that version.
-    if (auto *FDGV = dyn_cast<Function>(DGV))
-      if (FDGV->isIntrinsic())
-        if (const auto *FSrcGV = dyn_cast<Function>(SrcGV))
+    if (auto *FDGV = dyn_cast<Function>(DGV); FDGV && (FDGV->isIntrinsic()))
+      if (const auto *FSrcGV = dyn_cast<Function>(SrcGV))
           if (FDGV->getFunctionType() != TypeMap.get(FSrcGV->getFunctionType()))
             return nullptr;
 
@@ -661,14 +657,14 @@ GlobalValue *IRLinker::copyGlobalValueProto(const GlobalValue *SGV,
   else if (SGV->hasExternalWeakLinkage())
     NewGV->setLinkage(GlobalValue::ExternalWeakLinkage);
 
-  if (auto *NewGO = dyn_cast<GlobalObject>(NewGV)) {
+  if (auto *NewGO = dyn_cast<GlobalObject>(NewGV); NewGO && (isa<GlobalVariable>(SGV) || SGV->isDeclaration())) 
     // Metadata for global variables and function declarations is copied eagerly.
-    if (isa<GlobalVariable>(SGV) || SGV->isDeclaration()) {
+    {
       NewGO->copyMetadata(cast<GlobalObject>(SGV), 0);
       if (SGV->isDeclaration() && NewGO->hasMetadata())
         UnmappedMetadata.insert(NewGO);
     }
-  }
+  
 
   // Remove these copied constants in case this stays a declaration, since
   // they point to the source module. If the def is linked the values will

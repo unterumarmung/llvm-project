@@ -139,9 +139,8 @@ bool CXXTypeidExpr::isPotentiallyEvaluated() const {
   //   When typeid is applied to an expression other than a glvalue of
   //   polymorphic class type, [...] the expression is an unevaluated operand.
   const Expr *E = getExprOperand();
-  if (const CXXRecordDecl *RD = E->getType()->getAsCXXRecordDecl())
-    if (RD->isPolymorphic() && E->isGLValue())
-      return true;
+  if (const CXXRecordDecl *RD = E->getType()->getAsCXXRecordDecl(); RD && (RD->isPolymorphic() && E->isGLValue()))
+    return true;
 
   return false;
 }
@@ -150,9 +149,8 @@ bool CXXTypeidExpr::isMostDerived(const ASTContext &Context) const {
   assert(!isTypeOperand() && "Cannot call isMostDerived for typeid(type)");
   const Expr *E = getExprOperand()->IgnoreParenNoopCasts(Context);
 
-  if (const CXXRecordDecl *RD = E->getType()->getAsCXXRecordDecl())
-    if (RD->isEffectivelyFinal())
-      return true;
+  if (const CXXRecordDecl *RD = E->getType()->getAsCXXRecordDecl(); RD && (RD->isEffectivelyFinal()))
+    return true;
 
   if (const auto *DRE = dyn_cast<DeclRefExpr>(E)) {
     QualType Ty = DRE->getDecl()->getType();
@@ -182,9 +180,8 @@ static bool isGLValueFromPointerDeref(const Expr *E) {
   if (const auto *OVE = dyn_cast<OpaqueValueExpr>(E))
     return isGLValueFromPointerDeref(OVE->getSourceExpr());
 
-  if (const auto *BO = dyn_cast<BinaryOperator>(E))
-    if (BO->getOpcode() == BO_Comma)
-      return isGLValueFromPointerDeref(BO->getRHS());
+  if (const auto *BO = dyn_cast<BinaryOperator>(E); BO && (BO->getOpcode() == BO_Comma))
+    return isGLValueFromPointerDeref(BO->getRHS());
 
   if (const auto *ACO = dyn_cast<AbstractConditionalOperator>(E))
     return isGLValueFromPointerDeref(ACO->getTrueExpr()) ||
@@ -195,9 +192,8 @@ static bool isGLValueFromPointerDeref(const Expr *E) {
   if (isa<ArraySubscriptExpr>(E))
     return true;
 
-  if (const auto *UO = dyn_cast<UnaryOperator>(E))
-    if (UO->getOpcode() == UO_Deref)
-      return true;
+  if (const auto *UO = dyn_cast<UnaryOperator>(E); UO && (UO->getOpcode() == UO_Deref))
+    return true;
 
   return false;
 }
@@ -730,9 +726,8 @@ Expr *CXXMemberCallExpr::getImplicitObjectArgument() const {
   const Expr *Callee = getCallee()->IgnoreParens();
   if (const auto *MemExpr = dyn_cast<MemberExpr>(Callee))
     return MemExpr->getBase();
-  if (const auto *BO = dyn_cast<BinaryOperator>(Callee))
-    if (BO->getOpcode() == BO_PtrMemD || BO->getOpcode() == BO_PtrMemI)
-      return BO->getLHS();
+  if (const auto *BO = dyn_cast<BinaryOperator>(Callee); BO && (BO->getOpcode() == BO_PtrMemD || BO->getOpcode() == BO_PtrMemI))
+    return BO->getLHS();
 
   // FIXME: Will eventually need to cope with member pointers.
   return nullptr;
@@ -1063,9 +1058,8 @@ Expr *CXXDefaultArgExpr::getAdjustedRewrittenExpr() {
   assert(hasRewrittenInit() &&
          "expected this CXXDefaultArgExpr to have a rewritten init.");
   Expr *Init = getRewrittenExpr();
-  if (auto *E = dyn_cast_if_present<FullExpr>(Init))
-    if (!isa<ConstantExpr>(E))
-      return E->getSubExpr();
+  if (auto *E = dyn_cast_if_present<FullExpr>(Init); E && (!isa<ConstantExpr>(E)))
+    return E->getSubExpr();
   return Init;
 }
 

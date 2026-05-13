@@ -1746,11 +1746,11 @@ static enum CXChildVisitResult PrintType(CXCursor cursor, CXCursor p,
     /* Print the number of fields if they exist. */
     {
       int numFields = 0;
-      if (clang_Type_visitFields(T, FieldVisitor, &numFields)){
-        if (numFields != 0) {
+      if ((clang_Type_visitFields(T, FieldVisitor, &numFields)) && (numFields != 0))
+        {
           printf(" [nbFields=%d]", numFields);
         }
-      }
+      
     }
 
     /* Print if it is an anonymous record or namespace. */
@@ -3929,12 +3929,12 @@ static void index_indexDeclaration(CXClientData client_data,
     printf("\n");
   }
 
-  if ((InterInfo = clang_index_getObjCInterfaceDeclInfo(info))) {
-    if (InterInfo->superInfo) {
+  if (((InterInfo = clang_index_getObjCInterfaceDeclInfo(info))) && (InterInfo->superInfo)) 
+    {
       printBaseClassInfo(client_data, InterInfo->superInfo);
       printf("\n");
     }
-  }
+  
 
   if ((ProtoInfo = clang_index_getObjCProtocolRefListInfo(info))) {
     printProtocolList(ProtoInfo, client_data);
@@ -4098,13 +4098,13 @@ static int index_file(int argc, const char **argv, int full) {
   int result;
 
   check_prefix = 0;
-  if (argc > 0) {
-    if (strstr(argv[0], "-check-prefix=") == argv[0]) {
+  if ((argc > 0) && (strstr(argv[0], "-check-prefix=") == argv[0])) 
+    {
       check_prefix = argv[0] + strlen("-check-prefix=");
       ++argv;
       --argc;
     }
-  }
+  
 
   if (!(Idx = clang_createIndex(/* excludeDeclsFromPCH */ 1,
                                 /* displayDiagnostics=*/1))) {
@@ -4142,13 +4142,13 @@ static int index_tu(int argc, const char **argv) {
   int result;
 
   check_prefix = 0;
-  if (argc > 0) {
-    if (strstr(argv[0], "-check-prefix=") == argv[0]) {
+  if ((argc > 0) && (strstr(argv[0], "-check-prefix=") == argv[0])) 
+    {
       check_prefix = argv[0] + strlen("-check-prefix=");
       ++argv;
       --argc;
     }
-  }
+  
 
   if (!(Idx = clang_createIndex(/* excludeDeclsFromPCH */ 1,
                                 /* displayDiagnostics=*/1))) {
@@ -4172,13 +4172,13 @@ static int index_compile_db(int argc, const char **argv) {
   int errorCode = 0;
 
   check_prefix = 0;
-  if (argc > 0) {
-    if (strstr(argv[0], "-check-prefix=") == argv[0]) {
+  if ((argc > 0) && (strstr(argv[0], "-check-prefix=") == argv[0])) 
+    {
       check_prefix = argv[0] + strlen("-check-prefix=");
       ++argv;
       --argc;
     }
-  }
+  
 
   if (argc == 0) {
     fprintf(stderr, "no compilation database\n");

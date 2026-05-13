@@ -446,11 +446,10 @@ const Init *BitInit::convertInitializerTo(const RecTy *Ty) const {
   if (isa<IntRecTy>(Ty))
     return IntInit::get(getRecordKeeper(), getValue());
 
-  if (auto *BRT = dyn_cast<BitsRecTy>(Ty)) {
+  if (auto *BRT = dyn_cast<BitsRecTy>(Ty); BRT && (BRT->getNumBits() == 1)) 
     // Can only convert single bit.
-    if (BRT->getNumBits() == 1)
-      return BitsInit::get(getRecordKeeper(), this);
-  }
+    return BitsInit::get(getRecordKeeper(), this);
+  
 
   return nullptr;
 }
@@ -1496,9 +1495,8 @@ const Init *BinOpInit::Fold(const Record *CurRec) const {
       assert(*ArgNo < Dag->getNumArgs());
 
       const Init *Arg = Dag->getArg(*ArgNo);
-      if (const auto *TI = dyn_cast<TypedInit>(Arg))
-        if (!TI->getType()->typeIsConvertibleTo(getType()))
-          return UnsetInit::get(Dag->getRecordKeeper());
+      if (const auto *TI = dyn_cast<TypedInit>(Arg); TI && (!TI->getType()->typeIsConvertibleTo(getType())))
+        return UnsetInit::get(Dag->getRecordKeeper());
       return Arg;
     }
     break;
@@ -1613,11 +1611,10 @@ const Init *BinOpInit::resolveReferences(Resolver &R) const {
     // limited version of short-circuit against all ones (`true` is casted
     // to 1 rather than all ones before we evaluate `!or`).
     if (const auto *LHSi = dyn_cast_or_null<IntInit>(
-            NewLHS->convertInitializerTo(IntRecTy::get(getRecordKeeper())))) {
-      if ((Opc == AND && !LHSi->getValue()) ||
-          (Opc == OR && LHSi->getValue() == -1))
-        return LHSi;
-    }
+            NewLHS->convertInitializerTo(IntRecTy::get(getRecordKeeper()))); LHSi && ((Opc == AND && !LHSi->getValue()) ||
+          (Opc == OR && LHSi->getValue() == -1))) 
+      return LHSi;
+    
   }
 
   const Init *NewRHS = RHS->resolveReferences(R);
@@ -2427,9 +2424,8 @@ DefInit::DefInit(const Record *D)
     : TypedInit(IK_DefInit, D->getType()), Def(D) {}
 
 const Init *DefInit::convertInitializerTo(const RecTy *Ty) const {
-  if (auto *RRT = dyn_cast<RecordRecTy>(Ty))
-    if (getType()->typeIsConvertibleTo(RRT))
-      return this;
+  if (auto *RRT = dyn_cast<RecordRecTy>(Ty); RRT && (getType()->typeIsConvertibleTo(RRT)))
+    return this;
   return nullptr;
 }
 

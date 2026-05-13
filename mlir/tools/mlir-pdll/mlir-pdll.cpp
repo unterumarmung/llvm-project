@@ -242,11 +242,10 @@ int main(int argc, char **argv) {
 
   // Always write the depfile, even if the main output hasn't changed. If it's
   // missing, Ninja considers the output dirty.
-  if (!dependencyFilename.empty()) {
-    if (failed(createDependencyFile(outputFilename, dependencyFilename,
-                                    includedFilesStorage)))
-      return 1;
-  }
+  if ((!dependencyFilename.empty()) && (failed(createDependencyFile(outputFilename, dependencyFilename,
+                                    includedFilesStorage)))) 
+    return 1;
+  
 
   return 0;
 }

@@ -93,9 +93,8 @@ Error DispatchStage::dispatch(InstRef IR) {
     AvailableEntries = 0;
 
   // Check if this is an optimizable reg-reg move or an XCHG-like instruction.
-  if (IS.isOptimizableMove())
-    if (PRF.tryEliminateMoveOrSwap(IS.getDefs(), IS.getUses()))
-      IS.setEliminated();
+  if ((IS.isOptimizableMove()) && (PRF.tryEliminateMoveOrSwap(IS.getDefs(), IS.getUses())))
+    IS.setEliminated();
 
   // A dependency-breaking instruction doesn't have to wait on the register
   // input operands, and it is often optimized at register renaming stage.

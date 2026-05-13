@@ -79,14 +79,14 @@ typeContainsPointer(QualType T,
 /// Infer type from a simple sizeof expression.
 static QualType inferTypeFromSizeofExpr(const Expr *E) {
   const Expr *Arg = E->IgnoreParenImpCasts();
-  if (const auto *UET = dyn_cast<UnaryExprOrTypeTraitExpr>(Arg)) {
-    if (UET->getKind() == UETT_SizeOf) {
+  if (const auto *UET = dyn_cast<UnaryExprOrTypeTraitExpr>(Arg); UET && (UET->getKind() == UETT_SizeOf)) 
+    {
       if (UET->isArgumentType())
         return UET->getArgumentTypeInfo()->getType();
       else
         return UET->getArgumentExpr()->getType();
     }
-  }
+  
   return QualType();
 }
 

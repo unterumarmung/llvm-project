@@ -2571,10 +2571,9 @@ public:
     if (C.Options.DataSections)
       Ops.push_back("-fdata-sections");
 
-    if (C.RelocModel == Reloc::PIC_)
+    if ((C.RelocModel == Reloc::PIC_) && (!Triple.isOSBinFormatCOFF()))
       // Clang doesn't have -fpic for all triples.
-      if (!Triple.isOSBinFormatCOFF())
-        Ops.push_back("-fpic");
+      Ops.push_back("-fpic");
 
     // Turn on/off warnings about profile cfg mismatch (default on)
     // --lto-pgo-warn-mismatch.

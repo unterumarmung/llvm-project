@@ -267,14 +267,14 @@ void ExprEngine::VisitObjCMessage(const ObjCMessageExpr *ME,
 
     if (UpdatedMsg->isInstanceMessage()) {
       SVal recVal = UpdatedMsg->getReceiverSVal();
-      if (!recVal.isUndef()) {
-        if (ObjCNoRet.isImplicitNoReturn(ME)) {
+      if ((!recVal.isUndef()) && (ObjCNoRet.isImplicitNoReturn(ME))) 
+        {
           // If we raise an exception, for now treat it as a sink.
           // Eventually we will want to handle exceptions properly.
           Bldr.generateSink(ME, Pred, State);
           continue;
         }
-      }
+      
     } else {
       // Check for special class methods that are known to not return
       // and that we should treat as a sink.

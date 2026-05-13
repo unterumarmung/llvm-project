@@ -72,9 +72,8 @@ bool llvm::hasAssumption(const Function &F,
 
 bool llvm::hasAssumption(const CallBase &CB,
                          const KnownAssumptionString &AssumptionStr) {
-  if (Function *F = CB.getCalledFunction())
-    if (hasAssumption(*F, AssumptionStr))
-      return true;
+  if (Function *F = CB.getCalledFunction(); F && (hasAssumption(*F, AssumptionStr)))
+    return true;
 
   const Attribute &A = CB.getFnAttr(AssumptionAttrKey);
   return ::hasAssumption(A, AssumptionStr);

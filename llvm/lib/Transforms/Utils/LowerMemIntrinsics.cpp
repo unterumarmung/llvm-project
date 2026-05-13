@@ -140,9 +140,8 @@ insertLoopExpansion(Instruction *InsertBefore, Value *Len,
   LoopExpansionInfo LEI;
 
   // If the length is known to be zero, there is nothing to do.
-  if (auto *CLen = dyn_cast<ConstantInt>(Len))
-    if (CLen->isZero())
-      return LEI;
+  if (auto *CLen = dyn_cast<ConstantInt>(Len); CLen && (CLen->isZero()))
+    return LEI;
 
   BasicBlock *PreLoopBB = InsertBefore->getParent();
   BasicBlock *PostLoopBB = PreLoopBB->splitBasicBlock(
@@ -1313,9 +1312,8 @@ static void createMemSetPatternLoop(Instruction *InsertBefore, Value *DstAddr,
                                     const TargetTransformInfo *TTI,
                                     std::optional<uint64_t> AverageTripCount) {
   // No need to expand zero length memset.pattern.
-  if (auto *CLen = dyn_cast<ConstantInt>(Len))
-    if (CLen->isZero())
-      return;
+  if (auto *CLen = dyn_cast<ConstantInt>(Len); CLen && (CLen->isZero()))
+    return;
 
   BasicBlock *PreLoopBB = InsertBefore->getParent();
   Function *ParentFunc = PreLoopBB->getParent();

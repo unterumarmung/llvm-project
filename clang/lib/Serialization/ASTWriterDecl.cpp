@@ -389,23 +389,21 @@ static bool shouldFunctionGenerateHereOnly(const FunctionDecl *FD) {
 
   ASTContext &Ctx = FD->getASTContext();
   auto Linkage = Ctx.GetGVALinkageForFunction(FD);
-  if (Ctx.getLangOpts().ModulesCodegen ||
+  if ((Ctx.getLangOpts().ModulesCodegen ||
       (FD->hasAttr<DLLExportAttr>() &&
-       Ctx.getLangOpts().BuildingPCHWithObjectFile))
+       Ctx.getLangOpts().BuildingPCHWithObjectFile)) && (!FD->hasAttr<AlwaysInlineAttr>() && Linkage != GVA_Internal &&
+        Linkage != GVA_AvailableExternally))
     // Under -fmodules-codegen, codegen is performed for all non-internal,
     // non-always_inline functions, unless they are available elsewhere.
-    if (!FD->hasAttr<AlwaysInlineAttr>() && Linkage != GVA_Internal &&
-        Linkage != GVA_AvailableExternally)
-      return true;
+    return true;
 
   Module *M = FD->getOwningModule();
   if (!M)
     return false;
 
   M = M->getTopLevelModule();
-  if (M->isInterfaceOrPartition())
-    if (Linkage >= GVA_StrongExternal)
-      return true;
+  if ((M->isInterfaceOrPartition()) && (Linkage >= GVA_StrongExternal))
+    return true;
 
   return false;
 }
@@ -476,8 +474,8 @@ void ASTDeclWriter::Visit(Decl *D) {
 
   // And similarly for FieldDecls. We already serialized whether there is a
   // default member initializer.
-  if (auto *FD = dyn_cast<FieldDecl>(D)) {
-    if (FD->hasInClassInitializer()) {
+  if (auto *FD = dyn_cast<FieldDecl>(D); FD && (FD->hasInClassInitializer())) 
+    {
       if (Expr *Init = FD->getInClassInitializer()) {
         Record.push_back(1);
         Record.AddStmt(Init);
@@ -486,7 +484,7 @@ void ASTDeclWriter::Visit(Decl *D) {
         // Initializer has not been instantiated yet.
       }
     }
-  }
+  
 
   // If this declaration is also a DeclContext, write blocks for the
   // declarations that lexically stored inside its context and those

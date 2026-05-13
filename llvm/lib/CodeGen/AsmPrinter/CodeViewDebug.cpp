@@ -435,9 +435,8 @@ getFunctionOptions(const DISubroutineType *Ty,
 
   // Add CxxReturnUdt option to functions that return nontrivial record types
   // or methods that return record types.
-  if (auto *ReturnDCTy = dyn_cast_or_null<DICompositeType>(ReturnTy))
-    if (isNonTrivial(ReturnDCTy) || ClassTy)
-      FO |= FunctionOptions::CxxReturnUdt;
+  if (auto *ReturnDCTy = dyn_cast_or_null<DICompositeType>(ReturnTy); ReturnDCTy && (isNonTrivial(ReturnDCTy) || ClassTy))
+    FO |= FunctionOptions::CxxReturnUdt;
 
   // DISubroutineType is unnamed. Use DISubprogram's i.e. SPName in comparison.
   if (ClassTy && isNonTrivial(ClassTy) && SPName == ClassTy->getName()) {
@@ -2122,12 +2121,12 @@ TypeIndex CodeViewDebug::lowerTypeMemberFunction(const DISubroutineType *Ty,
   TypeIndex ThisTypeIndex;
   if (!IsStaticMethod && ReturnAndArgs.size() > Index) {
     if (const DIDerivedType *PtrTy =
-            dyn_cast_or_null<DIDerivedType>(ReturnAndArgs[Index])) {
-      if (PtrTy->getTag() == dwarf::DW_TAG_pointer_type) {
+            dyn_cast_or_null<DIDerivedType>(ReturnAndArgs[Index]); PtrTy && (PtrTy->getTag() == dwarf::DW_TAG_pointer_type)) 
+      {
         ThisTypeIndex = getTypeIndexForThisPtr(PtrTy, Ty);
         Index++;
       }
-    }
+    
   }
 
   while (Index < ReturnAndArgs.size())
@@ -2351,12 +2350,11 @@ void CodeViewDebug::collectMemberInfo(ClassInfo &Info,
     Info.Members.push_back({DDTy, 0});
 
     // Collect static const data members with values.
-    if ((DDTy->getFlags() & DINode::FlagStaticMember) ==
-        DINode::FlagStaticMember) {
-      if (DDTy->getConstant() && (isa<ConstantInt>(DDTy->getConstant()) ||
-                                  isa<ConstantFP>(DDTy->getConstant())))
-        StaticConstMembers.push_back(DDTy);
-    }
+    if (((DDTy->getFlags() & DINode::FlagStaticMember) ==
+        DINode::FlagStaticMember) && (DDTy->getConstant() && (isa<ConstantInt>(DDTy->getConstant()) ||
+                                  isa<ConstantFP>(DDTy->getConstant())))) 
+      StaticConstMembers.push_back(DDTy);
+    
 
     return;
   }

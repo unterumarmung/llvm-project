@@ -1398,23 +1398,22 @@ void StmtPrinter::VisitUnresolvedLookupExpr(UnresolvedLookupExpr *Node) {
 
 static bool isImplicitSelf(const Expr *E) {
   if (const auto *DRE = dyn_cast<DeclRefExpr>(E)) {
-    if (const auto *PD = dyn_cast<ImplicitParamDecl>(DRE->getDecl())) {
-      if (PD->getParameterKind() == ImplicitParamKind::ObjCSelf &&
-          DRE->getBeginLoc().isInvalid())
-        return true;
-    }
+    if (const auto *PD = dyn_cast<ImplicitParamDecl>(DRE->getDecl()); PD && (PD->getParameterKind() == ImplicitParamKind::ObjCSelf &&
+          DRE->getBeginLoc().isInvalid())) 
+      return true;
+    
   }
   return false;
 }
 
 void StmtPrinter::VisitObjCIvarRefExpr(ObjCIvarRefExpr *Node) {
-  if (Node->getBase()) {
-    if (!Policy.SuppressImplicitBase ||
-        !isImplicitSelf(Node->getBase()->IgnoreImpCasts())) {
+  if ((Node->getBase()) && (!Policy.SuppressImplicitBase ||
+        !isImplicitSelf(Node->getBase()->IgnoreImpCasts()))) 
+    {
       PrintExpr(Node->getBase());
       OS << (Node->isArrow() ? "->" : ".");
     }
-  }
+  
   OS << *Node->getDecl();
 }
 
@@ -1805,9 +1804,8 @@ void StmtPrinter::VisitMemberExpr(MemberExpr *Node) {
       OS << (Node->isArrow() ? "->" : ".");
   }
 
-  if (auto *FD = dyn_cast<FieldDecl>(Node->getMemberDecl()))
-    if (FD->isAnonymousStructOrUnion())
-      return;
+  if (auto *FD = dyn_cast<FieldDecl>(Node->getMemberDecl()); FD && (FD->isAnonymousStructOrUnion()))
+    return;
 
   Node->getQualifier().print(OS, Policy);
   if (Node->hasTemplateKeyword())

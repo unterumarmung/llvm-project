@@ -112,9 +112,8 @@ void Scheduler::issueInstruction(
   // other dependent instructions. Dependent instructions may be issued during
   // this same cycle if operands have ReadAdvance entries.  Promote those
   // instructions to the ReadySet and notify the caller that those are ready.
-  if (HasDependentUsers)
-    if (promoteToPendingSet(PendingInstructions))
-      promoteToReadySet(ReadyInstructions);
+  if ((HasDependentUsers) && (promoteToPendingSet(PendingInstructions)))
+    promoteToReadySet(ReadyInstructions);
 }
 
 bool Scheduler::promoteToReadySet(SmallVectorImpl<InstRef> &Ready) {

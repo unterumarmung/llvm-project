@@ -57,13 +57,13 @@ void DependencyTracker::verifyKeepChain() {
         BrokenLinks.emplace_back(Current, Child,
                                  "Found invalid link in keep chain");
 
-      if (Child.getTag() == dwarf::DW_TAG_subprogram) {
-        if (!ChildInfo.getKeep() && isLiveSubprogramEntry(UnitEntryPairTy(
-                                        &CU, Child.getDebugInfoEntry()))) {
+      if ((Child.getTag() == dwarf::DW_TAG_subprogram) && (!ChildInfo.getKeep() && isLiveSubprogramEntry(UnitEntryPairTy(
+                                        &CU, Child.getDebugInfoEntry())))) 
+        {
           BrokenLinks.emplace_back(Current, Child,
                                    "Live subprogram is not marked as kept");
         }
-      }
+      
 
       if (!ChildInfo.getODRAvailable()) {
         assert(!ChildTypeDieIsKept);
@@ -468,9 +468,8 @@ bool DependencyTracker::markDIEEntryAsKeptRec(
           Placement == CompileUnit::PlainDwarf) &&
          "Wrong kind of placement for ODR unavailable entry");
 
-  if (!isChildrenAction(Action))
-    if (isAlreadyMarked(Entry, Placement))
-      return true;
+  if ((!isChildrenAction(Action)) && (isAlreadyMarked(Entry, Placement)))
+    return true;
 
   // Mark current DIE as kept.
   Info.setKeep();

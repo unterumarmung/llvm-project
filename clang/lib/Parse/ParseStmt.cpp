@@ -814,12 +814,11 @@ StmtResult Parser::ParseCaseStatement(ParsedStmtContext StmtCtx,
     ExprResult LHS;
     if (!MissingCase) {
       LHS = ParseCaseExpression(CaseLoc);
-      if (LHS.isInvalid()) {
+      if ((LHS.isInvalid()) && (!SkipUntil(tok::colon, tok::r_brace, StopAtSemi | StopBeforeMatch))) 
         // If constant-expression is parsed unsuccessfully, recover by skipping
         // current case statement (moving to the colon that ends it).
-        if (!SkipUntil(tok::colon, tok::r_brace, StopAtSemi | StopBeforeMatch))
-          return StmtError();
-      }
+        return StmtError();
+      
     } else {
       LHS = Actions.ActOnCaseExpr(CaseLoc, Expr);
       MissingCase = false;
@@ -839,10 +838,9 @@ StmtResult Parser::ParseCaseStatement(ParsedStmtContext StmtCtx,
         DiagId = diag::ext_c2y_case_range;
       Diag(DotDotDotLoc, DiagId);
       RHS = ParseCaseExpression(CaseLoc);
-      if (RHS.isInvalid()) {
-        if (!SkipUntil(tok::colon, tok::r_brace, StopAtSemi | StopBeforeMatch))
-          return StmtError();
-      }
+      if ((RHS.isInvalid()) && (!SkipUntil(tok::colon, tok::r_brace, StopAtSemi | StopBeforeMatch))) 
+        return StmtError();
+      
     }
 
     ColonProtection.restore();

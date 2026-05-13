@@ -202,14 +202,13 @@ ABIArgInfo NVPTXABIInfo::classifyArgumentType(QualType Ty) const {
         /* byval */ true);
   }
 
-  if (const auto *EIT = Ty->getAs<BitIntType>()) {
-    if ((EIT->getNumBits() > 128) ||
+  if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && ((EIT->getNumBits() > 128) ||
         (!getContext().getTargetInfo().hasInt128Type() &&
-         EIT->getNumBits() > 64))
-      return getNaturalAlignIndirect(
+         EIT->getNumBits() > 64))) 
+    return getNaturalAlignIndirect(
           Ty, /* AddrSpace */ getDataLayout().getAllocaAddrSpace(),
           /* byval */ true);
-  }
+  
 
   return (isPromotableIntegerTypeForABI(Ty) ? ABIArgInfo::getExtend(Ty)
                                             : ABIArgInfo::getDirect());
@@ -244,15 +243,15 @@ void NVPTXTargetCodeGenInfo::setTargetAttributes(
   if (GV->isDeclaration())
     return;
   const VarDecl *VD = dyn_cast_or_null<VarDecl>(D);
-  if (VD) {
-    if (M.getLangOpts().CUDA) {
+  if ((VD) && (M.getLangOpts().CUDA)) 
+    {
       if (VD->getType()->isCUDADeviceBuiltinSurfaceType())
         addNVVMMetadata(GV, "surface", 1);
       else if (VD->getType()->isCUDADeviceBuiltinTextureType())
         addNVVMMetadata(GV, "texture", 1);
       return;
     }
-  }
+  
 
   const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(D);
   if (!FD)
@@ -261,10 +260,10 @@ void NVPTXTargetCodeGenInfo::setTargetAttributes(
   llvm::Function *F = cast<llvm::Function>(GV);
 
   // Perform special handling in OpenCL/CUDA mode
-  if (M.getLangOpts().OpenCL || M.getLangOpts().CUDA) {
+  if ((M.getLangOpts().OpenCL || M.getLangOpts().CUDA) && (FD->hasAttr<DeviceKernelAttr>() || FD->hasAttr<CUDAGlobalAttr>())) 
     // Use function attributes to check for kernel functions
     // By default, all functions are device functions
-    if (FD->hasAttr<DeviceKernelAttr>() || FD->hasAttr<CUDAGlobalAttr>()) {
+    {
       // OpenCL/CUDA kernel functions get kernel metadata
       // And kernel functions are not subject to inlining
       F->addFnAttr(llvm::Attribute::NoInline);
@@ -280,7 +279,7 @@ void NVPTXTargetCodeGenInfo::setTargetAttributes(
       if (CUDALaunchBoundsAttr *Attr = FD->getAttr<CUDALaunchBoundsAttr>())
         M.handleCUDALaunchBoundsAttr(F, Attr);
     }
-  }
+  
 }
 
 void NVPTXTargetCodeGenInfo::addNVVMMetadata(llvm::GlobalValue *GV,

@@ -691,20 +691,18 @@ void DwarfUnit::updateAcceleratorTables(const DIScope *Context,
   // add temporary record for this type to be added later
 
   unsigned Flags = 0;
-  if (auto *CT = dyn_cast<DICompositeType>(Ty)) {
+  if (auto *CT = dyn_cast<DICompositeType>(Ty); CT && (CT->getRuntimeLang() == 0 || CT->isObjcClassComplete())) 
     // A runtime language of 0 actually means C/C++ and that any
     // non-negative value is some version of Objective-C/C++.
-    if (CT->getRuntimeLang() == 0 || CT->isObjcClassComplete())
-      Flags = dwarf::DW_FLAG_type_implementation;
-  }
+    Flags = dwarf::DW_FLAG_type_implementation;
+  
 
   DD->addAccelType(*this, CUNode->getNameTableKind(), Ty->getName(), TyDIE,
                    Flags);
 
-  if (auto *CT = dyn_cast<DICompositeType>(Ty))
-    if (Ty->getName() != CT->getIdentifier() &&
-        CT->getRuntimeLang() == dwarf::DW_LANG_Swift)
-      DD->addAccelType(*this, CUNode->getNameTableKind(), CT->getIdentifier(),
+  if (auto *CT = dyn_cast<DICompositeType>(Ty); CT && (Ty->getName() != CT->getIdentifier() &&
+        CT->getRuntimeLang() == dwarf::DW_LANG_Swift))
+    DD->addAccelType(*this, CUNode->getNameTableKind(), CT->getIdentifier(),
                        TyDIE, Flags);
 
   addGlobalType(Ty, TyDIE, Context);
@@ -1086,13 +1084,12 @@ void DwarfUnit::constructTypeDIE(DIE &Buffer, const DICompositeType *CTy) {
     }
 
     // Add template parameters to a class, structure or union types.
-    if (Tag == dwarf::DW_TAG_class_type ||
+    if ((Tag == dwarf::DW_TAG_class_type ||
         Tag == dwarf::DW_TAG_structure_type ||
-        Tag == dwarf::DW_TAG_union_type) {
-      if (!(DD->useSplitDwarf() && !getCU().getSkeleton()) ||
-          CTy->isNameSimplified())
-        addTemplateParams(Buffer, CTy->getTemplateParams());
-    }
+        Tag == dwarf::DW_TAG_union_type) && (!(DD->useSplitDwarf() && !getCU().getSkeleton()) ||
+          CTy->isNameSimplified())) 
+      addTemplateParams(Buffer, CTy->getTemplateParams());
+    
 
     // Add elements to structure type.
     DINodeArray Elements = CTy->getElements();
@@ -1375,8 +1372,8 @@ DIE *DwarfUnit::getOrCreateSubprogramDIE(const DISubprogram *SP,
   if (DIE *SPDie = getDIE(SP))
     return SPDie;
 
-  if (auto *SPDecl = SP->getDeclaration()) {
-    if (!Minimal) {
+  if (auto *SPDecl = SP->getDeclaration(); SPDecl && (!Minimal)) 
+    {
       // Build the decl now to ensure it precedes the definition.
       getOrCreateSubprogramDIE(SPDecl, nullptr);
       // Check whether the DIE for SP has already been created after the call
@@ -1387,7 +1384,7 @@ DIE *DwarfUnit::getOrCreateSubprogramDIE(const DISubprogram *SP,
       if (DIE *SPDie = getDIE(SP))
         return SPDie;
     }
-  }
+  
 
   // DW_TAG_inlined_subroutine may refer to this DIE.
   DIE &SPDie = createAndAddDIE(dwarf::DW_TAG_subprogram, *ContextDIE, SP);
@@ -1406,15 +1403,14 @@ bool DwarfUnit::applySubprogramDefinitionAttributes(const DISubprogram *SP,
                                                     DIE &SPDie, bool Minimal) {
   DIE *DeclDie = nullptr;
   StringRef DeclLinkageName;
-  if (auto *SPDecl = SP->getDeclaration()) {
-    if (!Minimal) {
+  if (auto *SPDecl = SP->getDeclaration(); SPDecl && (!Minimal)) 
+    {
       DITypeArray DeclArgs, DefinitionArgs;
       DeclArgs = SPDecl->getType()->getTypeArray();
       DefinitionArgs = SP->getType()->getTypeArray();
 
-      if (DeclArgs.size() && DefinitionArgs.size())
-        if (DefinitionArgs[0] != nullptr && DeclArgs[0] != DefinitionArgs[0])
-          addType(SPDie, DefinitionArgs[0]);
+      if ((DeclArgs.size() && DefinitionArgs.size()) && (DefinitionArgs[0] != nullptr && DeclArgs[0] != DefinitionArgs[0]))
+        addType(SPDie, DefinitionArgs[0]);
 
       DeclDie = getDIE(SPDecl);
       assert(DeclDie && "This DIE should've already been constructed when the "
@@ -1431,7 +1427,7 @@ bool DwarfUnit::applySubprogramDefinitionAttributes(const DISubprogram *SP,
       if (SP->getLine() != SPDecl->getLine())
         addUInt(SPDie, dwarf::DW_AT_decl_line, std::nullopt, SP->getLine());
     }
-  }
+  
 
   // Add function template parameters.
   if (!Minimal || SP->isNameSimplified())
@@ -1459,9 +1455,8 @@ void DwarfUnit::applySubprogramAttributes(const DISubprogram *SP, DIE &SPDie,
   // and its source location.
   bool SkipSPSourceLocation = SkipSPAttributes &&
                               !CUNode->getDebugInfoForProfiling();
-  if (!SkipSPSourceLocation)
-    if (applySubprogramDefinitionAttributes(SP, SPDie, SkipSPAttributes))
-      return;
+  if ((!SkipSPSourceLocation) && (applySubprogramDefinitionAttributes(SP, SPDie, SkipSPAttributes)))
+    return;
 
   // Constructors and operators for anonymous aggregates do not have names.
   if (!SP->getName().empty())

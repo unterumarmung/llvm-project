@@ -750,14 +750,14 @@ struct ElementalOpConversion
     // the array temporary. An hlfir.as_expr may have been added if the
     // elemental is a "view" over a variable (e.g parentheses or transpose).
     if (auto asExpr = elementValue.getDefiningOp<hlfir::AsExprOp>()) {
-      if (asExpr->hasOneUse() && !asExpr.isMove()) {
+      if ((asExpr->hasOneUse() && !asExpr.isMove()) && (asExpr->getNextNode() == yield.getOperation())) 
         // Check that the asExpr is the final operation before the yield,
         // otherwise, clean-ups could impact the memory being re-used.
-        if (asExpr->getNextNode() == yield.getOperation()) {
+        {
           elementValue = hlfir::Entity{asExpr.getVar()};
           rewriter.eraseOp(asExpr);
         }
-      }
+      
     }
     rewriter.eraseOp(yield);
     // Assign the element value to the temp element for this iteration.

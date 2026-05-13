@@ -260,8 +260,8 @@ public:
   bool VisitDesignatedInitExpr(const DesignatedInitExpr *E) {
     for (const DesignatedInitExpr::Designator &D : E->designators()) {
       if (D.isFieldDesignator()) {
-        if (const FieldDecl *Decl = D.getFieldDecl()) {
-          if (isInUSRSet(Decl)) {
+        if (const FieldDecl *Decl = D.getFieldDecl(); Decl && (isInUSRSet(Decl))) 
+          {
             auto StartLoc = D.getFieldLoc();
             auto EndLoc = D.getFieldLoc();
             RenameInfos.push_back({StartLoc, EndLoc,
@@ -270,7 +270,7 @@ public:
                                    /*Specifier=*/std::nullopt,
                                    /*IgnorePrefixQualifiers=*/true});
           }
-        }
+        
       }
     }
     return true;
@@ -283,8 +283,8 @@ public:
       if (!Initializer->isWritten())
         continue;
 
-      if (const FieldDecl *FD = Initializer->getMember()) {
-        if (isInUSRSet(FD)) {
+      if (const FieldDecl *FD = Initializer->getMember(); FD && (isInUSRSet(FD))) 
+        {
           auto Loc = Initializer->getSourceLocation();
           RenameInfos.push_back({Loc, Loc,
                                  /*FromDecl=*/nullptr,
@@ -292,7 +292,7 @@ public:
                                  /*Specifier=*/std::nullopt,
                                  /*IgnorePrefixQualifiers=*/true});
         }
-      }
+      
     }
     return true;
   }
@@ -312,8 +312,8 @@ public:
                                 ? Expr->getLAngleLoc().getLocWithOffset(-1)
                                 : Expr->getEndLoc();
 
-    if (const auto *MD = llvm::dyn_cast<CXXMethodDecl>(Decl)) {
-      if (isInUSRSet(MD)) {
+    if (const auto *MD = llvm::dyn_cast<CXXMethodDecl>(Decl); MD && (isInUSRSet(MD))) 
+      {
         // Handle renaming static template class methods, we only rename the
         // name without prefix qualifiers and restrict the source range to the
         // name.
@@ -324,7 +324,7 @@ public:
                                /*IgnorePrefixQualifiers=*/true});
         return true;
       }
-    }
+    
 
     // In case of renaming an enum declaration, we have to explicitly handle
     // unscoped enum constants referenced in expressions (e.g.
@@ -386,8 +386,8 @@ public:
     if (!TL)
       return true;
 
-    if (const auto *TargetDecl = getSupportedDeclFromTypeLoc(TL)) {
-      if (isInUSRSet(TargetDecl)) {
+    if (const auto *TargetDecl = getSupportedDeclFromTypeLoc(TL); TargetDecl && (isInUSRSet(TargetDecl))) 
+      {
         RenameInfo Info = {NestedLoc.getBeginLoc(),
                            EndLocationForType(TL),
                            TargetDecl,
@@ -396,7 +396,7 @@ public:
                            /*IgnorePrefixQualifiers=*/false};
         RenameInfos.push_back(Info);
       }
-    }
+    
     return true;
   }
 
@@ -419,8 +419,8 @@ public:
 
     // Handle the outermost TypeLoc which is directly linked to the interesting
     // declaration and don't handle nested name specifier locations.
-    if (const auto *TargetDecl = getSupportedDeclFromTypeLoc(Loc)) {
-      if (isInUSRSet(TargetDecl)) {
+    if (const auto *TargetDecl = getSupportedDeclFromTypeLoc(Loc); TargetDecl && (isInUSRSet(TargetDecl))) 
+      {
         // Only handle the outermost typeLoc.
         //
         // For a type like "a::Foo", there will be two typeLocs for it.
@@ -448,12 +448,12 @@ public:
         }
         return true;
       }
-    }
+    
 
     // Handle specific template class specialiation cases.
     if (const auto *TemplateSpecType =
-            dyn_cast<TemplateSpecializationType>(Loc.getType())) {
-      if (isInUSRSet(TemplateSpecType->getTemplateName().getAsTemplateDecl())) {
+            dyn_cast<TemplateSpecializationType>(Loc.getType()); TemplateSpecType && (isInUSRSet(TemplateSpecType->getTemplateName().getAsTemplateDecl()))) 
+      {
         auto StartLoc = StartLocationForType(Loc);
         auto EndLoc = EndLocationForType(Loc);
         if (IsValidEditLoc(Context.getSourceManager(), StartLoc)) {
@@ -467,7 +467,7 @@ public:
           RenameInfos.push_back(Info);
         }
       }
-    }
+    
     return true;
   }
 

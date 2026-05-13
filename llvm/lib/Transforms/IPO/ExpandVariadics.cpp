@@ -400,13 +400,13 @@ bool ExpandVariadics::runOnModule(Module &M) {
     // stream. Fortunately this is only necessary for the ABI rewrite case.
     for (BasicBlock &BB : F) {
       for (Instruction &I : make_early_inc_range(BB)) {
-        if (CallBase *CB = dyn_cast<CallBase>(&I)) {
-          if (CB->isIndirectCall()) {
+        if (CallBase *CB = dyn_cast<CallBase>(&I); CB && (CB->isIndirectCall())) 
+          {
             FunctionType *FTy = CB->getFunctionType();
             if (FTy->isVarArg())
               Changed |= expandCall(M, Builder, CB, FTy, /*NF=*/nullptr);
           }
-        }
+        
       }
     }
   }
@@ -1044,11 +1044,11 @@ struct Wasm final : public VariadicABIInfo {
     if (A < MinAlign)
       A = Align(MinAlign);
 
-    if (auto *S = dyn_cast<StructType>(Parameter)) {
-      if (S->getNumElements() > 1) {
+    if (auto *S = dyn_cast<StructType>(Parameter); S && (S->getNumElements() > 1)) 
+      {
         return {DL.getABITypeAlign(PointerType::getUnqual(Ctx)), true};
       }
-    }
+    
 
     return {A, false};
   }

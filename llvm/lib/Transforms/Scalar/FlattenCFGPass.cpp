@@ -60,9 +60,8 @@ static bool iterativelyFlattenCFG(Function &F, AliasAnalysis *AA) {
     // Loop over all of the basic blocks and try to flatten them.
     for (WeakVH &BlockHandle : Blocks) {
       // Skip blocks erased by FlattenCFG.
-      if (auto *BB = cast_or_null<BasicBlock>(BlockHandle))
-        if (FlattenCFG(BB, AA))
-          LocalChange = true;
+      if (auto *BB = cast_or_null<BasicBlock>(BlockHandle); BB && (FlattenCFG(BB, AA)))
+        LocalChange = true;
     }
     Changed |= LocalChange;
   }

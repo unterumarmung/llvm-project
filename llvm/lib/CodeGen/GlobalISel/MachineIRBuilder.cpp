@@ -102,9 +102,8 @@ MachineInstrBuilder MachineIRBuilder::buildConstDbgValue(const Constant &C,
   auto MIB = buildInstrNoInsert(TargetOpcode::DBG_VALUE);
 
   auto *NumericConstant = [&] () -> const Constant* {
-    if (const auto *CE = dyn_cast<ConstantExpr>(&C))
-      if (CE->getOpcode() == Instruction::IntToPtr)
-        return CE->getOperand(0);
+    if (const auto *CE = dyn_cast<ConstantExpr>(&C); CE && (CE->getOpcode() == Instruction::IntToPtr))
+      return CE->getOperand(0);
     return &C;
   }();
 

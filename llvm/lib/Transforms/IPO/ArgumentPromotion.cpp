@@ -715,15 +715,15 @@ static bool findArgParts(Argument *Arg, const DataLayout &DL, AAResults &AAR,
     return false;
   }
 
-  if (NeededDerefBytes || NeededAlign > 1) {
+  if ((NeededDerefBytes || NeededAlign > 1) && (!allCallersPassValidPointerForArgument(Arg, RecursiveCalls, NeededAlign,
+                                               NeededDerefBytes))) 
     // Try to prove a required deref / aligned requirement.
-    if (!allCallersPassValidPointerForArgument(Arg, RecursiveCalls, NeededAlign,
-                                               NeededDerefBytes)) {
+    {
       LLVM_DEBUG(dbgs() << "ArgPromotion of " << *Arg << " failed: "
                         << "not dereferenceable or aligned\n");
       return false;
     }
-  }
+  
 
   if (ArgParts.empty())
     return true; // No users, this is a dead argument.

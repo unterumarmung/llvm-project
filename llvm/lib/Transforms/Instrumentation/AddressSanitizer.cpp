@@ -2195,11 +2195,10 @@ bool ModuleAddressSanitizer::shouldInstrumentGlobal(GlobalVariable *G) const {
 
     // Do not instrument user-defined sections (with names resembling
     // valid C identifiers)
-    if (TargetTriple.isOSBinFormatELF()) {
-      if (llvm::all_of(Section,
-                       [](char c) { return llvm::isAlnum(c) || c == '_'; }))
-        return false;
-    }
+    if ((TargetTriple.isOSBinFormatELF()) && (llvm::all_of(Section,
+                       [](char c) { return llvm::isAlnum(c) || c == '_'; }))) 
+      return false;
+    
 
     // On COFF, if the section name contains '$', it is highly likely that the
     // user is using section sorting to create an array of globals similar to
@@ -2251,12 +2250,11 @@ bool ModuleAddressSanitizer::shouldInstrumentGlobal(GlobalVariable *G) const {
     }
   }
 
-  if (CompileKernel) {
+  if ((CompileKernel) && (G->getName().starts_with("__"))) 
     // Globals that prefixed by "__" are special and cannot be padded with a
     // redzone.
-    if (G->getName().starts_with("__"))
-      return false;
-  }
+    return false;
+  
 
   return true;
 }
@@ -3594,11 +3592,10 @@ void FunctionStackPoisoner::processStaticAllocas() {
     ASanStackVariableDescription &Desc = *AllocaToSVDMap[APC.AI];
     Desc.LifetimeSize = Desc.Size;
     if (const DILocation *FnLoc = EntryDebugLocation.get()) {
-      if (const DILocation *LifetimeLoc = APC.InsBefore->getDebugLoc().get()) {
-        if (LifetimeLoc->getFile() == FnLoc->getFile())
-          if (unsigned Line = LifetimeLoc->getLine())
+      if (const DILocation *LifetimeLoc = APC.InsBefore->getDebugLoc().get(); LifetimeLoc && (LifetimeLoc->getFile() == FnLoc->getFile())) 
+        if (unsigned Line = LifetimeLoc->getLine())
             Desc.Line = std::min(Desc.Line ? Desc.Line : Line, Line);
-      }
+      
     }
   }
 

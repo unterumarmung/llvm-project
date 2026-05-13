@@ -638,12 +638,12 @@ public:
     auto staticOffs = decomposedOffs.first;
     auto dynamicOffs = decomposedOffs.second;
 
-    if (dynamicHalos.empty() && !staticHalos.empty()) {
-      if (staticHalos[0] == 0 && llvm::all_equal(staticHalos)) {
+    if ((dynamicHalos.empty() && !staticHalos.empty()) && (staticHalos[0] == 0 && llvm::all_equal(staticHalos))) 
+      {
         staticHalos.clear();
         modified = true;
       }
-    }
+    
 
     // Remove sharded dims offsets if they are effectively the default values,
     // e.g. if they define equi-distance between all neighboring shards.
@@ -1086,13 +1086,13 @@ static LogicalResult verifyAllToAllOperandAndResultShape(
   ShapedType operandType = cast<ShapedType>(operand.getType());
   ShapedType resultType = cast<ShapedType>(result.getType());
   for (int64_t axis = 0; axis < operandType.getRank(); ++axis) {
-    if ((axis != splitAxis && axis != concatAxis) || splitAxis == concatAxis) {
-      if (failed(verifyDimensionCompatibility(
+    if (((axis != splitAxis && axis != concatAxis) || splitAxis == concatAxis) && (failed(verifyDimensionCompatibility(
               result.getLoc(), operandType.getDimSize(axis),
-              resultType.getDimSize(axis), axis))) {
+              resultType.getDimSize(axis), axis)))) 
+      {
         return failure();
       }
-    }
+    
   }
 
   if (splitAxis == concatAxis) {
@@ -1131,13 +1131,13 @@ static LogicalResult verifyScatterOrSliceOperandAndResultShape(
   ShapedType operandType = cast<ShapedType>(operand.getType());
   ShapedType resultType = cast<ShapedType>(result.getType());
   for (int64_t axis = 0; axis < operandType.getRank(); ++axis) {
-    if (axis != tensorAxis) {
-      if (failed(verifyDimensionCompatibility(
+    if ((axis != tensorAxis) && (failed(verifyDimensionCompatibility(
               result.getLoc(), operandType.getDimSize(axis),
-              resultType.getDimSize(axis), axis))) {
+              resultType.getDimSize(axis), axis)))) 
+      {
         return failure();
       }
-    }
+    
   }
 
   auto deviceGroupSize =

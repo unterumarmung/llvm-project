@@ -680,11 +680,10 @@ Expected<std::unique_ptr<Expression>> Pattern::parseNumericSubstitutionBlock(
     bool AlternateForm = FormatExpr.consume_front("#");
 
     // Parse precision.
-    if (FormatExpr.consume_front(".")) {
-      if (FormatExpr.consumeInteger(10, Precision))
-        return ErrorDiagnostic::get(SM, FormatExpr,
+    if ((FormatExpr.consume_front(".")) && (FormatExpr.consumeInteger(10, Precision))) 
+      return ErrorDiagnostic::get(SM, FormatExpr,
                                     "invalid precision in format specifier");
-    }
+    
 
     if (!FormatExpr.empty()) {
       // Check for unknown matching format specifier and set matching format in

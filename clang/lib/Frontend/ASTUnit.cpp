@@ -923,16 +923,16 @@ static void AddTopLevelDeclarationToHash(Decl *D, unsigned &Hash) {
     return;
 
   if (const auto *ND = dyn_cast<NamedDecl>(D)) {
-    if (const auto *EnumD = dyn_cast<EnumDecl>(D)) {
+    if (const auto *EnumD = dyn_cast<EnumDecl>(D); EnumD && (!EnumD->isScoped())) 
       // For an unscoped enum include the enumerators in the hash since they
       // enter the top-level namespace.
-      if (!EnumD->isScoped()) {
+      {
         for (const auto *EI : EnumD->enumerators()) {
           if (EI->getIdentifier())
             Hash = llvm::djbHash(EI->getIdentifier()->getName(), Hash);
         }
       }
-    }
+    
 
     if (ND->getIdentifier())
       Hash = llvm::djbHash(ND->getIdentifier()->getName(), Hash);

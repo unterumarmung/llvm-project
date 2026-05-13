@@ -131,11 +131,10 @@ static DWARFDie GetParentDeclContextDIE(DWARFDie &Die) {
 static std::optional<gsym_strp_t>
 getQualifiedNameIndex(DWARFDie &Die, uint64_t Language, GsymCreator &Gsym) {
   // If the dwarf has mangled name, use mangled name
-  if (auto LinkageName = Die.getLinkageName()) {
+  if (auto LinkageName = Die.getLinkageName(); LinkageName && (strlen(LinkageName) > 0)) 
     // We have seen cases were linkage name is actually empty.
-    if (strlen(LinkageName) > 0)
-      return Gsym.insertString(LinkageName, /* Copy */ false);
-  }
+    return Gsym.insertString(LinkageName, /* Copy */ false);
+  
 
   StringRef ShortName(Die.getName(DINameKind::ShortName));
   if (ShortName.empty())
@@ -529,8 +528,8 @@ void DwarfTransformer::handleDie(OutputAggregator &Out, CUInfo &CUI,
         // on the linker of the DWARF. This indicates a function was stripped
         // and the debug info wasn't able to be stripped from the DWARF. If
         // the LowPC isn't zero or -1, then we should emit an error.
-        if (Range.LowPC != 0) {
-          if (!Gsym.isQuiet()) {
+        if ((Range.LowPC != 0) && (!Gsym.isQuiet())) 
+          {
             // Unexpected invalid address, emit a warning
             Out.Report("Address range starts outside executable section",
                        [&](raw_ostream &OS) {
@@ -542,7 +541,7 @@ void DwarfTransformer::handleDie(OutputAggregator &Out, CUInfo &CUI,
                          Die.dump(OS, 0, DIDumpOptions::getForSingleDIE());
                        });
           }
-        }
+        
         break;
       }
 

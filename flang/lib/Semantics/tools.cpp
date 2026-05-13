@@ -308,12 +308,12 @@ bool IsPointerDummy(const Symbol &symbol) {
 
 bool IsBindCProcedure(const Symbol &original) {
   const Symbol &symbol{original.GetUltimate()};
-  if (const auto *procDetails{symbol.detailsIf<ProcEntityDetails>()}) {
-    if (procDetails->procInterface()) {
+  if (const auto *procDetails{symbol.detailsIf<ProcEntityDetails>()}; procDetails && (procDetails->procInterface())) 
+    {
       // procedure component with a BIND(C) interface
       return IsBindCProcedure(*procDetails->procInterface());
     }
-  }
+  
   return symbol.attrs().test(Attr::BIND_C) && IsProcedure(symbol);
 }
 
@@ -641,14 +641,14 @@ bool IsInitialized(const Symbol &symbol, bool ignoreDataStatements,
     return !ignorePointer;
   } else if (IsNamedConstant(symbol)) {
     return false;
-  } else if (const auto *object{symbol.detailsIf<ObjectEntityDetails>()}) {
-    if ((!object->isDummy() || IsIntentOut(symbol)) && object->type()) {
+  } else if (const auto *object{symbol.detailsIf<ObjectEntityDetails>()}; object && ((!object->isDummy() || IsIntentOut(symbol)) && object->type())) 
+    {
       if (const auto *derived{object->type()->AsDerived()}) {
         return derived->HasDefaultInitialization(
             ignoreAllocatable, ignorePointer);
       }
     }
-  }
+  
   return false;
 }
 
@@ -658,14 +658,14 @@ bool IsDestructible(const Symbol &symbol, const Symbol *derivedTypeSymbol) {
   } else if (IsNamedConstant(symbol) || IsFunctionResult(symbol) ||
       IsPointer(symbol)) {
     return false;
-  } else if (const auto *object{symbol.detailsIf<ObjectEntityDetails>()}) {
-    if ((!object->isDummy() || IsIntentOut(symbol)) && object->type()) {
+  } else if (const auto *object{symbol.detailsIf<ObjectEntityDetails>()}; object && ((!object->isDummy() || IsIntentOut(symbol)) && object->type())) 
+    {
       if (const auto *derived{object->type()->AsDerived()}) {
         return &derived->typeSymbol() != derivedTypeSymbol &&
             derived->HasDestruction();
       }
     }
-  }
+  
   return false;
 }
 
@@ -705,12 +705,12 @@ SymbolVector FinalsForDerivedTypeInstantiation(const DerivedTypeSpec &spec) {
       if (const auto *subprog{subr.detailsIf<SubprogramDetails>()};
           subprog && subprog->dummyArgs().size() == 1) {
         if (const Symbol * arg{subprog->dummyArgs()[0]}) {
-          if (const DeclTypeSpec * type{arg->GetType()}) {
-            if (type->category() == DeclTypeSpec::TypeDerived &&
-                evaluate::AreSameDerivedType(spec, type->derivedTypeSpec())) {
+          if (const DeclTypeSpec * type{arg->GetType()}; type && (type->category() == DeclTypeSpec::TypeDerived &&
+                evaluate::AreSameDerivedType(spec, type->derivedTypeSpec()))) 
+            {
               result.emplace_back(subr);
             }
-          }
+          
         }
       }
     }
@@ -847,11 +847,11 @@ static bool MayHaveDefinedAssignment(
         if (const DeclTypeSpec *type{symbolRef->GetType()}) {
           if (type->IsPolymorphic()) {
             return true;
-          } else if (const DerivedTypeSpec *derived{type->AsDerived()}) {
-            if (MayHaveDefinedAssignment(*derived, checked)) {
+          } else if (const DerivedTypeSpec *derived{type->AsDerived()}; derived && (MayHaveDefinedAssignment(*derived, checked))) 
+            {
               return true;
             }
-          }
+          
         }
       }
     }
@@ -963,9 +963,9 @@ public:
     const auto &call{std::get<parser::Call>(stmt.t)};
     const auto &procedureDesignator{
         std::get<parser::ProcedureDesignator>(call.t)};
-    if (auto *name{std::get_if<parser::Name>(&procedureDesignator.u)}) {
+    if (auto *name{std::get_if<parser::Name>(&procedureDesignator.u)}; name && (name->source == "move_alloc")) 
       // TODO: also ensure that the procedure is, in fact, an intrinsic
-      if (name->source == "move_alloc") {
+      {
         const auto &args{std::get<std::list<parser::ActualArgSpec>>(call.t)};
         if (!args.empty()) {
           const parser::ActualArg &actualArg{
@@ -977,7 +977,7 @@ public:
           }
         }
       }
-    }
+    
     return false;
   }
   bool operator()(const parser::StopStmt &stmt) {
@@ -1496,8 +1496,8 @@ PotentialComponentIterator::const_iterator FindEventOrLockPotentialComponent(
   for (auto end{potentials.end()}; iter != end; ++iter) {
     const Symbol &component{*iter};
     if (const auto *object{component.detailsIf<ObjectEntityDetails>()}) {
-      if (const DeclTypeSpec * type{object->type()}) {
-        if (IsEventTypeOrLockType(type->AsDerived())) {
+      if (const DeclTypeSpec * type{object->type()}; type && (IsEventTypeOrLockType(type->AsDerived()))) 
+        {
           if (!ignoreCoarrays) {
             break; // found one
           }
@@ -1509,7 +1509,7 @@ PotentialComponentIterator::const_iterator FindEventOrLockPotentialComponent(
             break; // found one not in a coarray
           }
         }
-      }
+      
     }
   }
   return iter;
@@ -1522,8 +1522,8 @@ PotentialComponentIterator::const_iterator FindNotifyPotentialComponent(
   for (auto end{potentials.end()}; iter != end; ++iter) {
     const Symbol &component{*iter};
     if (const auto *object{component.detailsIf<ObjectEntityDetails>()}) {
-      if (const DeclTypeSpec *type{object->type()}) {
-        if (IsNotifyType(type->AsDerived())) {
+      if (const DeclTypeSpec *type{object->type()}; type && (IsNotifyType(type->AsDerived()))) 
+        {
           if (!ignoreCoarrays) {
             break; // found one
           }
@@ -1535,7 +1535,7 @@ PotentialComponentIterator::const_iterator FindNotifyPotentialComponent(
             break; // found one not in a coarray
           }
         }
-      }
+      
     }
   }
   return iter;
@@ -1614,22 +1614,22 @@ const Symbol *FindImmediateComponent(const DerivedTypeSpec &type,
 
 const Symbol *IsFunctionResultWithSameNameAsFunction(const Symbol &symbol) {
   if (IsFunctionResult(symbol)) {
-    if (const Symbol * function{symbol.owner().symbol()}) {
-      if (symbol.name() == function->name()) {
+    if (const Symbol * function{symbol.owner().symbol()}; function && (symbol.name() == function->name())) 
+      {
         return function;
       }
-    }
+    
     // Check ENTRY result symbols too
     const Scope &outer{symbol.owner().parent()};
     auto iter{outer.find(symbol.name())};
     if (iter != outer.end()) {
       const Symbol &outerSym{*iter->second};
-      if (const auto *subp{outerSym.detailsIf<SubprogramDetails>()}) {
-        if (subp->entryScope() == &symbol.owner() &&
-            symbol.name() == outerSym.name()) {
+      if (const auto *subp{outerSym.detailsIf<SubprogramDetails>()}; subp && (subp->entryScope() == &symbol.owner() &&
+            symbol.name() == outerSym.name())) 
+        {
           return &outerSym;
         }
-      }
+      
     }
   }
   return nullptr;
@@ -1771,11 +1771,11 @@ bool HasDefinedIo(common::DefinedIo which, const DerivedTypeSpec &derived,
       const Symbol &symbol{*pair.second};
       if (const auto *generic{symbol.detailsIf<GenericDetails>()}) {
         GenericKind kind{generic->kind()};
-        if (const auto *io{std::get_if<common::DefinedIo>(&kind.u)}) {
-          if (*io == which) {
+        if (const auto *io{std::get_if<common::DefinedIo>(&kind.u)}; io && (*io == which)) 
+          {
             return true; // type-bound GENERIC exists
           }
-        }
+        
       }
     }
   }

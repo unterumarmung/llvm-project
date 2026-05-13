@@ -227,31 +227,27 @@ CleanupPointerRootUsers(GlobalVariable *GV,
       if (isa<Constant>(V)) {
         Changed = true;
         SI->eraseFromParent();
-      } else if (Instruction *I = dyn_cast<Instruction>(V)) {
-        if (I->hasOneUse())
-          Dead.push_back(std::make_pair(I, SI));
-      }
+      } else if (Instruction *I = dyn_cast<Instruction>(V); I && (I->hasOneUse())) 
+        Dead.push_back(std::make_pair(I, SI));
+      
     } else if (MemSetInst *MSI = dyn_cast<MemSetInst>(U)) {
       if (isa<Constant>(MSI->getValue())) {
         Changed = true;
         MSI->eraseFromParent();
-      } else if (Instruction *I = dyn_cast<Instruction>(MSI->getValue())) {
-        if (I->hasOneUse())
-          Dead.push_back(std::make_pair(I, MSI));
-      }
+      } else if (Instruction *I = dyn_cast<Instruction>(MSI->getValue()); I && (I->hasOneUse())) 
+        Dead.push_back(std::make_pair(I, MSI));
+      
     } else if (MemTransferInst *MTI = dyn_cast<MemTransferInst>(U)) {
       GlobalVariable *MemSrc = dyn_cast<GlobalVariable>(MTI->getSource());
       if (MemSrc && MemSrc->isConstant()) {
         Changed = true;
         MTI->eraseFromParent();
-      } else if (Instruction *I = dyn_cast<Instruction>(MTI->getSource())) {
-        if (I->hasOneUse())
-          Dead.push_back(std::make_pair(I, MTI));
-      }
-    } else if (ConstantExpr *CE = dyn_cast<ConstantExpr>(U)) {
-      if (isa<GEPOperator>(CE))
-        append_range(Worklist, CE->users());
-    }
+      } else if (Instruction *I = dyn_cast<Instruction>(MTI->getSource()); I && (I->hasOneUse())) 
+        Dead.push_back(std::make_pair(I, MTI));
+      
+    } else if (ConstantExpr *CE = dyn_cast<ConstantExpr>(U); CE && (isa<GEPOperator>(CE))) 
+      append_range(Worklist, CE->users());
+    
   }
 
   for (const auto &[Inst, Store] : Dead) {
@@ -319,10 +315,9 @@ static bool CleanupConstantGlobalUsers(GlobalVariable *GV,
       APInt Offset(DL.getIndexTypeSizeInBits(PtrOp->getType()), 0);
       PtrOp = PtrOp->stripAndAccumulateConstantOffsets(
           DL, Offset, /* AllowNonInbounds */ true);
-      if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(PtrOp)) {
-        if (II->getIntrinsicID() == Intrinsic::threadlocal_address)
-          PtrOp = II->getArgOperand(0);
-      }
+      if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(PtrOp); II && (II->getIntrinsicID() == Intrinsic::threadlocal_address)) 
+        PtrOp = II->getArgOperand(0);
+      
       if (PtrOp == GV) {
         if (auto *Value = ConstantFoldLoadFromConst(Init, Ty, Offset, DL)) {
           LI->replaceAllUsesWith(Value);
@@ -335,10 +330,9 @@ static bool CleanupConstantGlobalUsers(GlobalVariable *GV,
     } else if (MemIntrinsic *MI = dyn_cast<MemIntrinsic>(U)) { // memset/cpy/mv
       if (getUnderlyingObject(MI->getRawDest()) == GV)
         EraseFromParent(MI);
-    } else if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(U)) {
-      if (II->getIntrinsicID() == Intrinsic::threadlocal_address)
-        append_range(WorkList, II->users());
-    }
+    } else if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(U); II && (II->getIntrinsicID() == Intrinsic::threadlocal_address)) 
+      append_range(WorkList, II->users());
+    
   }
 
   Changed |=
@@ -665,12 +659,11 @@ static GlobalVariable *SRAGlobal(GlobalVariable *GV, const DataLayout &DL) {
 static bool AllUsesOfValueWillTrapIfNull(const Value *V,
                                         SmallPtrSetImpl<const PHINode*> &PHIs) {
   for (const User *U : V->users()) {
-    if (const Instruction *I = dyn_cast<Instruction>(U)) {
+    if (const Instruction *I = dyn_cast<Instruction>(U); I && (NullPointerIsDefined(I->getFunction()))) 
       // If null pointer is considered valid, then all uses are non-trapping.
       // Non address-space 0 globals have already been pruned by the caller.
-      if (NullPointerIsDefined(I->getFunction()))
-        return false;
-    }
+      return false;
+    
     if (isa<LoadInst>(U)) {
       // Will trap.
     } else if (const StoreInst *SI = dyn_cast<StoreInst>(U)) {
@@ -1338,9 +1331,8 @@ deleteIfDead(GlobalValue &GV,
   if (!GV.isDiscardableIfUnused() && !GV.isDeclaration())
     return false;
 
-  if (const Comdat *C = GV.getComdat())
-    if (!GV.hasLocalLinkage() && NotDiscardableComdats.count(C))
-      return false;
+  if (const Comdat *C = GV.getComdat(); C && (!GV.hasLocalLinkage() && NotDiscardableComdats.count(C)))
+    return false;
 
   bool Dead;
   if (auto *F = dyn_cast<Function>(&GV))
@@ -1442,11 +1434,10 @@ static bool forwardStoredOnceStore(
   const Function *F = StoredOnceStore->getFunction();
   SmallVector<LoadInst *> Loads;
   for (User *U : GV->users()) {
-    if (auto *LI = dyn_cast<LoadInst>(U)) {
-      if (LI->getFunction() == F &&
-          LI->getType() == StoredOnceValue->getType() && LI->isSimple())
-        Loads.push_back(LI);
-    }
+    if (auto *LI = dyn_cast<LoadInst>(U); LI && (LI->getFunction() == F &&
+          LI->getType() == StoredOnceValue->getType() && LI->isSimple())) 
+      Loads.push_back(LI);
+    
   }
   // Only compute DT if we have any loads to examine.
   bool MadeChange = false;
@@ -1623,20 +1614,19 @@ processInternalGlobal(GlobalVariable *GV, const GlobalStatus &GS,
 
     // Try to forward the store to any loads. If we have more than one store, we
     // may have a store of the initializer between StoredOnceStore and a load.
-    if (GS.NumStores == 1)
-      if (forwardStoredOnceStore(GV, GS.StoredOnceStore, LookupDomTree))
-        return true;
+    if ((GS.NumStores == 1) && (forwardStoredOnceStore(GV, GS.StoredOnceStore, LookupDomTree)))
+      return true;
 
     // Otherwise, if the global was not a boolean, we can shrink it to be a
     // boolean. Skip this optimization for AS that doesn't allow an initializer.
-    if (SOVConstant && GS.Ordering == AtomicOrdering::NotAtomic &&
+    if ((SOVConstant && GS.Ordering == AtomicOrdering::NotAtomic &&
         (!isa<UndefValue>(GV->getInitializer()) ||
-         CanHaveNonUndefGlobalInitializer)) {
-      if (TryToShrinkGlobalToBoolean(GV, SOVConstant)) {
+         CanHaveNonUndefGlobalInitializer)) && (TryToShrinkGlobalToBoolean(GV, SOVConstant))) 
+      {
         ++NumShrunkToBool;
         return true;
       }
-    }
+    
   }
 
   return Changed;
@@ -1687,9 +1677,8 @@ processGlobal(GlobalValue &GV,
 /// FastCC.
 static void ChangeCalleesToFastCall(Function *F) {
   for (User *U : F->users())
-    if (auto *Call = dyn_cast<CallBase>(U))
-      if (Call->getCalledOperand() == F)
-        Call->setCallingConv(CallingConv::Fast);
+    if (auto *Call = dyn_cast<CallBase>(U); Call && (Call->getCalledOperand() == F))
+      Call->setCallingConv(CallingConv::Fast);
 }
 
 static AttributeList StripAttr(LLVMContext &C, AttributeList Attrs,
@@ -1790,9 +1779,8 @@ isValidCandidateForColdCC(Function &F,
 
 static void changeCallSitesToColdCC(Function *F) {
   for (User *U : F->users())
-    if (auto *Call = dyn_cast<CallBase>(U))
-      if (Call->getCalledOperand() == F)
-        Call->setCallingConv(CallingConv::Cold);
+    if (auto *Call = dyn_cast<CallBase>(U); Call && (Call->getCalledOperand() == F))
+      Call->setCallingConv(CallingConv::Cold);
 }
 
 // This function iterates over all the call instructions in the input Function
@@ -1971,12 +1959,12 @@ OptimizeFunctions(Module &M,
     // no point in analyzing them and b) GlobalOpt should otherwise grow
     // some more complicated logic to break these cycles.
     // Notify the analysis manager that we've modified the function's CFG.
-    if (!F.isDeclaration()) {
-      if (removeUnreachableBlocks(F)) {
+    if ((!F.isDeclaration()) && (removeUnreachableBlocks(F))) 
+      {
         Changed = true;
         ChangedCFGCallback(F);
       }
-    }
+    
 
     Changed |= processGlobal(F, GetTTI, GetTLI, LookupDomTree);
 
@@ -2473,10 +2461,10 @@ static Function *hasSideeffectFreeStaticResolution(GlobalIFunc &IF) {
 static bool OptimizeStaticIFuncs(Module &M) {
   bool Changed = false;
   for (GlobalIFunc &IF : M.ifuncs())
-    if (Function *Callee = hasSideeffectFreeStaticResolution(IF))
-      if (!IF.use_empty() &&
+    if (Function *Callee = hasSideeffectFreeStaticResolution(IF); Callee && (!IF.use_empty() &&
           (!Callee->isDeclaration() ||
-           none_of(IF.users(), [](User *U) { return isa<GlobalAlias>(U); }))) {
+           none_of(IF.users(), [](User *U) { return isa<GlobalAlias>(U); }))))
+      {
         IF.replaceAllUsesWith(Callee);
         NumIFuncsResolved++;
         Changed = true;
@@ -2574,9 +2562,8 @@ static bool OptimizeNonTrivialIFuncs(
     SmallVector<Function *> Versions;
     // Discover the versioned functions.
     if (any_of(*Resolver, [&](BasicBlock &BB) {
-          if (auto *Ret = dyn_cast_or_null<ReturnInst>(BB.getTerminator()))
-            if (!collectVersions(Ret->getReturnValue(), Versions, GetTTI))
-              return true;
+          if (auto *Ret = dyn_cast_or_null<ReturnInst>(BB.getTerminator()); Ret && (!collectVersions(Ret->getReturnValue(), Versions, GetTTI)))
+            return true;
           return false;
         }))
       continue;
@@ -2610,8 +2597,8 @@ static bool OptimizeNonTrivialIFuncs(
 
     // Find the callsites.
     for (User *U : CalleeIF->users()) {
-      if (auto *CB = dyn_cast<CallBase>(U)) {
-        if (CB->getCalledOperand() == CalleeIF) {
+      if (auto *CB = dyn_cast<CallBase>(U); CB && (CB->getCalledOperand() == CalleeIF)) 
+        {
           Function *Caller = CB->getFunction();
           GlobalIFunc *CallerIF = nullptr;
           TargetTransformInfo &TTI = GetTTI(*Caller);
@@ -2636,7 +2623,7 @@ static bool OptimizeNonTrivialIFuncs(
           }
           It->second.push_back(CB);
         }
-      }
+      
     }
 
     if (CallSites.empty())
@@ -2763,17 +2750,14 @@ optimizeGlobalsInModule(Module &M, const DataLayout &DL,
 
     NotDiscardableComdats.clear();
     for (const GlobalVariable &GV : M.globals())
-      if (const Comdat *C = GV.getComdat())
-        if (!GV.isDiscardableIfUnused() || !GV.use_empty())
-          NotDiscardableComdats.insert(C);
+      if (const Comdat *C = GV.getComdat(); C && (!GV.isDiscardableIfUnused() || !GV.use_empty()))
+        NotDiscardableComdats.insert(C);
     for (Function &F : M)
-      if (const Comdat *C = F.getComdat())
-        if (!F.isDefTriviallyDead())
-          NotDiscardableComdats.insert(C);
+      if (const Comdat *C = F.getComdat(); C && (!F.isDefTriviallyDead()))
+        NotDiscardableComdats.insert(C);
     for (GlobalAlias &GA : M.aliases())
-      if (const Comdat *C = GA.getComdat())
-        if (!GA.isDiscardableIfUnused() || !GA.use_empty())
-          NotDiscardableComdats.insert(C);
+      if (const Comdat *C = GA.getComdat(); C && (!GA.isDiscardableIfUnused() || !GA.use_empty()))
+        NotDiscardableComdats.insert(C);
 
     // Delete functions that are trivially dead, ccc -> fastcc
     LocalChange |= OptimizeFunctions(M, GetTLI, GetTTI, GetBFI, LookupDomTree,

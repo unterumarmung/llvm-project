@@ -983,12 +983,12 @@ bool EarlyIfConverter::doOperandsComeFromMemory(Register Reg) {
       if (!UseReg.isVirtual())
         continue;
 
-      if (MachineInstr *UseDef = MRI->getVRegDef(UseReg)) {
-        if (!VisitedInstrs.count(UseDef)) {
+      if (MachineInstr *UseDef = MRI->getVRegDef(UseReg); UseDef && (!VisitedInstrs.count(UseDef))) 
+        {
           Worklist.push_back(UseDef);
           VisitedRegs.push_back(UseReg);
         }
-      }
+      
     }
   }
 

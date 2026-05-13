@@ -2116,12 +2116,12 @@ static void ProcessMachO(StringRef Name, MachOObjectFile *MachOOF,
   // If we are doing some processing here on the Mach-O file print the header
   // info.  And don't print it otherwise like in the case of printing the
   // UniversalHeaders or ArchiveHeaders.
-  if (Disassemble || Relocations || PrivateHeaders || ExportsTrie || Rebase ||
+  if ((Disassemble || Relocations || PrivateHeaders || ExportsTrie || Rebase ||
       Bind || SymbolTable || LazyBind || WeakBind || IndirectSymbols ||
       DataInCode || FunctionStartsType != FunctionStartsMode::None ||
       LinkOptHints || ChainedFixups || DyldInfo || DylibsUsed || DylibId ||
-      Rpaths || ObjcMetaData || (!FilterSections.empty())) {
-    if (LeadingHeaders) {
+      Rpaths || ObjcMetaData || (!FilterSections.empty())) && (LeadingHeaders)) 
+    {
       outs() << Name;
       if (!ArchiveMemberName.empty())
         outs() << '(' << ArchiveMemberName << ')';
@@ -2129,7 +2129,7 @@ static void ProcessMachO(StringRef Name, MachOObjectFile *MachOOF,
         outs() << " (architecture " << ArchitectureName << ")";
       outs() << ":\n";
     }
-  }
+  
   // To use the report_error() form with an ArchiveName and FileName set
   // these up based on what is passed for Name and ArchiveMemberName.
   StringRef ArchiveName;
@@ -3479,8 +3479,8 @@ static void method_reference(struct DisassembleInfo *info,
         }
         info->class_name = nullptr;
       }
-    } else if (strcmp(*ReferenceName, "_objc_msgSendSuper2") == 0) {
-      if (info->selector_name != nullptr) {
+    } else if ((strcmp(*ReferenceName, "_objc_msgSendSuper2") == 0) && (info->selector_name != nullptr)) 
+      {
         info->method =
             std::make_unique<char[]>(17 + strlen(info->selector_name));
         char *method = info->method.get();
@@ -3498,7 +3498,7 @@ static void method_reference(struct DisassembleInfo *info,
         }
         info->class_name = nullptr;
       }
-    }
+    
   }
 }
 
@@ -6947,14 +6947,14 @@ static const char *GuessLiteralPointer(uint64_t ReferenceValue,
     }
     // If there is an external relocation entry for a symbol in a section
     // then used that symbol's value for the value of the reference.
-    if (reloc_found && isExtern) {
-      if (info->O->getAnyRelocationPCRel(RE)) {
+    if ((reloc_found && isExtern) && (info->O->getAnyRelocationPCRel(RE))) 
+      {
         unsigned Type = info->O->getAnyRelocationType(RE);
         if (Type == MachO::X86_64_RELOC_SIGNED) {
           ReferenceValue = cantFail(Symbol.getValue());
         }
       }
-    }
+    
   }
 
   // Look for literals such as Objective-C CFStrings refs, Selector refs,

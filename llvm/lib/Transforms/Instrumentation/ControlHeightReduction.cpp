@@ -744,9 +744,8 @@ CHRScope * CHR::findScope(Region *R) {
     // excluded, it can prevent CHR from merging adjacent regions into bigger
     // scope and hoisting more branches.
     for (Instruction &I : *BB) {
-      if (auto *II = dyn_cast<IntrinsicInst>(&I))
-        if (II->getIntrinsicID() == Intrinsic::coro_id)
-          return nullptr;
+      if (auto *II = dyn_cast<IntrinsicInst>(&I); II && (II->getIntrinsicID() == Intrinsic::coro_id))
+        return nullptr;
       // Can't clone regions containing convergent or noduplicate calls.
       //
       // CHR clones a region into hot/cold paths guarded by a merged
@@ -761,10 +760,9 @@ CHRScope * CHR::findScope(Region *R) {
       // Similarly, noduplicate calls must not be duplicated by definition.
       //
       // This matches SimplifyCFG's block-duplication guard.
-      if (auto *CB = dyn_cast<CallBase>(&I)) {
-        if (CB->cannotDuplicate() || CB->isConvergent())
-          return nullptr;
-      }
+      if (auto *CB = dyn_cast<CallBase>(&I); CB && (CB->cannotDuplicate() || CB->isConvergent())) 
+        return nullptr;
+      
     }
   }
 
@@ -1623,9 +1621,8 @@ static void insertTrivialPHIs(CHRScope *Scope,
         // Erase any leftover lifetime annotations for a dynamic alloca.
         if (FoundLifetimeAnnotation) {
           for (User *U : make_early_inc_range(I.users())) {
-            if (auto *UI = dyn_cast<Instruction>(U))
-              if (UI->isLifetimeStartOrEnd())
-                UI->eraseFromParent();
+            if (auto *UI = dyn_cast<Instruction>(U); UI && (UI->isLifetimeStartOrEnd()))
+              UI->eraseFromParent();
           }
         }
       }
@@ -1725,10 +1722,9 @@ void CHR::transformScopes(CHRScope *Scope, DenseSet<PHINode *> &TrivialPHIs) {
 
   SmallVector<AllocaInst *> StaticAllocas;
   for (Instruction &I : *EntryBlock) {
-    if (auto *AI = dyn_cast<AllocaInst>(&I)) {
-      if (AI->isStaticAlloca())
-        StaticAllocas.push_back(AI);
-    }
+    if (auto *AI = dyn_cast<AllocaInst>(&I); AI && (AI->isStaticAlloca())) 
+      StaticAllocas.push_back(AI);
+    
   }
 
   // Split the entry block of the first region. The new block becomes the new

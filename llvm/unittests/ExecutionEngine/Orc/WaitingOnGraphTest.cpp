@@ -127,16 +127,14 @@ protected:
                                         TestGraph::ElementId E) {
       {
         auto I = T.Failed.find(C);
-        if (I != T.Failed.end())
-          if (I->second.count(E))
-            return TestGraph::ExternalState::Failed;
+        if ((I != T.Failed.end()) && (I->second.count(E)))
+          return TestGraph::ExternalState::Failed;
       }
 
       {
         auto I = T.Ready.find(C);
-        if (I != T.Ready.end())
-          if (I->second.count(E))
-            return TestGraph::ExternalState::Ready;
+        if ((I != T.Ready.end()) && (I->second.count(E)))
+          return TestGraph::ExternalState::Ready;
       }
 
       return TestGraph::ExternalState::None;

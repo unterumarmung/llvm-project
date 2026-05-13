@@ -1113,20 +1113,20 @@ void ContinuationIndenter::addTokenOnCurrentLine(LineState &State, bool DryRun,
     CurrentState.LastSpace = State.Column;
   } else if (Current.is(TT_CSharpGenericTypeConstraintColon)) {
     CurrentState.ColonPos = State.Column;
-  } else if (Previous.opensScope()) {
+  } else if ((Previous.opensScope()) && (Previous.MatchingParen)) 
     // If a function has a trailing call, indent all parameters from the
     // opening parenthesis. This avoids confusing indents like:
     //   OuterFunction(InnerFunctionCall( // break
     //       ParameterToInnerFunction))   // break
     //       .SecondInnerFunctionCall();
-    if (Previous.MatchingParen) {
+    {
       const FormatToken *Next = Previous.MatchingParen->getNextNonComment();
       if (Next && Next->isMemberAccess() && State.Stack.size() > 1 &&
           State.Stack[State.Stack.size() - 2].CallContinuation == 0) {
         CurrentState.LastSpace = State.Column;
       }
     }
-  }
+  
 }
 
 unsigned ContinuationIndenter::addTokenOnNewLine(LineState &State,
@@ -1218,8 +1218,8 @@ unsigned ContinuationIndenter::addTokenOnNewLine(LineState &State,
                CurrentState.ColonPos <= NextNonComment->ColumnWidth) {
       CurrentState.ColonPos = State.Column + NextNonComment->ColumnWidth;
     }
-  } else if (PreviousNonComment && PreviousNonComment->is(tok::colon) &&
-             PreviousNonComment->isOneOf(TT_ObjCMethodExpr, TT_DictLiteral)) {
+  } else if ((PreviousNonComment && PreviousNonComment->is(tok::colon) &&
+             PreviousNonComment->isOneOf(TT_ObjCMethodExpr, TT_DictLiteral)) && (State.Stack.size() > 1)) 
     // FIXME: This is hacky, find a better way. The problem is that in an ObjC
     // method expression, the block should be aligned to the line starting it,
     // e.g.:
@@ -1229,12 +1229,12 @@ unsigned ContinuationIndenter::addTokenOnNewLine(LineState &State,
     //                        }];
     // Thus, we set LastSpace of the next higher NestingLevel, to which we move
     // when we consume all of the "}"'s FakeRParens at the "{".
-    if (State.Stack.size() > 1) {
+    {
       State.Stack[State.Stack.size() - 2].LastSpace =
           std::max(CurrentState.LastSpace, CurrentState.Indent.Total) +
           Style.ContinuationIndentWidth;
     }
-  }
+  
 
   switch (Style.BreakInheritanceList) {
   case FormatStyle::BILS_BeforeColon:

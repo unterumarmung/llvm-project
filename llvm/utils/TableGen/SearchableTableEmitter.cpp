@@ -613,13 +613,13 @@ bool SearchableTableEmitter::parseFieldType(GenericField &Field,
     return true;
   }
 
-  if (const Record *TypeRec = Records.getDef(TypeStr)) {
-    if (TypeRec->isSubClassOf("GenericEnum")) {
+  if (const Record *TypeRec = Records.getDef(TypeStr); TypeRec && (TypeRec->isSubClassOf("GenericEnum"))) 
+    {
       Field.Enum = EnumMap[TypeRec];
       Field.RecType = RecordRecTy::get(Field.Enum->Class);
       return true;
     }
-  }
+  
 
   return false;
 }
@@ -789,9 +789,9 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
       Table->Fields.emplace_back(FieldName); // Construct a GenericField.
 
       if (auto TypeOfRecordVal =
-              TableRec->getValue(("TypeOf_" + FieldName).str())) {
-        if (!parseFieldType(Table->Fields.back(),
-                            TypeOfRecordVal->getValue())) {
+              TableRec->getValue(("TypeOf_" + FieldName).str()); TypeOfRecordVal && (!parseFieldType(Table->Fields.back(),
+                            TypeOfRecordVal->getValue()))) 
+        {
           PrintError(TypeOfRecordVal,
                      Twine("Table '") + Table->Name + "' has invalid 'TypeOf_" +
                          FieldName +
@@ -799,7 +799,7 @@ void SearchableTableEmitter::run(raw_ostream &OS) {
           PrintFatalNote("The 'TypeOf_xxx' field must be a string naming a "
                          "GenericEnum record, or \"code\"");
         }
-      }
+      
     }
 
     StringRef FilterClass = TableRec->getValueAsString("FilterClass");

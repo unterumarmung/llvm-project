@@ -62,8 +62,8 @@ AbstractCallSite::AbstractCallSite(const Use *U)
     // has only one use, we look through the constant cast expression.
     // This happens by updating the use @p U to the use of the constant
     // cast expression and afterwards re-initializing CB accordingly.
-    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(U->getUser()))
-      if (CE->hasOneUse() && CE->isCast()) {
+    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(U->getUser()); CE && (CE->hasOneUse() && CE->isCast()))
+      {
         U = &*CE->use_begin();
         CB = dyn_cast<CallBase>(U->getUser());
       }

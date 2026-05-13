@@ -28,10 +28,9 @@ static void removeVolatileInFunction(Oracle &O, Function &F) {
     } else if (AtomicCmpXchgInst *CmpXChg = dyn_cast<AtomicCmpXchgInst>(&I)) {
       if (CmpXChg->isVolatile() && !O.shouldKeep())
         CmpXChg->setVolatile(false);
-    } else if (MemIntrinsic *MemIntrin = dyn_cast<MemIntrinsic>(&I)) {
-      if (MemIntrin->isVolatile() && !O.shouldKeep())
-        MemIntrin->setVolatile(ConstantInt::getFalse(Ctx));
-    }
+    } else if (MemIntrinsic *MemIntrin = dyn_cast<MemIntrinsic>(&I); MemIntrin && (MemIntrin->isVolatile() && !O.shouldKeep())) 
+      MemIntrin->setVolatile(ConstantInt::getFalse(Ctx));
+    
   }
 }
 
@@ -55,10 +54,9 @@ static void reduceAtomicSyncScopesInFunction(Oracle &O, Function &F) {
     } else if (AtomicCmpXchgInst *CmpXChg = dyn_cast<AtomicCmpXchgInst>(&I)) {
       if (CmpXChg->getSyncScopeID() != SyncScope::System && !O.shouldKeep())
         CmpXChg->setSyncScopeID(SyncScope::System);
-    } else if (FenceInst *Fence = dyn_cast<FenceInst>(&I)) {
-      if (Fence->getSyncScopeID() != SyncScope::System && !O.shouldKeep())
-        Fence->setSyncScopeID(SyncScope::System);
-    }
+    } else if (FenceInst *Fence = dyn_cast<FenceInst>(&I); Fence && (Fence->getSyncScopeID() != SyncScope::System && !O.shouldKeep())) 
+      Fence->setSyncScopeID(SyncScope::System);
+    
   }
 }
 

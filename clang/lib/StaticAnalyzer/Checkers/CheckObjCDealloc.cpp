@@ -344,10 +344,9 @@ void ObjCDeallocChecker::checkPreObjCMessage(
 
   if (M.getSelector() == ReleaseSel) {
     ReleasedValue = M.getReceiverSVal().getAsSymbol();
-  } else if (M.getSelector() == DeallocSel && !M.isReceiverSelfOrSuper()) {
-    if (diagnoseMistakenDealloc(M.getReceiverSVal().getAsSymbol(), M, C))
-      return;
-  }
+  } else if ((M.getSelector() == DeallocSel && !M.isReceiverSelfOrSuper()) && (diagnoseMistakenDealloc(M.getReceiverSVal().getAsSymbol(), M, C))) 
+    return;
+  
 
   if (ReleasedValue) {
     // An instance variable symbol was released with -release:

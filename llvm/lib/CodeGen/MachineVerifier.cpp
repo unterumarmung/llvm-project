@@ -737,12 +737,11 @@ MachineVerifier::visitMachineBasicBlockBefore(const MachineBasicBlock *MBB) {
     }
   }
 
-  if (MBB->isIRBlockAddressTaken()) {
-    if (!MBB->getAddressTakenIRBlock()->hasAddressTaken())
-      report("ir-block-address-taken is associated with basic block not used by "
+  if ((MBB->isIRBlockAddressTaken()) && (!MBB->getAddressTakenIRBlock()->hasAddressTaken())) 
+    report("ir-block-address-taken is associated with basic block not used by "
              "a blockaddress.",
              MBB);
-  }
+  
 
   // Count the number of landing pad successors.
   SmallPtrSet<const MachineBasicBlock*, 4> LandingPadSuccs;
@@ -928,14 +927,14 @@ void MachineVerifier::visitMachineBundleBefore(const MachineInstr *MI) {
   if (MI->isTerminator()) {
     if (!FirstTerminator)
       FirstTerminator = MI;
-  } else if (FirstTerminator) {
+  } else if ((FirstTerminator) && (FirstTerminator->getOpcode() != TargetOpcode::G_INVOKE_REGION_START)) 
     // For GlobalISel, G_INVOKE_REGION_START is a terminator that we allow to
     // precede non-terminators.
-    if (FirstTerminator->getOpcode() != TargetOpcode::G_INVOKE_REGION_START) {
+    {
       report("Non-terminator instruction after the first terminator", MI);
       OS << "First terminator was:\t" << *FirstTerminator;
     }
-  }
+  
 }
 
 // The operands on an INLINEASM instruction must follow a template.
@@ -1291,11 +1290,10 @@ void MachineVerifier::verifyPreISelGenericInstruction(const MachineInstr *MI) {
             report("range is incompatible with the result type", MI);
           }
         }
-      } else if (MI->getOpcode() == TargetOpcode::G_STORE) {
-        if (TypeSize::isKnownLT(ValTy.getSizeInBytes(),
-                                MMO.getSize().getValue()))
-          report("store memory size cannot exceed value size", MI);
-      }
+      } else if ((MI->getOpcode() == TargetOpcode::G_STORE) && (TypeSize::isKnownLT(ValTy.getSizeInBytes(),
+                                MMO.getSize().getValue()))) 
+        report("store memory size cannot exceed value size", MI);
+      
 
       const AtomicOrdering Order = MMO.getSuccessOrdering();
       if (isa<GAnyStore>(*MI)) {
@@ -2099,9 +2097,8 @@ void MachineVerifier::verifyPreISelGenericInstruction(const MachineInstr *MI) {
     if (SrcPtrTy.getAddressSpace() != MMOs[1]->getAddrSpace())
       report("inconsistent load address space", MI);
 
-    if (Opc != TargetOpcode::G_MEMCPY_INLINE)
-      if (!MI->getOperand(3).isImm() || (MI->getOperand(3).getImm() & ~1LL))
-        report("'tail' flag (operand 3) must be an immediate 0 or 1", MI);
+    if ((Opc != TargetOpcode::G_MEMCPY_INLINE) && (!MI->getOperand(3).isImm() || (MI->getOperand(3).getImm() & ~1LL)))
+      report("'tail' flag (operand 3) must be an immediate 0 or 1", MI);
 
     break;
   }
@@ -2443,12 +2440,12 @@ void MachineVerifier::visitMachineInstrBefore(const MachineInstr *MI) {
         !DstSize.isScalable())
       break;
 
-    if (SrcSize.isNonZero() && DstSize.isNonZero() && SrcSize != DstSize) {
-      if (!DstOp.getSubReg() && !SrcOp.getSubReg()) {
+    if ((SrcSize.isNonZero() && DstSize.isNonZero() && SrcSize != DstSize) && (!DstOp.getSubReg() && !SrcOp.getSubReg())) 
+      {
         report("Copy Instruction is illegal with mismatching sizes", MI);
         OS << "Def Size = " << DstSize << ", Src Size = " << SrcSize << '\n';
       }
-    }
+    
     break;
   }
   case TargetOpcode::COPY_LANEMASK: {
@@ -2615,12 +2612,11 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
       if (MCOI.OperandType == MCOI::OPERAND_REGISTER &&
           !MO->isReg() && !MO->isFI())
         report("Expected a register operand.", MO, MONum);
-      if (MO->isReg()) {
-        if (MCOI.OperandType == MCOI::OPERAND_IMMEDIATE ||
+      if ((MO->isReg()) && (MCOI.OperandType == MCOI::OPERAND_IMMEDIATE ||
             (MCOI.OperandType == MCOI::OPERAND_PCREL &&
-             !TII->isPCRelRegisterOperandLegal(*MO)))
-          report("Expected a non-register operand.", MO, MONum);
-      }
+             !TII->isPCRelRegisterOperandLegal(*MO)))) 
+        report("Expected a non-register operand.", MO, MONum);
+      
     }
 
     int TiedTo = MCID.getOperandConstraint(MONum, MCOI::TIED_TO);
@@ -2641,11 +2637,10 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
       }
     } else if (MO->isReg() && MO->isTied())
       report("Explicit operand should not be tied", MO, MONum);
-  } else if (!MI->isVariadic()) {
+  } else if ((!MI->isVariadic()) && (!MO->isValidExcessOperand())) 
     // ARM adds %reg0 operands to indicate predicates. We'll allow that.
-    if (!MO->isValidExcessOperand())
-      report("Extra explicit operand on non-variadic instruction", MO, MONum);
-  }
+    report("Extra explicit operand on non-variadic instruction", MO, MONum);
+  
 
   // Verify earlyClobber def operand
   if (MCID.getOperandConstraint(MONum, MCOI::EARLY_CLOBBER) != -1) {
@@ -2720,13 +2715,13 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
         return;
       }
       if (MONum < MCID.getNumOperands()) {
-        if (const TargetRegisterClass *DRC = TII->getRegClass(MCID, MONum)) {
-          if (!DRC->contains(Reg)) {
+        if (const TargetRegisterClass *DRC = TII->getRegClass(MCID, MONum); DRC && (!DRC->contains(Reg))) 
+          {
             report("Illegal physical register for instruction", MO, MONum);
             OS << printReg(Reg, TRI) << " is not a "
                << TRI->getRegClassName(DRC) << " register.\n";
           }
-        }
+        
       }
       if (MO->isRenamable()) {
         if (MRI->isReserved(Reg)) {
@@ -3782,29 +3777,29 @@ void MachineVerifier::verifyLiveRangeSegment(const LiveRange &LR,
       report_context(S);
     }
 
-    if (S.end.isDead()) {
+    if ((S.end.isDead()) && (!SlotIndex::isSameInstr(S.start, S.end))) 
       // Segment ends on the dead slot.
       // That means there must be a dead def.
-      if (!SlotIndex::isSameInstr(S.start, S.end)) {
+      {
         report("Live segment ending at dead slot spans instructions", EndMBB);
         report_context(LR, VRegOrUnit, LaneMask);
         report_context(S);
       }
-    }
+    
 
     // After tied operands are rewritten, a live segment can only end at an
     // early-clobber slot if it is being redefined by an early-clobber def.
     // TODO: Before tied operands are rewritten, a live segment can only end at
     // an early-clobber slot if the last use is tied to an early-clobber def.
-    if (MF->getProperties().hasTiedOpsRewritten() && S.end.isEarlyClobber()) {
-      if (I + 1 == LR.end() || (I + 1)->start != S.end) {
+    if ((MF->getProperties().hasTiedOpsRewritten() && S.end.isEarlyClobber()) && (I + 1 == LR.end() || (I + 1)->start != S.end)) 
+      {
         report("Live segment ending at early clobber slot must be "
                "redefined by an EC def in the same instruction",
                EndMBB);
         report_context(LR, VRegOrUnit, LaneMask);
         report_context(S);
       }
-    }
+    
 
     // The following checks only apply to virtual registers. Physreg liveness
     // is too weird to check.
@@ -3848,17 +3843,17 @@ void MachineVerifier::verifyLiveRangeSegment(const LiveRange &LR,
           report_context(S);
         }
       } else {
-        if (!hasRead) {
+        if ((!hasRead) && (!MRI->shouldTrackSubRegLiveness(VRegOrUnit.asVirtualReg()) ||
+              LaneMask.any() || !hasSubRegDef)) 
           // When tracking subregister liveness, the main range must start new
           // values on partial register writes, even if there is no read.
-          if (!MRI->shouldTrackSubRegLiveness(VRegOrUnit.asVirtualReg()) ||
-              LaneMask.any() || !hasSubRegDef) {
+          {
             report("Instruction ending live segment doesn't read the register",
                    MI);
             report_context(LR, VRegOrUnit, LaneMask);
             report_context(S);
           }
-        }
+        
       }
     }
   }

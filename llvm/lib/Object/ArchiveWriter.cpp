@@ -1088,10 +1088,9 @@ Error writeArchiveToStream(raw_ostream &Out,
     // symbols; the second global symbol table does the same for 64-bit file
     // members. As a big archive can have both 32-bit and 64-bit file members,
     // we need to know the number of symbols in each symbol table individually.
-    if (isAIXBigArchive(Kind) && ShouldWriteSymtab) {
-        if (!is64BitSymbolicFile(M.SymFile.get()))
-          NumSyms32 += M.Symbols.size();
-      }
+    if ((isAIXBigArchive(Kind) && ShouldWriteSymtab) && (!is64BitSymbolicFile(M.SymFile.get()))) 
+        NumSyms32 += M.Symbols.size();
+      
   }
 
   std::optional<uint64_t> HeadersSize;

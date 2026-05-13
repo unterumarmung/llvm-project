@@ -385,12 +385,12 @@ public:
         for (const LambdaCapture &OtherCapture : L->captures()) {
           if (!OtherCapture.capturesVariable())
             continue;
-          if (auto *ValueDecl = OtherCapture.getCapturedVar()) {
-            if (declProtectsThis(ValueDecl)) {
+          if (auto *ValueDecl = OtherCapture.getCapturedVar(); ValueDecl && (declProtectsThis(ValueDecl))) 
+            {
               ProtectedThisDecls.insert(ValueDecl);
               return true;
             }
-          }
+          
         }
         return false;
       }
@@ -416,24 +416,24 @@ public:
               continue;
             }
             if (auto *Type = ClsType.getTypePtrOrNull()) {
-              if (auto *CXXR = Type->getPointeeCXXRecordDecl()) {
-                if (CXXR == Ctor->getParent() && Ctor->isMoveConstructor() &&
-                    CE->getNumArgs() == 1) {
+              if (auto *CXXR = Type->getPointeeCXXRecordDecl(); CXXR && (CXXR == Ctor->getParent() && Ctor->isMoveConstructor() &&
+                    CE->getNumArgs() == 1)) 
+                {
                   Arg = CE->getArg(0)->IgnoreParenCasts();
                   continue;
                 }
-              }
+              
             }
             return false;
           }
           if (auto *CE = dyn_cast<CallExpr>(Arg)) {
-            if (auto *Callee = CE->getDirectCallee()) {
-              if ((isStdOrWTFMove(Callee) || isCtorOfSafePtr(Callee)) &&
-                  CE->getNumArgs() == 1) {
+            if (auto *Callee = CE->getDirectCallee(); Callee && ((isStdOrWTFMove(Callee) || isCtorOfSafePtr(Callee)) &&
+                  CE->getNumArgs() == 1)) 
+              {
                 Arg = CE->getArg(0)->IgnoreParenCasts();
                 continue;
               }
-            }
+            
           }
           if (auto *OpCE = dyn_cast<CXXOperatorCallExpr>(Arg)) {
             auto OpCode = OpCE->getOperator();

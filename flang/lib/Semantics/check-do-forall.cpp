@@ -292,8 +292,8 @@ public:
   // C1145, C1146: cannot call ieee_[gs]et_flag, ieee_[gs]et_halting_mode,
   // ieee_[gs]et_status, ieee_set_rounding_mode, or ieee_set_underflow_mode
   void Post(const parser::ProcedureDesignator &procedureDesignator) {
-    if (auto *name{std::get_if<parser::Name>(&procedureDesignator.u)}) {
-      if (name->symbol) {
+    if (auto *name{std::get_if<parser::Name>(&procedureDesignator.u)}; name && (name->symbol)) 
+      {
         const Symbol &ultimate{name->symbol->GetUltimate()};
         const Scope &scope{ultimate.owner()};
         if (const Symbol * module{scope.IsModule() ? scope.symbol() : nullptr};
@@ -317,21 +317,21 @@ public:
           }
         }
       }
-    }
+    
   }
 
   // 11.1.7.5, paragraph 5, no ADVANCE specifier in a DO CONCURRENT
   void Post(const parser::IoControlSpec &ioControlSpec) {
     if (auto *charExpr{
-            std::get_if<parser::IoControlSpec::CharExpr>(&ioControlSpec.u)}) {
-      if (std::get<parser::IoControlSpec::CharExpr::Kind>(charExpr->t) ==
-          parser::IoControlSpec::CharExpr::Kind::Advance) {
+            std::get_if<parser::IoControlSpec::CharExpr>(&ioControlSpec.u)}; charExpr && (std::get<parser::IoControlSpec::CharExpr::Kind>(charExpr->t) ==
+          parser::IoControlSpec::CharExpr::Kind::Advance)) 
+      {
         SayWithDo(context_, currentStatementSourcePosition_,
             "ADVANCE specifier is not allowed in DO"
             " CONCURRENT"_err_en_US,
             doConcurrentSourcePosition_);
       }
-    }
+    
   }
 
 private:
@@ -356,8 +356,8 @@ public:
 
   // Check to see if the name is a variable from an enclosing scope
   void Post(const parser::Name &name) {
-    if (const Symbol * symbol{name.symbol}) {
-      if (IsVariableName(*symbol)) {
+    if (const Symbol * symbol{name.symbol}; symbol && (IsVariableName(*symbol))) 
+      {
         const Scope &variableScope{symbol->owner()};
         if (DoesScopeContain(&variableScope, blockScope_)) {
           context_.SayWithDecl(*symbol, name.source,
@@ -367,7 +367,7 @@ public:
               symbol->name());
         }
       }
-    }
+    
   }
 
 private:
@@ -532,14 +532,14 @@ private:
 
   // Semantic checks for the limit and step expressions
   void CheckDoExpression(const parser::ScalarExpr &scalarExpression) {
-    if (const SomeExpr * expr{GetExpr(context_, scalarExpression)}) {
-      if (!ExprHasTypeCategory(*expr, TypeCategory::Integer)) {
+    if (const SomeExpr * expr{GetExpr(context_, scalarExpression)}; expr && (!ExprHasTypeCategory(*expr, TypeCategory::Integer))) 
+      {
         // No warnings or errors for type INTEGER
         parser::CharBlock loc{
             parser::UnwrapRef<parser::Expr>(scalarExpression).source};
         CheckDoControl(loc, ExprHasTypeCategory(*expr, TypeCategory::Real));
       }
-    }
+    
   }
 
   void CheckDoNormal(const parser::DoConstruct &doConstruct) {

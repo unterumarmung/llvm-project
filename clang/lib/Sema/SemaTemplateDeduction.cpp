@@ -243,17 +243,15 @@ getDeducedNTTParameterFromExpr(const Expr *E, unsigned Depth) {
   // any number of parameter substitutions already.
   E = unwrapExpressionForDeduction(E);
   if (const auto *DRE = dyn_cast<DeclRefExpr>(E))
-    if (const auto *NTTP = dyn_cast<NonTypeTemplateParmDecl>(DRE->getDecl()))
-      if (NTTP->getDepth() == Depth)
-        return NTTP;
+    if (const auto *NTTP = dyn_cast<NonTypeTemplateParmDecl>(DRE->getDecl()); NTTP && (NTTP->getDepth() == Depth))
+      return NTTP;
 
   if (const auto *ULE = dyn_cast<UnresolvedLookupExpr>(E);
       ULE && (ULE->isConceptReference() || ULE->isVarDeclReference())) {
-    if (auto *TTP = ULE->getTemplateTemplateDecl()) {
+    if (auto *TTP = ULE->getTemplateTemplateDecl(); TTP && (TTP->getDepth() == Depth)) 
 
-      if (TTP->getDepth() == Depth)
-        return TTP;
-    }
+      return TTP;
+    
   }
   return nullptr;
 }
@@ -1827,10 +1825,9 @@ static TemplateDeductionResult DeduceTemplateArgumentsByTypeMatch(
       Qualifiers Quals;
       A = S.Context.getUnqualifiedArrayType(A, Quals);
       A = S.Context.getQualifiedType(A, P.getQualifiers());
-    } else if (!IsPossiblyOpaquelyQualifiedType(P)) {
-      if (P.getCVRQualifiers() != A.getCVRQualifiers())
-        return TemplateDeductionResult::NonDeducedMismatch;
-    }
+    } else if ((!IsPossiblyOpaquelyQualifiedType(P)) && (P.getCVRQualifiers() != A.getCVRQualifiers())) 
+      return TemplateDeductionResult::NonDeducedMismatch;
+    
   }
 
   // If the parameter type is not dependent, there is nothing to deduce.
@@ -2019,9 +2016,8 @@ static TemplateDeductionResult DeduceTemplateArgumentsByTypeMatch(
             /*ArrayBound=*/true, Info, POK != PartialOrderingKind::None,
             Deduced, HasDeducedAnyParam);
       }
-      if (const auto *DAA = dyn_cast<DependentSizedArrayType>(AA))
-        if (DAA->getSizeExpr())
-          return DeduceNonTypeTemplateArgument(
+      if (const auto *DAA = dyn_cast<DependentSizedArrayType>(AA); DAA && (DAA->getSizeExpr()))
+        return DeduceNonTypeTemplateArgument(
               S, TemplateParams, NTTP, DAA->getSizeExpr(), Info,
               POK != PartialOrderingKind::None, Deduced, HasDeducedAnyParam);
 
@@ -2621,10 +2617,9 @@ DeduceTemplateArguments(Sema &S, TemplateParameterList *TemplateParams,
     return TemplateDeductionResult::NonDeducedMismatch;
 
   case TemplateArgument::Integral:
-    if (A.getKind() == TemplateArgument::Integral) {
-      if (llvm::APSInt::isSameValue(P.getAsIntegral(), A.getAsIntegral()))
-        return TemplateDeductionResult::Success;
-    }
+    if ((A.getKind() == TemplateArgument::Integral) && (llvm::APSInt::isSameValue(P.getAsIntegral(), A.getAsIntegral()))) 
+      return TemplateDeductionResult::Success;
+    
     Info.FirstArg = P;
     Info.SecondArg = A;
     return TemplateDeductionResult::NonDeducedMismatch;
@@ -3110,9 +3105,8 @@ static TemplateDeductionResult ConvertDeducedTemplateArguments(
     {
       Qualifiers ThisTypeQuals;
       CXXRecordDecl *ThisContext = nullptr;
-      if (auto *Rec = dyn_cast<CXXRecordDecl>(TD->getDeclContext()))
-        if (Rec->isLambda())
-          if (auto *Method = dyn_cast<CXXMethodDecl>(Rec->getDeclContext())) {
+      if (auto *Rec = dyn_cast<CXXRecordDecl>(TD->getDeclContext()); Rec && (Rec->isLambda()))
+        if (auto *Method = dyn_cast<CXXMethodDecl>(Rec->getDeclContext())) {
             ThisContext = Method->getParent();
             ThisTypeQuals = Method->getMethodQualifiers();
           }
@@ -3640,12 +3634,11 @@ TemplateDeductionResult Sema::SubstituteExplicitTemplateArguments(
   // explicitly-specified template arguments. If the function has a trailing
   // return type, substitute it after the arguments to ensure we substitute
   // in lexical order.
-  if (Proto->hasTrailingReturn()) {
-    if (SubstParmTypes(Function->getLocation(), Function->parameters(),
+  if ((Proto->hasTrailingReturn()) && (SubstParmTypes(Function->getLocation(), Function->parameters(),
                        Proto->getExtParameterInfosOrNull(), MLTAL, ParamTypes,
-                       /*params=*/nullptr, ExtParamInfos))
-      return TemplateDeductionResult::SubstitutionFailure;
-  }
+                       /*params=*/nullptr, ExtParamInfos))) 
+    return TemplateDeductionResult::SubstitutionFailure;
+  
 
   // Instantiate the return type.
   QualType ResultType;
@@ -3672,8 +3665,8 @@ TemplateDeductionResult Sema::SubstituteExplicitTemplateArguments(
     if (ResultType.isNull())
       return TemplateDeductionResult::SubstitutionFailure;
     // CUDA: Kernel function must have 'void' return type.
-    if (getLangOpts().CUDA)
-      if (Function->hasAttr<CUDAGlobalAttr>() && !ResultType->isVoidType()) {
+    if ((getLangOpts().CUDA) && (Function->hasAttr<CUDAGlobalAttr>() && !ResultType->isVoidType()))
+      {
         Diag(Function->getLocation(), diag::err_kern_type_not_void_return)
             << Function->getType() << Function->getSourceRange();
         return TemplateDeductionResult::SubstitutionFailure;
@@ -3816,13 +3809,13 @@ CheckOriginalCallArgDeduction(Sema &S, TemplateDeductionInfo &Info,
   if (const PointerType *OriginalParamPtr
       = OriginalParamType->getAs<PointerType>()) {
     if (const PointerType *DeducedAPtr = DeducedA->getAs<PointerType>()) {
-      if (const PointerType *APtr = A->getAs<PointerType>()) {
-        if (A->getPointeeType()->isRecordType()) {
+      if (const PointerType *APtr = A->getAs<PointerType>(); APtr && (A->getPointeeType()->isRecordType())) 
+        {
           OriginalParamType = OriginalParamPtr->getPointeeType();
           DeducedA = DeducedAPtr->getPointeeType();
           A = APtr->getPointeeType();
         }
-      }
+      
     }
   }
 
@@ -4035,14 +4028,14 @@ TemplateDeductionResult Sema::FinishTemplateArgumentDeduction(
   // We skipped the instantiation of the explicit-specifier during the
   // substitution of `FD` before. So, we try to instantiate it back if
   // `Specialization` is either a constructor or a conversion function.
-  if (isa<CXXConstructorDecl, CXXConversionDecl>(Specialization)) {
-    if (TemplateDeductionResult::Success !=
+  if ((isa<CXXConstructorDecl, CXXConversionDecl>(Specialization)) && (TemplateDeductionResult::Success !=
         instantiateExplicitSpecifierDeferred(*this, Specialization, SubstArgs,
                                              Info, FunctionTemplate,
-                                             DeducedArgs)) {
+                                             DeducedArgs))) 
+    {
       return TemplateDeductionResult::SubstitutionFailure;
     }
-  }
+  
 
   if (OriginalCallArgs) {
     // C++ [temp.deduct.call]p4:
@@ -4119,8 +4112,8 @@ static QualType GetTypeOfFunction(Sema &S, const OverloadExpr::FindResult &R,
       S.DeduceReturnType(Fn, R.Expression->getExprLoc(), /*Diagnose*/ false))
     return {};
 
-  if (CXXMethodDecl *Method = dyn_cast<CXXMethodDecl>(Fn))
-    if (Method->isImplicitObjectMemberFunction()) {
+  if (CXXMethodDecl *Method = dyn_cast<CXXMethodDecl>(Fn); Method && (Method->isImplicitObjectMemberFunction()))
+    {
       // An instance method that's referenced in a form that doesn't
       // look like a member pointer is just invalid.
       if (!R.HasFormOfMemberPointer)
@@ -4880,16 +4873,16 @@ TemplateDeductionResult Sema::DeduceTemplateArguments(
   // If the requested function type does not match the actual type of the
   // specialization with respect to arguments of compatible pointer to function
   // types, template argument deduction fails.
-  if (!ArgFunctionType.isNull()) {
-    if (IsAddressOfFunction ? !isSameOrCompatibleFunctionType(
+  if ((!ArgFunctionType.isNull()) && (IsAddressOfFunction ? !isSameOrCompatibleFunctionType(
                                   SpecializationType, ArgFunctionType)
                             : !Context.hasSameFunctionTypeIgnoringExceptionSpec(
-                                  SpecializationType, ArgFunctionType)) {
+                                  SpecializationType, ArgFunctionType))) 
+    {
       Info.FirstArg = TemplateArgument(SpecializationType);
       Info.SecondArg = TemplateArgument(ArgFunctionType);
       return TemplateDeductionResult::NonDeducedMismatch;
     }
-  }
+  
 
   return TemplateDeductionResult::Success;
 }
@@ -6644,17 +6637,15 @@ struct MarkUsedTemplateParameterVisitor : DynamicRecursiveASTVisitor {
 
   bool TraverseTemplateName(TemplateName Template) override {
     if (auto *TTP = llvm::dyn_cast_or_null<TemplateTemplateParmDecl>(
-            Template.getAsTemplateDecl()))
-      if (TTP->getDepth() == Depth)
-        Used[TTP->getIndex()] = true;
+            Template.getAsTemplateDecl()); TTP && (TTP->getDepth() == Depth))
+      Used[TTP->getIndex()] = true;
     DynamicRecursiveASTVisitor::TraverseTemplateName(Template);
     return true;
   }
 
   bool VisitDeclRefExpr(DeclRefExpr *E) override {
-    if (auto *NTTP = dyn_cast<NonTypeTemplateParmDecl>(E->getDecl()))
-      if (NTTP->getDepth() == Depth)
-        Used[NTTP->getIndex()] = true;
+    if (auto *NTTP = dyn_cast<NonTypeTemplateParmDecl>(E->getDecl()); NTTP && (NTTP->getDepth() == Depth))
+      Used[NTTP->getIndex()] = true;
     if (VisitDeclRefTypes)
       DynamicRecursiveASTVisitor::TraverseType(E->getType());
     return true;
@@ -6662,10 +6653,9 @@ struct MarkUsedTemplateParameterVisitor : DynamicRecursiveASTVisitor {
 
   bool VisitUnresolvedLookupExpr(UnresolvedLookupExpr *ULE) override {
     if (ULE->isConceptReference() || ULE->isVarDeclReference()) {
-      if (auto *TTP = ULE->getTemplateTemplateDecl()) {
-        if (TTP->getDepth() == Depth)
-          Used[TTP->getIndex()] = true;
-      }
+      if (auto *TTP = ULE->getTemplateTemplateDecl(); TTP && (TTP->getDepth() == Depth)) 
+        Used[TTP->getIndex()] = true;
+      
       for (auto &TLoc : ULE->template_arguments())
         DynamicRecursiveASTVisitor::TraverseTemplateArgumentLoc(TLoc);
     }
@@ -6741,10 +6731,9 @@ MarkUsedTemplateParameters(ASTContext &Ctx,
                            llvm::SmallBitVector &Used) {
   if (TemplateDecl *Template = Name.getAsTemplateDecl()) {
     if (TemplateTemplateParmDecl *TTP
-          = dyn_cast<TemplateTemplateParmDecl>(Template)) {
-      if (TTP->getDepth() == Depth)
-        Used[TTP->getIndex()] = true;
-    }
+          = dyn_cast<TemplateTemplateParmDecl>(Template); TTP && (TTP->getDepth() == Depth)) 
+      Used[TTP->getIndex()] = true;
+    
     return;
   }
 

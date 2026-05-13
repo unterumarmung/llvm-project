@@ -73,9 +73,8 @@ static unsigned countOperands(SDNode *Node, unsigned NumExpUses,
   for (unsigned I = N; I > NumExpUses; --I) {
     if (isa<RegisterMaskSDNode>(Node->getOperand(I - 1)))
       continue;
-    if (RegisterSDNode *RN = dyn_cast<RegisterSDNode>(Node->getOperand(I - 1)))
-      if (RN->getReg().isPhysical())
-        continue;
+    if (RegisterSDNode *RN = dyn_cast<RegisterSDNode>(Node->getOperand(I - 1)); RN && (RN->getReg().isPhysical()))
+      continue;
     NumImpUses = N - I;
     break;
   }

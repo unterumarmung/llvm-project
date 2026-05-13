@@ -952,9 +952,8 @@ BPIConstruction::getInitialEstimatedBlockWeight(const BasicBlock *BB) {
   // Returns true if \p BB has call marked with "NoReturn" attribute.
   auto hasNoReturn = [&](const BasicBlock *BB) {
     for (const auto &I : reverse(*BB))
-      if (const CallInst *CI = dyn_cast<CallInst>(&I))
-        if (CI->hasFnAttr(Attribute::NoReturn))
-          return true;
+      if (const CallInst *CI = dyn_cast<CallInst>(&I); CI && (CI->hasFnAttr(Attribute::NoReturn)))
+        return true;
 
     return false;
   };
@@ -978,9 +977,8 @@ BPIConstruction::getInitialEstimatedBlockWeight(const BasicBlock *BB) {
 
   // Check if the block contains 'cold' call.
   for (const auto &I : *BB)
-    if (const CallInst *CI = dyn_cast<CallInst>(&I))
-      if (CI->hasFnAttr(Attribute::Cold))
-        return static_cast<uint32_t>(BlockExecWeight::COLD);
+    if (const CallInst *CI = dyn_cast<CallInst>(&I); CI && (CI->hasFnAttr(Attribute::Cold)))
+      return static_cast<uint32_t>(BlockExecWeight::COLD);
 
   return std::nullopt;
 }
@@ -1169,9 +1167,8 @@ bool BPIConstruction::calcZeroHeuristics(const BasicBlock *BB,
 
   // If the LHS is the result of AND'ing a value with a single bit bitmask,
   // we don't have information about probabilities.
-  if (Instruction *LHS = dyn_cast<Instruction>(CI->getOperand(0)))
-    if (LHS->getOpcode() == Instruction::And)
-      if (ConstantInt *AndRHS = GetConstantInt(LHS->getOperand(1)))
+  if (Instruction *LHS = dyn_cast<Instruction>(CI->getOperand(0)); LHS && (LHS->getOpcode() == Instruction::And))
+    if (ConstantInt *AndRHS = GetConstantInt(LHS->getOperand(1)))
         if (AndRHS->getValue().isPowerOf2())
           return false;
 

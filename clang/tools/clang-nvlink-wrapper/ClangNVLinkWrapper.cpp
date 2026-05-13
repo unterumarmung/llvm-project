@@ -349,9 +349,8 @@ Expected<std::unique_ptr<lto::LTO>> createLTO(const ArgList &Args) {
   lto::Config Conf;
   lto::ThinBackend Backend;
   unsigned Jobs = 0;
-  if (auto *Arg = Args.getLastArg(OPT_jobs))
-    if (!to_integer(Arg->getValue(), Jobs) || Jobs == 0)
-      reportError(createStringError("%s: expected a positive integer, got '%s'",
+  if (auto *Arg = Args.getLastArg(OPT_jobs); Arg && (!to_integer(Arg->getValue(), Jobs) || Jobs == 0))
+    reportError(createStringError("%s: expected a positive integer, got '%s'",
                                     Arg->getSpelling().data(),
                                     Arg->getValue()));
   Backend =
@@ -403,9 +402,8 @@ Expected<std::unique_ptr<lto::LTO>> createLTO(const ArgList &Args) {
       return Err;
 
   unsigned Partitions = 1;
-  if (auto *Arg = Args.getLastArg(OPT_lto_partitions))
-    if (!to_integer(Arg->getValue(), Partitions) || Partitions == 0)
-      reportError(createStringError("%s: expected a positive integer, got '%s'",
+  if (auto *Arg = Args.getLastArg(OPT_lto_partitions); Arg && (!to_integer(Arg->getValue(), Partitions) || Partitions == 0))
+    reportError(createStringError("%s: expected a positive integer, got '%s'",
                                     Arg->getSpelling().data(),
                                     Arg->getValue()));
   lto::LTO::LTOKind Kind = Args.hasArg(OPT_thinlto) ? lto::LTO::LTOK_UnifiedThin

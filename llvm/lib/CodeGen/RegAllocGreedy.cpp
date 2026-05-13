@@ -1619,19 +1619,19 @@ MCRegister RAGreedy::tryInstructionSplit(const LiveInterval &VirtReg,
   // Otherwise, splitting just inserts uncoalescable copies that do not help
   // the allocation.
   for (const SlotIndex Use : Uses) {
-    if (const MachineInstr *MI = Indexes->getInstructionFromIndex(Use)) {
-      if (TII->isFullCopyInstr(*MI) ||
+    if (const MachineInstr *MI = Indexes->getInstructionFromIndex(Use); MI && (TII->isFullCopyInstr(*MI) ||
           (SplitSubClass &&
            SuperRCNumAllocatableRegs ==
                getNumAllocatableRegsForConstraints(MI, VirtReg.reg(), SuperRC,
                                                    TII, TRI, RegClassInfo)) ||
           // TODO: Handle split for subranges with subclass constraints?
           (!SplitSubClass && VirtReg.hasSubRanges() &&
-           !readsLaneSubset(*MRI, MI, VirtReg, TRI, Use, TII))) {
+           !readsLaneSubset(*MRI, MI, VirtReg, TRI, Use, TII)))) 
+      {
         LLVM_DEBUG(dbgs() << "    skip:\t" << Use << '\t' << *MI);
         continue;
       }
-    }
+    
     SE->openIntv();
     SlotIndex SegStart = SE->enterIntvBefore(Use);
     SlotIndex SegStop = SE->leaveIntvAfter(Use);

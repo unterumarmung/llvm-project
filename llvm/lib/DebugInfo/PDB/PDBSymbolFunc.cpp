@@ -37,10 +37,9 @@ public:
     std::unordered_set<std::string> SeenNames;
     auto DataChildren = Func.findAllChildren<PDBSymbolData>();
     while (auto Child = DataChildren->getNext()) {
-      if (Child->getDataKind() == PDB_DataKind::Param) {
-        if (SeenNames.insert(Child->getName()).second)
-          Args.push_back(std::move(Child));
-      }
+      if ((Child->getDataKind() == PDB_DataKind::Param) && (SeenNames.insert(Child->getName()).second)) 
+        Args.push_back(std::move(Child));
+      
     }
     reset();
   }

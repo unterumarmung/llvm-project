@@ -440,8 +440,8 @@ mlir::intrange::inferRemS(ArrayRef<ConstantIntRanges> argRanges) {
     smin = canNegativeDividend ? minNegativeResult : zero;
     smax = canPositiveDividend ? maxPositiveResult : zero;
     // Special case: sweeping out a contiguous range in N/[modulus].
-    if (rhsMin == rhsMax) {
-      if ((lhsMax - lhsMin).ult(maxDivisor)) {
+    if ((rhsMin == rhsMax) && ((lhsMax - lhsMin).ult(maxDivisor))) 
+      {
         APInt minRem = lhsMin.srem(maxDivisor);
         APInt maxRem = lhsMax.srem(maxDivisor);
         if (minRem.sle(maxRem)) {
@@ -449,7 +449,7 @@ mlir::intrange::inferRemS(ArrayRef<ConstantIntRanges> argRanges) {
           smax = maxRem;
         }
       }
-    }
+    
   }
   return ConstantIntRanges::fromSigned(smin, smax);
 }
@@ -468,9 +468,9 @@ mlir::intrange::inferRemU(ArrayRef<ConstantIntRanges> argRanges) {
   // Remainder can't be larger than either of its arguments.
   APInt umax = llvm::APIntOps::umin((rhsMax - 1), lhs.umax());
 
-  if (!rhsMin.isZero()) {
+  if ((!rhsMin.isZero()) && (rhsMin == rhsMax)) 
     // Special case: sweeping out a contiguous range in N/[modulus]
-    if (rhsMin == rhsMax) {
+    {
       const APInt &lhsMin = lhs.umin(), &lhsMax = lhs.umax();
       if ((lhsMax - lhsMin).ult(rhsMax)) {
         APInt minRem = lhsMin.urem(rhsMax);
@@ -481,7 +481,7 @@ mlir::intrange::inferRemU(ArrayRef<ConstantIntRanges> argRanges) {
         }
       }
     }
-  }
+  
   return ConstantIntRanges::fromUnsigned(umin, umax);
 }
 

@@ -1490,15 +1490,14 @@ void CodeGenRegBank::computeComposites() {
 
         // Conflicting composition? Emit a warning but allow it.
         if (CodeGenSubRegIndex *Prev =
-                Idx1->addComposite(Idx2, Idx3, getHwModes())) {
+                Idx1->addComposite(Idx2, Idx3, getHwModes()); Prev && (!UserDefined.contains({Idx1, Idx2}) ||
+              agree(compose(Idx1, Idx2), SubRegAction.at(Idx3)))) 
           // If the composition was not user-defined, always emit a warning.
-          if (!UserDefined.contains({Idx1, Idx2}) ||
-              agree(compose(Idx1, Idx2), SubRegAction.at(Idx3)))
-            PrintWarning(Twine("SubRegIndex ") + Idx1->getQualifiedName() +
+          PrintWarning(Twine("SubRegIndex ") + Idx1->getQualifiedName() +
                          " and " + Idx2->getQualifiedName() +
                          " compose ambiguously as " + Prev->getQualifiedName() +
                          " or " + Idx3->getQualifiedName());
-        }
+        
       }
     }
   }

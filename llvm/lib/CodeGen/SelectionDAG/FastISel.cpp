@@ -313,10 +313,9 @@ Register FastISel::materializeConstant(const Value *V, MVT VT) {
       }
     }
   } else if (const auto *Op = dyn_cast<Operator>(V)) {
-    if (!selectOperator(Op, Op->getOpcode()))
-      if (!isa<Instruction>(Op) ||
-          !fastSelectInstruction(cast<Instruction>(Op)))
-        return Register();
+    if ((!selectOperator(Op, Op->getOpcode())) && (!isa<Instruction>(Op) ||
+          !fastSelectInstruction(cast<Instruction>(Op))))
+      return Register();
     Reg = lookUpRegForValue(Op);
   } else if (isa<UndefValue>(V)) {
     Reg = createResultReg(TLI.getRegClassFor(VT));
@@ -462,8 +461,8 @@ bool FastISel::selectBinaryOp(const User *I, unsigned ISDOpcode) {
 
   // Check if the first operand is a constant, and handle it as "ri".  At -O0,
   // we don't have anything that canonicalizes operand order.
-  if (const auto *CI = dyn_cast<ConstantInt>(I->getOperand(0)))
-    if (isa<Instruction>(I) && cast<Instruction>(I)->isCommutative()) {
+  if (const auto *CI = dyn_cast<ConstantInt>(I->getOperand(0)); CI && (isa<Instruction>(I) && cast<Instruction>(I)->isCommutative()))
+    {
       Register Op1 = getRegForValue(I->getOperand(1));
       if (!Op1)
         return false;
@@ -1549,8 +1548,8 @@ bool FastISel::selectInstruction(const Instruction *I) {
   MachineInstr *SavedLastLocalValue = getLastLocalValue();
   // Just before the terminator instruction, insert instructions to
   // feed PHI nodes in successor blocks.
-  if (I->isTerminator()) {
-    if (!handlePHINodesInSuccessorBlocks(I->getParent())) {
+  if ((I->isTerminator()) && (!handlePHINodesInSuccessorBlocks(I->getParent()))) 
+    {
       // PHI node handling may have generated local value instructions,
       // even though it failed to handle all PHI nodes.
       // We remove these instructions because SelectionDAGISel will generate
@@ -1558,7 +1557,7 @@ bool FastISel::selectInstruction(const Instruction *I) {
       removeDeadLocalValueCode(SavedLastLocalValue);
       return false;
     }
-  }
+  
 
   // FastISel does not handle any operand bundles except OB_funclet.
   if (auto *Call = dyn_cast<CallBase>(I))
@@ -2224,13 +2223,13 @@ bool FastISel::handlePHINodesInSuccessorBlocks(const BasicBlock *LLVMBB) {
       // use CreateRegs to create registers, so it always creates
       // exactly one register for each non-void instruction.
       EVT VT = TLI.getValueType(DL, PN.getType(), /*AllowUnknown=*/true);
-      if (VT == MVT::Other || !TLI.isTypeLegal(VT)) {
+      if ((VT == MVT::Other || !TLI.isTypeLegal(VT)) && (!(VT == MVT::i1 || VT == MVT::i8 || VT == MVT::i16))) 
         // Handle integer promotions, though, because they're common and easy.
-        if (!(VT == MVT::i1 || VT == MVT::i8 || VT == MVT::i16)) {
+        {
           FuncInfo.PHINodesToUpdate.resize(FuncInfo.OrigNumPHINodesToUpdate);
           return false;
         }
-      }
+      
 
       const Value *PHIOp = PN.getIncomingValueForBlock(LLVMBB);
 

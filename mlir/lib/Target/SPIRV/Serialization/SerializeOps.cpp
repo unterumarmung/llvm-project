@@ -369,11 +369,11 @@ LogicalResult Serializer::processFuncOp(spirv::FuncOp op) {
     auto isValidDecoration = mlir::spirv::symbolizeEnum<spirv::Decoration>(
         llvm::convertToCamelFromSnakeCase(attr.getName().strref(),
                                           /*capitalizeFirst=*/true));
-    if (isValidDecoration != std::nullopt) {
-      if (failed(processDecoration(op.getLoc(), funcID, attr))) {
+    if ((isValidDecoration != std::nullopt) && (failed(processDecoration(op.getLoc(), funcID, attr)))) 
+      {
         return failure();
       }
-    }
+    
   }
   // Insert OpFunctionEnd.
   encodeInstructionInto(functionBody, spirv::Opcode::OpFunctionEnd, {});

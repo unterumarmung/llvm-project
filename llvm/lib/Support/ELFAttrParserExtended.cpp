@@ -66,9 +66,8 @@ StringRef
 ELFExtendedAttrParser::getTagName(const StringRef &BuildAttrSubsectionName,
                                   const unsigned Tag) {
   for (const auto &Entry : TagsNamesMap) {
-    if (BuildAttrSubsectionName == Entry.SubsectionName)
-      if (Tag == Entry.Tag)
-        return Entry.TagName;
+    if ((BuildAttrSubsectionName == Entry.SubsectionName) && (Tag == Entry.Tag))
+      return Entry.TagName;
   }
   return "";
 }

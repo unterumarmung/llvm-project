@@ -185,14 +185,14 @@ static bool isRematerializationCandidate(Value val,
   // OutlineRematerializationOpInterface may have been traced through by
   // getOriginalValue. If the traced op is not a candidate, check the direct
   // defining op of the live-in value.
-  if (origVal != val) {
-    if (isa_and_nonnull<acc::OutlineRematerializationOpInterface>(
-            val.getDefiningOp())) {
+  if ((origVal != val) && (isa_and_nonnull<acc::OutlineRematerializationOpInterface>(
+            val.getDefiningOp()))) 
+    {
       LLVM_DEBUG(llvm::dbgs()
                  << "\t\t-> OutlineRematerializationOpInterface (direct)\n");
       return true;
     }
-  }
+  
 
   LLVM_DEBUG(llvm::dbgs() << "\t\t-> not a candidate\n");
   return false;

@@ -66,9 +66,8 @@ std::string SDNode::getOperationName(const SelectionDAG *G) const {
       return "<<Unknown DAG Node>>";
     if (isMachineOpcode()) {
       if (G)
-        if (const TargetInstrInfo *TII = G->getSubtarget().getInstrInfo())
-          if (getMachineOpcode() < TII->getNumOpcodes())
-            return std::string(TII->getName(getMachineOpcode()));
+        if (const TargetInstrInfo *TII = G->getSubtarget().getInstrInfo(); TII && (getMachineOpcode() < TII->getNumOpcodes()))
+          return std::string(TII->getName(getMachineOpcode()));
       return "<<Unknown Machine Node #" + utostr(getOpcode()) + ">>";
     }
     if (G) {
@@ -955,8 +954,8 @@ void SDNode::print_details(raw_ostream &OS, const SelectionDAG *G) const {
     interleaveComma(M->memoperands(), OS, [&](const MachineMemOperand *MMO) {
       printMemOperand(OS, *MMO, G);
     });
-    if (auto *A = dyn_cast<AtomicSDNode>(M))
-      if (A->getOpcode() == ISD::ATOMIC_LOAD) {
+    if (auto *A = dyn_cast<AtomicSDNode>(M); A && (A->getOpcode() == ISD::ATOMIC_LOAD))
+      {
         bool doExt = true;
         switch (A->getExtensionType()) {
         default: doExt = false; break;

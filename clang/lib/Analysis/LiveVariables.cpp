@@ -185,9 +185,8 @@ public:
 static const VariableArrayType *FindVA(QualType Ty) {
   const Type *ty = Ty.getTypePtr();
   while (const ArrayType *VT = dyn_cast<ArrayType>(ty)) {
-    if (const VariableArrayType *VAT = dyn_cast<VariableArrayType>(VT))
-      if (VAT->getSizeExpr())
-        return VAT;
+    if (const VariableArrayType *VAT = dyn_cast<VariableArrayType>(VT); VAT && (VAT->getSizeExpr()))
+      return VAT;
 
     ty = VT->getElementType().getTypePtr();
   }
@@ -422,10 +421,9 @@ void TransferFunctions::VisitDeclRefExpr(DeclRefExpr *DR) {
 
       val.liveBindings = LV.BSetFact.add(val.liveBindings, BD);
     }
-  } else if (const auto *VD = dyn_cast<VarDecl>(D)) {
-    if (!InAssignment && !isAlwaysAlive(VD))
-      val.liveDecls = LV.DSetFact.add(val.liveDecls, VD);
-  }
+  } else if (const auto *VD = dyn_cast<VarDecl>(D); VD && (!InAssignment && !isAlwaysAlive(VD))) 
+    val.liveDecls = LV.DSetFact.add(val.liveDecls, VD);
+  
 }
 
 void TransferFunctions::VisitDeclStmt(DeclStmt *DS) {
@@ -441,10 +439,9 @@ void TransferFunctions::VisitDeclStmt(DeclStmt *DS) {
       // When a bindig to a tuple-like structure is created, the HoldingVar
       // initializers have a DeclRefExpr to the DecompositionDecl.
       val.liveDecls = LV.DSetFact.remove(val.liveDecls, DD);
-    } else if (const auto *VD = dyn_cast<VarDecl>(DI)) {
-      if (!isAlwaysAlive(VD))
-        val.liveDecls = LV.DSetFact.remove(val.liveDecls, VD);
-    }
+    } else if (const auto *VD = dyn_cast<VarDecl>(DI); VD && (!isAlwaysAlive(VD))) 
+      val.liveDecls = LV.DSetFact.remove(val.liveDecls, VD);
+    
   }
 }
 

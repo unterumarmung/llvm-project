@@ -906,15 +906,15 @@ int dsymutil_main(int argc, char **argv, const llvm::ToolContext &) {
         if (Options.DumpDebugMap)
           continue;
 
-        if (Map->begin() == Map->end()) {
-          if (!Options.LinkOpts.Quiet) {
+        if ((Map->begin() == Map->end()) && (!Options.LinkOpts.Quiet)) 
+          {
             std::lock_guard<std::mutex> Guard(ErrorHandlerMutex);
             WithColor::warning()
                 << "no debug symbols in executable (-arch "
                 << MachOUtils::getArchName(Map->getTriple().getArchName())
                 << ")\n";
           }
-        }
+        
 
         // Using a std::shared_ptr rather than std::unique_ptr because move-only
         // types don't work with std::bind in the ThreadPool implementation.

@@ -158,20 +158,20 @@ void DefinitionBlockSeparator::separateBlocks(
       }
 
       // A single line identifier that is not in the last line.
-      if (OperateLine->First->is(tok::identifier) &&
-          OperateLine->First == OperateLine->Last && NextLine) {
+      if ((OperateLine->First->is(tok::identifier) &&
+          OperateLine->First == OperateLine->Last && NextLine) && (NextLine->MightBeFunctionDecl &&
+            NextLine->mightBeFunctionDefinition() &&
+            NextLine->First->NewlinesBefore == 1 &&
+            OperateLine->First->is(TT_FunctionLikeOrFreestandingMacro))) 
         // UnwrappedLineParser's recognition of free-standing macro like
         // Q_OBJECT may also recognize some uppercased type names that may be
         // used as return type as that kind of macros, which is a bit hard to
         // distinguish one from another purely from token patterns. Here, we
         // try not to add new lines below those identifiers.
-        if (NextLine->MightBeFunctionDecl &&
-            NextLine->mightBeFunctionDefinition() &&
-            NextLine->First->NewlinesBefore == 1 &&
-            OperateLine->First->is(TT_FunctionLikeOrFreestandingMacro)) {
+        {
           return true;
         }
-      }
+      
 
       if (Style.isCSharp() && OperateLine->First->is(TT_AttributeLSquare))
         return true;

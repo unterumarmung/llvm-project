@@ -470,9 +470,8 @@ void MoveChecker::checkPostCall(const CallEvent &Call,
   if (CC && CC->getCXXThisVal().getAsRegion() == ArgRegion)
     return;
 
-  if (const auto *IC = dyn_cast<CXXInstanceCall>(AFC))
-    if (IC->getCXXThisVal().getAsRegion() == ArgRegion)
-      return;
+  if (const auto *IC = dyn_cast<CXXInstanceCall>(AFC); IC && (IC->getCXXThisVal().getAsRegion() == ArgRegion))
+    return;
 
   const MemRegion *BaseRegion = ArgRegion->getBaseRegion();
   // Skip temp objects because of their short lifetime.

@@ -690,18 +690,16 @@ ASTNodeKind Node::getType() const { return ASTNode.getNodeKind(); }
 StringRef Node::getTypeLabel() const { return getType().asStringRef(); }
 
 std::optional<std::string> Node::getQualifiedIdentifier() const {
-  if (auto *ND = ASTNode.get<NamedDecl>()) {
-    if (ND->getDeclName().isIdentifier())
-      return ND->getQualifiedNameAsString();
-  }
+  if (auto *ND = ASTNode.get<NamedDecl>(); ND && (ND->getDeclName().isIdentifier())) 
+    return ND->getQualifiedNameAsString();
+  
   return std::nullopt;
 }
 
 std::optional<StringRef> Node::getIdentifier() const {
-  if (auto *ND = ASTNode.get<NamedDecl>()) {
-    if (ND->getDeclName().isIdentifier())
-      return ND->getName();
-  }
+  if (auto *ND = ASTNode.get<NamedDecl>(); ND && (ND->getDeclName().isIdentifier())) 
+    return ND->getName();
+  
   return std::nullopt;
 }
 
@@ -998,10 +996,9 @@ SyntaxTree::getSourceRangeOffsets(const Node &N) const {
   SourceLocation BeginLoc = Range.getBegin();
   SourceLocation EndLoc = Lexer::getLocForEndOfToken(
       Range.getEnd(), /*Offset=*/0, SrcMgr, TreeImpl->AST.getLangOpts());
-  if (auto *ThisExpr = N.ASTNode.get<CXXThisExpr>()) {
-    if (ThisExpr->isImplicit())
-      EndLoc = BeginLoc;
-  }
+  if (auto *ThisExpr = N.ASTNode.get<CXXThisExpr>(); ThisExpr && (ThisExpr->isImplicit())) 
+    EndLoc = BeginLoc;
+  
   unsigned Begin = SrcMgr.getFileOffset(SrcMgr.getExpansionLoc(BeginLoc));
   unsigned End = SrcMgr.getFileOffset(SrcMgr.getExpansionLoc(EndLoc));
   return {Begin, End};

@@ -281,9 +281,8 @@ void BottomUpPtrState::HandlePotentialUse(BasicBlock *BB, Instruction *Inst,
     // Don't insert anything between a call/invoke with operand bundle
     // "clang.arc.attachedcall" and the retainRV/claimRV call that uses the call
     // result.
-    if (auto *CB = dyn_cast<CallBase>(Inst))
-      if (objcarc::hasAttachedCallOpBundle(CB))
-        SetCFGHazardAfflicted(true);
+    if (auto *CB = dyn_cast<CallBase>(Inst); CB && (objcarc::hasAttachedCallOpBundle(CB)))
+      SetCFGHazardAfflicted(true);
   };
 
   // Check for possible direct uses.
@@ -293,13 +292,13 @@ void BottomUpPtrState::HandlePotentialUse(BasicBlock *BB, Instruction *Inst,
       LLVM_DEBUG(dbgs() << "            CanUse: Seq: " << GetSeq() << "; "
                         << *Ptr << "\n");
       SetSeqAndInsertReverseInsertPt(S_Use);
-    } else if (const auto *Call = getreturnRVOperand(*Inst, Class)) {
-      if (CanUse(Call, Ptr, PA, GetBasicARCInstKind(Call))) {
+    } else if (const auto *Call = getreturnRVOperand(*Inst, Class); Call && (CanUse(Call, Ptr, PA, GetBasicARCInstKind(Call)))) 
+      {
         LLVM_DEBUG(dbgs() << "            ReleaseUse: Seq: " << GetSeq() << "; "
                           << *Ptr << "\n");
         SetSeqAndInsertReverseInsertPt(S_Stop);
       }
-    }
+    
     break;
   case S_Stop:
     if (CanUse(Inst, Ptr, PA, Class)) {

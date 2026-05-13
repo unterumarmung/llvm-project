@@ -163,11 +163,11 @@ BasicBlock *llvm::CloneBasicBlock(const BasicBlock *BB, ValueToValueMapTy &VMap,
       hasMemProfMetadata |= I.hasMetadata(LLVMContext::MD_memprof);
       hasMemProfMetadata |= I.hasMetadata(LLVMContext::MD_callsite);
     }
-    if (const AllocaInst *AI = dyn_cast<AllocaInst>(&I)) {
-      if (!AI->isStaticAlloca()) {
+    if (const AllocaInst *AI = dyn_cast<AllocaInst>(&I); AI && (!AI->isStaticAlloca())) 
+      {
         hasDynamicAllocas = true;
       }
-    }
+    
   }
 
   if (CodeInfo) {
@@ -555,9 +555,8 @@ void PruningFunctionCloner::CloneBlock(
 
     // Don't clone fake_use as it may suppress many optimizations
     // due to inlining, especially SROA.
-    if (auto *IntrInst = dyn_cast<IntrinsicInst>(II))
-      if (IntrInst->getIntrinsicID() == Intrinsic::fake_use)
-        continue;
+    if (auto *IntrInst = dyn_cast<IntrinsicInst>(II); IntrInst && (IntrInst->getIntrinsicID() == Intrinsic::fake_use))
+      continue;
 
     Instruction *NewInst = cloneInstruction(II);
     NewInst->insertInto(NewBB, NewBB->end());
@@ -580,13 +579,13 @@ void PruningFunctionCloner::CloneBlock(
       // this stage, thus instruction simplification is performed after
       // processing phi-nodes.
       if (Value *V = ConstantFoldInstruction(
-              NewInst, BB->getDataLayout())) {
-        if (isInstructionTriviallyDead(NewInst)) {
+              NewInst, BB->getDataLayout()); V && (isInstructionTriviallyDead(NewInst))) 
+        {
           VMap[&*II] = V;
           NewInst->eraseFromParent();
           continue;
         }
-      }
+      
     }
 
     if (auto *CB = dyn_cast<CallBase>(II); CB && CB->isIndirectCall())
@@ -604,9 +603,8 @@ void PruningFunctionCloner::CloneBlock(
     CloneDbgRecordsToHere(NewInst, II);
 
     CodeInfo.OrigVMap[&*II] = NewInst;
-    if (auto *CB = dyn_cast<CallBase>(&*II))
-      if (CB->hasOperandBundles())
-        CodeInfo.OperandBundleCallSites.push_back(NewInst);
+    if (auto *CB = dyn_cast<CallBase>(&*II); CB && (CB->hasOperandBundles()))
+      CodeInfo.OperandBundleCallSites.push_back(NewInst);
 
     if (const AllocaInst *AI = dyn_cast<AllocaInst>(II)) {
       if (isa<ConstantInt>(AI->getArraySize()))
@@ -666,9 +664,8 @@ void PruningFunctionCloner::CloneBlock(
     VMap[OldTI] = NewInst; // Add instruction map to value.
 
     CodeInfo.OrigVMap[OldTI] = NewInst;
-    if (auto *CB = dyn_cast<CallBase>(OldTI))
-      if (CB->hasOperandBundles())
-        CodeInfo.OperandBundleCallSites.push_back(NewInst);
+    if (auto *CB = dyn_cast<CallBase>(OldTI); CB && (CB->hasOperandBundles()))
+      CodeInfo.OperandBundleCallSites.push_back(NewInst);
 
     // Recursively clone any reachable successor blocks.
     append_range(ToClone, successors(BB->getTerminator()));

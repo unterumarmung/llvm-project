@@ -731,11 +731,11 @@ bool llvm::findVCToolChainViaSetupConfig(
 bool llvm::findVCToolChainViaRegistry(std::string &Path,
                                       ToolsetLayout &VSLayout) {
   std::string VSInstallPath;
-  if (getSystemRegistryString(R"(SOFTWARE\Microsoft\VisualStudio\$VERSION)",
+  if ((getSystemRegistryString(R"(SOFTWARE\Microsoft\VisualStudio\$VERSION)",
                               "InstallDir", VSInstallPath, nullptr) ||
       getSystemRegistryString(R"(SOFTWARE\Microsoft\VCExpress\$VERSION)",
-                              "InstallDir", VSInstallPath, nullptr)) {
-    if (!VSInstallPath.empty()) {
+                              "InstallDir", VSInstallPath, nullptr)) && (!VSInstallPath.empty())) 
+    {
       auto pos = VSInstallPath.find(R"(\Common7\IDE)");
       if (pos == std::string::npos)
         return false;
@@ -746,6 +746,6 @@ bool llvm::findVCToolChainViaRegistry(std::string &Path,
       VSLayout = ToolsetLayout::OlderVS;
       return true;
     }
-  }
+  
   return false;
 }

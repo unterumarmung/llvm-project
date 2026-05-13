@@ -1539,8 +1539,8 @@ Expr<TypeParamInquiry::Result> FoldOperation(
           }
         }
       }
-      if (const auto *value{pdt->FindParameter(parameterName)}) {
-        if (value->isExplicit()) {
+      if (const auto *value{pdt->FindParameter(parameterName)}; value && (value->isExplicit())) 
+        {
           auto folded{Fold(context,
               AsExpr(ConvertToType<TypeParamInquiry::Result>(
                   Expr<SomeInteger>{value->GetExplicit().value()})))};
@@ -1548,7 +1548,7 @@ Expr<TypeParamInquiry::Result> FoldOperation(
             return folded;
           }
         }
-      }
+      
     }
   }
   return AsExpr(std::move(inquiry));

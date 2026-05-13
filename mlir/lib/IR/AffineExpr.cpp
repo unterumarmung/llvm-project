@@ -1489,10 +1489,9 @@ LogicalResult SimpleAffineExprFlattener::addLocalVariableSemiAffine(
   assert(result.size() == resultSize &&
          "`result` vector passed is not of correct size");
   int loc;
-  if ((loc = findLocalId(localExpr)) == -1) {
-    if (failed(addLocalIdSemiAffine(lhs, rhs, localExpr)))
-      return failure();
-  }
+  if (((loc = findLocalId(localExpr)) == -1) && (failed(addLocalIdSemiAffine(lhs, rhs, localExpr)))) 
+    return failure();
+  
   llvm::fill(result, 0);
   if (loc == -1)
     result[getLocalVarStartIndex() + numLocals - 1] = 1;

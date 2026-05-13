@@ -1515,12 +1515,12 @@ bool AArch64InstrInfo::areMemAccessesTriviallyDisjoint(
   // then the memory accesses are different.
   // If OffsetAIsScalable and OffsetBIsScalable are both true, they
   // are assumed to have the same scale (vscale).
-  if (getMemOperandWithOffsetWidth(MIa, BaseOpA, OffsetA, OffsetAIsScalable,
+  if ((getMemOperandWithOffsetWidth(MIa, BaseOpA, OffsetA, OffsetAIsScalable,
                                    WidthA, TRI) &&
       getMemOperandWithOffsetWidth(MIb, BaseOpB, OffsetB, OffsetBIsScalable,
-                                   WidthB, TRI)) {
-    if (BaseOpA->isIdenticalTo(*BaseOpB) &&
-        OffsetAIsScalable == OffsetBIsScalable) {
+                                   WidthB, TRI)) && (BaseOpA->isIdenticalTo(*BaseOpB) &&
+        OffsetAIsScalable == OffsetBIsScalable)) 
+    {
       int LowOffset = OffsetA < OffsetB ? OffsetA : OffsetB;
       int HighOffset = OffsetA < OffsetB ? OffsetB : OffsetA;
       TypeSize LowWidth = (LowOffset == OffsetA) ? WidthA : WidthB;
@@ -1528,7 +1528,7 @@ bool AArch64InstrInfo::areMemAccessesTriviallyDisjoint(
           LowOffset + (int)LowWidth.getKnownMinValue() <= HighOffset)
         return true;
     }
-  }
+  
   return false;
 }
 
@@ -1816,12 +1816,11 @@ AArch64InstrInfo::canRemovePTestInstr(MachineInstr *PTest, MachineInstr *Mask,
     // For PTEST(PTRUE_ALL, PTEST_LIKE), the PTEST is redundant if the
     // the element size matches and either the PTEST_LIKE instruction uses
     // the same all active mask or the condition is "any".
-    if (isPTrueOpcode(MaskOpcode) && Mask->getOperand(1).getImm() == 31 &&
+    if ((isPTrueOpcode(MaskOpcode) && Mask->getOperand(1).getImm() == 31 &&
         getElementSizeForOpcode(MaskOpcode) ==
-            getElementSizeForOpcode(PredOpcode)) {
-      if (Mask == PTestLikeMask || PTest->getOpcode() == AArch64::PTEST_PP_ANY)
-        return PredOpcode;
-    }
+            getElementSizeForOpcode(PredOpcode)) && (Mask == PTestLikeMask || PTest->getOpcode() == AArch64::PTEST_PP_ANY)) 
+      return PredOpcode;
+    
 
     // For PTEST(PG, PTEST_LIKE(PG, ...)), the PTEST is redundant since the
     // flags are set based on the same mask 'PG', but PTEST_LIKE must operate

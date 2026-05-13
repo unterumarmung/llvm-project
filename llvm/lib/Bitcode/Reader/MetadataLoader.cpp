@@ -180,9 +180,8 @@ private:
 static int64_t unrotateSign(uint64_t U) { return (U & 1) ? ~(U >> 1) : U >> 1; }
 
 void BitcodeReaderMetadataList::assignValue(Metadata *MD, unsigned Idx) {
-  if (auto *MDN = dyn_cast<MDNode>(MD))
-    if (!MDN->isResolved())
-      UnresolvedNodes.insert(Idx);
+  if (auto *MDN = dyn_cast<MDNode>(MD); MDN && (!MDN->isResolved()))
+    UnresolvedNodes.insert(Idx);
 
   if (Idx == size()) {
     push_back(MD);
@@ -227,9 +226,8 @@ Metadata *BitcodeReaderMetadataList::getMetadataFwdRef(unsigned Idx) {
 
 Metadata *BitcodeReaderMetadataList::getMetadataIfResolved(unsigned Idx) {
   Metadata *MD = lookup(Idx);
-  if (auto *N = dyn_cast_or_null<MDNode>(MD))
-    if (!N->isResolved())
-      return nullptr;
+  if (auto *N = dyn_cast_or_null<MDNode>(MD); N && (!N->isResolved()))
+    return nullptr;
   return MD;
 }
 

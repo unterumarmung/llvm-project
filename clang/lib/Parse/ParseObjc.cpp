@@ -3316,17 +3316,16 @@ void Parser::ParseLexedObjCMethodDefs(LexedMethod &LM, bool parseMethod) {
     ParseFunctionStatementBody(MCDecl, BodyScope);
   }
 
-  if (Tok.getLocation() != OrigLoc) {
+  if ((Tok.getLocation() != OrigLoc) && (PP.getSourceManager().isBeforeInTranslationUnit(Tok.getLocation(),
+                                                     OrigLoc))) 
     // Due to parsing error, we either went over the cached tokens or
     // there are still cached tokens left. If it's the latter case skip the
     // leftover tokens.
     // Since this is an uncommon situation that should be avoided, use the
     // expensive isBeforeInTranslationUnit call.
-    if (PP.getSourceManager().isBeforeInTranslationUnit(Tok.getLocation(),
-                                                     OrigLoc))
-      while (Tok.getLocation() != OrigLoc && Tok.isNot(tok::eof))
+    while (Tok.getLocation() != OrigLoc && Tok.isNot(tok::eof))
         ConsumeAnyToken();
-  }
+  
   // Clean up the remaining EOF token, only if it's inserted by us. Otherwise
   // this might be code-completion token, which must be propagated to callers.
   if (Tok.is(tok::eof) && Tok.getEofData() == MCDecl)

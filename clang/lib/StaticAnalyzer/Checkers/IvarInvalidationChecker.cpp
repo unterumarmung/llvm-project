@@ -562,13 +562,12 @@ reportIvarNeedsInvalidation(const ObjCIvarDecl *IvarD,
 void IvarInvalidationCheckerImpl::MethodCrawler::markInvalidated(
     const ObjCIvarDecl *Iv) {
   IvarSet::iterator I = IVars.find(Iv);
-  if (I != IVars.end()) {
+  if ((I != IVars.end()) && (!InvalidationMethod || I->second.hasMethod(InvalidationMethod))) 
     // If InvalidationMethod is present, we are processing the message send and
     // should ensure we are invalidating with the appropriate method,
     // otherwise, we are processing setting to 'nil'.
-    if (!InvalidationMethod || I->second.hasMethod(InvalidationMethod))
-      IVars.erase(I);
-  }
+    IVars.erase(I);
+  
 }
 
 const Expr *IvarInvalidationCheckerImpl::MethodCrawler::peel(const Expr *E) const {
@@ -678,8 +677,8 @@ void IvarInvalidationCheckerImpl::MethodCrawler::VisitObjCMessageExpr(
   const Expr *Receiver = ME->getInstanceReceiver();
 
   // Stop if we are calling '[self invalidate]'.
-  if (Receiver && isInvalidationMethod(MD, /*LookForPartial*/ false))
-    if (Receiver->isObjCSelfExpr()) {
+  if ((Receiver && isInvalidationMethod(MD, /*LookForPartial*/ false)) && (Receiver->isObjCSelfExpr()))
+    {
       CalledAnotherInvalidationMethod = true;
       return;
     }

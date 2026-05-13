@@ -135,10 +135,9 @@ bool HardwareLoopInfo::isHardwareLoopCandidate(ScalarEvolution &SE,
   for (BasicBlock *BB : ExitingBlocks) {
     // If we pass the updated counter back through a phi, we need to know
     // which latch the updated value will be coming from.
-    if (!L->isLoopLatch(BB)) {
-      if (ForceHardwareLoopPHI || CounterInReg)
-        continue;
-    }
+    if ((!L->isLoopLatch(BB)) && (ForceHardwareLoopPHI || CounterInReg)) 
+      continue;
+    
 
     const SCEV *EC = SE.getExitCount(L, BB);
     if (isa<SCEVCouldNotCompute>(EC))
@@ -295,10 +294,9 @@ bool TargetTransformInfo::hasBranchDivergence(const Function *F) const {
 ValueUniformity
 llvm::TargetTransformInfo::getValueUniformity(const Value *V) const {
   // Calls with the NoDivergenceSource attribute are always uniform.
-  if (const auto *Call = dyn_cast<CallBase>(V)) {
-    if (Call->hasFnAttr(Attribute::NoDivergenceSource))
-      return ValueUniformity::AlwaysUniform;
-  }
+  if (const auto *Call = dyn_cast<CallBase>(V); Call && (Call->hasFnAttr(Attribute::NoDivergenceSource))) 
+    return ValueUniformity::AlwaysUniform;
+  
   return TTIImpl->getValueUniformity(V);
 }
 
@@ -947,9 +945,8 @@ TargetTransformInfo::getOperandInfo(const Value *V) {
   // A broadcast shuffle creates a uniform value.
   // TODO: Add support for non-zero index broadcasts.
   // TODO: Add support for different source vector width.
-  if (const auto *ShuffleInst = dyn_cast<ShuffleVectorInst>(V))
-    if (ShuffleInst->isZeroEltSplat())
-      OpInfo = OK_UniformValue;
+  if (const auto *ShuffleInst = dyn_cast<ShuffleVectorInst>(V); ShuffleInst && (ShuffleInst->isZeroEltSplat()))
+    OpInfo = OK_UniformValue;
 
   const Value *Splat = getSplatValue(V);
 

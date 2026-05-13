@@ -170,9 +170,8 @@ CtxInstrumentationLowerer::CtxInstrumentationLowerer(Module &M,
       ContextRootSet.insert(F);
       for (const auto &BB : *F)
         for (const auto &I : BB)
-          if (const auto *CB = dyn_cast<CallBase>(&I))
-            if (CB->isMustTailCall())
-              emitUnsupportedRootError(*F, "it features musttail calls");
+          if (const auto *CB = dyn_cast<CallBase>(&I); CB && (CB->isMustTailCall()))
+            emitUnsupportedRootError(*F, "it features musttail calls");
     }
   }
 
@@ -259,9 +258,8 @@ bool CtxInstrumentationLowerer::lowerFunction(Function &F) {
   const bool HasMusttail = [&F]() {
     for (auto &BB : F)
       for (auto &I : BB)
-        if (auto *CB = dyn_cast<CallBase>(&I))
-          if (CB->isMustTailCall())
-            return true;
+        if (auto *CB = dyn_cast<CallBase>(&I); CB && (CB->isMustTailCall()))
+          return true;
     return false;
   }();
 

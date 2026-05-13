@@ -218,25 +218,21 @@ public:
 
       auto SR = Child->getSourceRange();
 
-      if (const auto *C = dyn_cast<CXXFunctionalCastExpr>(E)) {
-        if (C->getSourceRange() == SR)
-          return true;
-      }
+      if (const auto *C = dyn_cast<CXXFunctionalCastExpr>(E); C && (C->getSourceRange() == SR)) 
+        return true;
+      
 
-      if (const auto *C = dyn_cast<CXXConstructExpr>(E)) {
-        if (C->getSourceRange() == SR || C->isElidable())
-          return true;
-      }
+      if (const auto *C = dyn_cast<CXXConstructExpr>(E); C && (C->getSourceRange() == SR || C->isElidable())) 
+        return true;
+      
 
-      if (const auto *C = dyn_cast<CXXMemberCallExpr>(E)) {
-        if (C->getSourceRange() == SR)
-          return true;
-      }
+      if (const auto *C = dyn_cast<CXXMemberCallExpr>(E); C && (C->getSourceRange() == SR)) 
+        return true;
+      
 
-      if (const auto *C = dyn_cast<MemberExpr>(E)) {
-        if (C->getSourceRange() == SR)
-          return true;
-      }
+      if (const auto *C = dyn_cast<MemberExpr>(E); C && (C->getSourceRange() == SR)) 
+        return true;
+      
       return false;
     };
 

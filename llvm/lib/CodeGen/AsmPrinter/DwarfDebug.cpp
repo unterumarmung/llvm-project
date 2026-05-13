@@ -535,9 +535,8 @@ bool DwarfDebug::isLexicalScopeDIENull(LexicalScope *Scope) {
 
 template <typename Func> static void forBothCUs(DwarfCompileUnit &CU, Func F) {
   F(CU);
-  if (auto *SkelCU = CU.getSkeleton())
-    if (CU.getCUNode()->getSplitDebugInlining())
-      F(*SkelCU);
+  if (auto *SkelCU = CU.getSkeleton(); SkelCU && (CU.getCUNode()->getSplitDebugInlining()))
+    F(*SkelCU);
 }
 
 bool DwarfDebug::shareAcrossDWOCUs() const {
@@ -567,9 +566,8 @@ void DwarfDebug::constructAbstractSubprogramScopeDIE(DwarfCompileUnit &SrcCU,
   auto &CU = getOrCreateDwarfCompileUnit(SP->getUnit());
   auto &TargetCU = getOrCreateAbstractSubprogramCU(SP, SrcCU);
   TargetCU.constructAbstractSubprogramScopeDIE(Scope);
-  if (auto *SkelCU = CU.getSkeleton())
-    if (CU.getCUNode()->getSplitDebugInlining())
-      SkelCU->constructAbstractSubprogramScopeDIE(Scope);
+  if (auto *SkelCU = CU.getSkeleton(); SkelCU && (CU.getCUNode()->getSplitDebugInlining()))
+    SkelCU->constructAbstractSubprogramScopeDIE(Scope);
 }
 
 /// Represents a parameter whose call site value can be described by applying a
@@ -1015,10 +1013,9 @@ void DwarfDebug::constructCallSiteEntryDIEs(const DISubprogram &SP,
         const MachineOperand *BaseOp = nullptr;
         const TargetRegisterInfo &TRI =
             *Asm->MF->getSubtarget().getRegisterInfo();
-        if (TII->getMemOperandWithOffset(MI, BaseOp, Offset, Scalable, &TRI)) {
-          if (BaseOp && BaseOp->isReg() && !Scalable)
-            CallTarget = MachineLocation(BaseOp->getReg(), /*Indirect*/ true);
-        }
+        if ((TII->getMemOperandWithOffset(MI, BaseOp, Offset, Scalable, &TRI)) && (BaseOp && BaseOp->isReg() && !Scalable)) 
+          CallTarget = MachineLocation(BaseOp->getReg(), /*Indirect*/ true);
+        
 
         if (!CallTarget.isIndirect())
           CallTarget = MachineLocation(CalleeOp.getReg()); // Might be zero.
@@ -1401,8 +1398,8 @@ void DwarfDebug::finalizeModuleInfo() {
     // ranges for all subprogram DIEs for mach-o.
     DwarfCompileUnit &U = SkCU ? *SkCU : TheCU;
 
-    if (unsigned NumRanges = TheCU.getRanges().size()) {
-      if (shouldAttachCompileUnitRanges()) {
+    if (unsigned NumRanges = TheCU.getRanges().size(); NumRanges && (shouldAttachCompileUnitRanges())) 
+      {
         if (NumRanges > 1 && useRangesSection())
           // A DW_AT_low_pc attribute may also be specified in combination with
           // DW_AT_ranges to specify the default base address for use in
@@ -1414,7 +1411,7 @@ void DwarfDebug::finalizeModuleInfo() {
           U.setBaseAddress(TheCU.getRanges().front().Begin);
         U.attachRangesOrLowHighPC(U.getUnitDie(), TheCU.takeRanges());
       }
-    }
+    
 
     // We don't keep track of which addresses are used in which CU so this
     // is a bit pessimistic under LTO.
@@ -2487,10 +2484,10 @@ DwarfDebug::emitInitialLocDirective(const MachineFunction &MF, unsigned CUID) {
   bool IsEmptyPrologue = PrologEnd.second;
 
   // If the prolog is empty, no need to generate scope line for the proc.
-  if (IsEmptyPrologue) {
+  if ((IsEmptyPrologue) && (PrologEndLoc)) 
     // If there's nowhere to put a prologue_end flag, emit a scope line in case
     // there are simply no source locations anywhere in the function.
-    if (PrologEndLoc) {
+    {
       // Avoid trying to assign prologue_end to a line-zero location.
       // Instructions with no DebugLoc at all are fine, they'll be given the
       // scope line nuumber.
@@ -2501,7 +2498,7 @@ DwarfDebug::emitInitialLocDirective(const MachineFunction &MF, unsigned CUID) {
       // Later, don't place the prologue_end flag on this line-zero location.
       PrologEndLoc = nullptr;
     }
-  }
+  
 
   // Ensure the compile unit is created if the function is called before
   // beginFunction().
@@ -2918,10 +2915,9 @@ void DwarfDebug::endFunctionImpl(const MachineFunction *MF) {
   ProcessedSPNodes.insert(SP);
   DIE &ScopeDIE =
       TheCU.constructSubprogramScopeDIE(SP, F, FnScope, FunctionLineTableLabel);
-  if (auto *SkelCU = TheCU.getSkeleton())
-    if (!LScopes.getAbstractScopesList().empty() &&
-        TheCU.getCUNode()->getSplitDebugInlining())
-      SkelCU->constructSubprogramScopeDIE(SP, F, FnScope,
+  if (auto *SkelCU = TheCU.getSkeleton(); SkelCU && (!LScopes.getAbstractScopesList().empty() &&
+        TheCU.getCUNode()->getSplitDebugInlining()))
+    SkelCU->constructSubprogramScopeDIE(SP, F, FnScope,
                                           FunctionLineTableLabel);
 
   FunctionLineTableLabel = nullptr;
@@ -4244,9 +4240,8 @@ const MCSymbol *DwarfDebug::getSectionLabel(const MCSection *S) {
 }
 
 void DwarfDebug::insertSectionLabel(const MCSymbol *S) {
-  if (SectionLabels.insert(std::make_pair(&S->getSection(), S)).second)
-    if (useSplitDwarf() || getDwarfVersion() >= 5)
-      AddrPool.getIndex(S);
+  if ((SectionLabels.insert(std::make_pair(&S->getSection(), S)).second) && (useSplitDwarf() || getDwarfVersion() >= 5))
+    AddrPool.getIndex(S);
 }
 
 std::optional<MD5::MD5Result>

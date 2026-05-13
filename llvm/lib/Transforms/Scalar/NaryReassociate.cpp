@@ -315,12 +315,11 @@ Instruction *NaryReassociatePass::tryReassociate(Instruction *I,
   // TODO: Currently min/max reassociation is restricted to integer types only
   // due to use of SCEVExpander which my introduce incompatible forms of min/max
   // for pointer types.
-  if (I->getType()->isIntegerTy())
-    if ((ResI = matchAndReassociateMinOrMax<umin_pred_ty>(I, OrigSCEV)) ||
+  if ((I->getType()->isIntegerTy()) && ((ResI = matchAndReassociateMinOrMax<umin_pred_ty>(I, OrigSCEV)) ||
         (ResI = matchAndReassociateMinOrMax<smin_pred_ty>(I, OrigSCEV)) ||
         (ResI = matchAndReassociateMinOrMax<umax_pred_ty>(I, OrigSCEV)) ||
-        (ResI = matchAndReassociateMinOrMax<smax_pred_ty>(I, OrigSCEV)))
-      return ResI;
+        (ResI = matchAndReassociateMinOrMax<smax_pred_ty>(I, OrigSCEV))))
+    return ResI;
 
   return nullptr;
 }
@@ -363,11 +362,10 @@ NaryReassociatePass::tryReassociateGEPAtIndex(GetElementPtrInst *GEP,
   Value *IndexToSplit = GEP->getOperand(I + 1);
   if (SExtInst *SExt = dyn_cast<SExtInst>(IndexToSplit)) {
     IndexToSplit = SExt->getOperand(0);
-  } else if (ZExtInst *ZExt = dyn_cast<ZExtInst>(IndexToSplit)) {
+  } else if (ZExtInst *ZExt = dyn_cast<ZExtInst>(IndexToSplit); ZExt && (isKnownNonNegative(ZExt->getOperand(0), SQ))) 
     // zext can be treated as sext if the source is non-negative.
-    if (isKnownNonNegative(ZExt->getOperand(0), SQ))
-      IndexToSplit = ZExt->getOperand(0);
-  }
+    IndexToSplit = ZExt->getOperand(0);
+  
 
   if (AddOperator *AO = dyn_cast<AddOperator>(IndexToSplit)) {
     // If the I-th index needs sext and the underlying add is not equipped with

@@ -328,9 +328,8 @@ void FunctionImportGlobalProcessing::processGlobalForThinLTO(GlobalValue &GV) {
 
     // If we are renaming a COMDAT leader, ensure that we record the COMDAT
     // for later renaming as well. This is required for COFF.
-    if (const auto *C = GV.getComdat())
-      if (C->getName() == Name)
-        RenamedComdats.try_emplace(C, M.getOrInsertComdat(GV.getName()));
+    if (const auto *C = GV.getComdat(); C && (C->getName() == Name))
+      RenamedComdats.try_emplace(C, M.getOrInsertComdat(GV.getName()));
   } else
     GV.setLinkage(getLinkage(&GV, /* DoPromote */ false));
 

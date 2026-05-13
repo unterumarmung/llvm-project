@@ -84,11 +84,10 @@ ExtractFunction::initiate(RefactoringRuleContext &Context,
           diag::err_refactor_extract_simple_expression);
 
     // Property setters can't be extracted.
-    if (const auto *PRE = dyn_cast<ObjCPropertyRefExpr>(Code[0])) {
-      if (!PRE->isMessagingGetter())
-        return Context.createDiagnosticError(
+    if (const auto *PRE = dyn_cast<ObjCPropertyRefExpr>(Code[0]); PRE && (!PRE->isMessagingGetter())) 
+      return Context.createDiagnosticError(
             diag::err_refactor_extract_prohibited_expression);
-    }
+    
   }
 
   return ExtractFunction(std::move(Code), DeclName);

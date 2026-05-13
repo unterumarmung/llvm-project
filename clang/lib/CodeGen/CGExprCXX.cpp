@@ -264,8 +264,8 @@ RValue CodeGenFunction::EmitCXXMemberOrOperatorMemberCallExpr(
   CallArgList RtlArgStorage;
   CallArgList *RtlArgs = nullptr;
   LValue TrivialAssignmentRHS;
-  if (auto *OCE = dyn_cast<CXXOperatorCallExpr>(CE)) {
-    if (OCE->isAssignmentOp()) {
+  if (auto *OCE = dyn_cast<CXXOperatorCallExpr>(CE); OCE && (OCE->isAssignmentOp())) 
+    {
       if (TrivialAssignment) {
         TrivialAssignmentRHS = EmitLValue(CE->getArg(1));
       } else {
@@ -275,7 +275,7 @@ RValue CodeGenFunction::EmitCXXMemberOrOperatorMemberCallExpr(
                      /*ParamsToSkip*/ 0, EvaluationOrder::ForceRightToLeft);
       }
     }
-  }
+  
 
   LValue This;
   if (IsArrow) {
@@ -1228,16 +1228,15 @@ void CodeGenFunction::EmitNewArrayInitializer(
          "got wrong type of element to initialize");
 
   // If we have an empty initializer list, we can usually use memset.
-  if (auto *ILE = dyn_cast<InitListExpr>(Init))
-    if (ILE->getNumInits() == 0 && TryMemsetInitialization())
-      return;
+  if (auto *ILE = dyn_cast<InitListExpr>(Init); ILE && (ILE->getNumInits() == 0 && TryMemsetInitialization()))
+    return;
 
   // If we have a struct whose every field is value-initialized, we can
   // usually use memset.
   if (auto *ILE = dyn_cast<InitListExpr>(Init)) {
     if (const RecordType *RType =
-            ILE->getType()->getAsCanonical<RecordType>()) {
-      if (RType->getDecl()->isStruct()) {
+            ILE->getType()->getAsCanonical<RecordType>(); RType && (RType->getDecl()->isStruct())) 
+      {
         const RecordDecl *RD = RType->getDecl()->getDefinitionOrSelf();
         unsigned NumElements = 0;
         if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD))
@@ -1253,7 +1252,7 @@ void CodeGenFunction::EmitNewArrayInitializer(
         if (ILE->getNumInits() == NumElements && TryMemsetInitialization())
           return;
       }
-    }
+    
   }
 
   // Create the loop blocks.
@@ -1370,15 +1369,15 @@ RValue CodeGenFunction::EmitBuiltinNewDeleteCall(const FunctionProtoType *Type,
       Ctx.DeclarationNames.getCXXOperatorName(IsDelete ? OO_Delete : OO_New);
 
   for (auto *Decl : Ctx.getTranslationUnitDecl()->lookup(Name))
-    if (auto *FD = dyn_cast<FunctionDecl>(Decl))
-      if (Ctx.hasSameType(FD->getType(), QualType(Type, 0))) {
+    if (auto *FD = dyn_cast<FunctionDecl>(Decl); FD && (Ctx.hasSameType(FD->getType(), QualType(Type, 0))))
+      {
         RValue RV = EmitNewDeleteCall(*this, FD, Type, Args);
-        if (auto *CB = dyn_cast_if_present<llvm::CallBase>(RV.getScalarVal())) {
-          if (SanOpts.has(SanitizerKind::AllocToken)) {
+        if (auto *CB = dyn_cast_if_present<llvm::CallBase>(RV.getScalarVal()); CB && (SanOpts.has(SanitizerKind::AllocToken))) 
+          {
             // Set !alloc_token metadata.
             EmitAllocToken(CB, TheCall);
           }
-        }
+        
         return RV;
       }
   llvm_unreachable("predeclared global operator new/delete is missing");
@@ -1958,8 +1957,8 @@ static bool EmitObjectDelete(CodeGenFunction &CGF, const CXXDeleteExpr *DE,
   // Find the destructor for the type, if applicable.  If the
   // destructor is virtual, we'll just emit the vcall and return.
   CXXDestructorDecl *Dtor = nullptr;
-  if (const auto *RD = ElementType->getAsCXXRecordDecl()) {
-    if (RD->hasDefinition() && !RD->hasTrivialDestructor()) {
+  if (const auto *RD = ElementType->getAsCXXRecordDecl(); RD && (RD->hasDefinition() && !RD->hasTrivialDestructor())) 
+    {
       Dtor = RD->getDestructor();
 
       if (Dtor->isVirtual()) {
@@ -1973,7 +1972,7 @@ static bool EmitObjectDelete(CodeGenFunction &CGF, const CXXDeleteExpr *DE,
         }
       }
     }
-  }
+  
 
   // Make sure that we call delete even if the dtor throws.
   // This doesn't have to a conditional cleanup because we're going
@@ -2116,11 +2115,11 @@ void CodeGenFunction::EmitCXXDeleteExpr(const CXXDeleteExpr *E) {
           CGM.getContext().getLangOpts())) {
     if (auto *RD = DeleteTy->getAsCXXRecordDecl()) {
       auto *Dtor = RD->getDestructor();
-      if (Dtor && Dtor->isVirtual()) {
+      if ((Dtor && Dtor->isVirtual()) && (!TryDevirtualizeDtorCall(E, Dtor, CGM.getLangOpts()))) 
         // Emit normal loop over the array elements if we can easily
         // devirtualize destructor call.
         // Emit virtual call to vector deleting destructor otherwise.
-        if (!TryDevirtualizeDtorCall(E, Dtor, CGM.getLangOpts())) {
+        {
           llvm::Value *NumElements = nullptr;
           llvm::Value *AllocatedPtr = nullptr;
           CharUnits CookieSize;
@@ -2149,7 +2148,7 @@ void CodeGenFunction::EmitCXXDeleteExpr(const CXXDeleteExpr *E) {
           EmitBlock(DeleteEnd);
           return;
         }
-      }
+      
     }
   }
 

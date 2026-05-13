@@ -630,9 +630,8 @@ public: // Part of public interface to class.
     // and trying to infer them from offsets/alignments
     // seems to be error-prone and non-trivial because of the trailing padding.
     // As a temporary mitigation we don't create bindings for empty bases.
-    if (const auto *BR = dyn_cast<CXXBaseObjectRegion>(R))
-      if (BR->getDecl()->isEmpty())
-        return BindResult{StoreRef(store, *this), {}};
+    if (const auto *BR = dyn_cast<CXXBaseObjectRegion>(R); BR && (BR->getDecl()->isEmpty()))
+      return BindResult{StoreRef(store, *this), {}};
 
     llvm::SmallVector<SVal, 0> EscapedValuesDuringBind;
     LimitedRegionBindingsRef B =
@@ -818,11 +817,10 @@ public: // Part of public interface to class.
       for (const auto &[Key, Value] : Cluster) {
         if (!Key.isDirect())
           continue;
-        if (const SubRegion *R = dyn_cast<SubRegion>(Key.getRegion())) {
+        if (const SubRegion *R = dyn_cast<SubRegion>(Key.getRegion()); R && (!f.HandleBinding(*this, store, R, Value))) 
           // FIXME: Possibly incorporate the offset?
-          if (!f.HandleBinding(*this, store, R, Value))
-            return;
-        }
+          return;
+        
       }
     }
   }
@@ -979,9 +977,8 @@ static void getSymbolicOffsetFields(BindingKey K, FieldVector &Fields) {
   const MemRegion *R = K.getRegion();
 
   while (R != Base) {
-    if (const FieldRegion *FR = dyn_cast<FieldRegion>(R))
-      if (!isUnionField(FR))
-        Fields.push_back(FR->getDecl());
+    if (const FieldRegion *FR = dyn_cast<FieldRegion>(R); FR && (!isUnionField(FR)))
+      Fields.push_back(FR->getDecl());
 
     R = cast<SubRegion>(R)->getSuperRegion();
   }
@@ -1036,10 +1033,9 @@ collectSubRegionBindings(SmallVectorImpl<BindingPair> &Bindings,
     assert(ExtentInt.isNonNegative() || ExtentInt.isUnsigned());
     // Extents are in bytes but region offsets are in bits. Be careful!
     Length = ExtentInt.getLimitedValue() * SVB.getContext().getCharWidth();
-  } else if (const FieldRegion *FR = dyn_cast<FieldRegion>(Top)) {
-    if (FR->getDecl()->isBitField())
-      Length = FR->getDecl()->getBitWidthValue();
-  }
+  } else if (const FieldRegion *FR = dyn_cast<FieldRegion>(Top); FR && (FR->getDecl()->isBitField())) 
+    Length = FR->getDecl()->getBitWidthValue();
+  
 
   for (const auto &StoreEntry : Cluster) {
     BindingKey NextKey = StoreEntry.first;
@@ -1055,16 +1051,15 @@ collectSubRegionBindings(SmallVectorImpl<BindingPair> &Bindings,
         // Include it.
         Bindings.push_back(StoreEntry);
 
-      } else if (NextKey.getOffset() == TopKey.getOffset()) {
+      } else if ((NextKey.getOffset() == TopKey.getOffset()) && (IncludeAllDefaultBindings || NextKey.isDirect())) 
         // Case 2: The next binding is at the same offset as the region we're
         // invalidating. In this case, we need to leave default bindings alone,
         // since they may be providing a default value for a regions beyond what
         // we're invalidating.
         // FIXME: This is probably incorrect; consider invalidating an outer
         // struct whose first field is bound to a LazyCompoundVal.
-        if (IncludeAllDefaultBindings || NextKey.isDirect())
-          Bindings.push_back(StoreEntry);
-      }
+        Bindings.push_back(StoreEntry);
+      
 
     } else if (NextKey.hasSymbolicOffset()) {
       const MemRegion *Base = NextKey.getConcreteOffsetRegion();
@@ -1072,16 +1067,13 @@ collectSubRegionBindings(SmallVectorImpl<BindingPair> &Bindings,
         // Case 3: The next key is symbolic and we just changed something within
         // its concrete region. We don't know if the binding is still valid, so
         // we'll be conservative and include it.
-        if (IncludeAllDefaultBindings || NextKey.isDirect())
-          if (isCompatibleWithFields(NextKey, FieldsInSymbolicSubregions))
-            Bindings.push_back(StoreEntry);
-      } else if (const SubRegion *BaseSR = dyn_cast<SubRegion>(Base)) {
+        if ((IncludeAllDefaultBindings || NextKey.isDirect()) && (isCompatibleWithFields(NextKey, FieldsInSymbolicSubregions)))
+          Bindings.push_back(StoreEntry);
+      } else if (const SubRegion *BaseSR = dyn_cast<SubRegion>(Base); BaseSR && (BaseSR->isSubRegionOf(Top)) && (isCompatibleWithFields(NextKey, FieldsInSymbolicSubregions))) 
         // Case 4: The next key is symbolic, but we changed a known
         // super-region. In this case the binding is certainly included.
-        if (BaseSR->isSubRegionOf(Top))
-          if (isCompatibleWithFields(NextKey, FieldsInSymbolicSubregions))
-            Bindings.push_back(StoreEntry);
-      }
+        Bindings.push_back(StoreEntry);
+      
     }
   }
 }
@@ -1227,12 +1219,12 @@ void InvalidateRegionsWorker::VisitCluster(const MemRegion *baseR,
   }
 
   if (const auto *TO = dyn_cast<TypedValueRegion>(baseR)) {
-    if (const auto *RD = TO->getValueType()->getAsCXXRecordDecl()) {
+    if (const auto *RD = TO->getValueType()->getAsCXXRecordDecl(); RD && (RD->isLambda() && RD->getLambdaCallOperator()->getBody())) 
 
       // Lambdas can affect all static local variables without explicitly
       // capturing those.
       // We invalidate all static locals referenced inside the lambda body.
-      if (RD->isLambda() && RD->getLambdaCallOperator()->getBody()) {
+      {
         using namespace ast_matchers;
 
         const char *DeclBind = "DeclBind";
@@ -1249,7 +1241,7 @@ void InvalidateRegionsWorker::VisitCluster(const MemRegion *baseR,
           AddToWorkList(ToInvalidate);
         }
       }
-    }
+    
   }
 
   // BlockDataRegion?  If so, invalidate captured variables that are passed
@@ -2043,8 +2035,8 @@ static std::optional<SVal> getDerivedSymbolForBinding(
   assert(BaseRegion);
   QualType BaseTy = BaseRegion->getValueType();
   QualType Ty = SubReg->getValueType();
-  if (BaseTy->isScalarType() && Ty->isScalarType()) {
-    if (Ctx.getTypeSizeInChars(BaseTy) >= Ctx.getTypeSizeInChars(Ty)) {
+  if ((BaseTy->isScalarType() && Ty->isScalarType()) && (Ctx.getTypeSizeInChars(BaseTy) >= Ctx.getTypeSizeInChars(Ty))) 
+    {
       if (const std::optional<SVal> &ParentValue =
               B.getDirectBinding(BaseRegion)) {
         if (SymbolRef ParentValueAsSym = ParentValue->getAsSymbol())
@@ -2058,7 +2050,7 @@ static std::optional<SVal> getDerivedSymbolForBinding(
         return UnknownVal();
       }
     }
-  }
+  
   return std::nullopt;
 }
 
@@ -2288,10 +2280,9 @@ RegionStoreManager::getBindingForFieldOrElementCommon(RegionBindingsConstRef B,
       // Currently we don't reason specially about Clang-style vectors.  Check
       // if superR is a vector and if so return Unknown.
       if (const TypedValueRegion *typedSuperR =
-            dyn_cast<TypedValueRegion>(R->getSuperRegion())) {
-        if (typedSuperR->getValueType()->isVectorType())
-          return UnknownVal();
-      }
+            dyn_cast<TypedValueRegion>(R->getSuperRegion()); typedSuperR && (typedSuperR->getValueType()->isVectorType())) 
+        return UnknownVal();
+      
     }
 
     // FIXME: We also need to take ElementRegions with symbolic indexes into
@@ -2486,9 +2477,8 @@ bool RegionStoreManager::includedInBindings(Store store,
     for (ClusterBindings::iterator CI = Cluster.begin(), CE = Cluster.end();
          CI != CE; ++CI) {
       SVal D = CI.getData();
-      if (const MemRegion *R = D.getAsRegion())
-        if (R->getBaseRegion() == region)
-          return true;
+      if (const MemRegion *R = D.getAsRegion(); R && (R->getBaseRegion() == region))
+        return true;
     }
   }
 
@@ -2761,9 +2751,8 @@ std::optional<LimitedRegionBindingsRef> RegionStoreManager::tryBindSmallStruct(
 
   FieldVector Fields;
 
-  if (const CXXRecordDecl *Class = dyn_cast<CXXRecordDecl>(RD))
-    if (Class->getNumBases() != 0 || Class->getNumVBases() != 0)
-      return std::nullopt;
+  if (const CXXRecordDecl *Class = dyn_cast<CXXRecordDecl>(RD); Class && (Class->getNumBases() != 0 || Class->getNumVBases() != 0))
+    return std::nullopt;
 
   for (const auto *FD : RD->fields()) {
     if (FD->isUnnamedBitField())

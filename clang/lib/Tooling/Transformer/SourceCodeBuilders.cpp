@@ -21,11 +21,10 @@ using namespace tooling;
 
 const Expr *tooling::reallyIgnoreImplicit(const Expr &E) {
   const Expr *Expr = E.IgnoreImplicit();
-  if (const auto *CE = dyn_cast<CXXConstructExpr>(Expr)) {
-    if (CE->getNumArgs() > 0 &&
-        CE->getArg(0)->getSourceRange() == Expr->getSourceRange())
-      return CE->getArg(0)->IgnoreImplicit();
-  }
+  if (const auto *CE = dyn_cast<CXXConstructExpr>(Expr); CE && (CE->getNumArgs() > 0 &&
+        CE->getArg(0)->getSourceRange() == Expr->getSourceRange())) 
+    return CE->getArg(0)->IgnoreImplicit();
+  
   return Expr;
 }
 
@@ -84,8 +83,8 @@ std::optional<std::string> tooling::buildParens(const Expr &E,
 
 std::optional<std::string>
 tooling::buildDereference(const Expr &E, const ASTContext &Context) {
-  if (const auto *Op = dyn_cast<UnaryOperator>(&E))
-    if (Op->getOpcode() == UO_AddrOf) {
+  if (const auto *Op = dyn_cast<UnaryOperator>(&E); Op && (Op->getOpcode() == UO_AddrOf))
+    {
       // Strip leading '&'.
       StringRef Text =
           getText(*Op->getSubExpr()->IgnoreParenImpCasts(), Context);
@@ -107,8 +106,8 @@ std::optional<std::string> tooling::buildAddressOf(const Expr &E,
                                                    const ASTContext &Context) {
   if (E.isImplicitCXXThis())
     return std::string("this");
-  if (const auto *Op = dyn_cast<UnaryOperator>(&E))
-    if (Op->getOpcode() == UO_Deref) {
+  if (const auto *Op = dyn_cast<UnaryOperator>(&E); Op && (Op->getOpcode() == UO_Deref))
+    {
       // Strip leading '*'.
       StringRef Text =
           getText(*Op->getSubExpr()->IgnoreParenImpCasts(), Context);
@@ -130,8 +129,8 @@ std::optional<std::string> tooling::buildAddressOf(const Expr &E,
 // is a non-pointer value.
 static std::optional<std::string>
 buildAccessForValue(const Expr &E, const ASTContext &Context) {
-  if (const auto *Op = llvm::dyn_cast<UnaryOperator>(&E))
-    if (Op->getOpcode() == UO_Deref) {
+  if (const auto *Op = llvm::dyn_cast<UnaryOperator>(&E); Op && (Op->getOpcode() == UO_Deref))
+    {
       // Strip leading '*', add following '->'.
       const Expr *SubExpr = Op->getSubExpr()->IgnoreParenImpCasts();
       StringRef DerefText = getText(*SubExpr, Context);
@@ -156,8 +155,8 @@ buildAccessForValue(const Expr &E, const ASTContext &Context) {
 // is a pointer value.
 static std::optional<std::string>
 buildAccessForPointer(const Expr &E, const ASTContext &Context) {
-  if (const auto *Op = llvm::dyn_cast<UnaryOperator>(&E))
-    if (Op->getOpcode() == UO_AddrOf) {
+  if (const auto *Op = llvm::dyn_cast<UnaryOperator>(&E); Op && (Op->getOpcode() == UO_AddrOf))
+    {
       // Strip leading '&', add following '.'.
       const Expr *SubExpr = Op->getSubExpr()->IgnoreParenImpCasts();
       StringRef DerefText = getText(*SubExpr, Context);
@@ -191,10 +190,9 @@ std::optional<std::string> tooling::buildArrow(const Expr &E,
 // `O`. Otherwise, returns `nullptr`.
 static const Expr *maybeGetOperatorObjectArg(const Expr &E,
                                              OverloadedOperatorKind K) {
-  if (const auto *OpCall = dyn_cast<clang::CXXOperatorCallExpr>(&E)) {
-    if (OpCall->getOperator() == K && OpCall->getNumArgs() == 1)
-      return OpCall->getArg(0);
-  }
+  if (const auto *OpCall = dyn_cast<clang::CXXOperatorCallExpr>(&E); OpCall && (OpCall->getOperator() == K && OpCall->getNumArgs() == 1)) 
+    return OpCall->getArg(0);
+  
   return nullptr;
 }
 
@@ -230,10 +228,9 @@ std::optional<std::string> tooling::buildAccess(const Expr &RawExpression,
     return buildAccessForPointer(*E, Context);
   }
 
-  if (const auto *Obj = maybeGetOperatorObjectArg(*E, clang::OO_Star)) {
-    if (treatLikePointer(Obj->getType(), Classification, Context))
-      return buildAccessForPointer(*Obj, Context);
-  };
+  if (const auto *Obj = maybeGetOperatorObjectArg(*E, clang::OO_Star); Obj && (treatLikePointer(Obj->getType(), Classification, Context))) 
+    return buildAccessForPointer(*Obj, Context);
+  ;
 
   return buildAccessForValue(*E, Context);
 }

@@ -538,9 +538,9 @@ void RocmInstallationDetector::AddHIPIncludeArgs(const ArgList &DriverArgs,
     StringRef Inc = getIncludePath();
     auto &FS = D.getVFS();
 
-    if (!hasHIPStdParLibrary())
-      if (!HIPStdParPathArg.empty() ||
-          !FS.exists(Inc + "/thrust/system/hip/hipstdpar/hipstdpar_lib.hpp")) {
+    if ((!hasHIPStdParLibrary()) && (!HIPStdParPathArg.empty() ||
+          !FS.exists(Inc + "/thrust/system/hip/hipstdpar/hipstdpar_lib.hpp")))
+      {
         D.Diag(diag::err_drv_no_hipstdpar_lib);
         return;
       }

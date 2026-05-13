@@ -124,10 +124,9 @@ bool shouldTrackImplicitObjectArg(const CXXMethodDecl *Callee,
                                   bool RunningUnderLifetimeSafety) {
   if (!Callee)
     return false;
-  if (auto *Conv = dyn_cast<CXXConversionDecl>(Callee))
-    if (isGslPointerType(Conv->getConversionType()) &&
-        Callee->getParent()->hasAttr<OwnerAttr>())
-      return true;
+  if (auto *Conv = dyn_cast<CXXConversionDecl>(Callee); Conv && (isGslPointerType(Conv->getConversionType()) &&
+        Callee->getParent()->hasAttr<OwnerAttr>()))
+    return true;
   if (!isGslPointerType(Callee->getFunctionObjectParameterType()) &&
       !isGslOwnerType(Callee->getFunctionObjectParameterType()))
     return false;
@@ -203,9 +202,8 @@ bool shouldTrackFirstArgument(const FunctionDecl *FD) {
     return false;
   // Track std:: algorithm functions that return an iterator whose lifetime is
   // bound to the first argument.
-  if (FD->getNumParams() >= 2 && FD->isInStdNamespace() &&
-      isGslPointerType(FD->getReturnType())) {
-    if (llvm::StringSwitch<bool>(FD->getName())
+  if ((FD->getNumParams() >= 2 && FD->isInStdNamespace() &&
+      isGslPointerType(FD->getReturnType())) && (llvm::StringSwitch<bool>(FD->getName())
             .Cases(
                 {
                     "find",
@@ -220,9 +218,9 @@ bool shouldTrackFirstArgument(const FunctionDecl *FD) {
                     "partition_point",
                 },
                 true)
-            .Default(false))
-      return true;
-  }
+            .Default(false))) 
+    return true;
+  
   const auto *RD = FD->getParamDecl(0)->getType()->getPointeeCXXRecordDecl();
   if (!RD || !RD->isInStdNamespace())
     return false;

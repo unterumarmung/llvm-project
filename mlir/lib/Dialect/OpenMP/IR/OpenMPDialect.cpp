@@ -1169,11 +1169,10 @@ static ParseResult parseClauseWithRegionArgs(
   if (parser.parseRParen())
     return failure();
 
-  if (needsBarrier) {
-    if (parser.parseOptionalKeyword(getPrivateNeedsBarrierSpelling())
-            .succeeded())
-      *needsBarrier = mlir::UnitAttr::get(parser.getContext());
-  }
+  if ((needsBarrier) && (parser.parseOptionalKeyword(getPrivateNeedsBarrierSpelling())
+            .succeeded())) 
+    *needsBarrier = mlir::UnitAttr::get(parser.getContext());
+  
 
   auto *argsBegin = regionPrivateArgs.begin();
   MutableArrayRef argsSubrange(argsBegin + regionArgOffset,
@@ -3777,9 +3776,8 @@ void LoopNestOp::print(OpAsmPrinter &p) {
   if (getLoopInclusive())
     p << "inclusive ";
   p << "step (" << getLoopSteps() << ") ";
-  if (int64_t numCollapse = getCollapseNumLoops())
-    if (numCollapse > 1)
-      p << "collapse(" << numCollapse << ") ";
+  if (int64_t numCollapse = getCollapseNumLoops(); numCollapse && (numCollapse > 1))
+    p << "collapse(" << numCollapse << ") ";
 
   if (const auto tiles = getTileSizes())
     p << "tiles(" << tiles.value() << ") ";
@@ -3811,9 +3809,8 @@ LogicalResult LoopNestOp::verify() {
 
   uint64_t numIVs = getIVs().size();
 
-  if (const auto &numCollapse = getCollapseNumLoops())
-    if (numCollapse > numIVs)
-      return emitOpError()
+  if (const auto &numCollapse = getCollapseNumLoops(); numCollapse && (numCollapse > numIVs))
+    return emitOpError()
              << "collapse value is larger than the number of loops";
 
   if (const auto &tiles = getTileSizes())
@@ -4844,11 +4841,10 @@ LogicalResult ScanOp::verify() {
 /// Verifies align clause in allocate directive
 LogicalResult verifyAlignment(Operation &op,
                               std::optional<uint64_t> alignment) {
-  if (alignment.has_value()) {
-    if ((alignment.value() != 0) && !llvm::has_single_bit(alignment.value()))
-      return op.emitError()
+  if ((alignment.has_value()) && ((alignment.value() != 0) && !llvm::has_single_bit(alignment.value()))) 
+    return op.emitError()
              << "ALIGN value : " << alignment.value() << " must be power of 2";
-  }
+  
   return success();
 }
 

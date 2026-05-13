@@ -2511,12 +2511,11 @@ bool RedirectingFileSystem::exists(const Twine &OriginalPath) {
   if (makeAbsolute(Path))
     return false;
 
-  if (Redirection == RedirectKind::Fallback) {
+  if ((Redirection == RedirectKind::Fallback) && (ExternalFS->exists(Path))) 
     // Attempt to find the original file first, only falling back to the
     // mapped file if that fails.
-    if (ExternalFS->exists(Path))
-      return true;
-  }
+    return true;
+  
 
   ErrorOr<RedirectingFileSystem::LookupResult> Result = lookupPath(Path);
   if (!Result) {

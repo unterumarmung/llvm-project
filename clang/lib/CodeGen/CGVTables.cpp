@@ -1317,9 +1317,8 @@ bool CodeGenModule::AlwaysHasLTOVisibilityPublic(const CXXRecordDecl *RD) {
     DC = DC->getParent();
     if (isa<TranslationUnitDecl>(DC->getRedeclContext())) {
       if (auto *ND = dyn_cast<NamespaceDecl>(D))
-        if (const IdentifierInfo *II = ND->getIdentifier())
-          if (II->isStr("std") || II->isStr("stdext"))
-            return true;
+        if (const IdentifierInfo *II = ND->getIdentifier(); II && (II->isStr("std") || II->isStr("stdext")))
+          return true;
       break;
     }
   }

@@ -249,10 +249,9 @@ static void emitUseStmtOp(Fortran::lower::AbstractConverter &converter,
       return "";
 
     if (const auto *generic =
-            ultimateSym.detailsIf<Fortran::semantics::GenericDetails>()) {
-      if (!generic->specific())
-        return "";
-    }
+            ultimateSym.detailsIf<Fortran::semantics::GenericDetails>(); generic && (!generic->specific())) 
+      return "";
+    
 
     return converter.mangleName(ultimateSym);
   };
@@ -677,11 +676,11 @@ public:
           Fortran::semantics::IsProcedurePointer(ultimate) ||
           Fortran::semantics::IsDummy(sym) || namelistDetails) {
         const Fortran::semantics::Scope &symbolScope = getSymbolHostScope(sym);
-        if (symbolScope.kind() ==
+        if ((symbolScope.kind() ==
                 Fortran::semantics::Scope::Kind::MainProgram ||
-            symbolScope.kind() == Fortran::semantics::Scope::Kind::Subprogram)
-          if (symbolScope != *internalScope &&
-              symbolScope.Contains(*internalScope)) {
+            symbolScope.kind() == Fortran::semantics::Scope::Kind::Subprogram) && (symbolScope != *internalScope &&
+              symbolScope.Contains(*internalScope)))
+          {
             if (namelistDetails) {
               // So far, namelist symbols are processed on the fly in IO and
               // the related namelist data structure is not added to the symbol
@@ -1000,9 +999,9 @@ public:
           if (const Fortran::semantics::DeclTypeSpec *declTypeSpec =
                   sym.GetType())
             if (const Fortran::semantics::DerivedTypeSpec *derivedTypeSpec =
-                    declTypeSpec->AsDerived())
-              if (derivedTypeSpec->HasDefaultInitialization(
-                      /*ignoreAllocatable=*/false, /*ignorePointer=*/false)) {
+                    declTypeSpec->AsDerived(); derivedTypeSpec && (derivedTypeSpec->HasDefaultInitialization(
+                      /*ignoreAllocatable=*/false, /*ignorePointer=*/false)))
+              {
                 mlir::Value box = builder->createBox(loc, exv);
                 fir::runtime::genDerivedTypeInitialize(*builder, loc, box);
               }
@@ -1388,10 +1387,9 @@ private:
     // with the new DeclareOp, and the following table lookups
     // do not reach here.
     if (sym.IsFuncResult())
-      if (const Fortran::semantics::DeclTypeSpec *declTy = sym.GetType())
-        if (declTy->category() ==
-            Fortran::semantics::DeclTypeSpec::Category::Character)
-          return symMap->lookupSymbol(sym);
+      if (const Fortran::semantics::DeclTypeSpec *declTy = sym.GetType(); declTy && (declTy->category() ==
+            Fortran::semantics::DeclTypeSpec::Category::Character))
+        return symMap->lookupSymbol(sym);
 
     // Procedure dummies are not mapped with an hlfir.declare because
     // they are not "variable" (cannot be assigned to), and it would
@@ -4569,8 +4567,8 @@ private:
       // MutableBoxValue should be properly set before binding it to a symbol in
       // order to get correct assignment semantics.
       if (const fir::MutableBoxValue *mutableBox =
-              newExv.getBoxOf<fir::MutableBoxValue>()) {
-        if (selector.isCharacter()) {
+              newExv.getBoxOf<fir::MutableBoxValue>(); mutableBox && (selector.isCharacter())) 
+        {
           auto dynamicType =
               Fortran::evaluate::DynamicType::From(assocEntitySymbol);
           if (!dynamicType.value().HasDeferredTypeParameter()) {
@@ -4580,7 +4578,7 @@ private:
                                           mutableBox->getMutableProperties()};
           }
         }
-      }
+      
       addSymbol(assocEntitySymbol, newExv);
     }
     // Statements inside rank case are lowered by SelectRankConstruct visit.

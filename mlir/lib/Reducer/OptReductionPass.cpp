@@ -49,8 +49,8 @@ void OptReductionPass::runOnOperation() {
   Operation *topOp = this->getOperation();
 
   std::string pipelineStr = optPass;
-  if (pipelineStr.empty()) {
-    if (!optPassFile.empty()) {
+  if ((pipelineStr.empty()) && (!optPassFile.empty())) 
+    {
       auto fileOrErr = llvm::MemoryBuffer::getFile(optPassFile);
       if (std::error_code ec = fileOrErr.getError()) {
         topOp->emitError() << "Could not open pass pipeline file: "
@@ -59,7 +59,7 @@ void OptReductionPass::runOnOperation() {
       }
       pipelineStr = fileOrErr.get()->getBuffer().trim().str();
     }
-  }
+  
 
   PassManager passManager(topOp->getName());
   if (failed(parsePassPipeline(pipelineStr, passManager))) {

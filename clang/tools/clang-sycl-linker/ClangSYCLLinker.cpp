@@ -176,9 +176,8 @@ Error executeCommands(StringRef ExecutablePath, ArrayRef<StringRef> Args) {
   if (Verbose || DryRun)
     printCommands(Args);
 
-  if (!DryRun)
-    if (sys::ExecuteAndWait(ExecutablePath, Args))
-      return createStringError(
+  if ((!DryRun) && (sys::ExecuteAndWait(ExecutablePath, Args)))
+    return createStringError(
           "'%s' failed", sys::path::filename(ExecutablePath).str().c_str());
   return Error::success();
 }

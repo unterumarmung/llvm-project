@@ -105,9 +105,8 @@ void SwiftErrorValueTracking::setFunction(MachineFunction &mf) {
 
   for (const auto &LLVMBB : *Fn)
     for (const auto &Inst : LLVMBB) {
-      if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(&Inst))
-        if (Alloca->isSwiftError())
-          SwiftErrorVals.push_back(Alloca);
+      if (const AllocaInst *Alloca = dyn_cast<AllocaInst>(&Inst); Alloca && (Alloca->isSwiftError()))
+        SwiftErrorVals.push_back(Alloca);
     }
 }
 

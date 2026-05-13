@@ -1528,10 +1528,8 @@ static bool foldICmpOrChain(Instruction &I, const DataLayout &DL,
 
   // If the chain or or's matches a load, combine to that before attempting to
   // remove shifts.
-  if (auto OpI = dyn_cast<Instruction>(Op0))
-    if (OpI->getOpcode() == Instruction::Or)
-      if (foldConsecutiveLoads(*OpI, DL, TTI, AA, DT))
-        return true;
+  if (auto OpI = dyn_cast<Instruction>(Op0); OpI && (OpI->getOpcode() == Instruction::Or) && (foldConsecutiveLoads(*OpI, DL, TTI, AA, DT)))
+    return true;
 
   IRBuilder<> Builder(&I);
   // icmp eq/ne or(shl(a), b), 0 -> icmp eq/ne or(a, b), 0
@@ -2246,13 +2244,12 @@ static bool foldMulHigh(Instruction &I) {
   Instruction *A, *B, *C;
   auto HiHi = m_OneUse(m_Mul(m_LShr(m_Value(X), m_SpecificInt(BitWidth / 2)),
                              m_LShr(m_Value(Y), m_SpecificInt(BitWidth / 2))));
-  if ((match(&I, m_c_Add(HiHi, m_OneUse(m_Add(m_Instruction(A),
+  if (((match(&I, m_c_Add(HiHi, m_OneUse(m_Add(m_Instruction(A),
                                               m_Instruction(B))))) ||
        match(&I, m_c_Add(m_Instruction(A),
                          m_OneUse(m_c_Add(HiHi, m_Instruction(B)))))) &&
-      A->hasOneUse() && B->hasOneUse())
-    if (FoldMulHighCarry(X, Y, A, B) || FoldMulHighLadder(X, Y, A, B))
-      return true;
+      A->hasOneUse() && B->hasOneUse()) && (FoldMulHighCarry(X, Y, A, B) || FoldMulHighLadder(X, Y, A, B)))
+    return true;
 
   if ((match(&I, m_c_Add(HiHi, m_OneUse(m_c_Add(
                                    m_Instruction(A),

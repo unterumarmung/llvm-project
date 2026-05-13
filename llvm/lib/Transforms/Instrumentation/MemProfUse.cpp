@@ -244,8 +244,8 @@ getStringContentHash(const GlobalVariable &GVar) {
   auto *Initializer = GVar.getInitializer();
   if (!Initializer)
     return std::nullopt;
-  if (auto *C = dyn_cast<ConstantDataSequential>(Initializer))
-    if (C->isString()) {
+  if (auto *C = dyn_cast<ConstantDataSequential>(Initializer); C && (C->isString()))
+    {
       // Note the hash computed for the literal would include the null byte.
       return llvm::MD5Hash(C->getAsString());
     }

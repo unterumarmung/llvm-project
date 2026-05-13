@@ -780,9 +780,8 @@ bool Type::isCountAttributedType() const {
 }
 
 const ComplexType *Type::getAsComplexIntegerType() const {
-  if (const auto *Complex = getAs<ComplexType>())
-    if (Complex->getElementType()->isIntegerType())
-      return Complex;
+  if (const auto *Complex = getAs<ComplexType>(); Complex && (Complex->getElementType()->isIntegerType()))
+    return Complex;
   return nullptr;
 }
 
@@ -804,10 +803,9 @@ QualType Type::getPointeeType() const {
 
 const RecordType *Type::getAsStructureType() const {
   // If this is directly a structure type, return it.
-  if (const auto *RT = dyn_cast<RecordType>(this)) {
-    if (RT->getDecl()->isStruct())
-      return RT;
-  }
+  if (const auto *RT = dyn_cast<RecordType>(this); RT && (RT->getDecl()->isStruct())) 
+    return RT;
+  
 
   // If the canonical form of this type isn't the right kind, reject it.
   if (const auto *RT = dyn_cast<RecordType>(CanonicalType)) {
@@ -823,10 +821,9 @@ const RecordType *Type::getAsStructureType() const {
 
 const RecordType *Type::getAsUnionType() const {
   // If this is directly a union type, return it.
-  if (const auto *RT = dyn_cast<RecordType>(this)) {
-    if (RT->getDecl()->isUnion())
-      return RT;
-  }
+  if (const auto *RT = dyn_cast<RecordType>(this); RT && (RT->getDecl()->isUnion())) 
+    return RT;
+  
 
   // If the canonical form of this type isn't the right kind, reject it.
   if (const auto *RT = dyn_cast<RecordType>(CanonicalType)) {
@@ -1807,10 +1804,9 @@ Type::getObjCSubstitutions(const DeclContext *dc) const {
 
 bool Type::acceptsObjCTypeParams() const {
   if (auto *IfaceT = getAsObjCInterfaceType()) {
-    if (auto *ID = IfaceT->getInterface()) {
-      if (ID->getTypeParamList())
-        return true;
-    }
+    if (auto *ID = IfaceT->getInterface(); ID && (ID->getTypeParamList())) 
+      return true;
+    
   }
 
   return false;
@@ -1909,9 +1905,8 @@ const ObjCObjectType *Type::getAsObjCQualifiedInterfaceType() const {
   // There is no sugar for ObjCObjectType's, just return the canonical
   // type pointer if it is the right class.  There is no typedef information to
   // return and these cannot be Address-space qualified.
-  if (const auto *T = getAs<ObjCObjectType>())
-    if (T->getNumProtocols() && T->getInterface())
-      return T;
+  if (const auto *T = getAs<ObjCObjectType>(); T && (T->getNumProtocols() && T->getInterface()))
+    return T;
   return nullptr;
 }
 
@@ -1922,36 +1917,32 @@ bool Type::isObjCQualifiedInterfaceType() const {
 const ObjCObjectPointerType *Type::getAsObjCQualifiedIdType() const {
   // There is no sugar for ObjCQualifiedIdType's, just return the canonical
   // type pointer if it is the right class.
-  if (const auto *OPT = getAs<ObjCObjectPointerType>()) {
-    if (OPT->isObjCQualifiedIdType())
-      return OPT;
-  }
+  if (const auto *OPT = getAs<ObjCObjectPointerType>(); OPT && (OPT->isObjCQualifiedIdType())) 
+    return OPT;
+  
   return nullptr;
 }
 
 const ObjCObjectPointerType *Type::getAsObjCQualifiedClassType() const {
   // There is no sugar for ObjCQualifiedClassType's, just return the canonical
   // type pointer if it is the right class.
-  if (const auto *OPT = getAs<ObjCObjectPointerType>()) {
-    if (OPT->isObjCQualifiedClassType())
-      return OPT;
-  }
+  if (const auto *OPT = getAs<ObjCObjectPointerType>(); OPT && (OPT->isObjCQualifiedClassType())) 
+    return OPT;
+  
   return nullptr;
 }
 
 const ObjCObjectType *Type::getAsObjCInterfaceType() const {
-  if (const auto *OT = getAs<ObjCObjectType>()) {
-    if (OT->getInterface())
-      return OT;
-  }
+  if (const auto *OT = getAs<ObjCObjectType>(); OT && (OT->getInterface())) 
+    return OT;
+  
   return nullptr;
 }
 
 const ObjCObjectPointerType *Type::getAsObjCInterfacePointerType() const {
-  if (const auto *OPT = getAs<ObjCObjectPointerType>()) {
-    if (OPT->getInterfaceType())
-      return OPT;
-  }
+  if (const auto *OPT = getAs<ObjCObjectPointerType>(); OPT && (OPT->getInterfaceType())) 
+    return OPT;
+  
   return nullptr;
 }
 
@@ -3068,9 +3059,8 @@ bool QualType::isTrapType() const {
 QualType::PrimitiveDefaultInitializeKind
 QualType::isNonTrivialToPrimitiveDefaultInitialize() const {
   if (const auto *RD =
-          getTypePtr()->getBaseElementTypeUnsafe()->getAsRecordDecl())
-    if (RD->isNonTrivialToPrimitiveDefaultInitialize())
-      return PDIK_Struct;
+          getTypePtr()->getBaseElementTypeUnsafe()->getAsRecordDecl(); RD && (RD->isNonTrivialToPrimitiveDefaultInitialize()))
+    return PDIK_Struct;
 
   switch (getQualifiers().getObjCLifetime()) {
   case Qualifiers::OCL_Strong:
@@ -3084,9 +3074,8 @@ QualType::isNonTrivialToPrimitiveDefaultInitialize() const {
 
 QualType::PrimitiveCopyKind QualType::isNonTrivialToPrimitiveCopy() const {
   if (const auto *RD =
-          getTypePtr()->getBaseElementTypeUnsafe()->getAsRecordDecl())
-    if (RD->isNonTrivialToPrimitiveCopy())
-      return PCK_Struct;
+          getTypePtr()->getBaseElementTypeUnsafe()->getAsRecordDecl(); RD && (RD->isNonTrivialToPrimitiveCopy()))
+    return PCK_Struct;
 
   Qualifiers Qs = getQualifiers();
   switch (Qs.getObjCLifetime()) {
@@ -4456,10 +4445,9 @@ bool RecordType::hasConstFields() const {
       if (FieldTy.isConstQualified())
         return true;
       FieldTy = FieldTy.getCanonicalType();
-      if (const auto *FieldRecTy = FieldTy->getAsCanonical<RecordType>()) {
-        if (!llvm::is_contained(RecordTypeList, FieldRecTy))
-          RecordTypeList.push_back(FieldRecTy);
-      }
+      if (const auto *FieldRecTy = FieldTy->getAsCanonical<RecordType>(); FieldRecTy && (!llvm::is_contained(RecordTypeList, FieldRecTy))) 
+        RecordTypeList.push_back(FieldRecTy);
+      
     }
     ++NextToCheckIndex;
   }
@@ -5393,11 +5381,10 @@ bool Type::isObjCARCImplicitlyUnretainedType() const {
   while (const auto *array = dyn_cast<ArrayType>(canon))
     canon = array->getElementType().getTypePtr();
 
-  if (const auto *opt = dyn_cast<ObjCObjectPointerType>(canon)) {
+  if (const auto *opt = dyn_cast<ObjCObjectPointerType>(canon); opt && (opt->getObjectType()->isObjCClass())) 
     // Class and Class<Protocol> don't require retention.
-    if (opt->getObjectType()->isObjCClass())
-      return true;
-  }
+    return true;
+  
 
   return false;
 }
@@ -5894,13 +5881,13 @@ HLSLAttributedResourceType::findHandleTypeOnResource(const Type *RT) {
   // If the type RT is an HLSL resource class, the first field must
   // be the resource handle of type HLSLAttributedResourceType
   const clang::Type *Ty = RT->getUnqualifiedDesugaredType();
-  if (const RecordDecl *RD = Ty->getAsCXXRecordDecl()) {
-    if (!RD->fields().empty()) {
+  if (const RecordDecl *RD = Ty->getAsCXXRecordDecl(); RD && (!RD->fields().empty())) 
+    {
       const auto &FirstFD = RD->fields().begin();
       return dyn_cast<HLSLAttributedResourceType>(
           FirstFD->getType().getTypePtr());
     }
-  }
+  
   return nullptr;
 }
 

@@ -140,9 +140,8 @@ struct MemOp {
     return asCI()->getCalledFunction()->getName();
   }
   bool isMemmove() {
-    if (auto MI = asMI())
-      if (MI->getIntrinsicID() == Intrinsic::memmove)
-        return true;
+    if (auto MI = asMI(); MI && (MI->getIntrinsicID() == Intrinsic::memmove))
+      return true;
     return false;
   }
   bool isMemcmp(TargetLibraryInfo &TLI) {

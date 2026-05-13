@@ -234,10 +234,9 @@ static bool evaluatePtrAddRecAtMaxBTCWillNotWrap(
 
   // Check if we have a suitable dereferencable assumption we can use.
   Instruction *CtxI = &*L->getHeader()->getFirstNonPHIIt();
-  if (BasicBlock *LoopPred = L->getLoopPredecessor()) {
-    if (isa<UncondBrInst, CondBrInst>(LoopPred->getTerminator()))
-      CtxI = LoopPred->getTerminator();
-  }
+  if (BasicBlock *LoopPred = L->getLoopPredecessor(); LoopPred && (isa<UncondBrInst, CondBrInst>(LoopPred->getTerminator()))) 
+    CtxI = LoopPred->getTerminator();
+  
   RetainedKnowledge DerefRK;
   getKnowledgeForValue(StartPtrV, {Attribute::Dereferenceable}, *AC,
                        [&](RetainedKnowledge RK, Instruction *Assume, auto) {
@@ -1040,10 +1039,7 @@ static bool isNoWrap(PredicatedScalarEvolution &PSE, const SCEVAddRecExpr *AR,
   // case, the GEP would be  poison and any memory access dependent on it would
   // be immediate UB when executed.
   if (auto *GEP = dyn_cast_if_present<GetElementPtrInst>(Ptr);
-      GEP && GEP->hasNoUnsignedSignedWrap()) {
-    // For the above reasoning to apply, the pointer must be dereferenced in
-    // every iteration.
-    if (L->getHeader() == L->getLoopLatch() ||
+      (GEP && GEP->hasNoUnsignedSignedWrap()) && (L->getHeader() == L->getLoopLatch() ||
         any_of(GEP->users(), [L, &DT, GEP](User *U) {
           if (getLoadStorePointerOperand(U) != GEP)
             return false;
@@ -1051,9 +1047,11 @@ static bool isNoWrap(PredicatedScalarEvolution &PSE, const SCEVAddRecExpr *AR,
           if (!L->contains(UserBB))
             return false;
           return !LoopAccessInfo::blockNeedsPredication(UserBB, L, &DT);
-        }))
-      return true;
-  }
+        }))) 
+    // For the above reasoning to apply, the pointer must be dereferenced in
+    // every iteration.
+    return true;
+  
 
   if (!Stride)
     Stride = getStrideFromAddRec(AR, L, AccessTy, Ptr, PSE);
@@ -2582,10 +2580,9 @@ bool LoopAccessInfo::analyzeLoop(AAResults *AA, const LoopInfo *LI,
     // Scan the BB and collect legal loads and stores. Also detect any
     // convergent instructions.
     for (Instruction &I : *BB) {
-      if (auto *Call = dyn_cast<CallBase>(&I)) {
-        if (Call->isConvergent())
-          HasConvergentOp = true;
-      }
+      if (auto *Call = dyn_cast<CallBase>(&I); Call && (Call->isConvergent())) 
+        HasConvergentOp = true;
+      
 
       // Unsafe to vectorize and we already found a convergent operation, can
       // early return now.
@@ -3052,9 +3049,8 @@ static const SCEV *getStrideFromPointer(Value *Ptr, ScalarEvolution *SE, Loop *L
 
   // Look through multiplies that scale a stride by a constant.
   match(V, m_scev_Mul(m_SCEVConstant(), m_SCEV(V)));
-  if (auto *C = dyn_cast<SCEVIntegralCastExpr>(V))
-    if (isa<SCEVUnknown>(C->getOperand()))
-      return V;
+  if (auto *C = dyn_cast<SCEVIntegralCastExpr>(V); C && (isa<SCEVUnknown>(C->getOperand())))
+    return V;
 
   return nullptr;
 }

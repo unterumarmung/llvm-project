@@ -859,11 +859,10 @@ void Preprocessor::HandlePragmaModuleBuild(Token &Tok) {
       if (TryConsumeIdentifier("build"))
         // #pragma clang module build -> entering a nested module build.
         ++NestingLevel;
-      else if (TryConsumeIdentifier("endbuild")) {
+      else if ((TryConsumeIdentifier("endbuild")) && (--NestingLevel == 0)) 
         // #pragma clang module endbuild -> leaving a module build.
-        if (--NestingLevel == 0)
-          break;
-      }
+        break;
+      
       // We should either be looking at the EOD or more of the current directive
       // preceding the EOD. Either way we can ignore this token and keep going.
       assert(Tok.getKind() != tok::eof && "missing EOD before EOF");

@@ -102,12 +102,12 @@ bool ChrootChecker::evalChdir(const CallEvent &Call, CheckerContext &C) const {
 
   if (const MemRegion *R = ArgVal.getAsRegion()) {
     R = R->StripCasts();
-    if (const auto *StrRegion = dyn_cast<StringRegion>(R)) {
-      if (StrRegion->getStringLiteral()->getString() == "/") {
+    if (const auto *StrRegion = dyn_cast<StringRegion>(R); StrRegion && (StrRegion->getStringLiteral()->getString() == "/")) 
+      {
         C.addTransition(State->set<ChrootState>(JAIL_ENTERED));
         return true;
       }
-    }
+    
   }
   return false;
 }

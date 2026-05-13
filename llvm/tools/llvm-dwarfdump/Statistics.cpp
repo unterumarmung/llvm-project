@@ -247,11 +247,10 @@ static std::string constructDieID(DWARFDie Die,
   std::string File;
   if (DeclFile) {
     DWARFUnit *U = Die.getDwarfUnit();
-    if (const auto *LT = U->getContext().getLineTableForUnit(U))
-      if (LT->getFileNameByIndex(
+    if (const auto *LT = U->getContext().getLineTableForUnit(U); LT && (LT->getFileNameByIndex(
               dwarf::toUnsigned(DeclFile, 0), U->getCompilationDir(),
-              DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath, File))
-        File = std::string(sys::path::filename(File));
+              DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath, File)))
+      File = std::string(sys::path::filename(File));
   }
   ID << ":" << (File.empty() ? "/" : File);
   ID << ":"

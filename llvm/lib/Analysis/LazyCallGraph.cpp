@@ -100,18 +100,16 @@ LazyCallGraph::EdgeSequence &LazyCallGraph::Node::populateSlow() {
   for (BasicBlock &BB : *F)
     for (Instruction &I : BB) {
       if (auto *CB = dyn_cast<CallBase>(&I))
-        if (Function *Callee = CB->getCalledFunction())
-          if (!Callee->isDeclaration())
-            if (Callees.insert(Callee).second) {
+        if (Function *Callee = CB->getCalledFunction(); Callee && (!Callee->isDeclaration()) && (Callees.insert(Callee).second))
+          {
               Visited.insert(Callee);
               addEdge(Edges->Edges, Edges->EdgeIndexMap, G->get(*Callee),
                       LazyCallGraph::Edge::Call);
             }
 
       for (Value *Op : I.operand_values())
-        if (Constant *C = dyn_cast<Constant>(Op))
-          if (Visited.insert(C).second)
-            Worklist.push_back(C);
+        if (Constant *C = dyn_cast<Constant>(Op); C && (Visited.insert(C).second))
+          Worklist.push_back(C);
     }
 
   // We've collected all the constant (and thus potentially function or
@@ -193,9 +191,8 @@ LazyCallGraph::LazyCallGraph(
   SmallVector<Constant *, 16> Worklist;
   SmallPtrSet<Constant *, 16> Visited;
   for (GlobalVariable &GV : M.globals())
-    if (GV.hasInitializer())
-      if (Visited.insert(GV.getInitializer()).second)
-        Worklist.push_back(GV.getInitializer());
+    if ((GV.hasInitializer()) && (Visited.insert(GV.getInitializer()).second))
+      Worklist.push_back(GV.getInitializer());
 
   LLVM_DEBUG(
       dbgs() << "  Adding functions referenced by global initializers to the "
@@ -1592,17 +1589,15 @@ static LazyCallGraph::Edge::Kind getEdgeKind(Function &OriginalFunction,
 
   for (Instruction &I : instructions(OriginalFunction)) {
     if (auto *CB = dyn_cast<CallBase>(&I)) {
-      if (Function *Callee = CB->getCalledFunction()) {
-        if (Callee == &NewFunction)
-          return LazyCallGraph::Edge::Kind::Call;
-      }
+      if (Function *Callee = CB->getCalledFunction(); Callee && (Callee == &NewFunction)) 
+        return LazyCallGraph::Edge::Kind::Call;
+      
     }
 #ifndef NDEBUG
     for (Value *Op : I.operand_values()) {
-      if (Constant *C = dyn_cast<Constant>(Op)) {
-        if (Visited.insert(C).second)
-          Worklist.push_back(C);
-      }
+      if (Constant *C = dyn_cast<Constant>(Op); C && (Visited.insert(C).second)) 
+        Worklist.push_back(C);
+      
     }
 #endif
   }

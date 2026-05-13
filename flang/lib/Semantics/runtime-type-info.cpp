@@ -801,12 +801,12 @@ evaluate::StructureConstructor RuntimeTableBuilder::DescribeComponent(
   if (dyType.category() == TypeCategory::Character && len) {
     // Ignore IDIM(x) (represented as MAX(0, x))
     if (const auto *clamped{evaluate::UnwrapExpr<
-            evaluate::Extremum<evaluate::SubscriptInteger>>(*len)}) {
-      if (clamped->ordering == evaluate::Ordering::Greater &&
-          clamped->left() == evaluate::Expr<evaluate::SubscriptInteger>{0}) {
+            evaluate::Extremum<evaluate::SubscriptInteger>>(*len)}; clamped && (clamped->ordering == evaluate::Ordering::Greater &&
+          clamped->left() == evaluate::Expr<evaluate::SubscriptInteger>{0})) 
+      {
         len = common::Clone(clamped->right());
       }
-    }
+    
     AddValue(values, componentSchema_, "characterlen"s,
         evaluate::AsGenericExpr(GetValue(len, parameters)));
   } else {
@@ -1254,11 +1254,11 @@ void RuntimeTableBuilder::DescribeSpecialProc(
     if (argThatMightBeDescriptor != 0) {
       if (const auto *dummyData{
               std::get_if<evaluate::characteristics::DummyDataObject>(
-                  &proc->dummyArguments.at(argThatMightBeDescriptor - 1).u)}) {
-        if (dummyData->IsPassedByDescriptor(proc->IsBindC())) {
+                  &proc->dummyArguments.at(argThatMightBeDescriptor - 1).u)}; dummyData && (dummyData->IsPassedByDescriptor(proc->IsBindC()))) 
+        {
           isArgDescriptorSet |= 1 << (argThatMightBeDescriptor - 1);
         }
-      }
+      
     }
     evaluate::StructureConstructorValues values;
     auto index{evaluate::ToInt64(which)};
@@ -1317,11 +1317,11 @@ RuntimeDerivedTypeTables BuildRuntimeDerivedTypeTables(
   // the module on which it depends.
   const auto &allSources{context.allCookedSources().allSources()};
   if (auto firstProv{allSources.GetFirstFileProvenance()}) {
-    if (const auto *srcFile{allSources.GetSourceFile(firstProv->start())}) {
-      if (srcFile->path().find("__fortran_builtins.f90") != std::string::npos) {
+    if (const auto *srcFile{allSources.GetSourceFile(firstProv->start())}; srcFile && (srcFile->path().find("__fortran_builtins.f90") != std::string::npos)) 
+      {
         return result;
       }
-    }
+    
   }
   result.schemata = context.GetBuiltinModule(typeInfoBuiltinModule);
   if (result.schemata) {
@@ -1481,13 +1481,13 @@ static const Symbol *FindSpecificDefinedIo(const Scope &scope,
     for (auto ref : generic->get<GenericDetails>().specificProcs()) {
       const Symbol &specific{*ref};
       if (const DeclTypeSpec *
-          thisType{GetDefinedIoSpecificArgType(specific)}) {
-        if (evaluate::DynamicType{
+          thisType{GetDefinedIoSpecificArgType(specific)}; thisType && (evaluate::DynamicType{
                 DEREF(thisType->AsDerived()), thisType->IsPolymorphic()}
-                .IsTkCompatibleWith(derived)) {
+                .IsTkCompatibleWith(derived))) 
+        {
           return &specific.GetUltimate();
         }
-      }
+      
     }
   }
   return nullptr;
@@ -1506,15 +1506,15 @@ bool ShouldIgnoreRuntimeTypeInfoNonTbpGenericInterfaces(
           common::DefinedIo::WriteFormatted,
           common::DefinedIo::WriteUnformatted}) {
     if (const Symbol *
-        specific{FindSpecificDefinedIo(typeScope, dyType, which)}) {
+        specific{FindSpecificDefinedIo(typeScope, dyType, which)}; specific && (FindSpecificDefinedIo(scope, dyType, which) != specific)) 
       // There's a non-TBP defined I/O procedure in the scope of the type's
       // definition that applies to this type.  It will appear in the type's
       // runtime information.  Determine whether it still applies in the
       // scope of interest.
-      if (FindSpecificDefinedIo(scope, dyType, which) != specific) {
+      {
         return true;
       }
-    }
+    
   }
   return false;
 }

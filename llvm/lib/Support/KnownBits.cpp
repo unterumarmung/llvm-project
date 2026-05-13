@@ -1186,14 +1186,14 @@ KnownBits KnownBits::sdiv(const KnownBits &LHS, const KnownBits &RHS,
       APInt Num = LHS.getSignedMinValue();
       Res = Denom.isZero() ? Num : Num.sdiv(Denom);
     }
-  } else if (LHS.isStrictlyPositive() && RHS.isNegative()) {
+  } else if ((LHS.isStrictlyPositive() && RHS.isNegative()) && (Exact || LHS.getSignedMinValue().uge(-RHS.getSignedMinValue()))) 
     // Result is negative if Exact OR LHS u>= -RHS.
-    if (Exact || LHS.getSignedMinValue().uge(-RHS.getSignedMinValue())) {
+    {
       APInt Denom = RHS.getSignedMaxValue();
       APInt Num = LHS.getSignedMaxValue();
       Res = Num.sdiv(Denom);
     }
-  }
+  
 
   if (Res) {
     if (Res->isNonNegative()) {

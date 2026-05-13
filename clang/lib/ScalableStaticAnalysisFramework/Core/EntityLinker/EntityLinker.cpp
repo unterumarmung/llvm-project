@@ -80,17 +80,17 @@ EntityId EntityLinker::resolveEntity(const EntityName &OldName,
   EntityId NewId = Output.IdTable.getId(NewName);
 
   auto [_, Inserted] = Output.LinkageTable.try_emplace(NewId, Linkage);
-  if (!Inserted) {
+  if ((!Inserted) && (Linkage.getLinkage() == EntityLinkageType::None ||
+        Linkage.getLinkage() == EntityLinkageType::Internal)) 
     // Insertion failure for `None` and `Internal` linkage is a fatal error
     // because these entities have unique namespaces and should never collide.
     // `External` linkage entities may collide.
-    if (Linkage.getLinkage() == EntityLinkageType::None ||
-        Linkage.getLinkage() == EntityLinkageType::Internal) {
+    {
       ErrorBuilder::fatal(ErrorMessages::EntityAlreadyExistsInLinkageTable,
                           ErrorMessages::EntityLinkerFatalErrorPrefix, NewId,
                           Linkage);
     }
-  }
+  
 
   return NewId;
 }

@@ -1355,15 +1355,15 @@ private:
 
     bool VisitDeclRefExpr(DeclRefExpr *E) override {
       const ValueDecl *Val = E->getDecl();
-      if (const auto *Var = dyn_cast<VarDecl>(Val)) {
-        if (Var->getTLSKind() != VarDecl::TLS_None) {
+      if (const auto *Var = dyn_cast<VarDecl>(Val); Var && (Var->getTLSKind() != VarDecl::TLS_None)) 
+        {
           // At least on macOS, thread-local variables are initialized on
           // first access, including a heap allocation.
           diagnoseLanguageConstruct(FunctionEffect::FE_ExcludeThreadLocalVars,
                                     ViolationID::AccessesThreadLocalVariable,
                                     E->getLocation());
         }
-      }
+      
       return true;
     }
 

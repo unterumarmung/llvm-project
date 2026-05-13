@@ -534,19 +534,17 @@ static LogicalResult verifyAttributions(Operation *op,
 static LogicalResult verifyReduceOpAndType(gpu::AllReduceOperation opName,
                                            Type resType) {
   using Kind = gpu::AllReduceOperation;
-  if (llvm::is_contained(
+  if ((llvm::is_contained(
           {Kind::MINNUMF, Kind::MAXNUMF, Kind::MINIMUMF, Kind::MAXIMUMF},
-          opName)) {
-    if (!isa<FloatType>(resType))
-      return failure();
-  }
+          opName)) && (!isa<FloatType>(resType))) 
+    return failure();
+  
 
-  if (llvm::is_contained({Kind::MINSI, Kind::MINUI, Kind::MAXSI, Kind::MAXUI,
+  if ((llvm::is_contained({Kind::MINSI, Kind::MINUI, Kind::MAXSI, Kind::MAXUI,
                           Kind::AND, Kind::OR, Kind::XOR},
-                         opName)) {
-    if (!isa<IntegerType>(resType))
-      return failure();
-  }
+                         opName)) && (!isa<IntegerType>(resType))) 
+    return failure();
+  
 
   return success();
 }
@@ -1334,12 +1332,11 @@ LogicalResult LaunchFuncOp::verify() {
                        GPUDialect::getContainerModuleAttrName() +
                        "' attribute");
 
-  if (hasClusterSize()) {
-    if (getClusterSizeY().getType() != getClusterSizeX().getType() ||
-        getClusterSizeZ().getType() != getClusterSizeX().getType())
-      return emitOpError()
+  if ((hasClusterSize()) && (getClusterSizeY().getType() != getClusterSizeX().getType() ||
+        getClusterSizeZ().getType() != getClusterSizeX().getType())) 
+    return emitOpError()
              << "expects types of the cluster dimensions must be the same";
-  }
+  
 
   if (!getAsyncDependencies().empty() && getAsyncObject())
     return emitOpError(

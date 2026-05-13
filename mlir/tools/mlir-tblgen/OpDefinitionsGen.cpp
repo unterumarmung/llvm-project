@@ -3605,9 +3605,8 @@ OpEmitter::genOpInterfaceMethodUsingDecl(const tblgen::InterfaceTrait *opTrait,
 
 void OpEmitter::genOpInterfaceMethods() {
   for (const auto &trait : op.getTraits()) {
-    if (const auto *opTrait = dyn_cast<tblgen::InterfaceTrait>(&trait))
-      if (opTrait->shouldDeclareMethods())
-        genOpInterfaceMethods(opTrait);
+    if (const auto *opTrait = dyn_cast<tblgen::InterfaceTrait>(&trait); opTrait && (opTrait->shouldDeclareMethods()))
+      genOpInterfaceMethods(opTrait);
   }
 }
 
@@ -4132,10 +4131,9 @@ void OpEmitter::genTraits() {
   // The op traits defined internal are ensured that they can be verified
   // earlier.
   for (const auto &trait : op.getTraits()) {
-    if (auto *opTrait = dyn_cast<tblgen::NativeTrait>(&trait)) {
-      if (opTrait->isStructuralOpTrait())
-        opClass.addTrait(opTrait->getFullyQualifiedTraitName());
-    }
+    if (auto *opTrait = dyn_cast<tblgen::NativeTrait>(&trait); opTrait && (opTrait->isStructuralOpTrait())) 
+      opClass.addTrait(opTrait->getFullyQualifiedTraitName());
+    
   }
 
   // OpInvariants wrapps the verifyInvariants which needs to be run before

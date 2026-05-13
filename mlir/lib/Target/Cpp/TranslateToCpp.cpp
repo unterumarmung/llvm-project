@@ -1343,10 +1343,9 @@ static LogicalResult printFunctionBody(CppEmitter &emitter,
 
   for (Block &block : blocks) {
     // Only print a label if the block has predecessors.
-    if (!block.hasNoPredecessors()) {
-      if (failed(emitter.emitLabel(block)))
-        return failure();
-    }
+    if ((!block.hasNoPredecessors()) && (failed(emitter.emitLabel(block)))) 
+      return failure();
+    
     for (Operation &op : block.getOperations()) {
       if (failed(emitter.emitOperation(op, /*trailingSemicolon=*/true)))
         return failure();

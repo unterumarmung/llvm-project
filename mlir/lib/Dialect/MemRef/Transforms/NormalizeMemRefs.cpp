@@ -71,8 +71,8 @@ void NormalizeMemRefs::runOnOperation() {
   // functions which calls or get called by a non-normalizable becomes non-
   // normalizable functions themselves.
   moduleOp.walk([&](func::FuncOp funcOp) {
-    if (normalizableFuncs.contains(funcOp)) {
-      if (!areMemRefsNormalizable(funcOp)) {
+    if ((normalizableFuncs.contains(funcOp)) && (!areMemRefsNormalizable(funcOp))) 
+      {
         LLVM_DEBUG(llvm::dbgs()
                    << "@" << funcOp.getName()
                    << " contains ops that cannot normalize MemRefs\n");
@@ -82,7 +82,7 @@ void NormalizeMemRefs::runOnOperation() {
         setCalleesAndCallersNonNormalizable(funcOp, moduleOp,
                                             normalizableFuncs);
       }
-    }
+    
   });
 
   LLVM_DEBUG(llvm::dbgs() << "Normalizing " << normalizableFuncs.size()

@@ -638,9 +638,8 @@ bool ScanReachableSymbols::scan(const MemRegion *R) {
     return false;
 
   // If this is a symbolic region, visit the symbol for the region.
-  if (const SymbolicRegion *SR = dyn_cast<SymbolicRegion>(R))
-    if (!visitor.VisitSymbol(SR->getSymbol()))
-      return false;
+  if (const SymbolicRegion *SR = dyn_cast<SymbolicRegion>(R); SR && (!visitor.VisitSymbol(SR->getSymbol())))
+    return false;
 
   // If this is a subregion, also visit the parent regions.
   if (const SubRegion *SR = dyn_cast<SubRegion>(R)) {

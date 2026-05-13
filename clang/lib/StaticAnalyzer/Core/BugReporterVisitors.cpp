@@ -160,9 +160,8 @@ const Expr *bugreporter::getDerefExpr(const Stmt *S) {
   // Special case: remove the final lvalue-to-rvalue cast, but do not recurse
   // deeper into the sub-expression. This way we return the lvalue from which
   // our pointer rvalue was loaded.
-  if (const auto *CE = dyn_cast<ImplicitCastExpr>(E))
-    if (CE->getCastKind() == CK_LValueToRValue)
-      E = CE->getSubExpr();
+  if (const auto *CE = dyn_cast<ImplicitCastExpr>(E); CE && (CE->getCastKind() == CK_LValueToRValue))
+    E = CE->getSubExpr();
 
   return E;
 }
@@ -326,10 +325,9 @@ static bool wasRegionOfInterestModifiedAt(const SubRegion *RegionOfInterest,
 
   // Writing into region of interest.
   if (auto PS = N->getLocationAs<PostStmt>())
-    if (auto *BO = PS->getStmtAs<BinaryOperator>())
-      if (BO->isAssignmentOp() && RegionOfInterest->isSubRegionOf(
-                                      N->getSVal(BO->getLHS()).getAsRegion()))
-        return true;
+    if (auto *BO = PS->getStmtAs<BinaryOperator>(); BO && (BO->isAssignmentOp() && RegionOfInterest->isSubRegionOf(
+                                      N->getSVal(BO->getLHS()).getAsRegion())))
+      return true;
 
   // SVal after the state is possibly different.
   SVal ValueAtN = N->getState()->getSVal(RegionOfInterest);
@@ -438,9 +436,8 @@ void NoStateChangeFuncVisitor::findModifyingFrames(
     }
 
     if (auto CE = CurrN->getLocationAs<CallEnter>()) {
-      if (const ExplodedNode *CallExitEndN = getMatchingCallExitEnd(CurrN))
-        if (wasModifiedInFunction(CurrN, CallExitEndN))
-          markFrameAsModifying(CurrentSF);
+      if (const ExplodedNode *CallExitEndN = getMatchingCallExitEnd(CurrN); CallExitEndN && (wasModifiedInFunction(CurrN, CallExitEndN)))
+        markFrameAsModifying(CurrentSF);
 
       // We exited this inlined call, lets actualize the stack frame.
       CurrentSF = CurrN->getStackFrame();
@@ -541,9 +538,8 @@ static bool potentiallyWritesIntoIvar(const Decl *Parent,
       Base = ICE->getSubExpr();
 
     if (const auto *DRE = dyn_cast<DeclRefExpr>(Base))
-      if (const auto *ID = dyn_cast<ImplicitParamDecl>(DRE->getDecl()))
-        if (ID->getParameterKind() == ImplicitParamKind::ObjCSelf)
-          return true;
+      if (const auto *ID = dyn_cast<ImplicitParamDecl>(DRE->getDecl()); ID && (ID->getParameterKind() == ImplicitParamKind::ObjCSelf))
+        return true;
 
     return false;
   }
@@ -565,9 +561,8 @@ NoStoreFuncVisitor::findRegionOfInterestInRecord(
   if (depth == DEREFERENCE_LIMIT) // Limit the recursion depth.
     return std::nullopt;
 
-  if (const auto *RDX = dyn_cast<CXXRecordDecl>(RD))
-    if (!RDX->hasDefinition())
-      return std::nullopt;
+  if (const auto *RDX = dyn_cast<CXXRecordDecl>(RD); RDX && (!RDX->hasDefinition()))
+    return std::nullopt;
 
   // Recursively examine the base classes.
   // Note that following base classes does not increase the recursion depth.
@@ -873,10 +868,9 @@ private:
 
     if (const auto *DS = dyn_cast<DeclStmt>(S)) {
       if (const auto *VD = dyn_cast<VarDecl>(DS->getSingleDecl()))
-        if (const Expr *RHS = VD->getInit())
-          if (RegionOfInterest->isSubRegionOf(
-                  State->getLValue(VD, LCtx).getAsRegion()))
-            return RHS->getBeginLoc();
+        if (const Expr *RHS = VD->getInit(); RHS && (RegionOfInterest->isSubRegionOf(
+                  State->getLValue(VD, LCtx).getAsRegion())))
+          return RHS->getBeginLoc();
     } else if (const auto *BO = dyn_cast<BinaryOperator>(S)) {
       const MemRegion *R = N->getSVal(BO->getLHS()).getAsRegion();
       const Expr *RHS = BO->getRHS();
@@ -1022,13 +1016,13 @@ public:
     }
 
     if (LValue) {
-      if (const MemRegion *MR = LValue->getAsRegion()) {
-        if (MR->canPrintPretty()) {
+      if (const MemRegion *MR = LValue->getAsRegion(); MR && (MR->canPrintPretty())) 
+        {
           Out << " (reference to ";
           MR->printPretty(Out);
           Out << ")";
         }
-      }
+      
     } else {
       // FIXME: We should have a more generalized location printing mechanism.
       if (const auto *DR = dyn_cast<DeclRefExpr>(RetE))
@@ -1338,11 +1332,11 @@ static void showBRParamDiagnostics(llvm::raw_svector_ostream &OS,
       OS << " ";
       VR->printPretty(OS);
     }
-  } else if (const auto *ImplParam = dyn_cast<ImplicitParamDecl>(D)) {
-    if (ImplParam->getParameterKind() == ImplicitParamKind::ObjCSelf) {
+  } else if (const auto *ImplParam = dyn_cast<ImplicitParamDecl>(D); ImplParam && (ImplParam->getParameterKind() == ImplicitParamKind::ObjCSelf)) 
+    {
       OS << " via implicit parameter 'self'";
     }
-  }
+  
 }
 
 /// Show default diagnostics for storing bad region.
@@ -1487,12 +1481,12 @@ PathDiagnosticPieceRef StoreSiteFinder::VisitNode(const ExplodedNode *Succ,
   bool IsParam = false;
 
   // First see if we reached the declaration of the region.
-  if (const auto *VR = dyn_cast<VarRegion>(R)) {
-    if (isInitializationOfVar(Pred, VR)) {
+  if (const auto *VR = dyn_cast<VarRegion>(R); VR && (isInitializationOfVar(Pred, VR))) 
+    {
       StoreSite = Pred;
       InitE = VR->getDecl()->getInit();
     }
-  }
+  
 
   // If this is a post initializer expression, initializing the region, we
   // should track the initializer expression.
@@ -1798,9 +1792,8 @@ PathDiagnosticPieceRef TrackConstraintBRVisitor::VisitNode(
 
   // Start tracking after we see the first state in which the value is
   // constrained.
-  if (!IsTrackingTurnedOn)
-    if (!isUnderconstrained(N))
-      IsTrackingTurnedOn = true;
+  if ((!IsTrackingTurnedOn) && (!isUnderconstrained(N)))
+    IsTrackingTurnedOn = true;
   if (!IsTrackingTurnedOn)
     return nullptr;
 
@@ -1870,9 +1863,8 @@ SuppressInlineDefensiveChecksVisitor::VisitNode(const ExplodedNode *Succ,
     return nullptr;
 
   // Start tracking after we see the first state in which the value is null.
-  if (!IsTrackingTurnedOn)
-    if (Succ->getState()->isNull(V).isConstrainedTrue())
-      IsTrackingTurnedOn = true;
+  if ((!IsTrackingTurnedOn) && (Succ->getState()->isNull(V).isConstrainedTrue()))
+    IsTrackingTurnedOn = true;
   if (!IsTrackingTurnedOn)
     return nullptr;
 
@@ -2015,9 +2007,8 @@ static bool isAssertlikeBlock(const CFGBlock *B, ASTContext &Context) {
   // B1, 'A && B' for B2, and 'A && B || C' for B3. Let's check whether we
   // reached the end of the condition!
   if (const Stmt *ElseCond = Else->getTerminatorCondition())
-    if (const auto *BinOp = dyn_cast<BinaryOperator>(ElseCond))
-      if (BinOp->isLogicalOp())
-        return isAssertlikeBlock(Else, Context);
+    if (const auto *BinOp = dyn_cast<BinaryOperator>(ElseCond); BinOp && (BinOp->isLogicalOp()))
+      return isAssertlikeBlock(Else, Context);
 
   return false;
 }
@@ -2119,15 +2110,15 @@ static const Expr *peelOffOuterExpr(const Expr *Ex, const ExplodedNode *N) {
       ProgramPoint ProgPoint = NI->getLocation();
       if (std::optional<BlockEdge> BE = ProgPoint.getAs<BlockEdge>()) {
         const CFGBlock *srcBlk = BE->getSrc();
-        if (const Stmt *term = srcBlk->getTerminatorStmt()) {
-          if (term == CO) {
+        if (const Stmt *term = srcBlk->getTerminatorStmt(); term && (term == CO)) 
+          {
             bool TookTrueBranch = (*(srcBlk->succ_begin()) == BE->getDst());
             if (TookTrueBranch)
               return peelOffOuterExpr(CO->getTrueExpr(), N);
             else
               return peelOffOuterExpr(CO->getFalseExpr(), N);
           }
-        }
+        
       }
       NI = NI->getFirstPred();
     } while (NI);
@@ -2339,9 +2330,8 @@ public:
 
         // If the contents are symbolic and null, find out when they became
         // null.
-        if (V.getAsLocSymbol(/*IncludeBaseRegions=*/true))
-          if (LVState->isNull(V).isConstrainedTrue())
-            Report.addVisitor<TrackConstraintBRVisitor>(
+        if ((V.getAsLocSymbol(/*IncludeBaseRegions=*/true)) && (LVState->isNull(V).isConstrainedTrue()))
+          Report.addVisitor<TrackConstraintBRVisitor>(
                 V.castAs<DefinedSVal>(),
                 /*Assumption=*/false, "Assuming pointer value is null");
 
@@ -2972,12 +2962,12 @@ bool ConditionBRVisitor::patternMatch(const Expr *Ex, const Expr *ParentEx,
         return false;
       }
     }
-    else if (OriginalTy->isObjCObjectPointerType()) {
-      if (IL->getValue() == 0) {
+    else if ((OriginalTy->isObjCObjectPointerType()) && (IL->getValue() == 0)) 
+      {
         Out << "nil";
         return false;
       }
-    }
+    
 
     Out << IL->getValue();
     return false;

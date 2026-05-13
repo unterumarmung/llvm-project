@@ -293,9 +293,8 @@ CXXRecordDecl::setBases(CXXBaseSpecifier const * const *Bases,
         //   the form 'X::X(const X&)' if each [...] virtual base class B of X
         //   has a copy constructor whose first parameter is of type
         //   'const B&' or 'const volatile B&' [...]
-        if (CXXRecordDecl *VBaseDecl = VBase.getType()->getAsCXXRecordDecl())
-          if (!VBaseDecl->hasCopyConstructorWithConstParam())
-            data().ImplicitCopyConstructorCanHaveConstParamForVBase = false;
+        if (CXXRecordDecl *VBaseDecl = VBase.getType()->getAsCXXRecordDecl(); VBaseDecl && (!VBaseDecl->hasCopyConstructorWithConstParam()))
+          data().ImplicitCopyConstructorCanHaveConstParamForVBase = false;
 
         // C++1z [dcl.init.agg]p1:
         //   An aggregate is a class with [...] no virtual base classes
@@ -714,9 +713,8 @@ bool CXXRecordDecl::hasSubobjectAtOffsetZeroOfEmptyBaseType(
 
       //   -- If X is n array type, [visit the element type]
       QualType T = Ctx.getBaseElementType(FD->getType());
-      if (auto *RD = T->getAsCXXRecordDecl())
-        if (Visit(RD))
-          return true;
+      if (auto *RD = T->getAsCXXRecordDecl(); RD && (Visit(RD)))
+        return true;
 
       if (!X->isUnion())
         IsFirstField = false;
@@ -767,8 +765,8 @@ void CXXRecordDecl::addedMember(Decl *D) {
       DUnderlying = UnderlyingFunTmpl->getTemplatedDecl();
   }
 
-  if (const auto *Method = dyn_cast<CXXMethodDecl>(D)) {
-    if (Method->isVirtual()) {
+  if (const auto *Method = dyn_cast<CXXMethodDecl>(D); Method && (Method->isVirtual())) 
+    {
       // C++ [dcl.init.aggr]p1:
       //   An aggregate is an array or a class with [...] no virtual functions.
       data().Aggregate = false;
@@ -799,7 +797,7 @@ void CXXRecordDecl::addedMember(Decl *D) {
       data().IsStandardLayout = false;
       data().IsCXX11StandardLayout = false;
     }
-  }
+  
 
   // Notify the listener if an implicit member was added after the definition
   // was completed.
@@ -1469,13 +1467,13 @@ void CXXRecordDecl::addedMember(Decl *D) {
   }
 
   // Handle using declarations of conversion functions.
-  if (auto *Shadow = dyn_cast<UsingShadowDecl>(D)) {
-    if (Shadow->getDeclName().getNameKind()
-          == DeclarationName::CXXConversionFunctionName) {
+  if (auto *Shadow = dyn_cast<UsingShadowDecl>(D); Shadow && (Shadow->getDeclName().getNameKind()
+          == DeclarationName::CXXConversionFunctionName)) 
+    {
       ASTContext &Ctx = getASTContext();
       data().Conversions.get(Ctx).addDecl(Ctx, Shadow, Shadow->getAccess());
     }
-  }
+  
 
   if (const auto *Using = dyn_cast<UsingDecl>(D)) {
     if (Using->getDeclName().getNameKind() ==
@@ -2114,14 +2112,14 @@ const CXXRecordDecl *CXXRecordDecl::getTemplateInstantiationPattern() const {
     }
   }
 
-  if (MemberSpecializationInfo *MSInfo = getMemberSpecializationInfo()) {
-    if (isTemplateInstantiation(MSInfo->getTemplateSpecializationKind())) {
+  if (MemberSpecializationInfo *MSInfo = getMemberSpecializationInfo(); MSInfo && (isTemplateInstantiation(MSInfo->getTemplateSpecializationKind()))) 
+    {
       const CXXRecordDecl *RD = this;
       while (auto *NewRD = RD->getInstantiatedFromMemberClass())
         RD = NewRD;
       return GetDefinitionOrSelf(RD);
     }
-  }
+  
 
   assert(!isTemplateInstantiation(this->getTemplateSpecializationKind()) &&
          "couldn't find pattern for class template instantiation");
@@ -2346,9 +2344,8 @@ bool CXXRecordDecl::isEffectivelyFinal() const {
     return false;
   if (Def->hasAttr<FinalAttr>())
     return true;
-  if (const auto *Dtor = Def->getDestructor())
-    if (Dtor->hasAttr<FinalAttr>())
-      return true;
+  if (const auto *Dtor = Def->getDestructor(); Dtor && (Dtor->hasAttr<FinalAttr>()))
+    return true;
   return false;
 }
 
@@ -2596,13 +2593,13 @@ CXXMethodDecl *CXXMethodDecl::getDevirtualizedMethod(const Expr *Base,
 
   // Likewise for calls on an object accessed by a (non-reference) pointer to
   // member access.
-  if (auto *BO = dyn_cast<BinaryOperator>(Base)) {
-    if (BO->isPtrMemOp()) {
+  if (auto *BO = dyn_cast<BinaryOperator>(Base); BO && (BO->isPtrMemOp())) 
+    {
       auto *MPT = BO->getRHS()->getType()->castAs<MemberPointerType>();
       if (MPT->getPointeeType()->isRecordType())
         return DevirtualizedMethod;
     }
-  }
+  
 
   // We can't devirtualize the call.
   return nullptr;
@@ -2708,12 +2705,12 @@ bool CXXMethodDecl::isUsualDeallocationFunction(
   DeclContext::lookup_result R = getDeclContext()->lookup(getDeclName());
   bool Result = true;
   for (const auto *D : R) {
-    if (const auto *FD = dyn_cast<FunctionDecl>(D)) {
-      if (FD->getNumParams() == 1) {
+    if (const auto *FD = dyn_cast<FunctionDecl>(D); FD && (FD->getNumParams() == 1)) 
+      {
         PreventedBy.push_back(FD);
         Result = false;
       }
-    }
+    
   }
   return Result;
 }
@@ -3843,9 +3840,8 @@ static bool isValidStructGUID(ASTContext &Ctx, QualType T) {
       RD = RD->getDefinition();
       if (!RD)
         return false;
-      if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD))
-        if (CXXRD->getNumBases())
-          return false;
+      if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD); CXXRD && (CXXRD->getNumBases()))
+        return false;
       auto MatcherIt = Fields.begin();
       for (const FieldDecl *FD : RD->fields()) {
         if (FD->isUnnamedBitField())

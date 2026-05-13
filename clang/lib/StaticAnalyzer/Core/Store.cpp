@@ -206,15 +206,15 @@ std::optional<const MemRegion *> StoreManager::castRegion(const MemRegion *R,
       if (!PointeeTy->isIncompleteType()) {
         // Compute the size in **bytes**.
         CharUnits pointeeTySize = Ctx.getTypeSizeInChars(PointeeTy);
-        if (!pointeeTySize.isZero()) {
+        if ((!pointeeTySize.isZero()) && (off.isMultipleOf(pointeeTySize))) 
           // Is the offset a multiple of the size?  If so, we can layer the
           // ElementRegion (with elementType == PointeeTy) directly on top of
           // the base region.
-          if (off.isMultipleOf(pointeeTySize)) {
+          {
             newIndex = off / pointeeTySize;
             newSuperR = baseR;
           }
-        }
+        
       }
 
       if (!newSuperR) {
@@ -288,9 +288,8 @@ SVal StoreManager::evalDerivedToBase(SVal Derived, QualType BaseType,
   if (const auto *AlreadyDerivedReg =
           dyn_cast<CXXDerivedObjectRegion>(DerivedReg)) {
     if (const auto *SR =
-            dyn_cast<SymbolicRegion>(AlreadyDerivedReg->getSuperRegion()))
-      if (SR->getSymbol()->getType()->getPointeeCXXRecordDecl() == BaseDecl)
-        return loc::MemRegionVal(SR);
+            dyn_cast<SymbolicRegion>(AlreadyDerivedReg->getSuperRegion()); SR && (SR->getSymbol()->getType()->getPointeeCXXRecordDecl() == BaseDecl))
+      return loc::MemRegionVal(SR);
 
     DerivedReg = AlreadyDerivedReg->getSuperRegion();
   }

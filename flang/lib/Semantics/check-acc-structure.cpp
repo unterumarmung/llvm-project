@@ -382,21 +382,21 @@ void AccStructureChecker::Enter(const parser::CallStmt &call) {
 
   DirectiveContext &inner{dirContext_.back()};
   for (llvm::acc::Clause cl : inner.actualClauses) {
-    if (cl == llvm::acc::Clause::ACCC_vector) {
-      if (!routineParDim.empty() && routineParDim != "SEQ") {
+    if ((cl == llvm::acc::Clause::ACCC_vector) && (!routineParDim.empty() && routineParDim != "SEQ")) 
+      {
         context_.Say(GetContext().clauseSource,
             "Calling %s routine inside VECTOR loop is not allowed"_err_en_US,
             routineParDim);
       }
-    }
-    if (cl == llvm::acc::Clause::ACCC_worker) {
-      if (!routineParDim.empty() &&
-          (routineParDim != "SEQ" && routineParDim != "VECTOR")) {
+    
+    if ((cl == llvm::acc::Clause::ACCC_worker) && (!routineParDim.empty() &&
+          (routineParDim != "SEQ" && routineParDim != "VECTOR"))) 
+      {
         context_.Say(GetContext().clauseSource,
             "Calling %s routine inside WORKER loop is not allowed"_err_en_US,
             routineParDim);
       }
-    }
+    
     if (cl == llvm::acc::Clause::ACCC_gang) {
       const std::optional<std::int64_t> loopGangDim{
           getGangDimensionSize(inner)};
@@ -524,20 +524,20 @@ void AccStructureChecker::CheckAtomicStmt(
   const auto *rhs{GetExpr(context_, expr)};
   const auto *lhs{GetExpr(context_, var)};
 
-  if (lhs) {
-    if (lhs->Rank() != 0) {
+  if ((lhs) && (lhs->Rank() != 0)) 
+    {
       context_.Say(expr.source,
           "LHS of atomic %s statement must be scalar"_err_en_US, construct);
     }
     // TODO: Check if lhs is intrinsic type.
-  }
-  if (rhs) {
-    if (rhs->Rank() != 0) {
+  
+  if ((rhs) && (rhs->Rank() != 0)) 
+    {
       context_.Say(var.GetSource(),
           "RHS of atomic %s statement must be scalar"_err_en_US, construct);
     }
     // TODO: Check if rhs is intrinsic type.
-  }
+  
 }
 
 static constexpr evaluate::operation::OperatorSet validAccAtomicUpdateOperators{
@@ -615,13 +615,13 @@ void AccStructureChecker::CheckAtomicWriteStmt(
   CheckAtomicStmt(assign, "write");
   const auto &expr{std::get<parser::Expr>(assign.t)};
   const auto *rhs{GetExpr(context_, expr)};
-  if (rhs) {
-    if (evaluate::IsVarSubexpressionOf(updateVar, *rhs)) {
+  if ((rhs) && (evaluate::IsVarSubexpressionOf(updateVar, *rhs))) 
+    {
       context_.Say(expr.source,
           "The RHS of this atomic write statement cannot reference the atomic variable: %s"_err_en_US,
           updateVar.AsFortran());
     }
-  }
+  
 }
 
 void AccStructureChecker::CheckAtomicCaptureStmt(
@@ -1089,8 +1089,8 @@ void AccStructureChecker::Enter(const parser::AccClause::Reduction &reduction) {
         common::visitors{
             [&](const parser::Designator &designator) {
               if (const auto *name =
-                      parser::GetDesignatorNameIfDataRef(designator)) {
-                if (name->symbol) {
+                      parser::GetDesignatorNameIfDataRef(designator); name && (name->symbol)) 
+                {
                   if (const auto *type{name->symbol->GetType()}) {
                     if (type->IsNumeric(TypeCategory::Integer) &&
                         !reductionIntegerSet.test(op.v)) {
@@ -1114,7 +1114,7 @@ void AccStructureChecker::Enter(const parser::AccClause::Reduction &reduction) {
                   }
                   // TODO: check composite type.
                 }
-              }
+              
             },
             [&](const Fortran::parser::Name &name) {
               // TODO: check common block

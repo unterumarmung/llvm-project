@@ -68,9 +68,8 @@ void promoteInternals(Module &ExportM, Module &ImportM, StringRef ModuleId,
     std::string OldName = Name.str();
     std::string NewName = (Name + ModuleId).str();
 
-    if (const auto *C = ExportGV.getComdat())
-      if (C->getName() == Name)
-        RenamedComdats.try_emplace(C, ExportM.getOrInsertComdat(NewName));
+    if (const auto *C = ExportGV.getComdat(); C && (C->getName() == Name))
+      RenamedComdats.try_emplace(C, ExportM.getOrInsertComdat(NewName));
 
     ExportGV.setName(NewName);
     ExportGV.setLinkage(GlobalValue::ExternalLinkage);
@@ -313,9 +312,8 @@ void splitAndWriteThinLTOBitcode(
   auto HasTypeMetadata = [](const GlobalObject *GO) {
     if (MDNode *MD = GO->getMetadata(LLVMContext::MD_associated))
       if (auto *AssocVM = dyn_cast_or_null<ValueAsMetadata>(MD->getOperand(0)))
-        if (auto *AssocGO = dyn_cast<GlobalObject>(AssocVM->getValue()))
-          if (AssocGO->hasMetadata(LLVMContext::MD_type))
-            return true;
+        if (auto *AssocGO = dyn_cast<GlobalObject>(AssocVM->getValue()); AssocGO && (AssocGO->hasMetadata(LLVMContext::MD_type)))
+          return true;
     return GO->hasMetadata(LLVMContext::MD_type);
   };
 
@@ -359,9 +357,8 @@ void splitAndWriteThinLTOBitcode(
   ValueToValueMapTy VMap;
   std::unique_ptr<Module> MergedM(
       CloneModule(M, VMap, [&](const GlobalValue *GV) -> bool {
-        if (const auto *C = GV->getComdat())
-          if (MergedMComdats.count(C))
-            return true;
+        if (const auto *C = GV->getComdat(); C && (MergedMComdats.count(C)))
+          return true;
         if (mustEmitToMergedModule(GV))
           return true;
         if (auto *F = dyn_cast<Function>(GV))
@@ -393,19 +390,16 @@ void splitAndWriteThinLTOBitcode(
     if ((!F.hasLocalLinkage() || F.hasAddressTaken()) && HasTypeMetadata(&F))
       CfiFunctions.insert(&F);
   for (auto &A : M.aliases())
-    if (auto *F = dyn_cast<Function>(A.getAliasee()))
-      if (HasTypeMetadata(F))
-        CfiFunctions.insert(&A);
+    if (auto *F = dyn_cast<Function>(A.getAliasee()); F && (HasTypeMetadata(F)))
+      CfiFunctions.insert(&A);
 
   // Remove all globals with type metadata, globals with comdats that live in
   // MergedM, and aliases pointing to such globals from the thin LTO module.
   filterModule(&M, [&](const GlobalValue *GV) {
-    if (auto *GVar = dyn_cast_or_null<GlobalVariable>(GV->getAliaseeObject()))
-      if (HasTypeMetadata(GVar))
-        return false;
-    if (const auto *C = GV->getComdat())
-      if (MergedMComdats.count(C))
-        return false;
+    if (auto *GVar = dyn_cast_or_null<GlobalVariable>(GV->getAliaseeObject()); GVar && (HasTypeMetadata(GVar)))
+      return false;
+    if (const auto *C = GV->getComdat(); C && (MergedMComdats.count(C)))
+      return false;
     if (mustEmitToMergedModule(GV))
       return false;
     return true;

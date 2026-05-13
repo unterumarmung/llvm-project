@@ -777,10 +777,9 @@ static LogicalResult checkRecipe(OpT op, llvm::StringRef operandName) {
 static ParseResult parseVar(mlir::OpAsmParser &parser,
                             OpAsmParser::UnresolvedOperand &var) {
   // Either `var` or `varPtr` keyword is required.
-  if (failed(parser.parseOptionalKeyword("varPtr"))) {
-    if (failed(parser.parseKeyword("var")))
-      return failure();
-  }
+  if ((failed(parser.parseOptionalKeyword("varPtr"))) && (failed(parser.parseKeyword("var")))) 
+    return failure();
+  
   if (failed(parser.parseLParen()))
     return failure();
   if (failed(parser.parseOperand(var)))
@@ -802,10 +801,9 @@ static ParseResult parseAccVar(mlir::OpAsmParser &parser,
                                OpAsmParser::UnresolvedOperand &var,
                                mlir::Type &accVarType) {
   // Either `accVar` or `accPtr` keyword is required.
-  if (failed(parser.parseOptionalKeyword("accPtr"))) {
-    if (failed(parser.parseKeyword("accVar")))
-      return failure();
-  }
+  if ((failed(parser.parseOptionalKeyword("accPtr"))) && (failed(parser.parseKeyword("accVar")))) 
+    return failure();
+  
   if (failed(parser.parseLParen()))
     return failure();
   if (failed(parser.parseOperand(var)))

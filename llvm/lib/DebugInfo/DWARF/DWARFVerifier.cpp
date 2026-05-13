@@ -136,11 +136,10 @@ bool DWARFVerifier::DieRangeInfo::intersects(const DieRangeInfo &RHS) const {
   auto I1 = Ranges.begin(), E1 = Ranges.end();
   auto I2 = RHS.Ranges.begin(), E2 = RHS.Ranges.end();
   while (I1 != E1 && I2 != E2) {
-    if (I1->intersects(*I2)) {
+    if ((I1->intersects(*I2)) && (!(*I1 == *I2))) 
       // Exact duplicates are allowed
-      if (!(*I1 == *I2))
-        return true;
-    }
+      return true;
+    
     if (I1->LowPC < I2->LowPC)
       ++I1;
     else
@@ -288,14 +287,14 @@ unsigned DWARFVerifier::verifyUnitContents(DWARFUnit &Unit,
 
     NumUnitErrors += verifyName(Die);
 
-    if (Die.hasChildren()) {
-      if (Die.getFirstChild().isValid() &&
-          Die.getFirstChild().getTag() == DW_TAG_null) {
+    if ((Die.hasChildren()) && (Die.getFirstChild().isValid() &&
+          Die.getFirstChild().getTag() == DW_TAG_null)) 
+      {
         warn() << formatv("{0} has DW_CHILDREN_yes but DIE has no children: ",
                           dwarf::TagString(Die.getTag()));
         Die.dump(OS);
       }
-    }
+    
 
     NumUnitErrors += verifyDebugInfoCallSite(Die);
   }

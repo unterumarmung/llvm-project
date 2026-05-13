@@ -182,10 +182,9 @@ bool ELFAsmParser::parseDirectiveSymbolAttribute(StringRef Directive, SMLoc) {
 bool ELFAsmParser::parseSectionSwitch(StringRef Section, unsigned Type,
                                       unsigned Flags, SectionKind Kind) {
   const MCExpr *Subsection = nullptr;
-  if (getLexer().isNot(AsmToken::EndOfStatement)) {
-    if (getParser().parseExpression(Subsection))
-      return true;
-  }
+  if ((getLexer().isNot(AsmToken::EndOfStatement)) && (getParser().parseExpression(Subsection))) 
+    return true;
+  
   Lex();
 
   getStreamer().switchSection(getContext().getELFSection(Section, Type, Flags),
@@ -568,15 +567,12 @@ bool ELFAsmParser::parseSectionArguments(bool IsPush, SMLoc loc) {
         return TokError("expected end of directive");
     }
 
-    if (Mergeable || TypeName == "llvm_cfi_jump_table")
-      if (parseMergeSize(Size))
-        return true;
-    if (Flags & ELF::SHF_LINK_ORDER)
-      if (parseLinkedToSym(LinkedToSym))
-        return true;
-    if (Group)
-      if (parseGroup(GroupName, IsComdat))
-        return true;
+    if ((Mergeable || TypeName == "llvm_cfi_jump_table") && (parseMergeSize(Size)))
+      return true;
+    if ((Flags & ELF::SHF_LINK_ORDER) && (parseLinkedToSym(LinkedToSym)))
+      return true;
+    if ((Group) && (parseGroup(GroupName, IsComdat)))
+      return true;
     if (maybeParseUniqueID(UniqueID))
       return true;
   }
@@ -868,10 +864,9 @@ bool ELFAsmParser::parseDirectiveWeakref(StringRef, SMLoc) {
 
 bool ELFAsmParser::parseDirectiveSubsection(StringRef, SMLoc) {
   const MCExpr *Subsection = MCConstantExpr::create(0, getContext());
-  if (getLexer().isNot(AsmToken::EndOfStatement)) {
-    if (getParser().parseExpression(Subsection))
-     return true;
-  }
+  if ((getLexer().isNot(AsmToken::EndOfStatement)) && (getParser().parseExpression(Subsection))) 
+    return true;
+  
 
   if (getLexer().isNot(AsmToken::EndOfStatement))
     return TokError("expected end of directive");

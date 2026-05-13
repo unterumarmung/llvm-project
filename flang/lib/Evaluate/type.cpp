@@ -92,8 +92,8 @@ bool IsPassedViaDescriptor(const Symbol &symbol) {
     return false;
   }
   if (const auto *object{
-          symbol.GetUltimate().detailsIf<ObjectEntityDetails>()}) {
-    if (object->isDummy()) {
+          symbol.GetUltimate().detailsIf<ObjectEntityDetails>()}; object && (object->isDummy())) 
+    {
       if (object->type() &&
           object->type()->category() == DeclTypeSpec::Character) {
         return false;
@@ -110,7 +110,7 @@ bool IsPassedViaDescriptor(const Symbol &symbol) {
         return false; // explicit shape but non-constant bounds
       }
     }
-  }
+  
   return true;
 }
 } // namespace Fortran::semantics
@@ -304,19 +304,19 @@ static bool AreSameComponent(const semantics::Symbol &x,
   if (x.attrs() != y.attrs()) {
     return false;
   }
-  if (x.attrs().test(semantics::Attr::PRIVATE) ||
-      y.attrs().test(semantics::Attr::PRIVATE)) {
-    if (!sameModuleName ||
+  if ((x.attrs().test(semantics::Attr::PRIVATE) ||
+      y.attrs().test(semantics::Attr::PRIVATE)) && (!sameModuleName ||
         x.attrs().test(semantics::Attr::PRIVATE) !=
-            y.attrs().test(semantics::Attr::PRIVATE)) {
+            y.attrs().test(semantics::Attr::PRIVATE))) 
+    {
       return false;
     }
-  }
-  if (x.size() && y.size()) {
-    if (x.offset() != y.offset() || x.size() != y.size()) {
+  
+  if ((x.size() && y.size()) && (x.offset() != y.offset() || x.size() != y.size())) 
+    {
       return false;
     }
-  }
+  
   const auto *xObj{x.detailsIf<semantics::ObjectEntityDetails>()};
   const auto *yObj{y.detailsIf<semantics::ObjectEntityDetails>()};
   const auto *xProc{x.detailsIf<semantics::ProcEntityDetails>()};

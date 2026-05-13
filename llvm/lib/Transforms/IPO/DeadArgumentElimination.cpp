@@ -144,10 +144,9 @@ bool DeadArgumentEliminationPass::deleteDeadVarargs(Function &F) {
         continue;
       if (CI->isMustTailCall())
         return false;
-      if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI)) {
-        if (II->getIntrinsicID() == Intrinsic::vastart)
-          return false;
-      }
+      if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(CI); II && (II->getIntrinsicID() == Intrinsic::vastart)) 
+        return false;
+      
     }
   }
 

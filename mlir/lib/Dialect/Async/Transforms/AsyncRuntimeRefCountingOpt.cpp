@@ -195,9 +195,8 @@ void AsyncRuntimeRefCountingOptPass::runOnOperation() {
   // Optimize reference counting for values defined by block arguments.
   WalkResult blockWalk = op->walk([&](Block *block) -> WalkResult {
     for (BlockArgument arg : block->getArguments())
-      if (isRefCounted(arg.getType()))
-        if (failed(optimizeReferenceCounting(arg, cancellable)))
-          return WalkResult::interrupt();
+      if ((isRefCounted(arg.getType())) && (failed(optimizeReferenceCounting(arg, cancellable))))
+        return WalkResult::interrupt();
 
     return WalkResult::advance();
   });
@@ -208,9 +207,8 @@ void AsyncRuntimeRefCountingOptPass::runOnOperation() {
   // Optimize reference counting for values defined by operation results.
   WalkResult opWalk = op->walk([&](Operation *op) -> WalkResult {
     for (unsigned i = 0; i < op->getNumResults(); ++i)
-      if (isRefCounted(op->getResultTypes()[i]))
-        if (failed(optimizeReferenceCounting(op->getResult(i), cancellable)))
-          return WalkResult::interrupt();
+      if ((isRefCounted(op->getResultTypes()[i])) && (failed(optimizeReferenceCounting(op->getResult(i), cancellable))))
+        return WalkResult::interrupt();
 
     return WalkResult::advance();
   });

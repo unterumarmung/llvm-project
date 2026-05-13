@@ -627,12 +627,12 @@ static bool CheckEquivalentExceptionSpecImpl(
       QualType Exception = *WithExceptions->exception_begin();
       if (CXXRecordDecl *ExRecord = Exception->getAsCXXRecordDecl()) {
         IdentifierInfo* Name = ExRecord->getIdentifier();
-        if (Name && Name->getName() == "bad_alloc") {
+        if ((Name && Name->getName() == "bad_alloc") && (ExRecord->isInStdNamespace())) 
           // It's called bad_alloc, but is it in std?
-          if (ExRecord->isInStdNamespace()) {
+          {
             return false;
           }
-        }
+        
       }
     }
   }
@@ -1331,9 +1331,8 @@ CanThrowResult Sema::canThrow(const Stmt *S) {
   case Expr::MaterializeTemporaryExprClass:
   case Expr::UnaryOperatorClass: {
     // FIXME: Properly determine whether a variably-modified type can throw.
-    if (auto *CE = dyn_cast<CastExpr>(S))
-      if (CE->getType()->isVariablyModifiedType())
-        return CT_Can;
+    if (auto *CE = dyn_cast<CastExpr>(S); CE && (CE->getType()->isVariablyModifiedType()))
+      return CT_Can;
     CanThrowResult CT =
         cast<Expr>(S)->isTypeDependent() ? CT_Dependent : CT_Cannot;
     return mergeCanThrow(CT, canSubStmtsThrow(*this, S));
@@ -1564,12 +1563,10 @@ CanThrowResult Sema::canThrow(const Stmt *S) {
         CT = mergeCanThrow(CT, canVarDeclThrow(*this, VD));
 
       // FIXME: Properly determine whether a variably-modified type can throw.
-      if (auto *TND = dyn_cast<TypedefNameDecl>(D))
-        if (TND->getUnderlyingType()->isVariablyModifiedType())
-          return CT_Can;
-      if (auto *VD = dyn_cast<ValueDecl>(D))
-        if (VD->getType()->isVariablyModifiedType())
-          return CT_Can;
+      if (auto *TND = dyn_cast<TypedefNameDecl>(D); TND && (TND->getUnderlyingType()->isVariablyModifiedType()))
+        return CT_Can;
+      if (auto *VD = dyn_cast<ValueDecl>(D); VD && (VD->getType()->isVariablyModifiedType()))
+        return CT_Can;
     }
     return CT;
   }

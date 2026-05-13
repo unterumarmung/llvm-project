@@ -127,15 +127,15 @@ Sema::ShouldDiagnoseAvailabilityOfDecl(const NamedDecl *D, std::string *Message,
   }
 done:
   // Forward class declarations get their attributes from their definition.
-  if (const auto *IDecl = dyn_cast<ObjCInterfaceDecl>(D)) {
-    if (IDecl->getDefinition()) {
+  if (const auto *IDecl = dyn_cast<ObjCInterfaceDecl>(D); IDecl && (IDecl->getDefinition())) 
+    {
       D = IDecl->getDefinition();
       Result = D->getAvailability(Message);
     }
-  }
+  
 
-  if (const auto *ECD = dyn_cast<EnumConstantDecl>(D))
-    if (Result == AR_Available) {
+  if (const auto *ECD = dyn_cast<EnumConstantDecl>(D); ECD && (Result == AR_Available))
+    {
       const DeclContext *DC = ECD->getDeclContext();
       if (const auto *TheEnumDecl = dyn_cast<EnumDecl>(DC)) {
         Result = TheEnumDecl->getAvailability(Message);
@@ -188,27 +188,24 @@ static bool ShouldDiagnoseAvailabilityInContext(
   // stage of the caller is known.
   // We only do this for APIs that are not explicitly deprecated. Any API that
   // is explicitly deprecated we always issue a diagnostic on.
-  if (S.getLangOpts().HLSL && K != AR_Deprecated) {
-    if (!S.getLangOpts().HLSLStrictAvailability ||
+  if ((S.getLangOpts().HLSL && K != AR_Deprecated) && (!S.getLangOpts().HLSLStrictAvailability ||
         (DeclEnv != nullptr &&
          S.getASTContext().getTargetInfo().getTriple().getEnvironment() ==
-             llvm::Triple::EnvironmentType::Library))
-      return false;
-  }
+             llvm::Triple::EnvironmentType::Library))) 
+    return false;
+  
 
   if (K == AR_Deprecated) {
-    if (const auto *VD = dyn_cast<VarDecl>(OffendingDecl))
-      if (VD->isLocalVarDeclOrParm() && VD->isDeprecated())
-        return true;
+    if (const auto *VD = dyn_cast<VarDecl>(OffendingDecl); VD && (VD->isLocalVarDeclOrParm() && VD->isDeprecated()))
+      return true;
   }
 
   // Checks if we should emit the availability diagnostic in the context of C.
   auto CheckContext = [&](const Decl *C) {
     if (K == AR_NotYetIntroduced) {
-      if (const AvailabilityAttr *AA = getAttrForPlatform(S.Context, C))
-        if (AA->getEffectiveIntroduced() >= DeclVersion &&
-            AA->getEffectiveEnvironment() == DeclEnv)
-          return true;
+      if (const AvailabilityAttr *AA = getAttrForPlatform(S.Context, C); AA && (AA->getEffectiveIntroduced() >= DeclVersion &&
+            AA->getEffectiveEnvironment() == DeclEnv))
+        return true;
     } else if (K == AR_Deprecated) {
       if (C->isDeprecated())
         return true;
@@ -217,10 +214,9 @@ static bool ShouldDiagnoseAvailabilityInContext(
       // when it is referenced from within the @implementation itself. In this
       // context, we interpret unavailable as a form of access control.
       if (const auto *MD = dyn_cast<ObjCMethodDecl>(OffendingDecl)) {
-        if (const auto *Impl = dyn_cast<ObjCImplDecl>(C)) {
-          if (MD->getClassInterface() == Impl->getClassInterface())
-            return true;
-        }
+        if (const auto *Impl = dyn_cast<ObjCImplDecl>(C); Impl && (MD->getClassInterface() == Impl->getClassInterface())) 
+          return true;
+        
       }
     }
 
@@ -235,21 +231,18 @@ static bool ShouldDiagnoseAvailabilityInContext(
 
     // An implementation implicitly has the availability of the interface.
     // Unless it is "+load" method.
-    if (const auto *MethodD = dyn_cast<ObjCMethodDecl>(Ctx))
-      if (MethodD->isClassMethod() &&
-          MethodD->getSelector().getAsString() == "load")
-        return true;
+    if (const auto *MethodD = dyn_cast<ObjCMethodDecl>(Ctx); MethodD && (MethodD->isClassMethod() &&
+          MethodD->getSelector().getAsString() == "load"))
+      return true;
 
     if (const auto *CatOrImpl = dyn_cast<ObjCImplDecl>(Ctx)) {
-      if (const ObjCInterfaceDecl *Interface = CatOrImpl->getClassInterface())
-        if (CheckContext(Interface))
-          return false;
+      if (const ObjCInterfaceDecl *Interface = CatOrImpl->getClassInterface(); Interface && (CheckContext(Interface)))
+        return false;
     }
     // A category implicitly has the availability of the interface.
     else if (const auto *CatD = dyn_cast<ObjCCategoryDecl>(Ctx))
-      if (const ObjCInterfaceDecl *Interface = CatD->getClassInterface())
-        if (CheckContext(Interface))
-          return false;
+      if (const ObjCInterfaceDecl *Interface = CatD->getClassInterface(); Interface && (CheckContext(Interface)))
+        return false;
   } while ((Ctx = cast_or_null<Decl>(Ctx->getDeclContext())));
 
   return true;
@@ -494,8 +487,8 @@ static void DoEmitAvailabilityWarning(Sema &S, AvailabilityResult K,
       return;
 
     if (const auto *Enclosing = findEnclosingDeclToAnnotate(Ctx)) {
-      if (const auto *TD = dyn_cast<TagDecl>(Enclosing))
-        if (TD->getDeclName().isEmpty()) {
+      if (const auto *TD = dyn_cast<TagDecl>(Enclosing); TD && (TD->getDeclName().isEmpty()))
+        {
           S.Diag(TD->getLocation(),
                  diag::note_decl_unguarded_availability_silence)
               << /*Anonymous*/ 1 << TD->getKindName();
@@ -577,8 +570,8 @@ static void DoEmitAvailabilityWarning(Sema &S, AvailabilityResult K,
     property_note_select = /* unavailable */ 1;
     available_here_select_kind = /* unavailable */ 0;
 
-    if (auto AL = OffendingDecl->getAttr<UnavailableAttr>()) {
-      if (AL->isImplicit() && AL->getImplicitReason()) {
+    if (auto AL = OffendingDecl->getAttr<UnavailableAttr>(); AL && (AL->isImplicit() && AL->getImplicitReason())) 
+      {
         // Most of these failures are due to extra restrictions in ARC;
         // reflect that in the primary diagnostic when applicable.
         auto flagARCError = [&] {
@@ -619,7 +612,7 @@ static void DoEmitAvailabilityWarning(Sema &S, AvailabilityResult K,
           break;
         }
       }
-    }
+    
     break;
 
   case AR_Available:

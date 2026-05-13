@@ -562,17 +562,16 @@ ExprResult SemaOpenACC::ActOnCacheVar(Expr *VarExpr) {
   }
 
   // References to a VarDecl are fine.
-  if (const auto *DRE = dyn_cast<DeclRefExpr>(CurVarExpr)) {
-    if (isa<VarDecl, NonTypeTemplateParmDecl>(
-            DRE->getFoundDecl()->getCanonicalDecl()))
-      return WasParsingInvalidCacheRef ? ExprEmpty() : VarExpr;
-  }
+  if (const auto *DRE = dyn_cast<DeclRefExpr>(CurVarExpr); DRE && (isa<VarDecl, NonTypeTemplateParmDecl>(
+            DRE->getFoundDecl()->getCanonicalDecl()))) 
+    return WasParsingInvalidCacheRef ? ExprEmpty() : VarExpr;
+  
 
-  if (const auto *ME = dyn_cast<MemberExpr>(CurVarExpr)) {
-    if (isa<FieldDecl>(ME->getMemberDecl()->getCanonicalDecl())) {
+  if (const auto *ME = dyn_cast<MemberExpr>(CurVarExpr); ME && (isa<FieldDecl>(ME->getMemberDecl()->getCanonicalDecl()))) 
+    {
       return WasParsingInvalidCacheRef ? ExprEmpty() : VarExpr;
     }
-  }
+  
 
   // Nothing really we can do here, as these are dependent.  So just return they
   // are valid.
@@ -762,11 +761,10 @@ ExprResult SemaOpenACC::ActOnVar(OpenACCDirectiveKind DK, OpenACCClauseKind CK,
   }
 
   // References to a VarDecl are fine.
-  if (const auto *DRE = dyn_cast<DeclRefExpr>(CurVarExpr)) {
-    if (isa<VarDecl, NonTypeTemplateParmDecl>(
-            DRE->getFoundDecl()->getCanonicalDecl()))
-      return CheckVarType(*this, CK, VarExpr, CurVarExpr);
-  }
+  if (const auto *DRE = dyn_cast<DeclRefExpr>(CurVarExpr); DRE && (isa<VarDecl, NonTypeTemplateParmDecl>(
+            DRE->getFoundDecl()->getCanonicalDecl()))) 
+    return CheckVarType(*this, CK, VarExpr, CurVarExpr);
+  
 
   // If CK is a Reduction, this special cases for OpenACC3.3 2.5.15: "A var in a
   // reduction clause must be a scalar variable name, an aggregate variable
@@ -774,8 +772,8 @@ ExprResult SemaOpenACC::ActOnVar(OpenACCDirectiveKind DK, OpenACCClauseKind CK,
   // If CK is a 'use_device', this also isn't valid, as it isn't the name of a
   // variable or array, if not done as a member expr.
   // A MemberExpr that references a Field is valid for other clauses.
-  if (const auto *ME = dyn_cast<MemberExpr>(CurVarExpr)) {
-    if (isa<FieldDecl>(ME->getMemberDecl()->getCanonicalDecl())) {
+  if (const auto *ME = dyn_cast<MemberExpr>(CurVarExpr); ME && (isa<FieldDecl>(ME->getMemberDecl()->getCanonicalDecl()))) 
+    {
       if (DK == OpenACCDirectiveKind::Declare ||
           CK == OpenACCClauseKind::Reduction ||
           CK == OpenACCClauseKind::UseDevice) {
@@ -789,7 +787,7 @@ ExprResult SemaOpenACC::ActOnVar(OpenACCDirectiveKind DK, OpenACCClauseKind CK,
         return CheckVarType(*this, CK, VarExpr, CurVarExpr);
       }
     }
-  }
+  
 
   // Referring to 'this' is ok for the most part, but for 'use_device'/'declare'
   // doesn't fall into 'variable or array name'
@@ -1240,9 +1238,8 @@ const ValueDecl *getDeclFromExpr(const Expr *E) {
   if (const auto *DRE = dyn_cast<DeclRefExpr>(E))
     return DRE->getDecl();
 
-  if (const auto *ME = dyn_cast<MemberExpr>(E))
-    if (isa<CXXThisExpr>(ME->getBase()->IgnoreParenImpCasts()))
-      return ME->getMemberDecl();
+  if (const auto *ME = dyn_cast<MemberExpr>(E); ME && (isa<CXXThisExpr>(ME->getBase()->IgnoreParenImpCasts())))
+    return ME->getMemberDecl();
 
   return nullptr;
 }
@@ -1349,10 +1346,9 @@ bool SemaOpenACC::ForStmtBeginChecker::checkForInit(const Stmt *InitStmt,
     const Expr *LHS = CE->getArg(0)->IgnoreParenImpCasts();
     if (auto *DRE = dyn_cast<DeclRefExpr>(LHS)) {
       InitVar = DRE->getDecl();
-    } else if (auto *ME = dyn_cast<MemberExpr>(LHS)) {
-      if (isa<CXXThisExpr>(ME->getBase()->IgnoreParenImpCasts()))
-        InitVar = ME->getMemberDecl();
-    }
+    } else if (auto *ME = dyn_cast<MemberExpr>(LHS); ME && (isa<CXXThisExpr>(ME->getBase()->IgnoreParenImpCasts()))) 
+      InitVar = ME->getMemberDecl();
+    
   }
 
   // If after all of that, we haven't found a variable, give up.

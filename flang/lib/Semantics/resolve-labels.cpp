@@ -930,11 +930,11 @@ ParseTreeAnalyzer LabelAnalysis(
 
 bool InBody(const parser::CharBlock &position,
     const std::pair<parser::CharBlock, parser::CharBlock> &pair) {
-  if (position.begin() >= pair.first.begin()) {
-    if (position.begin() < pair.second.end()) {
+  if ((position.begin() >= pair.first.begin()) && (position.begin() < pair.second.end())) 
+    {
       return true;
     }
-  }
+  
   return false;
 }
 
@@ -1150,16 +1150,16 @@ void CheckDataXferTargetConstraints(const SourceStmtList &stmts,
   for (const auto &stmt : stmts) {
     const auto &label{stmt.parserLabel};
     auto ioTarget{GetLabel(labels, label)};
-    if (HasScope(ioTarget.proxyForScope)) {
-      if (!ioTarget.labeledStmtClassificationSet.test(
-              TargetStatementEnum::Format)) {
+    if ((HasScope(ioTarget.proxyForScope)) && (!ioTarget.labeledStmtClassificationSet.test(
+              TargetStatementEnum::Format))) 
+      {
         context
             .Say(ioTarget.parserCharBlock, "'%u' not a FORMAT"_err_en_US,
                 SayLabel(label))
             .Attach(stmt.parserCharBlock, "data transfer use of '%u'"_en_US,
                 SayLabel(label));
       }
-    }
+    
   }
 }
 

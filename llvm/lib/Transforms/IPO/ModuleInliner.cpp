@@ -226,19 +226,16 @@ PreservedAnalyses ModuleInlinerPass::run(Module &M,
     if (!IFI.InlinedCallSites.empty()) {
       for (CallBase *ICB : reverse(IFI.InlinedCallSites)) {
         Function *NewCallee = ICB->getCalledFunction();
-        if (!NewCallee) {
+        if ((!NewCallee) && (CtxProf.isInSpecializedModule()) && (tryPromoteCall(*ICB))) 
           // Try to promote an indirect (virtual) call without waiting for
           // the post-inline cleanup and the next DevirtSCCRepeatedPass
           // iteration because the next iteration may not happen and we may
           // miss inlining it.
           // FIXME: enable for ctxprof.
-          if (CtxProf.isInSpecializedModule())
-            if (tryPromoteCall(*ICB))
-              NewCallee = ICB->getCalledFunction();
-        }
-        if (NewCallee)
-          if (!NewCallee->isDeclaration())
-            Calls->push(ICB);
+          NewCallee = ICB->getCalledFunction();
+        
+        if ((NewCallee) && (!NewCallee->isDeclaration()))
+          Calls->push(ICB);
       }
     }
 

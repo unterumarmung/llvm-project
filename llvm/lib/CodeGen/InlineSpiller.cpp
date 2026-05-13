@@ -1288,9 +1288,8 @@ void InlineSpiller::spillAroundUses(Register Reg) {
     // Find the slot index where this instruction reads and writes OldLI.
     // This is usually the def slot, except for tied early clobbers.
     SlotIndex Idx = LIS.getInstructionIndex(MI).getRegSlot();
-    if (VNInfo *VNI = OldLI.getVNInfoAt(Idx.getRegSlot(true)))
-      if (SlotIndex::isSameInstr(Idx, VNI->def))
-        Idx = VNI->def;
+    if (VNInfo *VNI = OldLI.getVNInfoAt(Idx.getRegSlot(true)); VNI && (SlotIndex::isSameInstr(Idx, VNI->def)))
+      Idx = VNI->def;
 
     // Check for a sibling copy.
     Register SibReg = isCopyOfBundle(MI, Reg, TII);
@@ -1343,9 +1342,8 @@ void InlineSpiller::spillAroundUses(Register Reg) {
     LLVM_DEBUG(dbgs() << "\trewrite: " << Idx << '\t' << MI << '\n');
 
     // FIXME: Use a second vreg if instruction has no tied ops.
-    if (RI.Writes)
-      if (hasLiveDef)
-        insertSpill(NewVReg, true, &MI);
+    if ((RI.Writes) && (hasLiveDef))
+      insertSpill(NewVReg, true, &MI);
   }
 }
 

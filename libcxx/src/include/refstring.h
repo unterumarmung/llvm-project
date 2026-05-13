@@ -97,11 +97,11 @@ inline __libcpp_refstring& __libcpp_refstring::operator=(__libcpp_refstring cons
   __imp_                    = s.__imp_;
   if (__uses_refcount())
     __libcpp_atomic_add(&rep_from_data(__imp_)->count, 1);
-  if (adjust_old_count) {
-    if (__libcpp_atomic_add(&old_rep->count, count_t(-1)) < 0) {
+  if ((adjust_old_count) && (__libcpp_atomic_add(&old_rep->count, count_t(-1)) < 0)) 
+    {
       ::operator delete(old_rep);
     }
-  }
+  
   return *this;
 }
 

@@ -187,9 +187,8 @@ VarEnv::create(StringRef name, llvm::SMLoc loc, VarKind vk, bool verifyUsage) {
   } else {
   if (!isInternalConsistent(*this, id, name))
     return std::nullopt;
-  if (verifyUsage)
-    if (!isUsageConsistent(*this, id, loc, vk))
-      return std::nullopt;
+  if ((verifyUsage) && (!isUsageConsistent(*this, id, loc, vk)))
+    return std::nullopt;
   }
   return std::make_pair(id, didInsert);
 }

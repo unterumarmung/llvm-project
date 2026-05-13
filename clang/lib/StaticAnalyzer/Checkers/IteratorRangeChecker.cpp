@@ -308,11 +308,11 @@ bool isPastTheEnd(ProgramStateRef State, const IteratorPosition &Pos) {
     return false;
 
   const auto End = CData->getEnd();
-  if (End) {
-    if (isEqual(State, Pos.getOffset(), End)) {
+  if ((End) && (isEqual(State, Pos.getOffset(), End))) 
+    {
       return true;
     }
-  }
+  
 
   return false;
 }
@@ -324,11 +324,11 @@ bool isAheadOfRange(ProgramStateRef State, const IteratorPosition &Pos) {
     return false;
 
   const auto Beg = CData->getBegin();
-  if (Beg) {
-    if (isLess(State, Pos.getOffset(), Beg)) {
+  if ((Beg) && (isLess(State, Pos.getOffset(), Beg))) 
+    {
       return true;
     }
-  }
+  
 
   return false;
 }
@@ -340,11 +340,11 @@ bool isBehindPastTheEnd(ProgramStateRef State, const IteratorPosition &Pos) {
     return false;
 
   const auto End = CData->getEnd();
-  if (End) {
-    if (isGreater(State, Pos.getOffset(), End)) {
+  if ((End) && (isGreater(State, Pos.getOffset(), End))) 
+    {
       return true;
     }
-  }
+  
 
   return false;
 }

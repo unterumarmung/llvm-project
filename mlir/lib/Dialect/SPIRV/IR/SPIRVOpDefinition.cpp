@@ -116,13 +116,12 @@ static ParseResult parseSwitchOpCases(
     SmallVector<Type> operandTypes;
     if (failed(parser.parseColon()) || failed(parser.parseSuccessor(target)))
       return failure();
-    if (succeeded(parser.parseOptionalLParen())) {
-      if (failed(parser.parseOperandList(operands,
+    if ((succeeded(parser.parseOptionalLParen())) && (failed(parser.parseOperandList(operands,
                                          OpAsmParser::Delimiter::None)) ||
           failed(parser.parseColonTypeList(operandTypes)) ||
-          failed(parser.parseRParen()))
-        return failure();
-    }
+          failed(parser.parseRParen()))) 
+      return failure();
+    
     targets.push_back(target);
     targetOperands.emplace_back(operands);
     targetOperandTypes.emplace_back(operandTypes);

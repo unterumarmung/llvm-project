@@ -207,9 +207,8 @@ bool AlignmentFromAssumptionsPass::processAssumption(CallInst *ACall,
     if (J == ACall)
       continue;
 
-    if (Instruction *K = dyn_cast<Instruction>(J))
-      if (K->getFunction() == ACall->getFunction())
-        WorkList.push_back(K);
+    if (Instruction *K = dyn_cast<Instruction>(J); K && (K->getFunction() == ACall->getFunction()))
+      WorkList.push_back(K);
   }
 
   while (!WorkList.empty()) {

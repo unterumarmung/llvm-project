@@ -1028,9 +1028,8 @@ void MCContext::setGenDwarfRootFile(StringRef InputFileName, StringRef Buffer) {
     llvm::sys::path::append(FileNameBuf, getMainFileName());
   }
   StringRef FileName = FileNameBuf;
-  if (FileName.consume_front(getCompilationDir()))
-    if (llvm::sys::path::is_separator(FileName.front()))
-      FileName = FileName.drop_front();
+  if ((FileName.consume_front(getCompilationDir())) && (llvm::sys::path::is_separator(FileName.front())))
+    FileName = FileName.drop_front();
   assert(!FileName.empty());
   setMCLineTableRootFile(
       /*CUID=*/0, getCompilationDir(), FileName, Cksum, std::nullopt);

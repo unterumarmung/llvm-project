@@ -775,13 +775,13 @@ VNInfo *LiveRange::MergeValueNumberInto(VNInfo *V1, VNInfo *V2) {
     // If we can merge it into later V2 segments, do so now.  We ignore any
     // following V1 segments, as they will be merged in subsequent iterations
     // of the loop.
-    if (I != end()) {
-      if (I->start == S->end && I->valno == V2) {
+    if ((I != end()) && (I->start == S->end && I->valno == V2)) 
+      {
         S->end = I->end;
         segments.erase(I);
         I = S+1;
       }
-    }
+    
   }
 
   // Now that V1 is dead, remove it.
@@ -1078,10 +1078,9 @@ bool LiveRange::verify() const {
     if (std::next(I) != E) {
       if (I->end > std::next(I)->start)
         return false;
-      if (I->end == std::next(I)->start) {
-        if (I->valno == std::next(I)->valno)
-          return false;
-      }
+      if ((I->end == std::next(I)->start) && (I->valno == std::next(I)->valno)) 
+        return false;
+      
     }
   }
 

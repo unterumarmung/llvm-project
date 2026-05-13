@@ -568,13 +568,12 @@ mlir::Value fir::FirOpBuilder::convertWithSemantics(
   }
 
   // Legacy: remove when removing non HLFIR lowering path.
-  if (allowRebox)
-    if (((fir::isPolymorphicType(fromTy) &&
+  if ((allowRebox) && (((fir::isPolymorphicType(fromTy) &&
           (fir::isAllocatableType(fromTy) || fir::isPointerType(fromTy)) &&
           fir::isPolymorphicType(toTy)) ||
          (fir::isPolymorphicType(fromTy) && mlir::isa<fir::BoxType>(toTy))) &&
-        !(fir::isUnlimitedPolymorphicType(fromTy) && fir::isAssumedType(toTy)))
-      return fir::ReboxOp::create(*this, loc, toTy, val, mlir::Value{},
+        !(fir::isUnlimitedPolymorphicType(fromTy) && fir::isAssumedType(toTy))))
+    return fir::ReboxOp::create(*this, loc, toTy, val, mlir::Value{},
                                   /*slice=*/mlir::Value{});
 
   return createConvert(loc, toTy, val);

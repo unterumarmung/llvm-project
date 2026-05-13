@@ -690,13 +690,13 @@ void BuiltinNameEmitter::GroupBySignature() {
     // Check if we have already seen another function with the same list of
     // signatures.  If so, just add the name of the function.
     for (auto *Candidate : KnownSignatures) {
-      if (Candidate->size() == CurSignatureList->size() &&
-          *Candidate == *CurSignatureList) {
-        if (CanReuseSignature(Candidate, Fct.second)) {
+      if ((Candidate->size() == CurSignatureList->size() &&
+          *Candidate == *CurSignatureList) && (CanReuseSignature(Candidate, Fct.second))) 
+        {
           SignatureListMap.find(Candidate)->second.Names.push_back(Fct.first);
           FoundReusableSig = true;
         }
-      }
+      
     }
 
     if (FoundReusableSig) {

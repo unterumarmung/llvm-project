@@ -239,9 +239,8 @@ bool TypeSetByHwMode::operator==(const TypeSetByHwMode &VTS) const {
       bool NoModeVTS = !VTS.hasMode(M) || VTS.get(M).empty();
       if (NoModeThis != NoModeVTS)
         return false;
-      if (!NoModeThis)
-        if (get(M) != VTS.get(M))
-          return false;
+      if ((!NoModeThis) && (get(M) != VTS.get(M)))
+        return false;
     }
   }
 
@@ -2097,10 +2096,9 @@ bool TreePatternNode::isIsomorphicTo(const TreePatternNode &N,
 
   // Check operator of non-leaves early since it can be cheaper than checking
   // types.
-  if (!isLeaf())
-    if (N.getOperator() != getOperator() ||
-        N.getNumChildren() != getNumChildren())
-      return false;
+  if ((!isLeaf()) && (N.getOperator() != getOperator() ||
+        N.getNumChildren() != getNumChildren()))
+    return false;
 
   if (getExtTypes() != N.getExtTypes() ||
       getPredicateCalls() != N.getPredicateCalls() ||
@@ -2775,11 +2773,11 @@ bool TreePatternNode::ApplyTypeConstraints(TreePattern &TP, bool NotRegisters) {
       // child patterns, so attempt to match each sub-operand separately.
       if (OperandNode->isSubClassOf("Operand")) {
         const DagInit *MIOpInfo = OperandNode->getValueAsDag("MIOperandInfo");
-        if (unsigned NumArgs = MIOpInfo->getNumArgs()) {
+        if (unsigned NumArgs = MIOpInfo->getNumArgs(); NumArgs && (Child->getNumMIResults(CDP) < NumArgs)) 
           // But don't do that if the whole operand is being provided by
           // a single ComplexPattern-related Operand.
 
-          if (Child->getNumMIResults(CDP) < NumArgs) {
+          {
             // Match first sub-operand against the child we already have.
             const Record *SubRec = cast<DefInit>(MIOpInfo->getArg(0))->getDef();
             MadeChange |= Child->UpdateNodeTypeFromInst(ChildResNo, SubRec, TP);
@@ -2799,7 +2797,7 @@ bool TreePatternNode::ApplyTypeConstraints(TreePattern &TP, bool NotRegisters) {
             }
             continue;
           }
-        }
+        
       }
 
       // If we didn't match by pieces above, attempt to match the whole
@@ -2900,10 +2898,10 @@ bool TreePatternNode::canPatternMatch(std::string &Reason,
   // immediate.
   const SDNodeInfo &NodeInfo = CDP.getSDNodeInfo(getOperator());
   bool isCommIntrinsic = isCommutativeIntrinsic(CDP);
-  if (NodeInfo.hasProperty(SDNPCommutative) || isCommIntrinsic) {
+  if ((NodeInfo.hasProperty(SDNPCommutative) || isCommIntrinsic) && (!OnlyOnRHSOfCommutative(getChild(getNumChildren() - 1)))) 
     // Scan all of the operands of the node and make sure that only the last one
     // is a constant node, unless the RHS also is.
-    if (!OnlyOnRHSOfCommutative(getChild(getNumChildren() - 1))) {
+    {
       unsigned Skip = isCommIntrinsic ? 1 : 0; // First operand is intrinsic id.
       for (unsigned i = Skip, e = getNumChildren() - 1; i != e; ++i)
         if (OnlyOnRHSOfCommutative(getChild(i))) {
@@ -2912,7 +2910,7 @@ bool TreePatternNode::canPatternMatch(std::string &Reason,
           return false;
         }
     }
-  }
+  
 
   return true;
 }
@@ -3819,17 +3817,17 @@ static bool InferFromPattern(CodeGenInstruction &InstInfo,
     InstInfo.InferredFrom = PatDef;
 
   // Check explicitly set flags for consistency.
-  if (InstInfo.hasSideEffects != PatInfo.hasSideEffects &&
-      !InstInfo.hasSideEffects_Unset) {
+  if ((InstInfo.hasSideEffects != PatInfo.hasSideEffects &&
+      !InstInfo.hasSideEffects_Unset) && (!InstInfo.hasSideEffects)) 
     // Allow explicitly setting hasSideEffects = 1 on instructions, even when
     // the pattern has no side effects. That could be useful for div/rem
     // instructions that may trap.
-    if (!InstInfo.hasSideEffects) {
+    {
       Error = true;
       PrintError(PatDef->getLoc(), "Pattern doesn't match hasSideEffects = " +
                                        Twine(InstInfo.hasSideEffects));
     }
-  }
+  
 
   if (InstInfo.mayStore != PatInfo.mayStore && !InstInfo.mayStore_Unset) {
     Error = true;
@@ -3837,15 +3835,15 @@ static bool InferFromPattern(CodeGenInstruction &InstInfo,
                "Pattern doesn't match mayStore = " + Twine(InstInfo.mayStore));
   }
 
-  if (InstInfo.mayLoad != PatInfo.mayLoad && !InstInfo.mayLoad_Unset) {
+  if ((InstInfo.mayLoad != PatInfo.mayLoad && !InstInfo.mayLoad_Unset) && (!InstInfo.mayLoad)) 
     // Allow explicitly setting mayLoad = 1, even when the pattern has no loads.
     // Some targets translate immediates to loads.
-    if (!InstInfo.mayLoad) {
+    {
       Error = true;
       PrintError(PatDef->getLoc(),
                  "Pattern doesn't match mayLoad = " + Twine(InstInfo.mayLoad));
     }
-  }
+  
 
   // Transfer inferred flags.
   InstInfo.hasSideEffects |= PatInfo.hasSideEffects;
@@ -3882,9 +3880,8 @@ static bool hasNullFragReference(const DagInit *DI) {
     return true;
   // If any of the arguments reference the null fragment, return true.
   for (unsigned i = 0, e = DI->getNumArgs(); i != e; ++i) {
-    if (auto Arg = dyn_cast<DefInit>(DI->getArg(i)))
-      if (Arg->getDef()->getName() == "null_frag")
-        return true;
+    if (auto Arg = dyn_cast<DefInit>(DI->getArg(i)); Arg && (Arg->getDef()->getName() == "null_frag"))
+      return true;
     const DagInit *Arg = dyn_cast<DagInit>(DI->getArg(i));
     if (Arg && hasNullFragReference(Arg))
       return true;
@@ -4045,12 +4042,11 @@ void CodeGenDAGPatterns::parseInstructionPattern(const CodeGenInstruction &CGI,
     if (InIter == InstInputs.end()) {
       // If this is an operand with a DefaultOps set filled in, we can ignore
       // this.  When we codegen it, we will do so as always executed.
-      if (Op.Rec->isSubClassOf("OperandWithDefaultOps")) {
+      if ((Op.Rec->isSubClassOf("OperandWithDefaultOps")) && (!getDefaultOperand(Op.Rec).DefaultOps.empty())) 
         // Does it have a non-empty DefaultOps field?  If so, ignore this
         // operand.
-        if (!getDefaultOperand(Op.Rec).DefaultOps.empty())
-          continue;
-      }
+        continue;
+      
       I.error("Operand $" + OpName +
               " does not appear in the instruction pattern");
       continue;
@@ -4210,9 +4206,8 @@ void CodeGenDAGPatterns::AddPatternToMatch(TreePattern *Pattern,
   // If the source pattern's root is a complex pattern, that complex pattern
   // must specify the nodes it can potentially match.
   if (const ComplexPattern *CP =
-          PTM.getSrcPattern().getComplexPatternInfo(*this))
-    if (CP->getRootNodes().empty())
-      Pattern->error("ComplexPattern at root must specify list of opcodes it"
+          PTM.getSrcPattern().getComplexPatternInfo(*this); CP && (CP->getRootNodes().empty()))
+    Pattern->error("ComplexPattern at root must specify list of opcodes it"
                      " could match");
 
   // Find all of the named values in the input and output, ensure they have the

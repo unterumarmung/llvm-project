@@ -980,9 +980,8 @@ bool Function::hasAddressTaken(const User **PutOffender,
     }
 
     if (IgnoreAssumeLikeCalls) {
-      if (const auto *I = dyn_cast<IntrinsicInst>(Call))
-        if (I->isAssumeLikeIntrinsic())
-          continue;
+      if (const auto *I = dyn_cast<IntrinsicInst>(Call); I && (I->isAssumeLikeIntrinsic()))
+        continue;
     }
 
     if (!Call->isCallee(&U) || (!IgnoreCastedDirectCall &&
@@ -1013,9 +1012,8 @@ bool Function::isDefTriviallyDead() const {
 /// setjmp or other function that gcc recognizes as "returning twice".
 bool Function::callsFunctionThatReturnsTwice() const {
   for (const Instruction &I : instructions(this))
-    if (const auto *Call = dyn_cast<CallBase>(&I))
-      if (Call->hasFnAttr(Attribute::ReturnsTwice))
-        return true;
+    if (const auto *Call = dyn_cast<CallBase>(&I); Call && (Call->hasFnAttr(Attribute::ReturnsTwice)))
+      return true;
 
   return false;
 }
@@ -1131,9 +1129,8 @@ std::optional<ProfileCount> Function::getEntryCount(bool AllowSynthetic) const {
 DenseSet<GlobalValue::GUID> Function::getImportGUIDs() const {
   DenseSet<GlobalValue::GUID> R;
   if (MDNode *MD = getMetadata(LLVMContext::MD_prof))
-    if (MDString *MDS = dyn_cast<MDString>(MD->getOperand(0)))
-      if (MDS->getString() == MDProfLabels::FunctionEntryCount)
-        for (unsigned i = 2; i < MD->getNumOperands(); i++)
+    if (MDString *MDS = dyn_cast<MDString>(MD->getOperand(0)); MDS && (MDS->getString() == MDProfLabels::FunctionEntryCount))
+      for (unsigned i = 2; i < MD->getNumOperands(); i++)
           R.insert(mdconst::extract<ConstantInt>(MD->getOperand(i))
                        ->getValue()
                        .getZExtValue());

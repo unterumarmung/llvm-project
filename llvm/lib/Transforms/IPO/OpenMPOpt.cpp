@@ -1876,14 +1876,14 @@ private:
     // If we use a call as a replacement value we need to make sure the ident is
     // valid at the new location. For now we just pick a global one, either
     // existing and used by one of the calls, or created from scratch.
-    if (CallBase *CI = dyn_cast<CallBase>(ReplVal)) {
-      if (!CI->arg_empty() &&
-          CI->getArgOperand(0)->getType() == OMPInfoCache.OMPBuilder.IdentPtr) {
+    if (CallBase *CI = dyn_cast<CallBase>(ReplVal); CI && (!CI->arg_empty() &&
+          CI->getArgOperand(0)->getType() == OMPInfoCache.OMPBuilder.IdentPtr)) 
+      {
         Value *Ident = getCombinedIdentFromCallUsesIn(RFI, F,
                                                       /* GlobalOnly */ true);
         CI->setArgOperand(0, Ident);
       }
-    }
+    
 
     bool Changed = false;
     auto ReplaceAndDeleteCB = [&](Use &U, Function &Caller) {
@@ -1939,9 +1939,8 @@ private:
     // Helper to identify uses of a GTId as GTId arguments.
     auto AddUserArgs = [&](Value &GTId) {
       for (Use &U : GTId.uses())
-        if (CallInst *CI = dyn_cast<CallInst>(U.getUser()))
-          if (CI->isArgOperand(&U))
-            if (Function *Callee = CI->getCalledFunction())
+        if (CallInst *CI = dyn_cast<CallInst>(U.getUser()); CI && (CI->isArgOperand(&U)))
+          if (Function *Callee = CI->getCalledFunction())
               if (CallArgOpIsGTId(*Callee, U.getOperandNo(), *CI))
                 GTIdArgs.insert(Callee->getArg(U.getOperandNo()));
     };
@@ -2170,8 +2169,8 @@ bool OpenMPOpt::rewriteDeviceCodeStateMachine() {
 
     SmallVector<Use *, 2> ToBeReplacedStateMachineUses;
     OMPInformationCache::foreachUse(*F, [&](Use &U) {
-      if (auto *CB = dyn_cast<CallBase>(U.getUser()))
-        if (CB->isCallee(&U)) {
+      if (auto *CB = dyn_cast<CallBase>(U.getUser()); CB && (CB->isCallee(&U)))
+        {
           ++NumDirectCalls;
           return;
         }
@@ -2954,14 +2953,12 @@ struct AAExecutionDomainFunction : public AAExecutionDomain {
 
     if (C->isZero()) {
       // Match: 0 == llvm.nvvm.read.ptx.sreg.tid.x()
-      if (auto *II = dyn_cast<IntrinsicInst>(Cmp->getOperand(0)))
-        if (II->getIntrinsicID() == Intrinsic::nvvm_read_ptx_sreg_tid_x)
-          return true;
+      if (auto *II = dyn_cast<IntrinsicInst>(Cmp->getOperand(0)); II && (II->getIntrinsicID() == Intrinsic::nvvm_read_ptx_sreg_tid_x))
+        return true;
 
       // Match: 0 == llvm.amdgcn.workitem.id.x()
-      if (auto *II = dyn_cast<IntrinsicInst>(Cmp->getOperand(0)))
-        if (II->getIntrinsicID() == Intrinsic::amdgcn_workitem_id_x)
-          return true;
+      if (auto *II = dyn_cast<IntrinsicInst>(Cmp->getOperand(0)); II && (II->getIntrinsicID() == Intrinsic::amdgcn_workitem_id_x))
+        return true;
     }
 
     return false;
@@ -3286,9 +3283,8 @@ ChangeStatus AAExecutionDomainFunction::updateImpl(Attributor &A) {
       if (!I.mayHaveSideEffects() && InfoCache.isOnlyUsedByAssume(I))
         continue;
 
-      if (auto *LI = dyn_cast<LoadInst>(&I))
-        if (LI->hasMetadata(LLVMContext::MD_invariant_load))
-          continue;
+      if (auto *LI = dyn_cast<LoadInst>(&I); LI && (LI->hasMetadata(LLVMContext::MD_invariant_load)))
+        continue;
 
       if (!ED.EncounteredNonLocalSideEffect &&
           AA::isPotentiallyAffectedByBarrier(A, I, *this))
@@ -4235,9 +4231,8 @@ struct AAKernelInfoFunction : AAKernelInfo {
           continue;
 
         // Skip diagnostics on calls to known OpenMP runtime functions for now.
-        if (auto *CB = dyn_cast<CallBase>(NonCompatibleI))
-          if (OMPInfoCache.RTLFunctions.contains(CB->getCalledFunction()))
-            continue;
+        if (auto *CB = dyn_cast<CallBase>(NonCompatibleI); CB && (OMPInfoCache.RTLFunctions.contains(CB->getCalledFunction())))
+          continue;
 
         auto Remark = [&](OptimizationRemarkAnalysis ORA) {
           ORA << "Value has potential side effects preventing SPMD-mode "
@@ -4708,10 +4703,9 @@ struct AAKernelInfoFunction : AAKernelInfo {
     };
 
     bool UsedAssumedInformationInCheckRWInst = false;
-    if (!SPMDCompatibilityTracker.isAtFixpoint())
-      if (!A.checkForAllReadWriteInstructions(
-              CheckRWInst, *this, UsedAssumedInformationInCheckRWInst))
-        SPMDCompatibilityTracker.indicatePessimisticFixpoint();
+    if ((!SPMDCompatibilityTracker.isAtFixpoint()) && (!A.checkForAllReadWriteInstructions(
+              CheckRWInst, *this, UsedAssumedInformationInCheckRWInst)))
+      SPMDCompatibilityTracker.indicatePessimisticFixpoint();
 
     bool UsedAssumedInformationFromReachingKernels = false;
     if (!IsKernelEntry) {
@@ -5572,14 +5566,13 @@ void OpenMPOpt::registerAAs(bool IsModulePass) {
     // We look at internal functions only on-demand but if any use is not a
     // direct call or outside the current set of analyzed functions, we have
     // to do it eagerly.
-    if (F->hasLocalLinkage()) {
-      if (llvm::all_of(F->uses(), [this](const Use &U) {
+    if ((F->hasLocalLinkage()) && (llvm::all_of(F->uses(), [this](const Use &U) {
             const auto *CB = dyn_cast<CallBase>(U.getUser());
             return CB && CB->isCallee(&U) &&
                    A.isRunOn(const_cast<Function *>(CB->getCaller()));
-          }))
-        continue;
-    }
+          }))) 
+      continue;
+    
     registerAAsForFunction(A, *F);
   }
 }
@@ -5602,11 +5595,10 @@ void OpenMPOpt::registerAAsForFunction(Attributor &A, const Function &F) {
           IRPosition::value(*LI->getPointerOperand()));
       continue;
     }
-    if (auto *CI = dyn_cast<CallBase>(&I)) {
-      if (CI->isIndirectCall())
-        A.getOrCreateAAFor<AAIndirectCallInfo>(
+    if (auto *CI = dyn_cast<CallBase>(&I); CI && (CI->isIndirectCall())) 
+      A.getOrCreateAAFor<AAIndirectCallInfo>(
             IRPosition::callsite_function(*CI));
-    }
+    
     if (auto *SI = dyn_cast<StoreInst>(&I)) {
       A.getOrCreateAAFor<AAIsDead>(IRPosition::value(*SI));
       A.getOrCreateAAFor<AAAddressSpace>(
@@ -5617,13 +5609,13 @@ void OpenMPOpt::registerAAsForFunction(Attributor &A, const Function &F) {
       A.getOrCreateAAFor<AAIsDead>(IRPosition::value(*FI));
       continue;
     }
-    if (auto *II = dyn_cast<IntrinsicInst>(&I)) {
-      if (II->getIntrinsicID() == Intrinsic::assume) {
+    if (auto *II = dyn_cast<IntrinsicInst>(&I); II && (II->getIntrinsicID() == Intrinsic::assume)) 
+      {
         A.getOrCreateAAFor<AAPotentialValues>(
             IRPosition::value(*II->getArgOperand(0)));
         continue;
       }
-    }
+    
   }
 }
 

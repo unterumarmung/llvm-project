@@ -352,13 +352,12 @@ getUnaryOpArgs(const Expr *Op) {
   if (const auto *UO = dyn_cast<UnaryOperator>(Op))
     return {{UO->getSubExpr(), UO->isPostfix()}};
 
-  if (const auto *OpCall = dyn_cast<CXXOperatorCallExpr>(Op)) {
+  if (const auto *OpCall = dyn_cast<CXXOperatorCallExpr>(Op); OpCall && (OpCall->getNumArgs() == 1 || OpCall->getOperator() == OO_PlusPlus ||
+        OpCall->getOperator() == OO_MinusMinus)) 
     // Post-inc/dec have a second unused argument to differentiate it, so we
     // accept -- or ++ as unary, or any operator call with only 1 arg.
-    if (OpCall->getNumArgs() == 1 || OpCall->getOperator() == OO_PlusPlus ||
-        OpCall->getOperator() == OO_MinusMinus)
-      return {{OpCall->getArg(0), /*IsPostfix=*/OpCall->getNumArgs() == 1}};
-  }
+    return {{OpCall->getArg(0), /*IsPostfix=*/OpCall->getNumArgs() == 1}};
+  
 
   return std::nullopt;
 }
@@ -445,10 +444,9 @@ getUpdateStmtInfo(const Expr *E) {
 
   if (isa<BinaryOperator>(RHS)) {
     return Res;
-  } else if (const auto *OO = dyn_cast<CXXOperatorCallExpr>(RHS)) {
-    if (OO->isInfixBinaryOp())
-      return Res;
-  }
+  } else if (const auto *OO = dyn_cast<CXXOperatorCallExpr>(RHS); OO && (OO->isInfixBinaryOp())) 
+    return Res;
+  
 
   return std::nullopt;
 }

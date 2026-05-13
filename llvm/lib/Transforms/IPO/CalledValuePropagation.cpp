@@ -138,9 +138,8 @@ public:
       if (auto *GV = dyn_cast<GlobalVariable>(Key.getPointer())) {
         if (canTrackGlobalVariableInterprocedurally(GV))
           return computeConstant(GV->getInitializer());
-      } else if (auto *F = cast<Function>(Key.getPointer()))
-        if (canTrackReturnsInterprocedurally(F))
-          return getUndefVal();
+      } else if (auto *F = cast<Function>(Key.getPointer()); F && (canTrackReturnsInterprocedurally(F)))
+        return getUndefVal();
     }
     return getOverdefinedVal();
   }

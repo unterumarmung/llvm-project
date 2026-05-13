@@ -35,9 +35,8 @@ static bool lowerWidenableCondition(Function &F) {
   // This is presumably cheaper than traversing all instructions in the
   // function.
   for (auto *U : WCDecl->users())
-    if (auto *CI = dyn_cast<CallInst>(U))
-      if (CI->getFunction() == &F)
-        ToLower.push_back(CI);
+    if (auto *CI = dyn_cast<CallInst>(U); CI && (CI->getFunction() == &F))
+      ToLower.push_back(CI);
 
   if (ToLower.empty())
     return false;

@@ -186,8 +186,8 @@ static void test_codegen_fns(MyASTConsumer *my) {
         }
         mytest_fn_ok = true;
       }
-    } else if(clang::RecordDecl *rd = dyn_cast<RecordDecl>(decl)) {
-      if (rd->getName() == "mytest_struct") {
+    } else if(clang::RecordDecl *rd = dyn_cast<RecordDecl>(decl); rd && (rd->getName() == "mytest_struct")) 
+      {
         RecordDecl *def = rd->getDefinition();
         ASSERT_TRUE(def != NULL);
         CanQualType qType = Ctx.getCanonicalTagType(rd);
@@ -248,7 +248,7 @@ static void test_codegen_fns(MyASTConsumer *my) {
 
         mytest_struct_ok = true;
       }
-    }
+    
   }
 
   ASSERT_TRUE(mytest_fn_ok);

@@ -145,9 +145,8 @@ void LVType::resolveName() {
   // In (b), the {Member} type have been resolved to use the real type.
 
   LVElement *BaseType = getType();
-  if (BaseType && options().getAttributeArgument())
-    if (BaseType->isTemplateParam())
-      BaseType = BaseType->getType();
+  if ((BaseType && options().getAttributeArgument()) && (BaseType->isTemplateParam()))
+    BaseType = BaseType->getType();
 
   if (BaseType && !BaseType->getIsResolvedName())
     BaseType->resolveName();

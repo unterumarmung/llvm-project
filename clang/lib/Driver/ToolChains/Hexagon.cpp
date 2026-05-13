@@ -153,10 +153,9 @@ void hexagon::getHexagonTargetFeatures(const Driver &D,
 
   bool UseLongCalls = false;
   if (Arg *A = Args.getLastArg(options::OPT_mlong_calls,
-                               options::OPT_mno_long_calls)) {
-    if (A->getOption().matches(options::OPT_mlong_calls))
-      UseLongCalls = true;
-  }
+                               options::OPT_mno_long_calls); A && (A->getOption().matches(options::OPT_mlong_calls))) 
+    UseLongCalls = true;
+  
 
   Features.push_back(UseLongCalls ? "+long-calls" : "-long-calls");
 
@@ -212,10 +211,9 @@ void hexagon::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_mhexagon_hvx_ieee_fp,
-                               options::OPT_mno_hexagon_hvx_ieee_fp)) {
-    if (A->getOption().matches(options::OPT_mhexagon_hvx_ieee_fp))
-      CmdArgs.push_back("-mhvx-ieee-fp");
-  }
+                               options::OPT_mno_hexagon_hvx_ieee_fp); A && (A->getOption().matches(options::OPT_mhexagon_hvx_ieee_fp))) 
+    CmdArgs.push_back("-mhvx-ieee-fp");
+  
 
   if (auto G = toolchains::HexagonToolChain::getSmallDataThreshold(Args)) {
     CmdArgs.push_back(Args.MakeArgString("-gpsize=" + Twine(*G)));
@@ -378,10 +376,9 @@ constructHexagonLinkArgs(Compilation &C, const JobAction &JA,
         CmdArgs.push_back("-lc");
       CmdArgs.push_back("-lclang_rt.builtins-hexagon");
     }
-    if (D.CCCIsCXX()) {
-      if (HTC.ShouldLinkCXXStdlib(Args))
-        HTC.AddCXXStdlibLibArgs(Args, CmdArgs);
-    }
+    if ((D.CCCIsCXX()) && (HTC.ShouldLinkCXXStdlib(Args))) 
+      HTC.AddCXXStdlibLibArgs(Args, CmdArgs);
+    
     const ToolChain::path_list &LibPaths = HTC.getFilePaths();
     for (const auto &LibPath : LibPaths)
       CmdArgs.push_back(Args.MakeArgString(StringRef("-L") + LibPath));
@@ -503,13 +500,13 @@ constructHexagonLinkArgs(Compilation &C, const JobAction &JA,
   //----------------------------------------------------------------------------
   // End files
   //----------------------------------------------------------------------------
-  if (IncStdLib && IncStartFiles) {
-    if (HTC.GetCStdlibType(Args) != ToolChain::CST_Picolibc) {
+  if ((IncStdLib && IncStartFiles) && (HTC.GetCStdlibType(Args) != ToolChain::CST_Picolibc)) 
+    {
       SmallString<128> Fini = LibraryDir;
       llvm::sys::path::append(Fini, UseShared ? "finiS.o" : "fini.o");
       CmdArgs.push_back(Args.MakeArgString(Fini));
     }
-  }
+  
 }
 
 void hexagon::Linker::ConstructJob(Compilation &C, const JobAction &JA,

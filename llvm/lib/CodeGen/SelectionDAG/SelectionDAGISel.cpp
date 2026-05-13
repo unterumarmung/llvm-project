@@ -862,14 +862,13 @@ static void preserveFakeUses(BasicBlock::iterator Begin,
   bool HaveFakeUse = false;
   bool HaveTailCall = false;
   do {
-    if (const CallInst *CI = dyn_cast<CallInst>(--I))
-      if (CI->isTailCall()) {
+    if (const CallInst *CI = dyn_cast<CallInst>(--I); CI && (CI->isTailCall()))
+      {
         HaveTailCall = true;
         break;
       }
-    if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(I))
-      if (II->getIntrinsicID() == Intrinsic::fake_use)
-        HaveFakeUse = true;
+    if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(I); II && (II->getIntrinsicID() == Intrinsic::fake_use))
+      HaveFakeUse = true;
   } while (I != Begin);
 
   // If we didn't find any tail calls followed by fake uses, we are done.
@@ -1464,8 +1463,8 @@ bool SelectionDAGISel::PrepareEHLandingPad() {
   // Catchpads have one live-in register, which typically holds the exception
   // pointer or code.
   if (isFuncletEHPersonality(Pers)) {
-    if (const auto *CPI = dyn_cast<CatchPadInst>(LLVMBB->getFirstNonPHIIt())) {
-      if (hasExceptionPointerOrCodeUser(CPI)) {
+    if (const auto *CPI = dyn_cast<CatchPadInst>(LLVMBB->getFirstNonPHIIt()); CPI && (hasExceptionPointerOrCodeUser(CPI))) 
+      {
         // Get or create the virtual register to hold the pointer or code.  Mark
         // the live in physreg and copy into the vreg.
         MCRegister EHPhysReg = TLI->getExceptionPointerRegister(PersonalityFn);
@@ -1476,7 +1475,7 @@ bool SelectionDAGISel::PrepareEHLandingPad() {
                 TII->get(TargetOpcode::COPY), VReg)
             .addReg(EHPhysReg, RegState::Kill);
       }
-    }
+    
     return true;
   }
 
@@ -3989,8 +3988,8 @@ void SelectionDAGISel::SelectCodeCommon(SDNode *NodeToMatch,
         unsigned NNonChainUses = 0;
         SDNode *NS = NodeStack[i].getNode();
         for (const SDUse &U : NS->uses())
-          if (U.getValueType() != MVT::Other)
-            if (++NNonChainUses > 1) {
+          if ((U.getValueType() != MVT::Other) && (++NNonChainUses > 1))
+            {
               HasMultipleUses = true;
               break;
             }

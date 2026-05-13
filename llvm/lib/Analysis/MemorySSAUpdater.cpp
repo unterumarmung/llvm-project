@@ -866,8 +866,8 @@ void MemorySSAUpdater::applyInsertUpdates(ArrayRef<CFGUpdate> Updates,
         // MemoryPhi node, and later deleted when the block is deleted.
         if (!DT.getNode(BB))
           return MSSA->getLiveOnEntryDef();
-        if (auto *IDom = DT.getNode(BB)->getIDom())
-          if (IDom->getBlock() != BB) {
+        if (auto *IDom = DT.getNode(BB)->getIDom(); IDom && (IDom->getBlock() != BB))
+          {
             BB = IDom->getBlock();
             continue;
           }

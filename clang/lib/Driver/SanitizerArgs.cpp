@@ -791,29 +791,27 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
   if (Arg *A = Args.getLastArg(
           options::OPT_fsanitize_coverage_stack_depth_callback_min_EQ)) {
     StringRef S = A->getValue();
-    if (S.getAsInteger(0, CoverageStackDepthCallbackMin) ||
-        CoverageStackDepthCallbackMin < 0) {
-      if (DiagnoseErrors)
-        D.Diag(clang::diag::err_drv_invalid_value) << A->getAsString(Args) << S;
-    }
+    if ((S.getAsInteger(0, CoverageStackDepthCallbackMin) ||
+        CoverageStackDepthCallbackMin < 0) && (DiagnoseErrors)) 
+      D.Diag(clang::diag::err_drv_invalid_value) << A->getAsString(Args) << S;
+    
   }
 
   // Parse -f[no-]sanitize-memory-track-origins[=level] options.
   if (AllAddedKinds & SanitizerKind::Memory) {
     if (Arg *A =
             Args.getLastArg(options::OPT_fsanitize_memory_track_origins_EQ,
-                            options::OPT_fno_sanitize_memory_track_origins)) {
-      if (!A->getOption().matches(
-              options::OPT_fno_sanitize_memory_track_origins)) {
+                            options::OPT_fno_sanitize_memory_track_origins); A && (!A->getOption().matches(
+              options::OPT_fno_sanitize_memory_track_origins))) 
+      {
         StringRef S = A->getValue();
-        if (S.getAsInteger(0, MsanTrackOrigins) || MsanTrackOrigins < 0 ||
-            MsanTrackOrigins > 2) {
-          if (DiagnoseErrors)
-            D.Diag(clang::diag::err_drv_invalid_value)
+        if ((S.getAsInteger(0, MsanTrackOrigins) || MsanTrackOrigins < 0 ||
+            MsanTrackOrigins > 2) && (DiagnoseErrors)) 
+          D.Diag(clang::diag::err_drv_invalid_value)
                 << A->getAsString(Args) << S;
-        }
+        
       }
-    }
+    
     MsanUseAfterDtor = Args.hasFlag(
         options::OPT_fsanitize_memory_use_after_dtor,
         options::OPT_fno_sanitize_memory_use_after_dtor, MsanUseAfterDtor);

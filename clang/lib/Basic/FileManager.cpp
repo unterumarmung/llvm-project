@@ -50,13 +50,13 @@ static void normalizeCacheKey(StringRef &Path,
   // A bare drive path like "[A-Z]:" is drive-relative (current directory on the
   // drive).  As `[A-Z]:` is not a path specification, we must canonicalise it
   // to `[A-Z]:.`.
-  if (is_style_windows(Style::native)) {
-    if (Path.size() > 1 && Path.back() == ':' &&
-        Path.equals_insensitive(root_name(Path))) {
+  if ((is_style_windows(Style::native)) && (Path.size() > 1 && Path.back() == ':' &&
+        Path.equals_insensitive(root_name(Path)))) 
+    {
       Storage = Path.str() + ".";
       Path = *Storage;
     }
-  }
+  
 }
 
 //===----------------------------------------------------------------------===//

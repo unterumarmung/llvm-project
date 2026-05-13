@@ -636,15 +636,15 @@ bool HasNameMatcher::matchesNodeFullFast(const NamedDecl &Node) const {
         continue;
       return false;
     }
-    if (const auto *RD = dyn_cast<RecordDecl>(Ctx)) {
-      if (!isa<ClassTemplateSpecializationDecl>(Ctx)) {
+    if (const auto *RD = dyn_cast<RecordDecl>(Ctx); RD && (!isa<ClassTemplateSpecializationDecl>(Ctx))) 
+      {
         if (Patterns.consumeNameSuffix(getNodeName(*RD, Scratch),
                                        /*CanSkip=*/false))
           continue;
 
         return false;
       }
-    }
+    
 
     // We don't know how to deal with this DeclContext.
     // Fallback to the slow version of the code.

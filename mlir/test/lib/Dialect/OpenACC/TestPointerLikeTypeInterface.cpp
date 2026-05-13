@@ -128,10 +128,9 @@ void TestPointerLikeTypeInterfacePass::runOnOperation() {
         }
       }
       // Collect value marked with test.value for store tests
-      if (testMode == "store" && op->hasAttr("test.value")) {
-        if (op->getNumResults() > 0)
-          testValue = op->getResult(0);
-      }
+      if ((testMode == "store" && op->hasAttr("test.value")) && (op->getNumResults() > 0)) 
+        testValue = op->getResult(0);
+      
     });
 
     // Now test all candidates

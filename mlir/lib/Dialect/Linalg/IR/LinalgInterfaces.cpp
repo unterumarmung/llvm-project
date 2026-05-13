@@ -1300,9 +1300,8 @@ LogicalResult mlir::linalg::detail::verifyStructuredOpInterface(Operation *op) {
 
   // Before checking indexing maps, we need to make sure the attributes
   // referenced by it are valid.
-  if (linalgOp.hasDynamicIndexingMaps())
-    if (failed(linalgOp.verifyIndexingMapRequiredAttributes()))
-      return failure();
+  if ((linalgOp.hasDynamicIndexingMaps()) && (failed(linalgOp.verifyIndexingMapRequiredAttributes())))
+    return failure();
 
   // Delayed calling of IndexingMapOpInterface::verifyImpl.
   if (failed(cast<IndexingMapOpInterface>(op).verifyImpl()))

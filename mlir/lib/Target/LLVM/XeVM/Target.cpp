@@ -575,9 +575,8 @@ std::optional<SmallVector<char, 0>> SPIRVSerializer::run() {
     auto libs = loadBitcodeFiles(*llvmModule);
     if (!libs)
       return std::nullopt;
-    if (!libs->empty())
-      if (failed(linkFiles(*llvmModule, std::move(*libs))))
-        return std::nullopt;
+    if ((!libs->empty()) && (failed(linkFiles(*llvmModule, std::move(*libs)))))
+      return std::nullopt;
     handleModulePostLink(*llvmModule);
   }
 

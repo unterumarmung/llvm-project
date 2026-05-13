@@ -110,14 +110,12 @@ void StorageLayout::foreachField(
   // Per-level storage.
   for (Level l = 0; l < lvlRank; /*l += 1 or l += AoSCooLen*/) {
     const auto lt = lvlTypes[l];
-    if (isWithPosLT(lt)) {
-      if (!(callback(fieldIdx++, SparseTensorFieldKind::PosMemRef, l, lt)))
-        return;
-    }
-    if (isWithCrdLT(lt)) {
-      if (!(callback(fieldIdx++, SparseTensorFieldKind::CrdMemRef, l, lt)))
-        return;
-    }
+    if ((isWithPosLT(lt)) && (!(callback(fieldIdx++, SparseTensorFieldKind::PosMemRef, l, lt)))) 
+      return;
+    
+    if ((isWithCrdLT(lt)) && (!(callback(fieldIdx++, SparseTensorFieldKind::CrdMemRef, l, lt)))) 
+      return;
+    
     if (!cooSegsRef.empty() && cooSegsRef.front().isSegmentStart(l)) {
       if (!cooSegsRef.front().isSoA) {
         // AoS COO, all singletons are fused into one memrefs. Skips the entire
@@ -1280,10 +1278,9 @@ static LogicalResult verifySparsifierGetterSetter(
   const auto enc = md.getType().getEncoding();
   const Level lvlRank = enc.getLvlRank();
 
-  if (mdKind == StorageSpecifierKind::DimOffset ||
-      mdKind == StorageSpecifierKind::DimStride)
-    if (!enc.isSlice())
-      return op->emitError("requested slice data on non-slice tensor");
+  if ((mdKind == StorageSpecifierKind::DimOffset ||
+      mdKind == StorageSpecifierKind::DimStride) && (!enc.isSlice()))
+    return op->emitError("requested slice data on non-slice tensor");
 
   if (mdKind != StorageSpecifierKind::ValMemSize) {
     if (!lvl)
@@ -1795,29 +1792,26 @@ LogicalResult BinaryOp::verify() {
 
   // Check correct number of block arguments and return type for each
   // non-empty region.
-  if (!overlap.empty()) {
-    if (failed(verifyNumBlockArgs(this, overlap, "overlap",
-                                  TypeRange{leftType, rightType}, outputType)))
-      return failure();
-  }
+  if ((!overlap.empty()) && (failed(verifyNumBlockArgs(this, overlap, "overlap",
+                                  TypeRange{leftType, rightType}, outputType)))) 
+    return failure();
+  
   if (!left.empty()) {
     if (failed(verifyNumBlockArgs(this, left, "left", TypeRange{leftType},
                                   outputType)))
       return failure();
-  } else if (getLeftIdentity()) {
-    if (leftType != outputType)
-      return emitError("left=identity requires first argument to have the same "
+  } else if ((getLeftIdentity()) && (leftType != outputType)) 
+    return emitError("left=identity requires first argument to have the same "
                        "type as the output");
-  }
+  
   if (!right.empty()) {
     if (failed(verifyNumBlockArgs(this, right, "right", TypeRange{rightType},
                                   outputType)))
       return failure();
-  } else if (getRightIdentity()) {
-    if (rightType != outputType)
-      return emitError("right=identity requires second argument to have the "
+  } else if ((getRightIdentity()) && (rightType != outputType)) 
+    return emitError("right=identity requires second argument to have the "
                        "same type as the output");
-  }
+  
   return success();
 }
 
@@ -1828,11 +1822,10 @@ LogicalResult UnaryOp::verify() {
   // Check correct number of block arguments and return type for each
   // non-empty region.
   Region &present = getPresentRegion();
-  if (!present.empty()) {
-    if (failed(verifyNumBlockArgs(this, present, "present",
-                                  TypeRange{inputType}, outputType)))
-      return failure();
-  }
+  if ((!present.empty()) && (failed(verifyNumBlockArgs(this, present, "present",
+                                  TypeRange{inputType}, outputType)))) 
+    return failure();
+  
   Region &absent = getAbsentRegion();
   if (!absent.empty()) {
     if (failed(verifyNumBlockArgs(this, absent, "absent", TypeRange{},
@@ -1846,11 +1839,10 @@ LogicalResult UnaryOp::verify() {
     if (auto arg = dyn_cast<BlockArgument>(absentVal)) {
       if (arg.getOwner() == parent)
         return emitError("absent region cannot yield linalg argument");
-    } else if (Operation *def = absentVal.getDefiningOp()) {
-      if (!isa<arith::ConstantOp>(def) &&
-          (def->getBlock() == absentBlock || def->getBlock() == parent))
-        return emitError("absent region cannot yield locally computed value");
-    }
+    } else if (Operation *def = absentVal.getDefiningOp(); def && (!isa<arith::ConstantOp>(def) &&
+          (def->getBlock() == absentBlock || def->getBlock() == parent))) 
+      return emitError("absent region cannot yield locally computed value");
+    
   }
   return success();
 }

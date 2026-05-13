@@ -87,9 +87,8 @@ struct msvc_hashing_ostream : public llvm::raw_svector_ostream {
 
 static const DeclContext *
 getLambdaDefaultArgumentDeclContext(const Decl *D) {
-  if (const auto *RD = dyn_cast<CXXRecordDecl>(D))
-    if (RD->isLambda())
-      if (const auto *Parm =
+  if (const auto *RD = dyn_cast<CXXRecordDecl>(D); RD && (RD->isLambda()))
+    if (const auto *Parm =
               dyn_cast_or_null<ParmVarDecl>(RD->getLambdaContextDecl()))
         return Parm->getDeclContext();
   return nullptr;
@@ -216,12 +215,12 @@ public:
 
     // Lambda closure types are already numbered, give out a phony number so
     // that they demangle nicely.
-    if (const auto *RD = dyn_cast<CXXRecordDecl>(ND)) {
-      if (RD->isLambda()) {
+    if (const auto *RD = dyn_cast<CXXRecordDecl>(ND); RD && (RD->isLambda())) 
+      {
         disc = 1;
         return true;
       }
-    }
+    
 
     // Use the canonical number for externally visible decls.
     if (ND->isExternallyVisible()) {
@@ -230,12 +229,11 @@ public:
     }
 
     // Anonymous tags are already numbered.
-    if (const TagDecl *Tag = dyn_cast<TagDecl>(ND)) {
-      if (!Tag->hasNameForLinkage() &&
+    if (const TagDecl *Tag = dyn_cast<TagDecl>(ND); Tag && (!Tag->hasNameForLinkage() &&
           !getASTContext().getDeclaratorForUnnamedTagDecl(Tag) &&
-          !getASTContext().getTypedefNameForUnnamedTagDecl(Tag))
-        return false;
-    }
+          !getASTContext().getTypedefNameForUnnamedTagDecl(Tag))) 
+      return false;
+    
 
     // Make up a reasonable number for internal decls.
     unsigned &discriminator = Uniquifier[ND];
@@ -1175,14 +1173,14 @@ void MicrosoftCXXNameMangler::mangleUnqualifiedName(GlobalDecl GD,
       // Otherwise, an anonymous entity.  We must have a declaration.
       assert(ND && "mangling empty name without declaration");
 
-      if (const NamespaceDecl *NS = dyn_cast<NamespaceDecl>(ND)) {
-        if (NS->isAnonymousNamespace()) {
+      if (const NamespaceDecl *NS = dyn_cast<NamespaceDecl>(ND); NS && (NS->isAnonymousNamespace())) 
+        {
           llvm::SmallString<16> Name("?A0x");
           Name += Context.getAnonymousNamespaceHash();
           mangleSourceName(Name);
           break;
         }
-      }
+      
 
       if (const DecompositionDecl *DD = dyn_cast<DecompositionDecl>(ND)) {
         // Decomposition declarations are considered anonymous, and get
@@ -1236,8 +1234,8 @@ void MicrosoftCXXNameMangler::mangleUnqualifiedName(GlobalDecl GD,
         break;
       }
 
-      if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(TD)) {
-        if (Record->isLambda()) {
+      if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(TD); Record && (Record->isLambda())) 
+        {
           llvm::SmallString<10> Name("<lambda_");
 
           Decl *LambdaContextDecl = Record->getLambdaContextDecl();
@@ -1267,16 +1265,16 @@ void MicrosoftCXXNameMangler::mangleUnqualifiedName(GlobalDecl GD,
 
           // If the context is a variable or a class member and not a parameter,
           // it is encoded in a qualified name.
-          if (LambdaManglingNumber && LambdaContextDecl) {
-            if ((isa<VarDecl>(LambdaContextDecl) ||
+          if ((LambdaManglingNumber && LambdaContextDecl) && ((isa<VarDecl>(LambdaContextDecl) ||
                  isa<FieldDecl>(LambdaContextDecl)) &&
-                !isa<ParmVarDecl>(LambdaContextDecl)) {
+                !isa<ParmVarDecl>(LambdaContextDecl))) 
+            {
               mangleUnqualifiedName(cast<NamedDecl>(LambdaContextDecl));
             }
-          }
+          
           break;
         }
-      }
+      
 
       llvm::SmallString<64> Name;
       if (DeclaratorDecl *DD =
@@ -1425,9 +1423,8 @@ void MicrosoftCXXNameMangler::mangleNestedName(GlobalDecl GD) {
       // to discriminate between named static data initializers in the same
       // scope.  This is handled differently from parameters, which use
       // positions to discriminate between multiple instances.
-      if (const auto *MC = BD->getBlockManglingContextDecl())
-        if (!isa<ParmVarDecl>(MC))
-          if (const auto *ND = dyn_cast<NamedDecl>(MC))
+      if (const auto *MC = BD->getBlockManglingContextDecl(); MC && (!isa<ParmVarDecl>(MC)))
+        if (const auto *ND = dyn_cast<NamedDecl>(MC))
             mangleUnqualifiedName(ND);
       // MS ABI and Itanium manglings are in inverted scopes.  In the case of a
       // RecordDecl, mangle the entire scope hierarchy at this point rather than
@@ -2014,9 +2011,8 @@ void MicrosoftCXXNameMangler::mangleTemplateArgValue(QualType T,
         const Decl *D = E.getAsBaseOrMember().getPointer();
         if (auto *FD = dyn_cast<FieldDecl>(D)) {
           ET = FD->getType();
-          if (const auto *RD = ET->getAsRecordDecl())
-            if (RD->isAnonymousStructOrUnion())
-              continue;
+          if (const auto *RD = ET->getAsRecordDecl(); RD && (RD->isAnonymousStructOrUnion()))
+            continue;
         } else {
           ET = getASTContext().getCanonicalTagType(cast<CXXRecordDecl>(D));
           // Bug in MSVC: fully qualified name of base class should be used for
@@ -3503,8 +3499,8 @@ void MicrosoftCXXNameMangler::mangleType(const VectorType *T, Qualifiers Quals,
   // Pattern match exactly the typedefs in our intrinsic headers.  Anything that
   // doesn't match the Intel types uses a custom mangling below.
   size_t OutSizeBefore = Out.tell();
-  if (!isa<ExtVectorType>(T)) {
-    if (getASTContext().getTargetInfo().getTriple().isX86() && ET) {
+  if ((!isa<ExtVectorType>(T)) && (getASTContext().getTargetInfo().getTriple().isX86() && ET)) 
+    {
       if (Width == 64 && ET->getKind() == BuiltinType::LongLong) {
         mangleArtificialTagType(TagTypeKind::Union, "__m64");
       } else if (Width >= 128) {
@@ -3519,7 +3515,7 @@ void MicrosoftCXXNameMangler::mangleType(const VectorType *T, Qualifiers Quals,
                                   "__m" + llvm::utostr(Width) + 'd');
       }
     }
-  }
+  
 
   bool IsBuiltin = Out.tell() != OutSizeBefore;
   if (!IsBuiltin) {

@@ -1246,9 +1246,8 @@ bool Sema::containsUnexpandedParameterPacks(Declarator &D) {
     }
   }
 
-  if (Expr *TRC = D.getTrailingRequiresClause())
-    if (TRC->containsUnexpandedParameterPack())
-      return true;
+  if (Expr *TRC = D.getTrailingRequiresClause(); TRC && (TRC->containsUnexpandedParameterPack()))
+    return true;
 
   return false;
 }

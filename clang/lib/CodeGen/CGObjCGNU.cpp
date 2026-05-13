@@ -2010,8 +2010,8 @@ class CGObjCGNUstep2 : public CGObjCGNUstep {
       ClassPtrAlias = nullptr;
     }
     if (auto Placeholder =
-        TheModule.getNamedGlobal(SymbolForClass(className)))
-      if (Placeholder != classStruct) {
+        TheModule.getNamedGlobal(SymbolForClass(className)); Placeholder && (Placeholder != classStruct))
+      {
         Placeholder->replaceAllUsesWith(classStruct);
         Placeholder->eraseFromParent();
         classStruct->setName(SymbolForClass(className));

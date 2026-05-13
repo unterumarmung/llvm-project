@@ -820,9 +820,8 @@ static bool isNullTermPointer(const Expr *Ptr, ASTContext &Ctx) {
     const CXXMethodDecl *MD = MCE->getMethodDecl();
     const CXXRecordDecl *RD = MCE->getRecordDecl()->getCanonicalDecl();
 
-    if (MD && RD && RD->isInStdNamespace() && MD->getIdentifier())
-      if (MD->getName() == "c_str" && RD->getName() == "basic_string")
-        return true;
+    if ((MD && RD && RD->isInStdNamespace() && MD->getIdentifier()) && (MD->getName() == "c_str" && RD->getName() == "basic_string"))
+      return true;
   }
 
   // Functions known to return properly null terminated strings.
@@ -973,9 +972,8 @@ hasUnsafeFormatOrSArg(ASTContext &Ctx, const CallExpr *Call,
                : ArgType->getPointeeType()->isCharType());
 
       if (auto *Precision = getPrecisionAsExpr(FS.getPrecision(), Call);
-          Precision && IsArgTypeValid)
-        if (isPtrBufferSafe(Arg, Precision, Ctx))
-          return true;
+          (Precision && IsArgTypeValid) && (isPtrBufferSafe(Arg, Precision, Ctx)))
+        return true;
       // Handle unsafe case:
       UnsafeArg = Call->getArg(ArgIdx); // output
       UnsafeArgSet = true;
@@ -1705,15 +1703,15 @@ public:
     const auto *LHS = BO->getLHS();
     const auto *RHS = BO->getRHS();
     // ptr at left
-    if (BO->getOpcode() == BO_Add || BO->getOpcode() == BO_Sub ||
-        BO->getOpcode() == BO_AddAssign || BO->getOpcode() == BO_SubAssign) {
-      if (hasPointerType(*LHS) && (RHS->getType()->isIntegerType() ||
-                                   RHS->getType()->isEnumeralType())) {
+    if ((BO->getOpcode() == BO_Add || BO->getOpcode() == BO_Sub ||
+        BO->getOpcode() == BO_AddAssign || BO->getOpcode() == BO_SubAssign) && (hasPointerType(*LHS) && (RHS->getType()->isIntegerType() ||
+                                   RHS->getType()->isEnumeralType()))) 
+      {
         Result.addNode(PointerArithmeticPointerTag, DynTypedNode::create(*LHS));
         Result.addNode(PointerArithmeticTag, DynTypedNode::create(*BO));
         return true;
       }
-    }
+    
     // ptr at right
     if (BO->getOpcode() == BO_Add && hasPointerType(*RHS) &&
         (LHS->getType()->isIntegerType() || LHS->getType()->isEnumeralType())) {
@@ -1794,10 +1792,9 @@ public:
   DeclUseList getClaimedVarUseSites() const override {
     // If the constructor call is of the form `std::span{var, n}`, `var` is
     // considered an unsafe variable.
-    if (auto *DRE = dyn_cast<DeclRefExpr>(Ctor->getArg(0))) {
-      if (isa<VarDecl>(DRE->getDecl()))
-        return {DRE};
-    }
+    if (auto *DRE = dyn_cast<DeclRefExpr>(Ctor->getArg(0)); DRE && (isa<VarDecl>(DRE->getDecl()))) 
+      return {DRE};
+    
     return {};
   }
 
@@ -2008,13 +2005,13 @@ public:
 
   static bool matches(const Stmt *S, const ASTContext &Ctx,
                       MatchResult &Result) {
-    if (auto *CE = dyn_cast<CallExpr>(S)) {
-      if (CE->getDirectCallee() &&
-          CE->getDirectCallee()->hasAttr<UnsafeBufferUsageAttr>()) {
+    if (auto *CE = dyn_cast<CallExpr>(S); CE && (CE->getDirectCallee() &&
+          CE->getDirectCallee()->hasAttr<UnsafeBufferUsageAttr>())) 
+      {
         Result.addNode(OpTag, DynTypedNode::create(*CE));
         return true;
       }
-    }
+    
     if (auto *ME = dyn_cast<MemberExpr>(S)) {
       if (!isa<FieldDecl>(ME->getMemberDecl()))
         return false;
@@ -2296,13 +2293,13 @@ public:
     bool AnyAttr = llvm::any_of(
         FD->specific_attrs<FormatAttr>(),
         [&Attr, &IsPrintf](const FormatAttr *FA) -> bool {
-          if (const auto *II = FA->getType()) {
-            if (II->getName() == "printf" || II->getName() == "scanf") {
+          if (const auto *II = FA->getType(); II && (II->getName() == "printf" || II->getName() == "scanf")) 
+            {
               Attr = FA;
               IsPrintf = II->getName() == "printf";
               return true;
             }
-          }
+          
           return false;
         });
     const Expr *UnsafeArg;
@@ -3111,11 +3108,11 @@ CArrayToPtrAssignmentGadget::getFixits(const FixitStrategy &S) const {
     if (S.lookup(RightVD) == FixitStrategy::Kind::Wontfix) {
       return FixItList{};
     }
-  } else if (S.lookup(LeftVD) == FixitStrategy::Kind::Wontfix) {
-    if (S.lookup(RightVD) == FixitStrategy::Kind::Array) {
+  } else if ((S.lookup(LeftVD) == FixitStrategy::Kind::Wontfix) && (S.lookup(RightVD) == FixitStrategy::Kind::Array)) 
+    {
       return createDataFixit(RightVD->getASTContext(), PtrRHS);
     }
-  }
+  
   return std::nullopt;
 }
 
@@ -3469,8 +3466,8 @@ UUCAddAssignGadget::getFixits(const FixitStrategy &S) const {
   if (DREs.size() != 1)
     return std::nullopt; // In cases of `Ptr += n` where `Ptr` is not a DRE, we
                          // give up
-  if (const VarDecl *VD = dyn_cast<VarDecl>(DREs.front()->getDecl())) {
-    if (S.lookup(VD) == FixitStrategy::Kind::Span) {
+  if (const VarDecl *VD = dyn_cast<VarDecl>(DREs.front()->getDecl()); VD && (S.lookup(VD) == FixitStrategy::Kind::Span)) 
+    {
       FixItList Fixes;
 
       const Stmt *AddAssignNode = Node;
@@ -3500,7 +3497,7 @@ UUCAddAssignGadget::getFixits(const FixitStrategy &S) const {
             Offset->getEndLoc().getLocWithOffset(1), ")"));
       return Fixes;
     }
-  }
+  
   return std::nullopt; // Not in the cases that we can handle for now, give up.
 }
 
@@ -3511,8 +3508,8 @@ UPCPreIncrementGadget::getFixits(const FixitStrategy &S) const {
   if (DREs.size() != 1)
     return std::nullopt; // In cases of `++Ptr` where `Ptr` is not a DRE, we
                          // give up
-  if (const VarDecl *VD = dyn_cast<VarDecl>(DREs.front()->getDecl())) {
-    if (S.lookup(VD) == FixitStrategy::Kind::Span) {
+  if (const VarDecl *VD = dyn_cast<VarDecl>(DREs.front()->getDecl()); VD && (S.lookup(VD) == FixitStrategy::Kind::Span)) 
+    {
       FixItList Fixes;
       std::stringstream SS;
       StringRef varName = VD->getName();
@@ -3530,7 +3527,7 @@ UPCPreIncrementGadget::getFixits(const FixitStrategy &S) const {
           SourceRange(Node->getBeginLoc(), *PreIncLocation), SS.str()));
       return Fixes;
     }
-  }
+  
   return std::nullopt; // Not in the cases that we can handle for now, give up.
 }
 
@@ -3606,10 +3603,9 @@ FixVarInitializerWithSpan(const Expr *Init, ASTContext &Ctx,
   } else {
     // In cases `Init` is of the form `&Var` after stripping of implicit
     // casts, where `&` is the built-in operator, the extent is 1.
-    if (auto AddrOfExpr = dyn_cast<UnaryOperator>(Init->IgnoreImpCasts()))
-      if (AddrOfExpr->getOpcode() == UnaryOperatorKind::UO_AddrOf &&
-          isa_and_present<DeclRefExpr>(AddrOfExpr->getSubExpr()))
-        ExtentText = One;
+    if (auto AddrOfExpr = dyn_cast<UnaryOperator>(Init->IgnoreImpCasts()); AddrOfExpr && (AddrOfExpr->getOpcode() == UnaryOperatorKind::UO_AddrOf &&
+          isa_and_present<DeclRefExpr>(AddrOfExpr->getSubExpr())))
+      ExtentText = One;
     // TODO: we can handle more cases, e.g., `&a[0]`, `&a`, `std::addressof`,
     // and explicit casting, etc. etc.
   }
@@ -4661,10 +4657,9 @@ void clang::checkUnsafeBufferUsage(const Decl *D,
     // We do not want to visit a Lambda expression defined inside a method
     // independently. Instead, it should be visited along with the outer method.
     // FIXME: do we want to do the same thing for `BlockDecl`s?
-    if (const auto *MD = dyn_cast<CXXMethodDecl>(D)) {
-      if (MD->getParent()->isLambda() && MD->getParent()->isLocalClass())
-        return;
-    }
+    if (const auto *MD = dyn_cast<CXXMethodDecl>(D); MD && (MD->getParent()->isLambda() && MD->getParent()->isLocalClass())) 
+      return;
+    
 
     for (FunctionDecl *FReDecl : FD->redecls()) {
       if (FReDecl->isExternC()) {

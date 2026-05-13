@@ -489,9 +489,8 @@ void DefGen::emitAccessors() {
 
 void DefGen::emitInterfaceMethods() {
   for (auto &traitDef : def.getTraits())
-    if (auto *trait = dyn_cast<InterfaceTrait>(&traitDef))
-      if (trait->shouldDeclareMethods())
-        emitTraitMethods(*trait);
+    if (auto *trait = dyn_cast<InterfaceTrait>(&traitDef); trait && (trait->shouldDeclareMethods()))
+      emitTraitMethods(*trait);
 }
 
 //===----------------------------------------------------------------------===//

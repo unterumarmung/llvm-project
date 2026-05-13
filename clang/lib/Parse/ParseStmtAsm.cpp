@@ -439,13 +439,12 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
           FID = ExpLoc.first;
           LineNo = SrcMgr.getLineNumber(FID, ExpLoc.second);
         }
-      } else if (!InAsmComment && Tok.is(tok::r_brace)) {
+      } else if ((!InAsmComment && Tok.is(tok::r_brace)) && (!BraceNesting)) 
         // In MSVC mode, braces only participate in brace matching and
         // separating the asm statements.  This is an intentional
         // departure from the Apple gcc behavior.
-        if (!BraceNesting)
-          break;
-      }
+        break;
+      
     }
     if (!InAsmComment && BraceNesting && Tok.is(tok::r_brace) &&
         BraceCount == (savedBraceCount + BraceNesting)) {

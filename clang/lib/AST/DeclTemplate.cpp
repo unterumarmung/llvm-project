@@ -214,9 +214,8 @@ static bool AdoptTemplateParameterList(TemplateParameterList *Params,
   for (NamedDecl *P : *Params) {
     P->setDeclContext(Owner);
 
-    if (const auto *TTP = dyn_cast<TemplateTemplateParmDecl>(P))
-      if (AdoptTemplateParameterList(TTP->getTemplateParameters(), Owner))
-        Invalid = true;
+    if (const auto *TTP = dyn_cast<TemplateTemplateParmDecl>(P); TTP && (AdoptTemplateParameterList(TTP->getTemplateParameters(), Owner)))
+      Invalid = true;
 
     if (P->isInvalidDecl())
       Invalid = true;
@@ -263,9 +262,8 @@ bool TemplateParameterList::shouldIncludeTypeForArgument(
     return true;
   const NamedDecl *TemplParam = TPL->getParam(Idx);
   if (const auto *ParamValueDecl =
-          dyn_cast<NonTypeTemplateParmDecl>(TemplParam))
-    if (ParamValueDecl->getType()->getContainedDeducedType())
-      return true;
+          dyn_cast<NonTypeTemplateParmDecl>(TemplParam); ParamValueDecl && (ParamValueDecl->getType()->getContainedDeducedType()))
+    return true;
   return false;
 }
 
@@ -1910,9 +1908,8 @@ SourceLocation ExplicitInstantiationDecl::getTemplateArgsRAngleLoc() const {
 SourceLocation ExplicitInstantiationDecl::getEndLoc() const {
   // For func/var templates with postfix type syntax (arrays, functions),
   // the type extends past the name, so use the type's end location.
-  if (auto *TSI = getTypeAsWritten())
-    if (TSI->getType().hasPostfixDeclaratorSyntax())
-      return TSI->getTypeLoc().getEndLoc();
+  if (auto *TSI = getTypeAsWritten(); TSI && (TSI->getType().hasPostfixDeclaratorSyntax()))
+    return TSI->getTypeLoc().getEndLoc();
   // Otherwise, template args RAngleLoc or NameLoc.
   SourceLocation RAngle = getTemplateArgsRAngleLoc();
   return RAngle.isValid() ? RAngle : NameLoc;

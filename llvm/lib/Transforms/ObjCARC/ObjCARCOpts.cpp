@@ -92,9 +92,8 @@ static const Value *FindSingleUseIdentifiedObject(const Value *Arg) {
   if (Arg->hasOneUse()) {
     if (const BitCastInst *BC = dyn_cast<BitCastInst>(Arg))
       return FindSingleUseIdentifiedObject(BC->getOperand(0));
-    if (const GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(Arg))
-      if (GEP->hasAllZeroIndices())
-        return FindSingleUseIdentifiedObject(GEP->getPointerOperand());
+    if (const GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(Arg); GEP && (GEP->hasAllZeroIndices()))
+      return FindSingleUseIdentifiedObject(GEP->getPointerOperand());
     if (IsForwarding(GetBasicARCInstKind(Arg)))
       return FindSingleUseIdentifiedObject(
                cast<CallInst>(Arg)->getArgOperand(0));
@@ -806,8 +805,8 @@ void ObjCARCOpt::OptimizeIndividualCalls(Function &F) {
   for (inst_iterator I = inst_begin(&F), E = inst_end(&F); I != E; ) {
     Instruction *Inst = &*I++;
 
-    if (auto *CI = dyn_cast<CallInst>(Inst))
-      if (objcarc::hasAttachedCallOpBundle(CI)) {
+    if (auto *CI = dyn_cast<CallInst>(Inst); CI && (objcarc::hasAttachedCallOpBundle(CI)))
+      {
         BundledInsts->insertRVCall(I->getIterator(), CI);
         Changed = true;
       }
@@ -864,9 +863,8 @@ static bool isInertARCValue(Value *V, SmallPtrSet<Value *, 1> &VisitedPhis) {
     return true;
 
   // See if this is a global attribute annotated with an 'objc_arc_inert'.
-  if (auto *GV = dyn_cast<GlobalVariable>(V))
-    if (GV->hasAttribute("objc_arc_inert"))
-      return true;
+  if (auto *GV = dyn_cast<GlobalVariable>(V); GV && (GV->hasAttribute("objc_arc_inert")))
+    return true;
 
   if (auto PN = dyn_cast<PHINode>(V)) {
     // Ignore this phi if it has already been discovered.
@@ -895,8 +893,8 @@ void ObjCARCOpt::OptimizeIndividualCallImpl(Function &F, Instruction *Inst,
     return;
   }
 
-  if (IsNoopOnGlobal(Class))
-    if (isInertARCValue(Inst->getOperand(0), VisitedPhis)) {
+  if ((IsNoopOnGlobal(Class)) && (isInertARCValue(Inst->getOperand(0), VisitedPhis)))
+    {
       if (!Inst->getType()->isVoidTy())
         Inst->replaceAllUsesWith(Inst->getOperand(0));
       Inst->eraseFromParent();
@@ -2039,9 +2037,8 @@ bool ObjCARCOpt::PerformCodePlacement(
     if (const LoadInst *LI = dyn_cast<LoadInst>(Arg))
       if (const GlobalVariable *GV =
             dyn_cast<GlobalVariable>(
-              GetRCIdentityRoot(LI->getPointerOperand())))
-        if (GV->isConstant())
-          KnownSafe = true;
+              GetRCIdentityRoot(LI->getPointerOperand())); GV && (GV->isConstant()))
+        KnownSafe = true;
 
     // Connect the dots between the top-down-collected RetainsToMove and
     // bottom-up-collected ReleasesToMove to form sets of related calls.

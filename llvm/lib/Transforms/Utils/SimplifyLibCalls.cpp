@@ -117,9 +117,8 @@ static bool ignoreCallingConv(LibFunc Func) {
 /// Return true if it is only used in equality comparisons with With.
 static bool isOnlyUsedInEqualityComparison(Value *V, Value *With) {
   for (User *U : V->users()) {
-    if (ICmpInst *IC = dyn_cast<ICmpInst>(U))
-      if (IC->isEquality() && IC->getOperand(1) == With)
-        continue;
+    if (ICmpInst *IC = dyn_cast<ICmpInst>(U); IC && (IC->isEquality() && IC->getOperand(1) == With))
+      continue;
     // Unknown instruction.
     return false;
   }
@@ -254,9 +253,8 @@ static Value *convertStrToInt(CallInst *CI, StringRef &Str, Value *EndPtr,
 static bool isOnlyUsedInComparisonWithZero(Value *V) {
   for (User *U : V->users()) {
     if (ICmpInst *IC = dyn_cast<ICmpInst>(U))
-      if (Constant *C = dyn_cast<Constant>(IC->getOperand(1)))
-        if (C->isNullValue())
-          continue;
+      if (Constant *C = dyn_cast<Constant>(IC->getOperand(1)); C && (C->isNullValue()))
+        continue;
     // Unknown instruction.
     return false;
   }
@@ -613,12 +611,11 @@ Value *LibCallSimplifier::optimizeStrCmp(CallInst *CI, IRBuilderBase &B) {
       return copyFlags(*CI, emitMemCmp(Str1P, Str2P,
                                        TLI->getAsSizeT(Len2, *CI->getModule()),
                                        B, DL, TLI));
-  } else if (HasStr1 && !HasStr2) {
-    if (canTransformToMemCmp(CI, Str2P, Len1, DL))
-      return copyFlags(*CI, emitMemCmp(Str1P, Str2P,
+  } else if ((HasStr1 && !HasStr2) && (canTransformToMemCmp(CI, Str2P, Len1, DL))) 
+    return copyFlags(*CI, emitMemCmp(Str1P, Str2P,
                                        TLI->getAsSizeT(Len1, *CI->getModule()),
                                        B, DL, TLI));
-  }
+  
 
   annotateNonNullNoUndefBasedOnAccess(CI, {0, 1});
   return nullptr;
@@ -2074,10 +2071,9 @@ Value *LibCallSimplifier::optimizeCAbs(CallInst *CI, IRBuilderBase &B) {
       if (ConstReal->isZero())
         AbsOp = Imag;
 
-    } else if (ConstantFP *ConstImag = dyn_cast<ConstantFP>(Imag)) {
-      if (ConstImag->isZero())
-        AbsOp = Real;
-    }
+    } else if (ConstantFP *ConstImag = dyn_cast<ConstantFP>(Imag); ConstImag && (ConstImag->isZero())) 
+      AbsOp = Real;
+    
 
     if (AbsOp)
       return copyFlags(*CI, B.CreateFAbs(AbsOp, CI, "cabs"));

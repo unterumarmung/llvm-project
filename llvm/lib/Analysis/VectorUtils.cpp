@@ -344,15 +344,13 @@ Value *llvm::findScalarElement(Value *V, unsigned EltNo) {
   // TODO: Use getBinOpIdentity() to generalize this.
   Value *Val; Constant *C;
   if (match(V, m_Add(m_Value(Val), m_Constant(C))))
-    if (Constant *Elt = C->getAggregateElement(EltNo))
-      if (Elt->isNullValue())
-        return findScalarElement(Val, EltNo);
+    if (Constant *Elt = C->getAggregateElement(EltNo); Elt && (Elt->isNullValue()))
+      return findScalarElement(Val, EltNo);
 
   // If the vector is a splat then we can trivially find the scalar element.
   if (isa<ScalableVectorType>(VTy))
-    if (Value *Splat = getSplatValue(V))
-      if (EltNo < VTy->getElementCount().getKnownMinValue())
-        return Splat;
+    if (Value *Splat = getSplatValue(V); Splat && (EltNo < VTy->getElementCount().getKnownMinValue()))
+      return Splat;
 
   // Otherwise, we don't know.
   return nullptr;
@@ -1267,9 +1265,8 @@ bool llvm::maskIsAllZeroOrUndef(Value *Mask) {
            I = 0,
            E = cast<FixedVectorType>(ConstMask->getType())->getNumElements();
        I != E; ++I) {
-    if (auto *MaskElt = ConstMask->getAggregateElement(I))
-      if (MaskElt->isNullValue() || isa<UndefValue>(MaskElt))
-        continue;
+    if (auto *MaskElt = ConstMask->getAggregateElement(I); MaskElt && (MaskElt->isNullValue() || isa<UndefValue>(MaskElt)))
+      continue;
     return false;
   }
   return true;
@@ -1293,9 +1290,8 @@ bool llvm::maskIsAllOneOrUndef(Value *Mask) {
            I = 0,
            E = cast<FixedVectorType>(ConstMask->getType())->getNumElements();
        I != E; ++I) {
-    if (auto *MaskElt = ConstMask->getAggregateElement(I))
-      if (MaskElt->isAllOnesValue() || isa<UndefValue>(MaskElt))
-        continue;
+    if (auto *MaskElt = ConstMask->getAggregateElement(I); MaskElt && (MaskElt->isAllOnesValue() || isa<UndefValue>(MaskElt)))
+      continue;
     return false;
   }
   return true;
@@ -1319,9 +1315,8 @@ bool llvm::maskContainsAllOneOrUndef(Value *Mask) {
            I = 0,
            E = cast<FixedVectorType>(ConstMask->getType())->getNumElements();
        I != E; ++I) {
-    if (auto *MaskElt = ConstMask->getAggregateElement(I))
-      if (MaskElt->isAllOnesValue() || isa<UndefValue>(MaskElt))
-        return true;
+    if (auto *MaskElt = ConstMask->getAggregateElement(I); MaskElt && (MaskElt->isAllOnesValue() || isa<UndefValue>(MaskElt)))
+      return true;
   }
   return false;
 }

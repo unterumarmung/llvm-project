@@ -350,9 +350,8 @@ static Error updateAndRemoveSymbols(const CommonConfig &Config,
     if (I != Config.SymbolsToRename.end())
       Sym.Name = std::string(I->getValue());
 
-    if (!Config.SymbolsPrefixRemove.empty() && Sym.Type != STT_SECTION)
-      if (StringRef(Sym.Name).starts_with(Config.SymbolsPrefixRemove))
-        Sym.Name = Sym.Name.substr(Config.SymbolsPrefixRemove.size());
+    if ((!Config.SymbolsPrefixRemove.empty() && Sym.Type != STT_SECTION) && (StringRef(Sym.Name).starts_with(Config.SymbolsPrefixRemove)))
+      Sym.Name = Sym.Name.substr(Config.SymbolsPrefixRemove.size());
 
     if (!Config.SymbolsPrefix.empty() && Sym.Type != STT_SECTION)
       Sym.Name = (Config.SymbolsPrefix + Sym.Name).str();

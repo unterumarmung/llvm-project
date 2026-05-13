@@ -313,9 +313,8 @@ static void collectGlobalsFromDeviceRegion(Region &region,
       llvm::SmallVector<SymbolRefAttr> symbols;
       indirectAccessOp.getReferencedSymbols(symbols, &symTab);
       for (SymbolRefAttr symRef : symbols)
-        if (Operation *globalOp = symTab.lookup(symRef.getLeafReference()))
-          if (isValidForAccDeclare(globalOp))
-            globals.insert(globalOp);
+        if (Operation *globalOp = symTab.lookup(symRef.getLeafReference()); globalOp && (isValidForAccDeclare(globalOp)))
+          globals.insert(globalOp);
     }
   });
 }

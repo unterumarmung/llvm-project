@@ -102,14 +102,13 @@ bool StaticInitGVIterator::isStaticInitGlobal(GlobalValue &GV) {
                        GV.getName() == "llvm.global_dtors"))
     return true;
 
-  if (ObjFmt == Triple::MachO) {
+  if ((ObjFmt == Triple::MachO) && (GV.hasSection() &&
+        (GV.getSection().starts_with("__DATA,__objc_classlist") ||
+         GV.getSection().starts_with("__DATA,__objc_selrefs")))) 
     // FIXME: These section checks are too strict: We should match first and
     // second word split by comma.
-    if (GV.hasSection() &&
-        (GV.getSection().starts_with("__DATA,__objc_classlist") ||
-         GV.getSection().starts_with("__DATA,__objc_selrefs")))
-      return true;
-  }
+    return true;
+  
 
   return false;
 }

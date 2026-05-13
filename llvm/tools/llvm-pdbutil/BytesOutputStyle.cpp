@@ -44,16 +44,14 @@ static Expected<StreamSpec> parseStreamSpec(StringRef Str) {
   if (Str.consumeInteger(0, Result.SI))
     return make_error<RawError>(raw_error_code::invalid_format,
                                 "Invalid Stream Specification");
-  if (Str.consume_front(":")) {
-    if (Str.consumeInteger(0, Result.Begin))
-      return make_error<RawError>(raw_error_code::invalid_format,
+  if ((Str.consume_front(":")) && (Str.consumeInteger(0, Result.Begin))) 
+    return make_error<RawError>(raw_error_code::invalid_format,
                                   "Invalid Stream Specification");
-  }
-  if (Str.consume_front("@")) {
-    if (Str.consumeInteger(0, Result.Size))
-      return make_error<RawError>(raw_error_code::invalid_format,
+  
+  if ((Str.consume_front("@")) && (Str.consumeInteger(0, Result.Size))) 
+    return make_error<RawError>(raw_error_code::invalid_format,
                                   "Invalid Stream Specification");
-  }
+  
 
   if (!Str.empty())
     return make_error<RawError>(raw_error_code::invalid_format,

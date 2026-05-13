@@ -531,8 +531,8 @@ TEST(RANDSTRUCT_TEST, AnonymousStructsAndUnionsRetainFieldOrder) {
 
   for (const Decl *D : RD->decls())
     if (const FieldDecl *FD = dyn_cast<FieldDecl>(D)) {
-      if (const auto *RD = FD->getType()->getAsRecordDecl()) {
-        if (RD->isAnonymousStructOrUnion()) {
+      if (const auto *RD = FD->getType()->getAsRecordDecl(); RD && (RD->isAnonymousStructOrUnion())) 
+        {
           // These field orders shouldn't change.
           if (RD->isUnion()) {
             const field_names Expected = {"m", "n", "o", "p", "q"};
@@ -546,7 +546,7 @@ TEST(RANDSTRUCT_TEST, AnonymousStructsAndUnionsRetainFieldOrder) {
             AnonStructTested = true;
           }
         }
-      }
+      
     }
 
   EXPECT_TRUE(AnonStructTested);

@@ -123,9 +123,8 @@ static bool isErrorParameter(Sema &S, QualType QT) {
 
   // Check for NSError**.
   if (const auto *OPT = Pointee->getAs<ObjCObjectPointerType>())
-    if (const auto *ID = OPT->getInterfaceDecl())
-      if (ID->getIdentifier() == S.ObjC().getNSErrorIdent())
-        return true;
+    if (const auto *ID = OPT->getInterfaceDecl(); ID && (ID->getIdentifier() == S.ObjC().getNSErrorIdent()))
+      return true;
 
   // Check for CFError**.
   if (const auto *PT = Pointee->getAs<PointerType>())
@@ -262,12 +261,12 @@ static void checkSwiftAsyncErrorBlock(Sema &S, Decl *D,
     for (QualType Param : BlockParams) {
       // Check for NSError *.
       if (const auto *ObjCPtrTy = Param->getAs<ObjCObjectPointerType>()) {
-        if (const auto *ID = ObjCPtrTy->getInterfaceDecl()) {
-          if (ID->getIdentifier() == S.ObjC().getNSErrorIdent()) {
+        if (const auto *ID = ObjCPtrTy->getInterfaceDecl(); ID && (ID->getIdentifier() == S.ObjC().getNSErrorIdent())) 
+          {
             AnyErrorParams = true;
             break;
           }
-        }
+        
       }
       // Check for CFError *.
       if (const auto *PtrTy = Param->getAs<PointerType>()) {
@@ -725,8 +724,8 @@ void SemaSwift::AddParameterABIAttr(Decl *D, const AttributeCommonInfo &CI,
   ASTContext &Context = getASTContext();
   QualType type = cast<ParmVarDecl>(D)->getType();
 
-  if (auto existingAttr = D->getAttr<ParameterABIAttr>()) {
-    if (existingAttr->getABI() != abi) {
+  if (auto existingAttr = D->getAttr<ParameterABIAttr>(); existingAttr && (existingAttr->getABI() != abi)) 
+    {
       Diag(CI.getLoc(), diag::err_attributes_are_not_compatible)
           << getParameterABISpelling(abi) << existingAttr
           << (CI.isRegularKeywordAttribute() ||
@@ -734,7 +733,7 @@ void SemaSwift::AddParameterABIAttr(Decl *D, const AttributeCommonInfo &CI,
       Diag(existingAttr->getLocation(), diag::note_conflicting_attribute);
       return;
     }
-  }
+  
 
   switch (abi) {
   case ParameterABI::HLSLOut:

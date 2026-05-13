@@ -275,11 +275,10 @@ static bool interp__builtin_strcmp(InterpState &S, CodePtr OpPC,
                                    const InterpFrame *Frame,
                                    const CallExpr *Call, unsigned ID) {
   uint64_t Limit = ~static_cast<uint64_t>(0);
-  if (ID == Builtin::BIstrncmp || ID == Builtin::BI__builtin_strncmp ||
-      ID == Builtin::BIwcsncmp || ID == Builtin::BI__builtin_wcsncmp) {
-    if (!popToUInt64(S, Call->getArg(2), Limit))
-      return false;
-  }
+  if ((ID == Builtin::BIstrncmp || ID == Builtin::BI__builtin_strncmp ||
+      ID == Builtin::BIwcsncmp || ID == Builtin::BI__builtin_wcsncmp) && (!popToUInt64(S, Call->getArg(2), Limit))) 
+    return false;
+  
 
   const Pointer &B = S.Stk.pop<Pointer>();
   const Pointer &A = S.Stk.pop<Pointer>();
@@ -1163,12 +1162,11 @@ static bool interp__builtin_atomic_lock_free(InterpState &S, CodePtr OpPC,
 
       const Expr *PtrArg = Call->getArg(1);
       // Otherwise, check if the type's alignment against Size.
-      if (const auto *ICE = dyn_cast<ImplicitCastExpr>(PtrArg)) {
+      if (const auto *ICE = dyn_cast<ImplicitCastExpr>(PtrArg); ICE && (ICE->getCastKind() == CK_BitCast)) 
         // Drop the potential implicit-cast to 'const volatile void*', getting
         // the underlying type.
-        if (ICE->getCastKind() == CK_BitCast)
-          PtrArg = ICE->getSubExpr();
-      }
+        PtrArg = ICE->getSubExpr();
+      
 
       if (const auto *PtrTy = PtrArg->getType()->getAs<PointerType>()) {
         QualType PointeeType = PtrTy->getPointeeType();
@@ -2449,13 +2447,12 @@ UnsignedOrNone evaluateBuiltinObjectSize(const ASTContext &ASTCtx,
     if (InvalidBase)
       return std::nullopt;
   } else {
-    if (isUserWritingOffTheEnd(ASTCtx, Ptr, InvalidBase)) {
+    if ((isUserWritingOffTheEnd(ASTCtx, Ptr, InvalidBase)) && (Kind == 1)) 
       // If we cannot determine the size of the initial allocation, then we
       // can't given an accurate upper-bound. However, we are still able to give
       // conservative lower-bounds for Type=3.
-      if (Kind == 1)
-        return std::nullopt;
-    }
+      return std::nullopt;
+    
   }
 
   // The "closest surrounding subobject" is NOT a base class,

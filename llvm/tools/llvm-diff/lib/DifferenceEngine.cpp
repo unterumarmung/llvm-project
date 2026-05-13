@@ -390,12 +390,12 @@ class FunctionDifferenceEngine {
       const PHINode &RI = cast<PHINode>(*R);
 
       // This is really weird;  type uniquing is broken?
-      if (LI.getType() != RI.getType()) {
-        if (!LI.getType()->isPointerTy() || !RI.getType()->isPointerTy()) {
+      if ((LI.getType() != RI.getType()) && (!LI.getType()->isPointerTy() || !RI.getType()->isPointerTy())) 
+        {
           if (Complain) Engine.log("different phi types");
           return true;
         }
-      }
+      
 
       if (LI.getNumIncomingValues() != RI.getNumIncomingValues()) {
         if (Complain)

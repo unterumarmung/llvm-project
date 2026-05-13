@@ -240,13 +240,13 @@ void Instruction::moveBeforeImpl(BasicBlock &BB, InstListType::iterator I,
 
   // If we've been given the "Preserve" flag, then just move the DbgRecords with
   // the instruction, no more special handling needed.
-  if (DebugMarker && !Preserve) {
-    if (I != this->getIterator() || InsertAtHead) {
+  if ((DebugMarker && !Preserve) && (I != this->getIterator() || InsertAtHead)) 
+    {
       // "this" is definitely moving in the list, or it's moving ahead of its
       // attached DbgVariableRecords. Detach any existing DbgRecords.
       handleMarkerRemoval();
     }
-  }
+  
 
   // Move this single instruction. Use the list splice method directly, not
   // the block splicer, which will do more debug-info things.
@@ -727,35 +727,32 @@ void Instruction::copyIRFlags(const Value *V, bool IncludeWrapFlags) {
     }
   }
 
-  if (auto *TI = dyn_cast<TruncInst>(V)) {
-    if (isa<TruncInst>(this)) {
+  if (auto *TI = dyn_cast<TruncInst>(V); TI && (isa<TruncInst>(this))) 
+    {
       setHasNoSignedWrap(TI->hasNoSignedWrap());
       setHasNoUnsignedWrap(TI->hasNoUnsignedWrap());
     }
-  }
+  
 
   // Copy the exact flag.
-  if (auto *PE = dyn_cast<PossiblyExactOperator>(V))
-    if (isa<PossiblyExactOperator>(this))
-      setIsExact(PE->isExact());
+  if (auto *PE = dyn_cast<PossiblyExactOperator>(V); PE && (isa<PossiblyExactOperator>(this)))
+    setIsExact(PE->isExact());
 
   if (auto *SrcPD = dyn_cast<PossiblyDisjointInst>(V))
     if (auto *DestPD = dyn_cast<PossiblyDisjointInst>(this))
       DestPD->setIsDisjoint(SrcPD->isDisjoint());
 
   // Copy the fast-math flags.
-  if (auto *FP = dyn_cast<FPMathOperator>(V))
-    if (isa<FPMathOperator>(this))
-      copyFastMathFlags(FP->getFastMathFlags());
+  if (auto *FP = dyn_cast<FPMathOperator>(V); FP && (isa<FPMathOperator>(this)))
+    copyFastMathFlags(FP->getFastMathFlags());
 
   if (auto *SrcGEP = dyn_cast<GetElementPtrInst>(V))
     if (auto *DestGEP = dyn_cast<GetElementPtrInst>(this))
       DestGEP->setNoWrapFlags(SrcGEP->getNoWrapFlags() |
                               DestGEP->getNoWrapFlags());
 
-  if (auto *NNI = dyn_cast<PossiblyNonNegInst>(V))
-    if (isa<PossiblyNonNegInst>(this))
-      setNonNeg(NNI->hasNonNeg());
+  if (auto *NNI = dyn_cast<PossiblyNonNegInst>(V); NNI && (isa<PossiblyNonNegInst>(this)))
+    setNonNeg(NNI->hasNonNeg());
 
   if (auto *SrcICmp = dyn_cast<ICmpInst>(V))
     if (auto *DestICmp = dyn_cast<ICmpInst>(this))
@@ -763,44 +760,42 @@ void Instruction::copyIRFlags(const Value *V, bool IncludeWrapFlags) {
 }
 
 void Instruction::andIRFlags(const Value *V) {
-  if (auto *OB = dyn_cast<OverflowingBinaryOperator>(V)) {
-    if (isa<OverflowingBinaryOperator>(this)) {
+  if (auto *OB = dyn_cast<OverflowingBinaryOperator>(V); OB && (isa<OverflowingBinaryOperator>(this))) 
+    {
       setHasNoSignedWrap(hasNoSignedWrap() && OB->hasNoSignedWrap());
       setHasNoUnsignedWrap(hasNoUnsignedWrap() && OB->hasNoUnsignedWrap());
     }
-  }
+  
 
-  if (auto *TI = dyn_cast<TruncInst>(V)) {
-    if (isa<TruncInst>(this)) {
+  if (auto *TI = dyn_cast<TruncInst>(V); TI && (isa<TruncInst>(this))) 
+    {
       setHasNoSignedWrap(hasNoSignedWrap() && TI->hasNoSignedWrap());
       setHasNoUnsignedWrap(hasNoUnsignedWrap() && TI->hasNoUnsignedWrap());
     }
-  }
+  
 
-  if (auto *PE = dyn_cast<PossiblyExactOperator>(V))
-    if (isa<PossiblyExactOperator>(this))
-      setIsExact(isExact() && PE->isExact());
+  if (auto *PE = dyn_cast<PossiblyExactOperator>(V); PE && (isa<PossiblyExactOperator>(this)))
+    setIsExact(isExact() && PE->isExact());
 
   if (auto *SrcPD = dyn_cast<PossiblyDisjointInst>(V))
     if (auto *DestPD = dyn_cast<PossiblyDisjointInst>(this))
       DestPD->setIsDisjoint(DestPD->isDisjoint() && SrcPD->isDisjoint());
 
-  if (auto *FP = dyn_cast<FPMathOperator>(V)) {
-    if (isa<FPMathOperator>(this)) {
+  if (auto *FP = dyn_cast<FPMathOperator>(V); FP && (isa<FPMathOperator>(this))) 
+    {
       FastMathFlags FM = getFastMathFlags();
       FM &= FP->getFastMathFlags();
       copyFastMathFlags(FM);
     }
-  }
+  
 
   if (auto *SrcGEP = dyn_cast<GetElementPtrInst>(V))
     if (auto *DestGEP = dyn_cast<GetElementPtrInst>(this))
       DestGEP->setNoWrapFlags(SrcGEP->getNoWrapFlags() &
                               DestGEP->getNoWrapFlags());
 
-  if (auto *NNI = dyn_cast<PossiblyNonNegInst>(V))
-    if (isa<PossiblyNonNegInst>(this))
-      setNonNeg(hasNonNeg() && NNI->hasNonNeg());
+  if (auto *NNI = dyn_cast<PossiblyNonNegInst>(V); NNI && (isa<PossiblyNonNegInst>(this)))
+    setNonNeg(hasNonNeg() && NNI->hasNonNeg());
 
   if (auto *SrcICmp = dyn_cast<ICmpInst>(V))
     if (auto *DestICmp = dyn_cast<ICmpInst>(this))

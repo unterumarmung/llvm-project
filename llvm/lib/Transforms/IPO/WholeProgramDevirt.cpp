@@ -1377,15 +1377,15 @@ bool DevirtModule::trySingleImplDevirt(
     // Since we are renaming the function, any comdats with the same name must
     // also be renamed. This is required when targeting COFF, as the comdat name
     // must match one of the names of the symbols in the comdat.
-    if (Comdat *C = TheFn->getComdat()) {
-      if (C->getName() == TheFn->getName()) {
+    if (Comdat *C = TheFn->getComdat(); C && (C->getName() == TheFn->getName())) 
+      {
         Comdat *NewC = M.getOrInsertComdat(NewName);
         NewC->setSelectionKind(C->getSelectionKind());
         for (GlobalObject &GO : M.global_objects())
           if (GO.getComdat() == C)
             GO.setComdat(NewC);
       }
-    }
+    
 
     TheFn->setLinkage(GlobalValue::ExternalLinkage);
     TheFn->setVisibility(GlobalValue::HiddenVisibility);
@@ -2675,13 +2675,12 @@ void DevirtIndex::run() {
     WholeProgramDevirtResolution *Res =
         &ExportSummary.getTypeIdSummary(S.first.TypeID)
              ->WPDRes[S.first.ByteOffset];
-    if (tryFindVirtualCallTargets(TargetsForSlot, *TidSummary,
-                                  S.first.ByteOffset)) {
+    if ((tryFindVirtualCallTargets(TargetsForSlot, *TidSummary,
+                                  S.first.ByteOffset)) && (!trySingleImplDevirt(TargetsForSlot, S.first, S.second, Res,
+                               DevirtTargets))) 
 
-      if (!trySingleImplDevirt(TargetsForSlot, S.first, S.second, Res,
-                               DevirtTargets))
-        continue;
-    }
+      continue;
+    
   }
 
   // Optionally have the thin link print message for each devirtualized

@@ -87,13 +87,13 @@ static bool isLoopDead(Loop *L, ScalarEvolution &SE,
       if (!AllOutgoingValuesSame)
         break;
 
-      if (Instruction *I = dyn_cast<Instruction>(incoming)) {
-        if (!L->makeLoopInvariant(I, Changed, Preheader->getTerminator(),
-                                  /*MSSAU=*/nullptr, &SE)) {
+      if (Instruction *I = dyn_cast<Instruction>(incoming); I && (!L->makeLoopInvariant(I, Changed, Preheader->getTerminator(),
+                                  /*MSSAU=*/nullptr, &SE))) 
+        {
           AllEntriesInvariant = false;
           break;
         }
-      }
+      
     }
   }
 

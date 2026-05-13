@@ -417,11 +417,7 @@ static FailureOr<LinalgOp> specializeLinalgContractions(RewriterBase &rewriter,
   if (indexingMaps[0].getNumDims() != numOfBatchDims + 3)
     return failure();
 
-  if (numOfBatchDims) {
-    // Each operand in a linalg generic contraction  could express different
-    // permutations for its batch dimension. But for named op it must be
-    // identity since separate maps are not specified.
-    if (llvm::any_of(indexingMaps, [numOfBatchDims](AffineMap m) {
+  if ((numOfBatchDims) && (llvm::any_of(indexingMaps, [numOfBatchDims](AffineMap m) {
           for (unsigned i = 0; i < numOfBatchDims; ++i) {
             auto expr = m.getResults()[i];
             if (expr.getKind() != AffineExprKind::DimId ||
@@ -429,9 +425,12 @@ static FailureOr<LinalgOp> specializeLinalgContractions(RewriterBase &rewriter,
               return true;
           }
           return false;
-        }))
-      return failure();
-  }
+        }))) 
+    // Each operand in a linalg generic contraction  could express different
+    // permutations for its batch dimension. But for named op it must be
+    // identity since separate maps are not specified.
+    return failure();
+  
 
   auto a =
       matchOperandMap(indexingMaps[0], numOfBatchDims, dims.m[0], dims.k[0]);

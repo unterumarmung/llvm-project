@@ -119,9 +119,8 @@ static bool isAssertionResultType(QualType Type) {
   if (Type.isNull())
     return false;
 
-  if (auto *RD = Type->getAsRecordDecl())
-    if (RD->getName() == "AssertionResult")
-      if (const auto *N = dyn_cast_or_null<NamespaceDecl>(RD->getDeclContext()))
+  if (auto *RD = Type->getAsRecordDecl(); RD && (RD->getName() == "AssertionResult"))
+    if (const auto *N = dyn_cast_or_null<NamespaceDecl>(RD->getDeclContext()))
         return isFullyQualifiedNamespaceEqualTo(*N, "testing");
 
   return false;
@@ -478,10 +477,9 @@ StorageLocation *getLocBehindPossiblePointer(const Expr &E,
 void transferUnwrapCall(const Expr *UnwrapExpr, const Expr *ObjectExpr,
                         LatticeTransferState &State) {
   if (auto *OptionalLoc = cast_or_null<RecordStorageLocation>(
-          getLocBehindPossiblePointer(*ObjectExpr, State.Env))) {
-    if (State.Env.getStorageLocation(*UnwrapExpr) == nullptr)
-      State.Env.setStorageLocation(*UnwrapExpr, locForValue(*OptionalLoc));
-  }
+          getLocBehindPossiblePointer(*ObjectExpr, State.Env)); OptionalLoc && (State.Env.getStorageLocation(*UnwrapExpr) == nullptr)) 
+    State.Env.setStorageLocation(*UnwrapExpr, locForValue(*OptionalLoc));
+  
 }
 
 void transferArrowOpCall(const Expr *UnwrapExpr, const Expr *ObjectExpr,
@@ -1229,10 +1227,9 @@ diagnoseUnwrapCall(const Expr *ObjectExpr, const Environment &Env) {
   if (auto *OptionalLoc = cast_or_null<RecordStorageLocation>(
           getLocBehindPossiblePointer(*ObjectExpr, Env))) {
     auto *Prop = Env.getValue(locForHasValue(*OptionalLoc));
-    if (auto *HasValueVal = cast_or_null<BoolValue>(Prop)) {
-      if (Env.proves(HasValueVal->formula()))
-        return {};
-    }
+    if (auto *HasValueVal = cast_or_null<BoolValue>(Prop); HasValueVal && (Env.proves(HasValueVal->formula()))) 
+      return {};
+    
   }
 
   // Record that this unwrap is *not* provably safe.

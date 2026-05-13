@@ -1186,14 +1186,13 @@ void NullabilityChecker::checkPostStmt(const ExplicitCastExpr *CE,
 /// match the expression resulting in the bound value.
 static const Expr * matchValueExprForBind(const Stmt *S) {
   // For `x = e` the value expression is the right-hand side.
-  if (auto *BinOp = dyn_cast<BinaryOperator>(S)) {
-    if (BinOp->getOpcode() == BO_Assign)
-      return BinOp->getRHS();
-  }
+  if (auto *BinOp = dyn_cast<BinaryOperator>(S); BinOp && (BinOp->getOpcode() == BO_Assign)) 
+    return BinOp->getRHS();
+  
 
   // For `int x = e` the value expression is the initializer.
-  if (auto *DS = dyn_cast<DeclStmt>(S))  {
-    if (DS->isSingleDecl()) {
+  if (auto *DS = dyn_cast<DeclStmt>(S); DS && (DS->isSingleDecl()))  
+    {
       auto *VD = dyn_cast<VarDecl>(DS->getSingleDecl());
       if (!VD)
         return nullptr;
@@ -1201,7 +1200,7 @@ static const Expr * matchValueExprForBind(const Stmt *S) {
       if (const Expr *Init = VD->getInit())
         return Init;
     }
-  }
+  
 
   return nullptr;
 }

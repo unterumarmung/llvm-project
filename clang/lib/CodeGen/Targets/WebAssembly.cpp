@@ -133,10 +133,10 @@ ABIArgInfo WebAssemblyABIInfo::classifyArgumentType(QualType Ty) const {
 }
 
 ABIArgInfo WebAssemblyABIInfo::classifyReturnType(QualType RetTy) const {
-  if (isAggregateTypeForABI(RetTy)) {
+  if ((isAggregateTypeForABI(RetTy)) && (!getRecordArgABI(RetTy, getCXXABI()))) 
     // Records with non-trivial destructors/copy-constructors should not be
     // returned by value.
-    if (!getRecordArgABI(RetTy, getCXXABI())) {
+    {
       // Ignore empty structs/unions.
       if (isEmptyRecord(getContext(), RetTy, true))
         return ABIArgInfo::getIgnore();
@@ -149,7 +149,7 @@ ABIArgInfo WebAssemblyABIInfo::classifyReturnType(QualType RetTy) const {
       if (Kind == WebAssemblyABIKind::ExperimentalMV)
         return ABIArgInfo::getDirect();
     }
-  }
+  
 
   // Otherwise just do the default thing.
   return defaultInfo.classifyReturnType(RetTy);

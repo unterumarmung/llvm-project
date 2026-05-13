@@ -173,12 +173,12 @@ static void CheckSyncStatList(
 
 static void CheckEventVariable(
     SemanticsContext &context, const parser::EventVariable &eventVar) {
-  if (const auto *expr{GetExpr(context, eventVar)}) {
-    if (!IsEventType(evaluate::GetDerivedTypeSpec(expr->GetType()))) { // C1176
+  if (const auto *expr{GetExpr(context, eventVar)}; expr && (!IsEventType(evaluate::GetDerivedTypeSpec(expr->GetType())))) 
+    { // C1176
       context.Say(parser::FindSourceLocation(eventVar),
           "The event-variable must be of type EVENT_TYPE from module ISO_FORTRAN_ENV"_err_en_US);
     }
-  }
+  
 }
 
 void CoarrayChecker::Leave(const parser::ChangeTeamStmt &x) {

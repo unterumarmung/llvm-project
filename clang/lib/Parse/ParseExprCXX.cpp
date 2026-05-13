@@ -404,19 +404,19 @@ bool Parser::ParseOptionalCXXScopeSpecifier(
 
     // If we get foo:bar, this is almost certainly a typo for foo::bar.  Recover
     // and emit a fixit hint for it.
-    if (Next.is(tok::colon) && !ColonIsSacred) {
-      if (Actions.IsInvalidUnlessNestedName(getCurScope(), SS, IdInfo,
+    if ((Next.is(tok::colon) && !ColonIsSacred) && (Actions.IsInvalidUnlessNestedName(getCurScope(), SS, IdInfo,
                                             EnteringContext) &&
           // If the token after the colon isn't an identifier, it's still an
           // error, but they probably meant something else strange so don't
           // recover like this.
-          PP.LookAhead(1).is(tok::identifier)) {
+          PP.LookAhead(1).is(tok::identifier))) 
+      {
         Diag(Next, diag::err_unexpected_colon_in_nested_name_spec)
           << FixItHint::CreateReplacement(Next.getLocation(), "::");
         // Recover as if the user wrote '::'.
         Next.setKind(tok::coloncolon);
       }
-    }
+    
 
     if (Next.is(tok::coloncolon) && GetLookAheadToken(2).is(tok::l_brace)) {
       // It is invalid to have :: {, consume the scope qualifier and pretend
@@ -1818,17 +1818,17 @@ Parser::ParseCXXTypeConstructExpression(const DeclSpec &DS) {
       return PreferredType;
     };
 
-    if (Tok.isNot(tok::r_paren)) {
-      if (ParseExpressionList(Exprs, [&] {
+    if ((Tok.isNot(tok::r_paren)) && (ParseExpressionList(Exprs, [&] {
             PreferredType.enterFunctionArgument(Tok.getLocation(),
                                                 RunSignatureHelp);
-          })) {
+          }))) 
+      {
         if (PP.isCodeCompletionReached() && !CalledSignatureHelp)
           RunSignatureHelp();
         SkipUntil(tok::r_paren, StopAtSemi);
         return ExprError();
       }
-    }
+    
 
     // Match the ')'.
     T.consumeClose();

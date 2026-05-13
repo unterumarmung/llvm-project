@@ -290,10 +290,9 @@ EmptySubobjectMap::CanPlaceBaseSubobjectAtOffset(const BaseSubobjectInfo *Info,
   if (Info->PrimaryVirtualBaseInfo) {
     BaseSubobjectInfo *PrimaryVirtualBaseInfo = Info->PrimaryVirtualBaseInfo;
 
-    if (Info == PrimaryVirtualBaseInfo->Derived) {
-      if (!CanPlaceBaseSubobjectAtOffset(PrimaryVirtualBaseInfo, Offset))
-        return false;
-    }
+    if ((Info == PrimaryVirtualBaseInfo->Derived) && (!CanPlaceBaseSubobjectAtOffset(PrimaryVirtualBaseInfo, Offset))) 
+      return false;
+    
   }
 
   // Traverse all member variables.
@@ -1153,8 +1152,8 @@ void ItaniumRecordLayoutBuilder::LayoutVirtualBases(
 
     const CXXRecordDecl *BaseDecl = Base.getType()->getAsCXXRecordDecl();
 
-    if (Base.isVirtual()) {
-      if (PrimaryBase != BaseDecl || !PrimaryBaseIsVirtual) {
+    if ((Base.isVirtual()) && (PrimaryBase != BaseDecl || !PrimaryBaseIsVirtual)) 
+      {
         bool IndirectPrimaryBase = IndirectPrimaryBases.count(BaseDecl);
 
         // Only lay out the virtual base if it's not an indirect primary base.
@@ -1168,7 +1167,7 @@ void ItaniumRecordLayoutBuilder::LayoutVirtualBases(
           LayoutVirtualBase(BaseInfo);
         }
       }
-    }
+    
 
     if (!BaseDecl->getNumVBases()) {
       // This base isn't interesting since it doesn't have any virtual bases.
@@ -2113,20 +2112,17 @@ void ItaniumRecordLayoutBuilder::LayoutField(const FieldDecl *D,
 
   // For checking the alignment of inner fields against
   // the alignment of its parent record.
-  if (const RecordDecl *RD = D->getParent()) {
+  if (const RecordDecl *RD = D->getParent(); RD && (RD->hasAttr<PackedAttr>() || !MaxFieldAlignment.isZero()) && (FieldAlign < OriginalFieldAlign) && (D->getType()->isRecordType()) && (!FieldOffset.isMultipleOf(OriginalFieldAlign))) 
     // Check if packed attribute or pragma pack is present.
-    if (RD->hasAttr<PackedAttr>() || !MaxFieldAlignment.isZero())
-      if (FieldAlign < OriginalFieldAlign)
-        if (D->getType()->isRecordType()) {
+    
           // If the offset is not a multiple of the alignment of
           // the type, raise the warning.
           // TODO: Takes no account the alignment of the outer struct
-          if (!FieldOffset.isMultipleOf(OriginalFieldAlign))
-            Diag(D->getLocation(), diag::warn_unaligned_access)
+          Diag(D->getLocation(), diag::warn_unaligned_access)
                 << Context.getCanonicalTagType(RD) << D->getName()
                 << D->getType();
-        }
-  }
+        
+  
 
   if (Packed && !FieldPacked && PackedFieldAlign < FieldAlign)
     Diag(D->getLocation(), diag::warn_unpacked_field) << D;
@@ -2914,10 +2910,9 @@ static bool recordUsesEBO(const RecordDecl *RD) {
     return false;
   if (RD->hasAttr<EmptyBasesAttr>())
     return true;
-  if (auto *LVA = RD->getAttr<LayoutVersionAttr>())
+  if (auto *LVA = RD->getAttr<LayoutVersionAttr>(); LVA && (LVA->getVersion() <= LangOptions::MSVC2015))
     // TODO: Double check with the next version of MSVC.
-    if (LVA->getVersion() <= LangOptions::MSVC2015)
-      return false;
+    return false;
   // TODO: Some later version of MSVC will change the default behavior of the
   // compiler to enable EBO by default.  When this happens, we will need an
   // additional isCompatibleWithMSVC check.

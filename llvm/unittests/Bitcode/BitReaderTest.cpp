@@ -260,12 +260,12 @@ TEST(BitReaderTest, MaterializeFunctionsForBlockAddrInFunctionAfter) {
 // Helper function to convert type metadata to a string for testing
 static std::string mdToString(Metadata *MD) {
   std::string S;
-  if (auto *VMD = dyn_cast<ValueAsMetadata>(MD)) {
-    if (VMD->getType()->isPointerTy()) {
+  if (auto *VMD = dyn_cast<ValueAsMetadata>(MD); VMD && (VMD->getType()->isPointerTy())) 
+    {
       S += "ptr";
       return S;
     }
-  }
+  
 
   if (auto *TMD = dyn_cast<MDTuple>(MD)) {
     S += "!{";
@@ -404,10 +404,10 @@ TEST(BitReaderTest, AccessMetadataTypeInfo) {
                          GetTypeByIDTy GetTypeByID,
                          GetContainedTypeIDTy GetContainedTypeID) {
     auto *OrigVal = cast<ValueAsMetadata>(*Val);
-    if (OrigVal->getType()->isPointerTy()) {
+    if ((OrigVal->getType()->isPointerTy()) && (!isa<Function>(OrigVal->getValue()))) 
       // Ignore function references, their signature can be saved like
       // in the test above
-      if (!isa<Function>(OrigVal->getValue())) {
+      {
         SmallVector<Metadata *> Tuple;
         Tuple.push_back(OrigVal);
         Tuple.push_back(getTypeMetadataEntry(GetContainedTypeID(TypeID, 0),
@@ -415,7 +415,7 @@ TEST(BitReaderTest, AccessMetadataTypeInfo) {
                                              GetContainedTypeID));
         *Val = MDTuple::get(OrigVal->getContext(), Tuple);
       }
-    }
+    
   };
 
   Expected<std::unique_ptr<Module>> ModuleOrErr =

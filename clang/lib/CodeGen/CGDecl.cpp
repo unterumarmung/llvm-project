@@ -111,15 +111,13 @@ void CodeGenFunction::EmitDecl(const Decl &D, bool EvaluateConditionDecl) {
     llvm_unreachable("Declaration should not be in declstmts!");
   case Decl::Record:    // struct/union/class X;
   case Decl::CXXRecord: // struct/union/class X; [C++]
-    if (CGDebugInfo *DI = getDebugInfo())
-      if (cast<RecordDecl>(D).getDefinition())
-        DI->EmitAndRetainType(
+    if (CGDebugInfo *DI = getDebugInfo(); DI && (cast<RecordDecl>(D).getDefinition()))
+      DI->EmitAndRetainType(
             getContext().getCanonicalTagType(cast<RecordDecl>(&D)));
     return;
   case Decl::Enum:      // enum X;
-    if (CGDebugInfo *DI = getDebugInfo())
-      if (cast<EnumDecl>(D).getDefinition())
-        DI->EmitAndRetainType(
+    if (CGDebugInfo *DI = getDebugInfo(); DI && (cast<EnumDecl>(D).getDefinition()))
+      DI->EmitAndRetainType(
             getContext().getCanonicalTagType(cast<EnumDecl>(&D)));
     return;
   case Decl::Function:     // void X();
@@ -1266,8 +1264,8 @@ void CodeGenFunction::emitStoresForConstant(const VarDecl &D, Address Loc,
         }
         return;
       }
-    } else if (auto *ATy = dyn_cast<llvm::ArrayType>(Ty)) {
-      if (ATy == Loc.getElementType() || IsTrivialAutoVarInitPattern) {
+    } else if (auto *ATy = dyn_cast<llvm::ArrayType>(Ty); ATy && (ATy == Loc.getElementType() || IsTrivialAutoVarInitPattern)) 
+      {
         for (unsigned i = 0; i != ATy->getNumElements(); i++) {
           Address EltPtr = Builder.CreateConstGEP(
               Loc.withElementType(ATy->getElementType()), i);
@@ -1276,7 +1274,7 @@ void CodeGenFunction::emitStoresForConstant(const VarDecl &D, Address Loc,
         }
         return;
       }
-    }
+    
   }
 
   // Copy from a global.
@@ -1746,12 +1744,11 @@ CodeGenFunction::EmitAutoVarAlloca(const VarDecl &D) {
   // non-scalars larger than 4 times the size of an unsigned int. Larger
   // non-scalars are often allocated in memory and may create unnecessary
   // overhead.
-  if (CGM.getCodeGenOpts().getExtendVariableLiveness() ==
-      CodeGenOptions::ExtendVariableLivenessKind::All) {
-    if (shouldExtendLifetime(getContext(), CurCodeDecl, D, CXXABIThisDecl))
-      EHStack.pushCleanup<FakeUse>(NormalFakeUse,
+  if ((CGM.getCodeGenOpts().getExtendVariableLiveness() ==
+      CodeGenOptions::ExtendVariableLivenessKind::All) && (shouldExtendLifetime(getContext(), CurCodeDecl, D, CXXABIThisDecl))) 
+    EHStack.pushCleanup<FakeUse>(NormalFakeUse,
                                    emission.getAllocatedAddress());
-  }
+  
 
   return emission;
 }
@@ -1825,11 +1822,10 @@ bool CodeGenFunction::isTrivialInitializer(const Expr *Init) {
     return true;
 
   if (const CXXConstructExpr *Construct = dyn_cast<CXXConstructExpr>(Init))
-    if (CXXConstructorDecl *Constructor = Construct->getConstructor())
-      if (Constructor->isTrivial() &&
+    if (CXXConstructorDecl *Constructor = Construct->getConstructor(); Constructor && (Constructor->isTrivial() &&
           Constructor->isDefaultConstructor() &&
-          !Construct->requiresZeroInitialization())
-        return true;
+          !Construct->requiresZeroInitialization()))
+      return true;
 
   return false;
 }
@@ -2054,8 +2050,8 @@ void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
   }
 
   if (!constant) {
-    if (trivialAutoVarInit !=
-        LangOptions::TrivialAutoVarInitKind::Uninitialized) {
+    if ((trivialAutoVarInit !=
+        LangOptions::TrivialAutoVarInitKind::Uninitialized) && (!type->isScalarType() || capturedByInit || isAccessedBy(D, Init))) 
       // At this point, we know D has an Init expression, but isn't a constant.
       // - If D is not a scalar, auto-var-init conservatively (members may be
       // left uninitialized by constructor Init expressions for example).
@@ -2064,10 +2060,10 @@ void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
       // It may be that the Init expression uses other uninitialized memory,
       // but auto-var-init here would not help, as auto-init would get
       // overwritten by Init.
-      if (!type->isScalarType() || capturedByInit || isAccessedBy(D, Init)) {
+      {
         initializeWhatIsTechnicallyUninitialized(Loc);
       }
-    }
+    
     LValue lv = MakeAddrLValue(Loc, type);
     lv.setNonGC(true);
     return EmitExprAsInit(Init, &D, lv, capturedByInit);
@@ -2848,23 +2844,22 @@ void CodeGenFunction::EmitParmDecl(const VarDecl &D, ParamValue Arg,
        &D == CXXABIThisDecl)) {
     // We don't emit fake uses for coroutine parameters, other than `this`.
     if (auto *FnDecl = dyn_cast_or_null<FunctionDecl>(CurCodeDecl);
-        &D == CXXABIThisDecl || !FnDecl ||
-        FnDecl->getBody()->getStmtClass() != Stmt::CoroutineBodyStmtClass) {
-      if (shouldExtendLifetime(getContext(), CurCodeDecl, D, CXXABIThisDecl))
-        EHStack.pushCleanup<FakeUse>(NormalFakeUse, DeclPtr);
-    }
+        (&D == CXXABIThisDecl || !FnDecl ||
+        FnDecl->getBody()->getStmtClass() != Stmt::CoroutineBodyStmtClass) && (shouldExtendLifetime(getContext(), CurCodeDecl, D, CXXABIThisDecl))) 
+      EHStack.pushCleanup<FakeUse>(NormalFakeUse, DeclPtr);
+    
   }
 
   // Emit debug info for param declarations in non-thunk functions.
-  if (CGDebugInfo *DI = getDebugInfo()) {
-    if (CGM.getCodeGenOpts().hasReducedDebugInfo() && !CurFuncIsThunk &&
-        !NoDebugInfo) {
+  if (CGDebugInfo *DI = getDebugInfo(); DI && (CGM.getCodeGenOpts().hasReducedDebugInfo() && !CurFuncIsThunk &&
+        !NoDebugInfo)) 
+    {
       llvm::DILocalVariable *DILocalVar = DI->EmitDeclareOfArgVariable(
           &D, AllocaPtr.getPointer(), ArgNo, Builder, UseIndirectDebugAddress);
       if (const auto *Var = dyn_cast_or_null<ParmVarDecl>(&D))
         DI->getParamDbgMappings().insert({Var, DILocalVar});
     }
-  }
+  
 
   if (D.hasAttr<AnnotateAttr>())
     EmitVarAnnotations(&D, DeclPtr.emitRawPointer(*this));

@@ -501,8 +501,8 @@ FindCallSeqStart(SDNode *N, unsigned &NestLevel, unsigned &MaxNest,
         unsigned MyNestLevel = NestLevel;
         unsigned MyMaxNest = MaxNest;
         if (SDNode *New = FindCallSeqStart(Op.getNode(),
-                                           MyNestLevel, MyMaxNest, TII))
-          if (!Best || (MyMaxNest > BestMaxNest)) {
+                                           MyNestLevel, MyMaxNest, TII); New && (!Best || (MyMaxNest > BestMaxNest)))
+          {
             Best = New;
             BestMaxNest = MyMaxNest;
           }
@@ -2521,10 +2521,9 @@ static int BUCompareLatency(SUnit *left, SUnit *right, bool checkPref,
     // is enabled, grouping instructions by cycle, then its height is already
     // covered so only its depth matters. We also reach this point if both stall
     // but have the same height.
-    if (!SPQ->getHazardRec()->isEnabled()) {
-      if (LHeight != RHeight)
-        return LHeight > RHeight ? 1 : -1;
-    }
+    if ((!SPQ->getHazardRec()->isEnabled()) && (LHeight != RHeight)) 
+      return LHeight > RHeight ? 1 : -1;
+    
     int LDepth = left->getDepth() - LPenalty;
     int RDepth = right->getDepth() - RPenalty;
     if (LDepth != RDepth) {
@@ -2967,10 +2966,9 @@ void RegReductionPQBase::PrescheduleNodesWithMultipleUses() {
       continue;
     // Avoid prescheduling copies to virtual registers, which don't behave
     // like other nodes from the perspective of scheduling heuristics.
-    if (SDNode *N = SU.getNode())
-      if (N->getOpcode() == ISD::CopyToReg &&
-          cast<RegisterSDNode>(N->getOperand(1))->getReg().isVirtual())
-        continue;
+    if (SDNode *N = SU.getNode(); N && (N->getOpcode() == ISD::CopyToReg &&
+          cast<RegisterSDNode>(N->getOperand(1))->getReg().isVirtual()))
+      continue;
 
     SDNode *PredFrameSetup = nullptr;
     for (const SDep &Pred : SU.Preds)
@@ -3013,10 +3011,9 @@ void RegReductionPQBase::PrescheduleNodesWithMultipleUses() {
       continue;
     // Avoid prescheduling to copies from virtual registers, which don't behave
     // like other nodes from the perspective of scheduling heuristics.
-    if (SDNode *N = SU.getNode())
-      if (N->getOpcode() == ISD::CopyFromReg &&
-          cast<RegisterSDNode>(N->getOperand(1))->getReg().isVirtual())
-        continue;
+    if (SDNode *N = SU.getNode(); N && (N->getOpcode() == ISD::CopyFromReg &&
+          cast<RegisterSDNode>(N->getOperand(1))->getReg().isVirtual()))
+      continue;
 
     // Perform checks on the successors of PredSU.
     for (const SDep &PredSucc : PredSU->Succs) {
@@ -3027,9 +3024,8 @@ void RegReductionPQBase::PrescheduleNodesWithMultipleUses() {
       if (PredSuccSU->NumSuccs == 0)
         goto outer_loop_continue;
       // Don't break physical register dependencies.
-      if (SU.hasPhysRegClobbers && PredSuccSU->hasPhysRegDefs)
-        if (canClobberPhysRegDefs(PredSuccSU, &SU, TII, TRI))
-          goto outer_loop_continue;
+      if ((SU.hasPhysRegClobbers && PredSuccSU->hasPhysRegDefs) && (canClobberPhysRegDefs(PredSuccSU, &SU, TII, TRI)))
+        goto outer_loop_continue;
       // Don't introduce graph cycles.
       if (scheduleDAG->IsReachable(&SU, PredSuccSU))
         goto outer_loop_continue;
@@ -3113,10 +3109,9 @@ void RegReductionPQBase::AddPseudoTwoAddrDeps() {
           continue;
         // Don't constrain nodes with physical register defs if the
         // predecessor can clobber them.
-        if (SuccSU->hasPhysRegDefs && SU.hasPhysRegClobbers) {
-          if (canClobberPhysRegDefs(SuccSU, &SU, TII, TRI))
-            continue;
-        }
+        if ((SuccSU->hasPhysRegDefs && SU.hasPhysRegClobbers) && (canClobberPhysRegDefs(SuccSU, &SU, TII, TRI))) 
+          continue;
+        
         // Don't constrain EXTRACT_SUBREG, INSERT_SUBREG, and SUBREG_TO_REG;
         // these may be coalesced away. We want them close to their uses.
         unsigned SuccOpc = SuccSU->getNode()->getMachineOpcode();

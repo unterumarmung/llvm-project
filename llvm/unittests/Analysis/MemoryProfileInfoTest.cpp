@@ -54,9 +54,8 @@ protected:
   CallBase *findCall(Function &F, const char *Name = nullptr) {
     for (auto &BB : F)
       for (auto &I : BB)
-        if (auto *CB = dyn_cast<CallBase>(&I))
-          if (!Name || CB->getName() == Name)
-            return CB;
+        if (auto *CB = dyn_cast<CallBase>(&I); CB && (!Name || CB->getName() == Name))
+          return CB;
     return nullptr;
   }
 };

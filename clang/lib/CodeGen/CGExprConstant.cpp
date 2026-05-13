@@ -517,10 +517,9 @@ llvm::Constant *ConstantAggregateBuilder::buildFrom(
 
   // Pick the type to use.  If the type is layout identical to the desired
   // type then use it, otherwise use whatever the builder produced for us.
-  if (llvm::StructType *DesiredSTy = dyn_cast<llvm::StructType>(DesiredTy)) {
-    if (DesiredSTy->isLayoutIdentical(STy))
-      STy = DesiredSTy;
-  }
+  if (llvm::StructType *DesiredSTy = dyn_cast<llvm::StructType>(DesiredTy); DesiredSTy && (DesiredSTy->isLayoutIdentical(STy))) 
+    STy = DesiredSTy;
+  
 
   return llvm::ConstantStruct::get(STy, Packed ? PackedElems : UnpackedElems);
 }
@@ -679,13 +678,13 @@ static bool EmitDesignatedInitUpdater(ConstantEmitter &Emitter,
   llvm::Type *ElemTy = Emitter.CGM.getTypes().ConvertTypeForMem(ElemType);
 
   llvm::Constant *FillC = nullptr;
-  if (const Expr *Filler = Updater->getArrayFiller()) {
-    if (!isa<NoInitExpr>(Filler)) {
+  if (const Expr *Filler = Updater->getArrayFiller(); Filler && (!isa<NoInitExpr>(Filler))) 
+    {
       FillC = Emitter.tryEmitAbstractForMemory(Filler, ElemType);
       if (!FillC)
         return false;
     }
-  }
+  
 
   unsigned NumElementsToUpdate =
       FillC ? CAT->getZExtSize() : Updater->getNumInits();
@@ -725,9 +724,8 @@ bool ConstStructBuilder::Build(const InitListExpr *ILE, bool AllowOverwrite) {
   // Bail out if we have base classes. We could support these, but they only
   // arise in C++1z where we will have already constant folded most interesting
   // cases. FIXME: There are still a few more cases we can handle this way.
-  if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD))
-    if (CXXRD->getNumBases())
-      return false;
+  if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD); CXXRD && (CXXRD->getNumBases()))
+    return false;
 
   const bool ZeroInitPadding = CGM.shouldZeroInitPadding();
   bool ZeroFieldSize = false;
@@ -969,10 +967,9 @@ bool ConstStructBuilder::DoZeroInitPadding(
     bool AllowOverwrite, CharUnits &SizeSoFar, bool &ZeroFieldSize) {
   uint64_t StartBitOffset = Layout.getFieldOffset(FieldNo);
   CharUnits StartOffset = CGM.getContext().toCharUnitsFromBits(StartBitOffset);
-  if (SizeSoFar < StartOffset)
-    if (!AppendBytes(SizeSoFar, getPadding(CGM, StartOffset - SizeSoFar),
-                     AllowOverwrite))
-      return false;
+  if ((SizeSoFar < StartOffset) && (!AppendBytes(SizeSoFar, getPadding(CGM, StartOffset - SizeSoFar),
+                     AllowOverwrite)))
+    return false;
 
   if (!Field.isBitField()) {
     CharUnits FieldSize = CGM.getContext().getTypeSizeInChars(Field.getType());
@@ -996,10 +993,9 @@ bool ConstStructBuilder::DoZeroInitPadding(const ASTRecordLayout &Layout,
                                            bool AllowOverwrite,
                                            CharUnits SizeSoFar) {
   CharUnits TotalSize = Layout.getSize();
-  if (SizeSoFar < TotalSize)
-    if (!AppendBytes(SizeSoFar, getPadding(CGM, TotalSize - SizeSoFar),
-                     AllowOverwrite))
-      return false;
+  if ((SizeSoFar < TotalSize) && (!AppendBytes(SizeSoFar, getPadding(CGM, TotalSize - SizeSoFar),
+                     AllowOverwrite)))
+    return false;
   SizeSoFar = TotalSize;
   return true;
 }
@@ -1385,8 +1381,8 @@ public:
 
   static APValue withDestType(ASTContext &Ctx, const Expr *E, QualType SrcType,
                               QualType DestType, const llvm::APSInt &Value) {
-    if (!Ctx.hasSameType(SrcType, DestType)) {
-      if (DestType->isFloatingType()) {
+    if ((!Ctx.hasSameType(SrcType, DestType)) && (DestType->isFloatingType())) 
+      {
         llvm::APFloat Result =
             llvm::APFloat(Ctx.getFloatTypeSemantics(DestType), 1);
         llvm::RoundingMode RM =
@@ -1396,7 +1392,7 @@ public:
         Result.convertFromAPInt(Value, Value.isSigned(), RM);
         return APValue(Result);
       }
-    }
+    
     return APValue(Value);
   }
 
@@ -2290,9 +2286,9 @@ ConstantLValueEmitter::tryEmitBase(const APValue::LValueBase &base) {
       return PtrAuthSign(C);
     }
 
-    if (const auto *VD = dyn_cast<VarDecl>(D)) {
+    if (const auto *VD = dyn_cast<VarDecl>(D); VD && (!VD->hasLocalStorage())) 
       // We can never refer to a variable with local storage.
-      if (!VD->hasLocalStorage()) {
+      {
         if (VD->isFileVarDecl() || VD->hasExternalStorage())
           return CGM.GetAddrOfGlobalVar(VD);
 
@@ -2301,7 +2297,7 @@ ConstantLValueEmitter::tryEmitBase(const APValue::LValueBase &base) {
               *VD, CGM.getLLVMLinkageVarDefinition(VD));
         }
       }
-    }
+    
 
     if (const auto *GD = dyn_cast<MSGuidDecl>(D))
       return CGM.GetAddrOfMSGuidDecl(GD);
@@ -2517,16 +2513,16 @@ std::pair<llvm::Constant *, llvm::ConstantInt *>
 ConstantLValueEmitter::emitPointerAuthDiscriminator(const Expr *E) {
   E = E->IgnoreParens();
 
-  if (const auto *Call = dyn_cast<CallExpr>(E)) {
-    if (Call->getBuiltinCallee() ==
-        Builtin::BI__builtin_ptrauth_blend_discriminator) {
+  if (const auto *Call = dyn_cast<CallExpr>(E); Call && (Call->getBuiltinCallee() ==
+        Builtin::BI__builtin_ptrauth_blend_discriminator)) 
+    {
       llvm::Constant *Pointer = ConstantEmitter(CGM).emitAbstract(
           Call->getArg(0), Call->getArg(0)->getType());
       auto *Extra = cast<llvm::ConstantInt>(ConstantEmitter(CGM).emitAbstract(
           Call->getArg(1), Call->getArg(1)->getType()));
       return {Pointer, Extra};
     }
-  }
+  
 
   llvm::Constant *Result = ConstantEmitter(CGM).emitAbstract(E, E->getType());
   if (Result->getType()->isPointerTy())
@@ -2828,9 +2824,8 @@ static llvm::Constant *EmitNullConstant(CodeGenModule &CGM,
     if (record->isUnion()) {
       if (Field->getIdentifier())
         break;
-      if (const auto *FieldRD = Field->getType()->getAsRecordDecl())
-        if (FieldRD->findFirstNamedDataMember())
-          break;
+      if (const auto *FieldRD = Field->getType()->getAsRecordDecl(); FieldRD && (FieldRD->findFirstNamedDataMember()))
+        break;
     }
   }
 

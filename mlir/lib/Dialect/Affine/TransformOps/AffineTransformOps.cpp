@@ -158,12 +158,11 @@ void SimplifyBoundedAffineOpsOp::getEffects(
 //===----------------------------------------------------------------------===//
 
 LogicalResult SuperVectorizeOp::verify() {
-  if (getFastestVaryingPattern().has_value()) {
-    if (getFastestVaryingPattern()->size() != getVectorSizes().size())
-      return emitOpError()
+  if ((getFastestVaryingPattern().has_value()) && (getFastestVaryingPattern()->size() != getVectorSizes().size())) 
+    return emitOpError()
              << "fastest varying pattern specified with different size than "
                 "the vector size";
-  }
+  
   return success();
 }
 

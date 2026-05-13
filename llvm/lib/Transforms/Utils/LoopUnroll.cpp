@@ -384,9 +384,8 @@ void llvm::simplifyLoopAfterUnroll(Loop *L, bool SimplifyIVs, LoopInfo *LI,
 
     for (Instruction &Inst : llvm::make_early_inc_range(*BB)) {
       if (Value *V = simplifyInstruction(
-              &Inst, {BB->getDataLayout(), nullptr, DT, AC}))
-        if (LI->replacementPreservesLCSSAForm(&Inst, V))
-          Inst.replaceAllUsesWith(V);
+              &Inst, {BB->getDataLayout(), nullptr, DT, AC}); V && (LI->replacementPreservesLCSSAForm(&Inst, V)))
+        Inst.replaceAllUsesWith(V);
       if (isInstructionTriviallyDead(&Inst))
         DeadInsts.emplace_back(&Inst);
 
@@ -433,9 +432,8 @@ static bool canHaveUnrollRemainder(const Loop *L) {
     for (auto &I : *BB) {
       if (isa<ConvergenceControlInst>(I))
         return true;
-      if (auto *CB = dyn_cast<CallBase>(&I))
-        if (CB->isConvergent())
-          return CB->getConvergenceControlToken();
+      if (auto *CB = dyn_cast<CallBase>(&I); CB && (CB->isConvergent()))
+        return CB->getConvergenceControlToken();
     }
   }
   return true;
@@ -1188,9 +1186,8 @@ llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
             continue;
           }
 
-          if (Instruction *InValI = dyn_cast<Instruction>(InVal))
-            if (It > 1 && L->contains(InValI))
-              InVal = LastValueMap[InValI];
+          if (Instruction *InValI = dyn_cast<Instruction>(InVal); InValI && (It > 1 && L->contains(InValI)))
+            InVal = LastValueMap[InValI];
           VMap[OrigPHI] = InVal;
           NewPHI->eraseFromParent();
         }
@@ -1293,10 +1290,9 @@ llvm::UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI,
       Value *InVal = PN->removeIncomingValue(LatchBlock, false);
       // If this value was defined in the loop, take the value defined by the
       // last iteration of the loop.
-      if (Instruction *InValI = dyn_cast<Instruction>(InVal)) {
-        if (L->contains(InValI))
-          InVal = LastValueMap[InVal];
-      }
+      if (Instruction *InValI = dyn_cast<Instruction>(InVal); InValI && (L->contains(InValI))) 
+        InVal = LastValueMap[InVal];
+      
       assert(Latches.back() == LastValueMap[LatchBlock] && "bad last latch");
       PN->addIncoming(InVal, Latches.back());
     }

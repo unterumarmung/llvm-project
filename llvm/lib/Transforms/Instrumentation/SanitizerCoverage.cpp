@@ -643,9 +643,8 @@ static bool IsBackEdge(BasicBlock *From, BasicBlock *To,
                        const DominatorTree &DT) {
   if (DT.dominates(To, From))
     return true;
-  if (auto Next = To->getUniqueSuccessor())
-    if (DT.dominates(Next, From))
-      return true;
+  if (auto Next = To->getUniqueSuccessor(); Next && (DT.dominates(Next, From)))
+    return true;
   return false;
 }
 
@@ -656,9 +655,8 @@ static bool IsBackEdge(BasicBlock *From, BasicBlock *To,
 // BB pruning.
 static bool IsInterestingCmp(ICmpInst *CMP, const DominatorTree &DT,
                              const SanitizerCoverageOptions &Options) {
-  if (!Options.NoPrune)
-    if (CMP->hasOneUse())
-      if (auto BR = dyn_cast<CondBrInst>(CMP->user_back()))
+  if ((!Options.NoPrune) && (CMP->hasOneUse()))
+    if (auto BR = dyn_cast<CondBrInst>(CMP->user_back()))
         for (BasicBlock *B : BR->successors())
           if (IsBackEdge(BR->getParent(), B, DT))
             return false;
@@ -726,17 +724,15 @@ void ModuleSanitizerCoverage::instrumentFunction(Function &F) {
           IndirCalls.push_back(&Inst);
       }
       if (Options.TraceCmp) {
-        if (ICmpInst *CMP = dyn_cast<ICmpInst>(&Inst))
-          if (IsInterestingCmp(CMP, DT, Options))
-            CmpTraceTargets.push_back(&Inst);
+        if (ICmpInst *CMP = dyn_cast<ICmpInst>(&Inst); CMP && (IsInterestingCmp(CMP, DT, Options)))
+          CmpTraceTargets.push_back(&Inst);
         if (isa<SwitchInst>(&Inst))
           SwitchTraceTargets.push_back(&Inst);
       }
       if (Options.TraceDiv)
-        if (BinaryOperator *BO = dyn_cast<BinaryOperator>(&Inst))
-          if (BO->getOpcode() == Instruction::SDiv ||
-              BO->getOpcode() == Instruction::UDiv)
-            DivTraceTargets.push_back(BO);
+        if (BinaryOperator *BO = dyn_cast<BinaryOperator>(&Inst); BO && (BO->getOpcode() == Instruction::SDiv ||
+              BO->getOpcode() == Instruction::UDiv))
+          DivTraceTargets.push_back(BO);
       if (Options.TraceGep)
         if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(&Inst))
           GepTraceTargets.push_back(GEP);
@@ -746,10 +742,9 @@ void ModuleSanitizerCoverage::instrumentFunction(Function &F) {
       if (Options.TraceStores)
         if (StoreInst *SI = dyn_cast<StoreInst>(&Inst))
           Stores.push_back(SI);
-      if (Options.StackDepth)
-        if (isa<InvokeInst>(Inst) ||
-            (isa<CallInst>(Inst) && !isa<IntrinsicInst>(Inst)))
-          IsLeafFunc = false;
+      if ((Options.StackDepth) && (isa<InvokeInst>(Inst) ||
+            (isa<CallInst>(Inst) && !isa<IntrinsicInst>(Inst))))
+        IsLeafFunc = false;
     }
   }
 

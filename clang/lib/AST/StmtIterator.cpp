@@ -23,9 +23,8 @@ using namespace clang;
 // Does it even make sense to build a CFG for an uninstantiated template?
 static inline const VariableArrayType *FindVA(const Type* t) {
   while (const ArrayType *vt = dyn_cast<ArrayType>(t)) {
-    if (const VariableArrayType *vat = dyn_cast<VariableArrayType>(vt))
-      if (vat->getSizeExpr())
-        return vat;
+    if (const VariableArrayType *vat = dyn_cast<VariableArrayType>(vt); vat && (vat->getSizeExpr()))
+      return vat;
 
     t = vt->getElementType().getTypePtr();
   }
@@ -44,9 +43,8 @@ void StmtIteratorBase::NextVA() {
     return;
 
   if (inDeclGroup()) {
-    if (VarDecl* VD = dyn_cast<VarDecl>(*DGI))
-      if (VD->hasInit())
-        return;
+    if (VarDecl* VD = dyn_cast<VarDecl>(*DGI); VD && (VD->hasInit()))
+      return;
 
     NextDecl();
   }
@@ -87,10 +85,9 @@ bool StmtIteratorBase::HandleDecl(Decl* D) {
       return true;
     }
   }
-  else if (EnumConstantDecl* ECD = dyn_cast<EnumConstantDecl>(D)) {
-    if (ECD->getInitExpr())
-      return true;
-  }
+  else if (EnumConstantDecl* ECD = dyn_cast<EnumConstantDecl>(D); ECD && (ECD->getInitExpr())) 
+    return true;
+  
 
   return false;
 }

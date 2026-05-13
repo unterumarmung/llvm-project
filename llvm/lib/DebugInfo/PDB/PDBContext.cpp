@@ -158,13 +158,12 @@ std::string PDBContext::getFunctionName(uint64_t Address,
     // PDBSymbolPublicSymbol.
     auto PublicSym =
         Session->findSymbolByAddress(Address, PDB_SymType::PublicSymbol);
-    if (auto *PS = dyn_cast_or_null<PDBSymbolPublicSymbol>(PublicSym.get())) {
+    if (auto *PS = dyn_cast_or_null<PDBSymbolPublicSymbol>(PublicSym.get()); PS && (!Func || Func->getVirtualAddress() == PS->getVirtualAddress())) 
       // If we also have a function symbol, prefer the use of public symbol name
       // only if it refers to the same address. The public symbol uses the
       // linkage name while the function does not.
-      if (!Func || Func->getVirtualAddress() == PS->getVirtualAddress())
-        return PS->getName();
-    }
+      return PS->getName();
+    
   }
 
   return Func ? Func->getName() : std::string();

@@ -271,8 +271,8 @@ ABIArgInfo SparcV9ABIInfo::classifyType(QualType Ty, unsigned SizeLimit,
     return ABIArgInfo::getExtend(Ty);
   }
 
-  if (const auto *EIT = Ty->getAs<BitIntType>())
-    if (EIT->getNumBits() < 64) {
+  if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && (EIT->getNumBits() < 64))
+    {
       RegOffset += 1;
       return ABIArgInfo::getExtend(Ty);
     }

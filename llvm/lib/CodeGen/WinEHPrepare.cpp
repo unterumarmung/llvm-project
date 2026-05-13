@@ -715,9 +715,8 @@ void llvm::calculateClrEHStateNumbers(const Function *Fn,
                                          HandlerType, 0, Pad->getParent());
       // Queue any child EH pads on the worklist.
       for (const User *U : Cleanup->users())
-        if (const auto *I = dyn_cast<Instruction>(U))
-          if (I->isEHPad())
-            Worklist.emplace_back(I, CleanupState);
+        if (const auto *I = dyn_cast<Instruction>(U); I && (I->isEHPad()))
+          Worklist.emplace_back(I, CleanupState);
       // Remember this pad's state.
       FuncInfo.EHPadStateMap[Cleanup] = CleanupState;
     } else {
@@ -737,9 +736,8 @@ void llvm::calculateClrEHStateNumbers(const Function *Fn,
                             ClrHandlerType::Catch, TypeToken, CatchBlock);
         // Queue any child EH pads on the worklist.
         for (const User *U : Catch->users())
-          if (const auto *I = dyn_cast<Instruction>(U))
-            if (I->isEHPad())
-              Worklist.emplace_back(I, CatchState);
+          if (const auto *I = dyn_cast<Instruction>(U); I && (I->isEHPad()))
+            Worklist.emplace_back(I, CatchState);
         // Remember this catch's state.
         FuncInfo.EHPadStateMap[Catch] = CatchState;
         FollowerState = CatchState;
@@ -1005,9 +1003,8 @@ bool WinEHPrepareImpl::cloneCommonBlocks(Function &F) {
 
       FixupCatchrets.clear();
       for (BasicBlock *Pred : predecessors(OldBlock))
-        if (auto *CatchRet = dyn_cast<CatchReturnInst>(Pred->getTerminator()))
-          if (CatchRet->getCatchSwitchParentPad() == FuncletToken)
-            FixupCatchrets.push_back(CatchRet);
+        if (auto *CatchRet = dyn_cast<CatchReturnInst>(Pred->getTerminator()); CatchRet && (CatchRet->getCatchSwitchParentPad() == FuncletToken))
+          FixupCatchrets.push_back(CatchRet);
 
       for (CatchReturnInst *CatchRet : FixupCatchrets)
         CatchRet->setSuccessor(NewBlock);
@@ -1185,15 +1182,15 @@ bool WinEHPrepareImpl::removeImplausibleInstructions(Function &F) {
           IsUnreachableCleanupret) {
         Changed = true;
         changeToUnreachable(TI);
-      } else if (isa<InvokeInst>(TI)) {
-        if (Personality == EHPersonality::MSVC_CXX && CleanupPad) {
+      } else if ((isa<InvokeInst>(TI)) && (Personality == EHPersonality::MSVC_CXX && CleanupPad)) 
+        {
           Changed = true;
           // Invokes within a cleanuppad for the MSVC++ personality never
           // transfer control to their unwind edge: the personality will
           // terminate the program.
           removeUnwindEdge(BB);
         }
-      }
+      
     }
   }
 

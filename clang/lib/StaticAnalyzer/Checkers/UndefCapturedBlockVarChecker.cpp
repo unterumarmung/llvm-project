@@ -36,9 +36,8 @@ public:
 
 static const DeclRefExpr *FindBlockDeclRefExpr(const Stmt *S,
                                                const VarDecl *VD) {
-  if (const DeclRefExpr *BR = dyn_cast<DeclRefExpr>(S))
-    if (BR->getDecl() == VD)
-      return BR;
+  if (const DeclRefExpr *BR = dyn_cast<DeclRefExpr>(S); BR && (BR->getDecl() == VD))
+    return BR;
 
   for (const Stmt *Child : S->children())
     if (Child)

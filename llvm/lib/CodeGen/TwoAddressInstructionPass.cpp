@@ -1401,17 +1401,17 @@ bool TwoAddressInstructionImpl::tryInstructionTransform(
     regBKilled = isKilled(MI, regB, true);
   }
 
-  if (ConvertibleTo3Addr) {
+  if ((ConvertibleTo3Addr) && (!regBKilled || isProfitableToConv3Addr(regA, regB)) && (convertInstTo3Addr(mi, nmi, regA, regB, Dist))) 
     // This instruction is potentially convertible to a true
     // three-address instruction.  Check if it is profitable.
-    if (!regBKilled || isProfitableToConv3Addr(regA, regB)) {
+    
       // Try to convert it.
-      if (convertInstTo3Addr(mi, nmi, regA, regB, Dist)) {
+      {
         ++NumConvertedTo3Addr;
         return true; // Done with this instruction.
       }
-    }
-  }
+    
+  
 
   // Return if it is commuted but 3 addr conversion is failed.
   if (Commuted)

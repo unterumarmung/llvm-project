@@ -116,9 +116,8 @@ StringRef ScalarTraits<PlatformSet>::input(StringRef Scalar, void *IO,
                       .Case("driverkit", PLATFORM_DRIVERKIT)
                       .Default(PLATFORM_UNKNOWN);
 
-  if (Platform == PLATFORM_MACCATALYST)
-    if (Ctx && Ctx->FileKind != FileType::TBD_V3)
-      return "invalid platform";
+  if ((Platform == PLATFORM_MACCATALYST) && (Ctx && Ctx->FileKind != FileType::TBD_V3))
+    return "invalid platform";
 
   if (Platform == PLATFORM_UNKNOWN)
     return "unknown platform";

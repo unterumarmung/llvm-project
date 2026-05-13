@@ -797,10 +797,9 @@ void tools::gnutools::Assembler::ConstructJob(Compilation &C,
     else
       CmdArgs.push_back("-EB");
 
-    if (Arg *A = Args.getLastArg(options::OPT_mnan_EQ)) {
-      if (StringRef(A->getValue()) == "2008")
-        CmdArgs.push_back(Args.MakeArgString("-mnan=2008"));
-    }
+    if (Arg *A = Args.getLastArg(options::OPT_mnan_EQ); A && (StringRef(A->getValue()) == "2008")) 
+      CmdArgs.push_back(Args.MakeArgString("-mnan=2008"));
+    
 
     // Add the last -mfp32/-mfpxx/-mfp64 or -mfpxx if it is enabled by default.
     if (Arg *A = Args.getLastArg(options::OPT_mfp32, options::OPT_mfpxx,
@@ -831,12 +830,11 @@ void tools::gnutools::Assembler::ConstructJob(Compilation &C,
     Args.AddLastArg(CmdArgs, options::OPT_mdsp, options::OPT_mno_dsp);
     Args.AddLastArg(CmdArgs, options::OPT_mdspr2, options::OPT_mno_dspr2);
 
-    if (Arg *A = Args.getLastArg(options::OPT_mmsa, options::OPT_mno_msa)) {
+    if (Arg *A = Args.getLastArg(options::OPT_mmsa, options::OPT_mno_msa); A && (A->getOption().matches(options::OPT_mmsa))) 
       // Do not use AddLastArg because not all versions of MIPS assembler
       // support -mmsa / -mno-msa options.
-      if (A->getOption().matches(options::OPT_mmsa))
-        CmdArgs.push_back(Args.MakeArgString("-mmsa"));
-    }
+      CmdArgs.push_back(Args.MakeArgString("-mmsa"));
+    
 
     Args.AddLastArg(CmdArgs, options::OPT_mhard_float,
                     options::OPT_msoft_float);
@@ -887,8 +885,8 @@ void tools::gnutools::Assembler::ConstructJob(Compilation &C,
   if (Arg *A = Args.getLastArg(options::OPT_g_Flag, options::OPT_gN_Group,
                                options::OPT_gdwarf_2, options::OPT_gdwarf_3,
                                options::OPT_gdwarf_4, options::OPT_gdwarf_5,
-                               options::OPT_gdwarf))
-    if (!A->getOption().matches(options::OPT_g0)) {
+                               options::OPT_gdwarf); A && (!A->getOption().matches(options::OPT_g0)))
+    {
       Args.AddLastArg(CmdArgs, options::OPT_g_Flag);
 
       unsigned DwarfVersion = getDwarfVersion(getToolChain(), Args);
@@ -2902,9 +2900,8 @@ void Generic_GCC::GCCInstallationDetector::ScanLibDirForGCCTriple(
          !EC && LI != LE; LI = LI.increment(EC)) {
       StringRef VersionText = llvm::sys::path::filename(LI->path());
       GCCVersion CandidateVersion = GCCVersion::Parse(VersionText);
-      if (CandidateVersion.Major != -1) // Filter obviously bad entries.
-        if (!CandidateGCCInstallPaths.insert(std::string(LI->path())).second)
-          continue; // Saw this path before; no need to look at it again.
+      if ((CandidateVersion.Major != -1) && (!CandidateGCCInstallPaths.insert(std::string(LI->path())).second)) // Filter obviously bad entries.
+        continue; // Saw this path before; no need to look at it again.
       if (CandidateVersion.isOlderThan(4, 1, 1))
         continue;
       if (CandidateVersion <= SelectedInstallation.Version && IsValid)

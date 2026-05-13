@@ -511,13 +511,13 @@ private:
     NamedDecl *NamedCtx = dyn_cast_or_null<NamedDecl>(Ctx);
 
     if (const auto *Decl = dyn_cast<TagDecl>(NamedTemplate)) {
-      if (const auto *R = dyn_cast<RecordDecl>(Decl)) {
-        if (R->isLambda()) {
+      if (const auto *R = dyn_cast<RecordDecl>(Decl); R && (R->isLambda())) 
+        {
           OS << "lambda at ";
           Decl->getLocation().print(OS, TheSema.getSourceManager());
           return;
         }
-      }
+      
       OS << "unnamed " << Decl->getKindName();
       return;
     }

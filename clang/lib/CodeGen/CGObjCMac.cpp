@@ -1716,9 +1716,8 @@ private:
     // and that the method may be inlined, this optimization actually
     // can't be performed.
     if (const ObjCMethodDecl *MD =
-            dyn_cast_or_null<ObjCMethodDecl>(CGF.CurFuncDecl))
-      if (MD->isInstanceMethod() && !MD->isDirectMethod())
-        if (const ObjCInterfaceDecl *ID = MD->getClassInterface())
+            dyn_cast_or_null<ObjCMethodDecl>(CGF.CurFuncDecl); MD && (MD->isInstanceMethod() && !MD->isDirectMethod()))
+      if (const ObjCInterfaceDecl *ID = MD->getClassInterface())
           return IV->getContainingInterface()->isSuperClassOf(ID);
     return false;
   }
@@ -4188,12 +4187,10 @@ void CGObjCMac::GenerateClass(const ObjCImplementationDecl *ID) {
     if (PID->getPropertyImplementation() == ObjCPropertyImplDecl::Synthesize) {
       if (PID->getPropertyDecl()->isDirectProperty())
         continue;
-      if (ObjCMethodDecl *MD = PID->getGetterMethodDecl())
-        if (GetMethodDefinition(MD))
-          Methods[InstanceMethods].push_back(MD);
-      if (ObjCMethodDecl *MD = PID->getSetterMethodDecl())
-        if (GetMethodDefinition(MD))
-          Methods[InstanceMethods].push_back(MD);
+      if (ObjCMethodDecl *MD = PID->getGetterMethodDecl(); MD && (GetMethodDefinition(MD)))
+        Methods[InstanceMethods].push_back(MD);
+      if (ObjCMethodDecl *MD = PID->getSetterMethodDecl(); MD && (GetMethodDefinition(MD)))
+        Methods[InstanceMethods].push_back(MD);
     }
   }
 
@@ -4618,10 +4615,9 @@ CGObjCCommonMac::GenerateDirectMethod(const ObjCMethodDecl *OMD,
   // Fast path: return cached entry if this is not an implementation (no body)
   // or if the return types match between declaration and implementation.
   auto Cached = DirectMethodDefinitions.find(COMD);
-  if (Cached != DirectMethodDefinitions.end()) {
-    if (!OMD->getBody() || COMD->getReturnType() == OMD->getReturnType())
-      return Cached->second;
-  }
+  if ((Cached != DirectMethodDefinitions.end()) && (!OMD->getBody() || COMD->getReturnType() == OMD->getReturnType())) 
+    return Cached->second;
+  
 
   CodeGenTypes &Types = CGM.getTypes();
   llvm::FunctionType *MethodTy =
@@ -6108,10 +6104,9 @@ llvm::Constant *CGObjCMac::EmitModuleSymbols() {
   for (unsigned i = 0; i < NumClasses; i++) {
     const ObjCInterfaceDecl *ID = ImplementedClasses[i];
     assert(ID);
-    if (ObjCImplementationDecl *IMP = ID->getImplementation())
+    if (ObjCImplementationDecl *IMP = ID->getImplementation(); IMP && (ID->isWeakImported() && !IMP->isWeakImported()))
       // We are implementing a weak imported interface. Give it external linkage
-      if (ID->isWeakImported() && !IMP->isWeakImported())
-        DefinedClasses[i]->setLinkage(llvm::GlobalVariable::ExternalLinkage);
+      DefinedClasses[i]->setLinkage(llvm::GlobalVariable::ExternalLinkage);
 
     array.add(DefinedClasses[i]);
   }
@@ -7103,9 +7098,9 @@ void CGObjCNonFragileABIMac::FinishNonFragileABIModule() {
        i++) {
     const ObjCInterfaceDecl *ID = ImplementedClasses[i];
     assert(ID);
-    if (ObjCImplementationDecl *IMP = ID->getImplementation())
+    if (ObjCImplementationDecl *IMP = ID->getImplementation(); IMP && (ID->isWeakImported() && !IMP->isWeakImported()))
       // We are implementing a weak imported interface. Give it external linkage
-      if (ID->isWeakImported() && !IMP->isWeakImported()) {
+      {
         DefinedClasses[i]->setLinkage(llvm::GlobalVariable::ExternalLinkage);
         DefinedMetaClasses[i]->setLinkage(
             llvm::GlobalVariable::ExternalLinkage);
@@ -7329,9 +7324,8 @@ llvm::GlobalVariable *CGObjCNonFragileABIMac::BuildClassObject(
   if (CGM.getTriple().isOSBinFormatMachO())
     GV->setSection("__DATA, __objc_data");
   GV->setAlignment(CGM.getDataLayout().getABITypeAlign(ObjCTypes.ClassnfABITy));
-  if (!CGM.getTriple().isOSBinFormatCOFF())
-    if (HiddenVisibility)
-      GV->setVisibility(llvm::GlobalValue::HiddenVisibility);
+  if ((!CGM.getTriple().isOSBinFormatCOFF()) && (HiddenVisibility))
+    GV->setVisibility(llvm::GlobalValue::HiddenVisibility);
   if (CGM.getCodeGenOpts().ObjCMsgSendClassSelectorStubs && !isMetaclass)
     CGM.addUsedGlobal(GV);
   return GV;
@@ -8756,13 +8750,11 @@ CGObjCNonFragileABIMac::GetInterfaceEHType(const ObjCInterfaceDecl *ID,
   }
   assert(Entry->getLinkage() == L);
 
-  if (!CGM.getTriple().isOSBinFormatCOFF())
-    if (ID->getVisibility() == HiddenVisibility)
-      Entry->setVisibility(llvm::GlobalValue::HiddenVisibility);
+  if ((!CGM.getTriple().isOSBinFormatCOFF()) && (ID->getVisibility() == HiddenVisibility))
+    Entry->setVisibility(llvm::GlobalValue::HiddenVisibility);
 
-  if (IsForDefinition)
-    if (CGM.getTriple().isOSBinFormatMachO())
-      Entry->setSection("__DATA,__objc_const");
+  if ((IsForDefinition) && (CGM.getTriple().isOSBinFormatMachO()))
+    Entry->setSection("__DATA,__objc_const");
 
   return Entry;
 }

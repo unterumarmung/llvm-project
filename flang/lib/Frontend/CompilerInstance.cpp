@@ -392,11 +392,11 @@ bool CompilerInstance::setUpTargetMachine() {
       /*Reloc::Model=*/CGOpts.getRelocationModel(),
       /*CodeModel::Model=*/cm, OptLevel));
   assert(targetMachine && "Failed to create TargetMachine");
-  if (cm.has_value()) {
-    if ((cm == llvm::CodeModel::Medium || cm == llvm::CodeModel::Large) &&
-        triple.getArch() == llvm::Triple::x86_64) {
+  if ((cm.has_value()) && ((cm == llvm::CodeModel::Medium || cm == llvm::CodeModel::Large) &&
+        triple.getArch() == llvm::Triple::x86_64)) 
+    {
       targetMachine->setLargeDataThreshold(CGOpts.LargeDataThreshold);
     }
-  }
+  
   return true;
 }

@@ -2210,10 +2210,9 @@ struct MemorySanitizerVisitor : public InstVisitor<MemorySanitizerVisitor> {
       return getCleanOrigin();
     assert((isa<Instruction>(V) || isa<Argument>(V)) &&
            "Unexpected value type in getOrigin()");
-    if (Instruction *I = dyn_cast<Instruction>(V)) {
-      if (I->getMetadata(LLVMContext::MD_nosanitize))
-        return getCleanOrigin();
-    }
+    if (Instruction *I = dyn_cast<Instruction>(V); I && (I->getMetadata(LLVMContext::MD_nosanitize))) 
+      return getCleanOrigin();
+    
     Value *Origin = OriginMap[V];
     assert(Origin && "Missing origin");
     return Origin;
@@ -2594,9 +2593,8 @@ struct MemorySanitizerVisitor : public InstVisitor<MemorySanitizerVisitor> {
     // Special case: if this is the bitcast (there is exactly 1 allowed) between
     // a musttail call and a ret, don't instrument. New instructions are not
     // allowed after a musttail call.
-    if (auto *CI = dyn_cast<CallInst>(I.getOperand(0)))
-      if (CI->isMustTailCall())
-        return;
+    if (auto *CI = dyn_cast<CallInst>(I.getOperand(0)); CI && (CI->isMustTailCall()))
+      return;
     IRBuilder<> IRB(&I);
     setShadow(&I, IRB.CreateBitCast(getShadow(&I, 0), getShadowTy(&I)));
     setOrigin(&I, getOrigin(&I, 0));
@@ -3521,9 +3519,8 @@ struct MemorySanitizerVisitor : public InstVisitor<MemorySanitizerVisitor> {
       return handleVectorLoadIntrinsic(I);
     }
 
-    if (I.doesNotAccessMemory())
-      if (maybeHandleSimpleNomemIntrinsic(I, /*trailingFlags=*/0))
-        return true;
+    if ((I.doesNotAccessMemory()) && (maybeHandleSimpleNomemIntrinsic(I, /*trailingFlags=*/0)))
+      return true;
 
     // FIXME: detect and handle SSE maskstore/maskload?
     // Some cases are now handled in handleAVXMasked{Load,Store}.
@@ -8660,12 +8657,11 @@ struct VarArgPowerPC64Helper : public VarArgHelperBase {
         if (ArgAlign < 8)
           ArgAlign = Align(8);
         VAArgOffset = alignTo(VAArgOffset, ArgAlign);
-        if (DL.isBigEndian()) {
+        if ((DL.isBigEndian()) && (ArgSize < 8)) 
           // Adjusting the shadow for argument with size < 8 to match the
           // placement of bits in big endian system
-          if (ArgSize < 8)
-            VAArgOffset += (8 - ArgSize);
-        }
+          VAArgOffset += (8 - ArgSize);
+        
         if (!IsFixed) {
           Base =
               getShadowPtrForVAArgument(IRB, VAArgOffset - VAArgBase, ArgSize);
@@ -8796,12 +8792,11 @@ struct VarArgPowerPC32Helper : public VarArgHelperBase {
           if (ArgAlign < IntptrSize)
             ArgAlign = Align(IntptrSize);
           VAArgOffset = alignTo(VAArgOffset, ArgAlign);
-          if (DL.isBigEndian()) {
+          if ((DL.isBigEndian()) && (ArgSize < IntptrSize)) 
             // Adjusting the shadow for argument with size < IntptrSize to match
             // the placement of bits in big endian system
-            if (ArgSize < IntptrSize)
-              VAArgOffset += (IntptrSize - ArgSize);
-          }
+            VAArgOffset += (IntptrSize - ArgSize);
+          
           if (!IsFixed) {
             Base = getShadowPtrForVAArgument(IRB, VAArgOffset - VAArgBase,
                                              ArgSize);
@@ -9240,12 +9235,11 @@ struct VarArgI386Helper : public VarArgHelperBase {
         uint64_t ArgSize = DL.getTypeAllocSize(A->getType());
         Align ArgAlign = Align(IntptrSize);
         VAArgOffset = alignTo(VAArgOffset, ArgAlign);
-        if (DL.isBigEndian()) {
+        if ((DL.isBigEndian()) && (ArgSize < IntptrSize)) 
           // Adjusting the shadow for argument with size < IntptrSize to match
           // the placement of bits in big endian system
-          if (ArgSize < IntptrSize)
-            VAArgOffset += (IntptrSize - ArgSize);
-        }
+          VAArgOffset += (IntptrSize - ArgSize);
+        
         if (!IsFixed) {
           Base = getShadowPtrForVAArgument(IRB, VAArgOffset, ArgSize);
           if (Base)
@@ -9327,12 +9321,11 @@ struct VarArgGenericHelper : public VarArgHelperBase {
       if (IsFixed)
         continue;
       uint64_t ArgSize = DL.getTypeAllocSize(A->getType());
-      if (DL.isBigEndian()) {
+      if ((DL.isBigEndian()) && (ArgSize < IntptrSize)) 
         // Adjusting the shadow for argument with size < IntptrSize to match the
         // placement of bits in big endian system
-        if (ArgSize < IntptrSize)
-          VAArgOffset += (IntptrSize - ArgSize);
-      }
+        VAArgOffset += (IntptrSize - ArgSize);
+      
       Value *Base = getShadowPtrForVAArgument(IRB, VAArgOffset, ArgSize);
       VAArgOffset += ArgSize;
       VAArgOffset = alignTo(VAArgOffset, IntptrSize);

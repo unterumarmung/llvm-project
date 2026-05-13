@@ -1856,10 +1856,9 @@ ModuleTranslation::convertParameterAttrs(LLVMFuncOp func, int argIdx,
       if (failed(convertParameterAttr(attrBuilder, llvmKind, namedAttr, *this,
                                       loc)))
         return failure();
-    } else if (namedAttr.getNameDialect()) {
-      if (failed(iface.convertParameterAttr(func, argIdx, namedAttr, *this)))
-        return failure();
-    }
+    } else if ((namedAttr.getNameDialect()) && (failed(iface.convertParameterAttr(func, argIdx, namedAttr, *this)))) 
+      return failure();
+    
   }
 
   return attrBuilder;

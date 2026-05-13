@@ -292,12 +292,11 @@ public:
     for (llvm::User *user : linearOrigVal[varIndex]->users())
       users.push_back(user);
     for (auto *user : users) {
-      if (auto *userInst = dyn_cast<llvm::Instruction>(user)) {
-        if (userInst->getParent()->getName().str().find(BBName) !=
-            std::string::npos)
-          user->replaceUsesOfWith(linearOrigVal[varIndex],
+      if (auto *userInst = dyn_cast<llvm::Instruction>(user); userInst && (userInst->getParent()->getName().str().find(BBName) !=
+            std::string::npos)) 
+        user->replaceUsesOfWith(linearOrigVal[varIndex],
                                   linearLoopBodyTemps[varIndex]);
-      }
+      
     }
   }
 };
@@ -6455,11 +6454,10 @@ convertOmpTargetData(Operation *op, llvm::IRBuilderBase &builder,
       break;
     case BodyGenTy::NoPriv:
       // If device info is available then region has already been generated
-      if (info.DevicePtrInfoMap.empty()) {
-        if (failed(inlineConvertOmpRegions(region, "omp.data.region", builder,
-                                           moduleTranslation)))
-          return llvm::make_error<PreviouslyReportedError>();
-      }
+      if ((info.DevicePtrInfoMap.empty()) && (failed(inlineConvertOmpRegions(region, "omp.data.region", builder,
+                                           moduleTranslation)))) 
+        return llvm::make_error<PreviouslyReportedError>();
+      
       break;
     }
     return builder.saveIP();
@@ -6731,8 +6729,8 @@ handleDeclareTargetMapVar(MapInfoData &mapData,
         userVec.push_back(user);
 
       for (llvm::User *user : userVec) {
-        if (auto *insn = dyn_cast<llvm::Instruction>(user)) {
-          if (insn->getFunction() == func) {
+        if (auto *insn = dyn_cast<llvm::Instruction>(user); insn && (insn->getFunction() == func)) 
+          {
             auto mapOp = cast<omp::MapInfoOp>(mapData.MapClause[i]);
             llvm::Value *substitute = mapData.BasePointers[i];
             if (isDeclareTargetLink(mapOp.getVarPtrPtr() ? mapOp.getVarPtrPtr()
@@ -6744,7 +6742,7 @@ handleDeclareTargetMapVar(MapInfoData &mapData,
             }
             user->replaceUsesOfWith(mapData.OriginalValue[i], substitute);
           }
-        }
+        
       }
     }
   }

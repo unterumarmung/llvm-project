@@ -139,10 +139,9 @@ public:
       } else if (isMemoryOperand(OldOpRec) && isMemoryOperand(NewOpRec)) {
         if (getMemOperandSize(OldOpRec) != getMemOperandSize(NewOpRec))
           return false;
-      } else if (isImmediateOperand(OldOpRec) && isImmediateOperand(NewOpRec)) {
-        if (OldOpRec->getValueAsDef("Type") != NewOpRec->getValueAsDef("Type"))
-          return false;
-      }
+      } else if ((isImmediateOperand(OldOpRec) && isImmediateOperand(NewOpRec)) && (OldOpRec->getValueAsDef("Type") != NewOpRec->getValueAsDef("Type"))) 
+        return false;
+      
     }
 
     return true;

@@ -1292,15 +1292,14 @@ ConstantRange::multiplyWithNoWrap(const ConstantRange &Other,
     Result = Result.intersectWith(umul_sat(Other), RangeType);
 
   // mul nsw nuw X, Y s>= 0 if X s> 1 or Y s> 1
-  if ((NoWrapKind == (OverflowingBinaryOperator::NoSignedWrap |
+  if (((NoWrapKind == (OverflowingBinaryOperator::NoSignedWrap |
                       OverflowingBinaryOperator::NoUnsignedWrap)) &&
-      !Result.isAllNonNegative()) {
-    if (getSignedMin().sgt(1) || Other.getSignedMin().sgt(1))
-      Result = Result.intersectWith(
+      !Result.isAllNonNegative()) && (getSignedMin().sgt(1) || Other.getSignedMin().sgt(1))) 
+    Result = Result.intersectWith(
           getNonEmpty(APInt::getZero(getBitWidth()),
                       APInt::getSignedMinValue(getBitWidth())),
           RangeType);
-  }
+  
 
   return Result;
 }

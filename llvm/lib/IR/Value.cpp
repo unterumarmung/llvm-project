@@ -421,13 +421,13 @@ void Value::takeName(Value *V) {
   if (!V->hasName()) return;
 
   // Get this's symtab if we didn't before.
-  if (!ST) {
-    if (getSymTab(this, ST)) {
+  if ((!ST) && (getSymTab(this, ST))) 
+    {
       // Clear V's name.
       V->setName("");
       return;  // Cannot set a name on this value (e.g. constant).
     }
-  }
+  
 
   // Get V's ST, this should always succeed, because V has a name.
   ValueSymbolTable *VST;
@@ -532,12 +532,12 @@ void Value::doRAUW(Value *New, ReplaceMetadataUses ReplaceMetaUses) {
     Use &U = *UseList;
     // Must handle Constants specially, we cannot call replaceUsesOfWith on a
     // constant because they are uniqued.
-    if (auto *C = dyn_cast<Constant>(U.getUser())) {
-      if (!isa<GlobalValue>(C)) {
+    if (auto *C = dyn_cast<Constant>(U.getUser()); C && (!isa<GlobalValue>(C))) 
+      {
         C->handleOperandChange(this, New);
         continue;
       }
-    }
+    
 
     U.set(New);
   }
@@ -571,13 +571,13 @@ bool Value::replaceUsesWithIf(Value *New,
 
     // Must handle Constants specially, we cannot call replaceUsesOfWith on a
     // constant because they are uniqued.
-    if (auto *C = dyn_cast<Constant>(U.getUser())) {
-      if (!isa<GlobalValue>(C)) {
+    if (auto *C = dyn_cast<Constant>(U.getUser()); C && (!isa<GlobalValue>(C))) 
+      {
         if (Visited.insert(C).second)
           Consts.push_back(TrackingVH<Constant>(C));
         continue;
       }
-    }
+    
     U.set(New);
   }
 
@@ -899,12 +899,12 @@ uint64_t Value::getPointerDereferenceableBytes(const DataLayout &DL,
     DerefBytes = A->getDereferenceableBytes();
     if (DerefBytes == 0) {
       // Handle byval/byref/inalloca/preallocated arguments
-      if (Type *ArgMemTy = A->getPointeeInMemoryValueType()) {
-        if (ArgMemTy->isSized()) {
+      if (Type *ArgMemTy = A->getPointeeInMemoryValueType(); ArgMemTy && (ArgMemTy->isSized())) 
+        {
           // FIXME: Why isn't this the type alloc size?
           DerefBytes = DL.getTypeStoreSize(ArgMemTy).getKnownMinValue();
         }
-      }
+      
     }
 
     if (DerefBytes == 0) {
@@ -949,15 +949,15 @@ uint64_t Value::getPointerDereferenceableBytes(const DataLayout &DL,
       CanBeNull = false;
       CanBeFreed = false;
     }
-  } else if (auto *GV = dyn_cast<GlobalVariable>(this)) {
-    if (GV->getValueType()->isSized() && !GV->hasExternalWeakLinkage()) {
+  } else if (auto *GV = dyn_cast<GlobalVariable>(this); GV && (GV->getValueType()->isSized() && !GV->hasExternalWeakLinkage())) 
+    {
       // TODO: Don't outright reject hasExternalWeakLinkage but set the
       // CanBeNull flag.
       DerefBytes = DL.getTypeStoreSize(GV->getValueType()).getFixedValue();
       CanBeNull = false;
       CanBeFreed = false;
     }
-  }
+  
   return DerefBytes;
 }
 
@@ -1008,10 +1008,10 @@ Align Value::getPointerAlignment(const DataLayout &DL) const {
       ConstantInt *CI = mdconst::extract<ConstantInt>(MD->getOperand(0));
       return Align(CI->getLimitedValue());
     }
-  } else if (auto *CE = dyn_cast<ConstantExpr>(this)) {
+  } else if (auto *CE = dyn_cast<ConstantExpr>(this); CE && (CE->getOpcode() == Instruction::IntToPtr &&
+        isa<ConstantInt>(CE->getOperand(0)))) 
     // Determine the alignment of inttoptr(C).
-    if (CE->getOpcode() == Instruction::IntToPtr &&
-        isa<ConstantInt>(CE->getOperand(0))) {
+    {
       ConstantInt *IntPtr = cast<ConstantInt>(CE->getOperand(0));
       size_t TrailingZeros = IntPtr->getValue().countr_zero();
       // While the actual alignment may be large, elsewhere we have
@@ -1020,7 +1020,7 @@ Align Value::getPointerAlignment(const DataLayout &DL) const {
                        ? uint64_t(1) << TrailingZeros
                        : Value::MaximumAlignment);
     }
-  }
+  
   return Align(1);
 }
 

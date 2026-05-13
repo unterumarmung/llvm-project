@@ -108,12 +108,12 @@ class MapsForPrivatizedSymbolsPass
 
     mlir::omp::VariableCaptureKind captureKind =
         mlir::omp::VariableCaptureKind::ByRef;
-    if (fir::isa_trivial(fir::unwrapRefType(varType)) ||
-        fir::isa_char(fir::unwrapRefType(varType))) {
-      if (canPassByValue(fir::unwrapRefType(varType))) {
+    if ((fir::isa_trivial(fir::unwrapRefType(varType)) ||
+        fir::isa_char(fir::unwrapRefType(varType))) && (canPassByValue(fir::unwrapRefType(varType)))) 
+      {
         captureKind = mlir::omp::VariableCaptureKind::ByCopy;
       }
-    }
+    
 
     // Use tofrom if what we are mapping is not a trivial type. In all
     // likelihood, it is a descriptor

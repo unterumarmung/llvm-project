@@ -433,8 +433,8 @@ static std::optional<EstimatedUnrollCost> analyzeLoopUnrollCost(
         Cost.IsCounted = true;
 
         // If this is a PHI node in the loop header, just add it to the PHI set.
-        if (auto *PhiI = dyn_cast<PHINode>(I))
-          if (PhiI->getParent() == L->getHeader()) {
+        if (auto *PhiI = dyn_cast<PHINode>(I); PhiI && (PhiI->getParent() == L->getHeader()))
+          {
             assert(Cost.IsFree && "Loop PHIs shouldn't be evaluated as they "
                                   "inherently simplify during unrolling.");
             if (Iteration == 0)
@@ -444,9 +444,8 @@ static std::optional<EstimatedUnrollCost> analyzeLoopUnrollCost(
             // if it is an in-loop instruction. We'll use this to populate the
             // cost worklist for the next iteration (as we count backwards).
             if (auto *OpI = dyn_cast<Instruction>(
-                    PhiI->getIncomingValueForBlock(L->getLoopLatch())))
-              if (L->contains(OpI))
-                PHIUsedList.push_back(OpI);
+                    PhiI->getIncomingValueForBlock(L->getLoopLatch())); OpI && (L->contains(OpI)))
+              PHIUsedList.push_back(OpI);
             continue;
           }
 
@@ -667,9 +666,8 @@ static std::optional<EstimatedUnrollCost> analyzeLoopUnrollCost(
         break;
 
       Value *Op = PN->getIncomingValueForBlock(ExitingBB);
-      if (auto *OpI = dyn_cast<Instruction>(Op))
-        if (L->contains(OpI))
-          AddCostRecursively(*OpI, TripCount - 1);
+      if (auto *OpI = dyn_cast<Instruction>(Op); OpI && (L->contains(OpI)))
+        AddCostRecursively(*OpI, TripCount - 1);
     }
   }
 
@@ -1385,9 +1383,8 @@ tryToUnrollLoop(Loop *L, DominatorTree &DT, LoopInfo *LI, ScalarEvolution &SE,
   SmallVector<BasicBlock *, 8> ExitingBlocks;
   L->getExitingBlocks(ExitingBlocks);
   for (BasicBlock *ExitingBlock : ExitingBlocks)
-    if (unsigned TC = SE.getSmallConstantTripCount(L, ExitingBlock))
-      if (!TripCount || TC < TripCount)
-        TripCount = TripMultiple = TC;
+    if (unsigned TC = SE.getSmallConstantTripCount(L, ExitingBlock); TC && (!TripCount || TC < TripCount))
+      TripCount = TripMultiple = TC;
 
   if (!TripCount) {
     // If no exact trip count is known, determine the trip multiple of either

@@ -638,18 +638,17 @@ void InferAddressSpacesImpl::appendsFlatAddressExpressionToPostorderStack(
     return;
   }
 
-  if (V->getType()->getPointerAddressSpace() == FlatAddrSpace &&
-      isAddressExpression(*V, *DL, TTI)) {
-    if (Visited.insert(V).second) {
+  if ((V->getType()->getPointerAddressSpace() == FlatAddrSpace &&
+      isAddressExpression(*V, *DL, TTI)) && (Visited.insert(V).second)) 
+    {
       PostorderStack.emplace_back(V, false);
 
       if (auto *Op = dyn_cast<Operator>(V))
         for (auto &O : Op->operands())
-          if (ConstantExpr *CE = dyn_cast<ConstantExpr>(O))
-            if (isAddressExpression(*CE, *DL, TTI) && Visited.insert(CE).second)
-              PostorderStack.emplace_back(CE, false);
+          if (ConstantExpr *CE = dyn_cast<ConstantExpr>(O); CE && (isAddressExpression(*CE, *DL, TTI) && Visited.insert(CE).second))
+            PostorderStack.emplace_back(CE, false);
     }
-  }
+  
 }
 
 // Returns all flat address expressions in function F. The elements are ordered
@@ -1074,13 +1073,13 @@ Value *InferAddressSpacesImpl::cloneValueWithNewAddressSpace(
   if (Instruction *I = dyn_cast<Instruction>(V)) {
     Value *NewV = cloneInstructionWithNewAddressSpace(
         I, NewAddrSpace, ValueWithNewAddrSpace, PredicatedAS, PoisonUsesToFix);
-    if (Instruction *NewI = dyn_cast_or_null<Instruction>(NewV)) {
-      if (NewI->getParent() == nullptr) {
+    if (Instruction *NewI = dyn_cast_or_null<Instruction>(NewV); NewI && (NewI->getParent() == nullptr)) 
+      {
         NewI->insertBefore(I->getIterator());
         NewI->takeName(I);
         NewI->setDebugLoc(I->getDebugLoc());
       }
-    }
+    
     return NewV;
   }
 
@@ -1254,12 +1253,11 @@ bool InferAddressSpacesImpl::updateAddressSpace(
         break;
     }
 
-    if (NewAS != FlatAddrSpace && NewAS != UninitializedAddressSpace) {
-      if (any_of(ConstantPtrOps, [=](Constant *C) {
+    if ((NewAS != FlatAddrSpace && NewAS != UninitializedAddressSpace) && (any_of(ConstantPtrOps, [=](Constant *C) {
             return !isSafeToCastConstAddrSpace(C, NewAS);
-          }))
-        NewAS = FlatAddrSpace;
-    }
+          }))) 
+      NewAS = FlatAddrSpace;
+    
 
     // operator(flat const, flat const, ...) -> flat
     if (NewAS == UninitializedAddressSpace &&
@@ -1437,15 +1435,13 @@ void InferAddressSpacesImpl::performPointerReplacement(
     return;
 
   // Handle more complex cases like intrinsic that need to be remangled.
-  if (auto *MI = dyn_cast<MemIntrinsic>(CurUser)) {
-    if (!MI->isVolatile() && handleMemIntrinsicPtrUse(MI, V, NewV))
-      return;
-  }
+  if (auto *MI = dyn_cast<MemIntrinsic>(CurUser); MI && (!MI->isVolatile() && handleMemIntrinsicPtrUse(MI, V, NewV))) 
+    return;
+  
 
-  if (auto *II = dyn_cast<IntrinsicInst>(CurUser)) {
-    if (rewriteIntrinsicOperands(II, V, NewV))
-      return;
-  }
+  if (auto *II = dyn_cast<IntrinsicInst>(CurUser); II && (rewriteIntrinsicOperands(II, V, NewV))) 
+    return;
+  
 
   if (ICmpInst *Cmp = dyn_cast<ICmpInst>(CurUserI)) {
     // If we can infer that both pointers are in the same addrspace,
@@ -1459,23 +1455,23 @@ void InferAddressSpacesImpl::performPointerReplacement(
     int OtherIdx = (SrcIdx == 0) ? 1 : 0;
     Value *OtherSrc = Cmp->getOperand(OtherIdx);
 
-    if (Value *OtherNewV = ValueWithNewAddrSpace.lookup(OtherSrc)) {
-      if (OtherNewV->getType()->getPointerAddressSpace() == NewAS) {
+    if (Value *OtherNewV = ValueWithNewAddrSpace.lookup(OtherSrc); OtherNewV && (OtherNewV->getType()->getPointerAddressSpace() == NewAS)) 
+      {
         Cmp->setOperand(OtherIdx, OtherNewV);
         Cmp->setOperand(SrcIdx, NewV);
         return;
       }
-    }
+    
 
     // Even if the type mismatches, we can cast the constant.
-    if (auto *KOtherSrc = dyn_cast<Constant>(OtherSrc)) {
-      if (isSafeToCastConstAddrSpace(KOtherSrc, NewAS)) {
+    if (auto *KOtherSrc = dyn_cast<Constant>(OtherSrc); KOtherSrc && (isSafeToCastConstAddrSpace(KOtherSrc, NewAS))) 
+      {
         Cmp->setOperand(SrcIdx, NewV);
         Cmp->setOperand(OtherIdx, ConstantExpr::getAddrSpaceCast(
                                       KOtherSrc, NewV->getType()));
         return;
       }
-    }
+    
   }
 
   if (AddrSpaceCastInst *ASC = dyn_cast<AddrSpaceCastInst>(CurUserI)) {

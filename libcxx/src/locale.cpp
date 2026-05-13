@@ -1576,10 +1576,9 @@ static codecvt_base::result utf8_to_utf16(
     codecvt_mode mode     = codecvt_mode(0)) {
   frm_nxt = frm;
   to_nxt  = to;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)
-      frm_nxt += 3;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)) 
+    frm_nxt += 3;
+  
   for (; frm_nxt < frm_end && to_nxt < to_end; ++to_nxt) {
     uint8_t c1 = *frm_nxt;
     if (c1 > Maxcode)
@@ -1682,10 +1681,9 @@ static codecvt_base::result utf8_to_utf16(
     codecvt_mode mode     = codecvt_mode(0)) {
   frm_nxt = frm;
   to_nxt  = to;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)
-      frm_nxt += 3;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)) 
+    frm_nxt += 3;
+  
   for (; frm_nxt < frm_end && to_nxt < to_end; ++to_nxt) {
     uint8_t c1 = *frm_nxt;
     if (c1 > Maxcode)
@@ -1784,10 +1782,9 @@ static int utf8_to_utf16_length(
     unsigned long Maxcode = 0x10FFFF,
     codecvt_mode mode     = codecvt_mode(0)) {
   const uint8_t* frm_nxt = frm;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)
-      frm_nxt += 3;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)) 
+    frm_nxt += 3;
+  
   for (size_t nchar16_t = 0; frm_nxt < frm_end && nchar16_t < mx; ++nchar16_t) {
     uint8_t c1 = *frm_nxt;
     if (c1 > Maxcode)
@@ -1921,10 +1918,9 @@ static codecvt_base::result utf8_to_ucs4(
     codecvt_mode mode     = codecvt_mode(0)) {
   frm_nxt = frm;
   to_nxt  = to;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)
-      frm_nxt += 3;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)) 
+    frm_nxt += 3;
+  
   for (; frm_nxt < frm_end && to_nxt < to_end; ++to_nxt) {
     uint8_t c1 = static_cast<uint8_t>(*frm_nxt);
     if (c1 < 0x80) {
@@ -2020,10 +2016,9 @@ static int utf8_to_ucs4_length(
     unsigned long Maxcode = 0x10FFFF,
     codecvt_mode mode     = codecvt_mode(0)) {
   const uint8_t* frm_nxt = frm;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)
-      frm_nxt += 3;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)) 
+    frm_nxt += 3;
+  
   for (size_t nchar32_t = 0; frm_nxt < frm_end && nchar32_t < mx; ++nchar32_t) {
     uint8_t c1 = static_cast<uint8_t>(*frm_nxt);
     if (c1 < 0x80) {
@@ -2148,10 +2143,9 @@ static codecvt_base::result utf8_to_ucs2(
     codecvt_mode mode     = codecvt_mode(0)) {
   frm_nxt = frm;
   to_nxt  = to;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)
-      frm_nxt += 3;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)) 
+    frm_nxt += 3;
+  
   for (; frm_nxt < frm_end && to_nxt < to_end; ++to_nxt) {
     uint8_t c1 = static_cast<uint8_t>(*frm_nxt);
     if (c1 < 0x80) {
@@ -2214,10 +2208,9 @@ static int utf8_to_ucs2_length(
     unsigned long Maxcode = 0x10FFFF,
     codecvt_mode mode     = codecvt_mode(0)) {
   const uint8_t* frm_nxt = frm;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)
-      frm_nxt += 3;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 3 && frm_nxt[0] == 0xEF && frm_nxt[1] == 0xBB && frm_nxt[2] == 0xBF)) 
+    frm_nxt += 3;
+  
   for (size_t nchar32_t = 0; frm_nxt < frm_end && nchar32_t < mx; ++nchar32_t) {
     uint8_t c1 = static_cast<uint8_t>(*frm_nxt);
     if (c1 < 0x80) {
@@ -2314,10 +2307,9 @@ static codecvt_base::result utf16be_to_ucs4(
     codecvt_mode mode     = codecvt_mode(0)) {
   frm_nxt = frm;
   to_nxt  = to;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFE && frm_nxt[1] == 0xFF)
-      frm_nxt += 2;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFE && frm_nxt[1] == 0xFF)) 
+    frm_nxt += 2;
+  
   for (; frm_nxt < frm_end - 1 && to_nxt < to_end; ++to_nxt) {
     uint16_t c1 = static_cast<uint16_t>((frm_nxt[0] << 8) | frm_nxt[1]);
     if ((c1 & 0xFC00) == 0xDC00)
@@ -2350,10 +2342,9 @@ static int utf16be_to_ucs4_length(
     unsigned long Maxcode = 0x10FFFF,
     codecvt_mode mode     = codecvt_mode(0)) {
   const uint8_t* frm_nxt = frm;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFE && frm_nxt[1] == 0xFF)
-      frm_nxt += 2;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFE && frm_nxt[1] == 0xFF)) 
+    frm_nxt += 2;
+  
   for (size_t nchar32_t = 0; frm_nxt < frm_end - 1 && nchar32_t < mx; ++nchar32_t) {
     uint16_t c1 = static_cast<uint16_t>((frm_nxt[0] << 8) | frm_nxt[1]);
     if ((c1 & 0xFC00) == 0xDC00)
@@ -2428,10 +2419,9 @@ static codecvt_base::result utf16le_to_ucs4(
     codecvt_mode mode     = codecvt_mode(0)) {
   frm_nxt = frm;
   to_nxt  = to;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFF && frm_nxt[1] == 0xFE)
-      frm_nxt += 2;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFF && frm_nxt[1] == 0xFE)) 
+    frm_nxt += 2;
+  
   for (; frm_nxt < frm_end - 1 && to_nxt < to_end; ++to_nxt) {
     uint16_t c1 = static_cast<uint16_t>((frm_nxt[1] << 8) | frm_nxt[0]);
     if ((c1 & 0xFC00) == 0xDC00)
@@ -2464,10 +2454,9 @@ static int utf16le_to_ucs4_length(
     unsigned long Maxcode = 0x10FFFF,
     codecvt_mode mode     = codecvt_mode(0)) {
   const uint8_t* frm_nxt = frm;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFF && frm_nxt[1] == 0xFE)
-      frm_nxt += 2;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFF && frm_nxt[1] == 0xFE)) 
+    frm_nxt += 2;
+  
   for (size_t nchar32_t = 0; frm_nxt < frm_end - 1 && nchar32_t < mx; ++nchar32_t) {
     uint16_t c1 = static_cast<uint16_t>((frm_nxt[1] << 8) | frm_nxt[0]);
     if ((c1 & 0xFC00) == 0xDC00)
@@ -2531,10 +2520,9 @@ static codecvt_base::result utf16be_to_ucs2(
     codecvt_mode mode     = codecvt_mode(0)) {
   frm_nxt = frm;
   to_nxt  = to;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFE && frm_nxt[1] == 0xFF)
-      frm_nxt += 2;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFE && frm_nxt[1] == 0xFF)) 
+    frm_nxt += 2;
+  
   for (; frm_nxt < frm_end - 1 && to_nxt < to_end; ++to_nxt) {
     uint16_t c1 = static_cast<uint16_t>((frm_nxt[0] << 8) | frm_nxt[1]);
     if ((c1 & 0xF800) == 0xD800 || c1 > Maxcode)
@@ -2552,10 +2540,9 @@ static int utf16be_to_ucs2_length(
     unsigned long Maxcode = 0x10FFFF,
     codecvt_mode mode     = codecvt_mode(0)) {
   const uint8_t* frm_nxt = frm;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFE && frm_nxt[1] == 0xFF)
-      frm_nxt += 2;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFE && frm_nxt[1] == 0xFF)) 
+    frm_nxt += 2;
+  
   for (size_t nchar16_t = 0; frm_nxt < frm_end - 1 && nchar16_t < mx; ++nchar16_t) {
     uint16_t c1 = static_cast<uint16_t>((frm_nxt[0] << 8) | frm_nxt[1]);
     if ((c1 & 0xF800) == 0xD800 || c1 > Maxcode)
@@ -2605,10 +2592,9 @@ static codecvt_base::result utf16le_to_ucs2(
     codecvt_mode mode     = codecvt_mode(0)) {
   frm_nxt = frm;
   to_nxt  = to;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFF && frm_nxt[1] == 0xFE)
-      frm_nxt += 2;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFF && frm_nxt[1] == 0xFE)) 
+    frm_nxt += 2;
+  
   for (; frm_nxt < frm_end - 1 && to_nxt < to_end; ++to_nxt) {
     uint16_t c1 = static_cast<uint16_t>((frm_nxt[1] << 8) | frm_nxt[0]);
     if ((c1 & 0xF800) == 0xD800 || c1 > Maxcode)
@@ -2627,10 +2613,9 @@ static int utf16le_to_ucs2_length(
     codecvt_mode mode     = codecvt_mode(0)) {
   const uint8_t* frm_nxt = frm;
   frm_nxt                = frm;
-  if (mode & consume_header) {
-    if (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFF && frm_nxt[1] == 0xFE)
-      frm_nxt += 2;
-  }
+  if ((mode & consume_header) && (frm_end - frm_nxt >= 2 && frm_nxt[0] == 0xFF && frm_nxt[1] == 0xFE)) 
+    frm_nxt += 2;
+  
   for (size_t nchar16_t = 0; frm_nxt < frm_end - 1 && nchar16_t < mx; ++nchar16_t) {
     uint16_t c1 = static_cast<uint16_t>((frm_nxt[1] << 8) | frm_nxt[0]);
     if ((c1 & 0xF800) == 0xD800 || c1 > Maxcode)
@@ -4011,19 +3996,18 @@ void __check_grouping(const string& __grouping, unsigned* __g, unsigned* __g_end
     const char* __ig = __grouping.data();
     const char* __eg = __ig + __grouping.size();
     for (unsigned* __r = __g; __r < __g_end - 1; ++__r) {
-      if (0 < *__ig && *__ig < numeric_limits<char>::max()) {
-        if (static_cast<unsigned>(*__ig) != *__r) {
+      if ((0 < *__ig && *__ig < numeric_limits<char>::max()) && (static_cast<unsigned>(*__ig) != *__r)) 
+        {
           __err = ios_base::failbit;
           return;
         }
-      }
+      
       if (__eg - __ig > 1)
         ++__ig;
     }
-    if (0 < *__ig && *__ig < numeric_limits<char>::max()) {
-      if (static_cast<unsigned>(*__ig) < __g_end[-1] || __g_end[-1] == 0)
-        __err = ios_base::failbit;
-    }
+    if ((0 < *__ig && *__ig < numeric_limits<char>::max()) && (static_cast<unsigned>(*__ig) < __g_end[-1] || __g_end[-1] == 0)) 
+      __err = ios_base::failbit;
+    
   }
 }
 

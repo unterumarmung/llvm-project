@@ -65,9 +65,8 @@ public:
 
     // Check that running on the parent operation always immediately fails.
     if (runOnParent) {
-      if (currentOp->getParentOp())
-        if (!failed(runPipeline(pm, currentOp->getParentOp())))
-          signalPassFailure();
+      if ((currentOp->getParentOp()) && (!failed(runPipeline(pm, currentOp->getParentOp()))))
+        signalPassFailure();
       return;
     }
 

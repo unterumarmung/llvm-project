@@ -430,10 +430,9 @@ MemoryEffects TypeBasedAAResult::getMemoryEffects(const CallBase *Call,
     return MemoryEffects::unknown();
 
   // If this is an "immutable" type, the access is not observable.
-  if (const MDNode *M = Call->getMetadata(LLVMContext::MD_tbaa))
-    if ((!isStructPathTBAA(M) && TBAANode(M).isTypeImmutable()) ||
-        (isStructPathTBAA(M) && TBAAStructTagNode(M).isTypeImmutable()))
-      return MemoryEffects::none();
+  if (const MDNode *M = Call->getMetadata(LLVMContext::MD_tbaa); M && ((!isStructPathTBAA(M) && TBAANode(M).isTypeImmutable()) ||
+        (isStructPathTBAA(M) && TBAAStructTagNode(M).isTypeImmutable())))
+    return MemoryEffects::none();
 
   return MemoryEffects::unknown();
 }
@@ -450,9 +449,8 @@ ModRefInfo TypeBasedAAResult::getModRefInfo(const CallBase *Call,
     return ModRefInfo::ModRef;
 
   if (const MDNode *L = Loc.AATags.TBAA)
-    if (const MDNode *M = Call->getMetadata(LLVMContext::MD_tbaa))
-      if (!Aliases(L, M))
-        return ModRefInfo::NoModRef;
+    if (const MDNode *M = Call->getMetadata(LLVMContext::MD_tbaa); M && (!Aliases(L, M)))
+      return ModRefInfo::NoModRef;
 
   return ModRefInfo::ModRef;
 }
@@ -464,9 +462,8 @@ ModRefInfo TypeBasedAAResult::getModRefInfo(const CallBase *Call1,
     return ModRefInfo::ModRef;
 
   if (const MDNode *M1 = Call1->getMetadata(LLVMContext::MD_tbaa))
-    if (const MDNode *M2 = Call2->getMetadata(LLVMContext::MD_tbaa))
-      if (!Aliases(M1, M2))
-        return ModRefInfo::NoModRef;
+    if (const MDNode *M2 = Call2->getMetadata(LLVMContext::MD_tbaa); M2 && (!Aliases(M1, M2)))
+      return ModRefInfo::NoModRef;
 
   return ModRefInfo::ModRef;
 }
@@ -475,19 +472,17 @@ bool MDNode::isTBAAVtableAccess() const {
   if (!isStructPathTBAA(this)) {
     if (getNumOperands() < 1)
       return false;
-    if (MDString *Tag1 = dyn_cast<MDString>(getOperand(0))) {
-      if (Tag1->getString() == "vtable pointer")
-        return true;
-    }
+    if (MDString *Tag1 = dyn_cast<MDString>(getOperand(0)); Tag1 && (Tag1->getString() == "vtable pointer")) 
+      return true;
+    
     return false;
   }
 
   // For struct-path aware TBAA, we use the access type of the tag.
   TBAAStructTagNode Tag(this);
   TBAAStructTypeNode AccessType(Tag.getAccessType());
-  if(auto *Id = dyn_cast<MDString>(AccessType.getId()))
-    if (Id->getString() == "vtable pointer")
-      return true;
+  if(auto *Id = dyn_cast<MDString>(AccessType.getId()); Id && (Id->getString() == "vtable pointer"))
+    return true;
   return false;
 }
 

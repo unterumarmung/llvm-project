@@ -681,10 +681,8 @@ bool Parser::parseError(const char *Msg) {
 Expected<Value> parse(StringRef JSON) {
   Parser P(JSON);
   Value E = nullptr;
-  if (P.checkUTF8())
-    if (P.parseValue(E))
-      if (P.assertEnd())
-        return std::move(E);
+  if ((P.checkUTF8()) && (P.parseValue(E)) && (P.assertEnd()))
+    return std::move(E);
   return P.takeError();
 }
 

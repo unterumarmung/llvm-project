@@ -134,17 +134,16 @@ CXType cxtype::MakeCXType(QualType T, CXTranslationUnit TU) {
 
   if (TU && !T.isNull()) {
     // Handle attributed types as the original type
-    if (auto *ATT = T->getAs<AttributedType>()) {
-      if (!(TU->ParsingOptions & CXTranslationUnit_IncludeAttributedTypes)) {
+    if (auto *ATT = T->getAs<AttributedType>(); ATT && (!(TU->ParsingOptions & CXTranslationUnit_IncludeAttributedTypes))) 
+      {
         // Return the equivalent type which represents the canonically
         // equivalent type.
         return MakeCXType(ATT->getEquivalentType(), TU);
       }
-    }
-    if (auto *ATT = T->getAs<BTFTagAttributedType>()) {
-      if (!(TU->ParsingOptions & CXTranslationUnit_IncludeAttributedTypes))
-        return MakeCXType(ATT->getWrappedType(), TU);
-    }
+    
+    if (auto *ATT = T->getAs<BTFTagAttributedType>(); ATT && (!(TU->ParsingOptions & CXTranslationUnit_IncludeAttributedTypes))) 
+      return MakeCXType(ATT->getWrappedType(), TU);
+    
     // Handle paren types as the original type
     if (auto *PTT = T->getAs<ParenType>()) {
       return MakeCXType(PTT->getInnerType(), TU);
@@ -412,10 +411,9 @@ int clang_getFieldDeclBitWidth(CXCursor C) {
   if (clang_isDeclaration(C.kind)) {
     const Decl *D = getCursorDecl(C);
 
-    if (const FieldDecl *FD = dyn_cast_or_null<FieldDecl>(D)) {
-      if (FD->isBitField() && !FD->getBitWidth()->isValueDependent())
-        return FD->getBitWidthValue();
-    }
+    if (const FieldDecl *FD = dyn_cast_or_null<FieldDecl>(D); FD && (FD->isBitField() && !FD->getBitWidth()->isValueDependent())) 
+      return FD->getBitWidthValue();
+    
   }
 
   return -1;
@@ -971,9 +969,8 @@ long long clang_Type_getAlignOf(CXType T) {
     return CXTypeLayoutError_Incomplete;
   if (QT->isDependentType())
     return CXTypeLayoutError_Dependent;
-  if (const auto *Deduced = dyn_cast<DeducedType>(QT))
-    if (Deduced->getDeducedType().isNull())
-      return CXTypeLayoutError_Undeduced;
+  if (const auto *Deduced = dyn_cast<DeducedType>(QT); Deduced && (Deduced->getDeducedType().isNull()))
+    return CXTypeLayoutError_Undeduced;
   // Exceptions by GCC extension - see ASTContext.cpp:1313 getTypeInfoImpl
   // if (QT->isFunctionType()) return 4; // Bug #15511 - should be 1
   // if (QT->isVoidType()) return 1;
@@ -1013,9 +1010,8 @@ long long clang_Type_getSizeOf(CXType T) {
     return CXTypeLayoutError_Dependent;
   if (!QT->isConstantSizeType())
     return CXTypeLayoutError_NotConstantSize;
-  if (const auto *Deduced = dyn_cast<DeducedType>(QT))
-    if (Deduced->getDeducedType().isNull())
-      return CXTypeLayoutError_Undeduced;
+  if (const auto *Deduced = dyn_cast<DeducedType>(QT); Deduced && (Deduced->getDeducedType().isNull()))
+    return CXTypeLayoutError_Undeduced;
   // [gcc extension] lib/AST/ExprConstant.cpp:1372
   //                 HandleSizeof : {voidtype,functype} == 1
   // not handled by ASTContext.cpp:1313 getTypeInfoImpl

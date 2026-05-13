@@ -258,9 +258,8 @@ RecurrenceInfo::digRecurrence(Instruction *V,
 
     // Continue along the use-def chain.
     for (Use &U : I->operands())
-      if (auto *UI = dyn_cast<Instruction>(U))
-        if (L.contains(UI))
-          Worklist.push_back(UI);
+      if (auto *UI = dyn_cast<Instruction>(U); UI && (L.contains(UI)))
+        Worklist.push_back(UI);
   }
   return nullptr;
 }
@@ -412,9 +411,8 @@ static bool isConditionalOnXorOfPHIs(const SelectInst *SI, const PHINode *P1,
 
     // Continue along the use-def chain.
     for (const Use &U : I->operands())
-      if (auto *UI = dyn_cast<Instruction>(U))
-        if (L.contains(UI))
-          Worklist.push_back(UI);
+      if (auto *UI = dyn_cast<Instruction>(U); UI && (L.contains(UI)))
+        Worklist.push_back(UI);
   }
   return false;
 }

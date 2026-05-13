@@ -437,9 +437,8 @@ static bool shouldSkipFunction(const Decl *D,
   // Skip analysis of inheriting constructors as top-level functions. These
   // constructors don't even have a body written down in the code, so even if
   // we find a bug, we won't be able to display it.
-  if (const auto *CD = dyn_cast<CXXConstructorDecl>(D))
-    if (CD->isInheritingConstructor())
-      return true;
+  if (const auto *CD = dyn_cast<CXXConstructorDecl>(D); CD && (CD->isInheritingConstructor()))
+    return true;
 
   // We want to re-analyse the functions as top level in the following cases:
   // - The 'init' methods should be reanalyzed because
@@ -453,10 +452,9 @@ static bool shouldSkipFunction(const Decl *D,
   // We also want to reanalyze all C++ copy and move assignment operators to
   // separately check the two cases where 'this' aliases with the parameter and
   // where it may not. (cplusplus.SelfAssignmentChecker)
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(D)) {
-    if (MD->isCopyAssignmentOperator() || MD->isMoveAssignmentOperator())
-      return false;
-  }
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(D); MD && (MD->isCopyAssignmentOperator() || MD->isMoveAssignmentOperator())) 
+    return false;
+  
 
   // Otherwise, if we visited the function before, do not reanalyze it.
   return Visited.count(D);

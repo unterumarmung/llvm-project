@@ -1833,9 +1833,8 @@ SDValue SelectionDAG::getConstant(const ConstantInt &Val, const SDLoc &DL,
   ID.AddBoolean(isO);
   void *IP = nullptr;
   SDNode *N = nullptr;
-  if ((N = FindNodeOrInsertPos(ID, DL, IP)))
-    if (!VT.isVector())
-      return SDValue(N, 0);
+  if (((N = FindNodeOrInsertPos(ID, DL, IP))) && (!VT.isVector()))
+    return SDValue(N, 0);
 
   if (!N) {
     N = newSDNode<ConstantSDNode>(isT, isO, Elt, VTs);
@@ -1914,9 +1913,8 @@ SDValue SelectionDAG::getConstantFP(const ConstantFP &V, const SDLoc &DL,
   ID.AddPointer(Elt);
   void *IP = nullptr;
   SDNode *N = nullptr;
-  if ((N = FindNodeOrInsertPos(ID, DL, IP)))
-    if (!VT.isVector())
-      return SDValue(N, 0);
+  if (((N = FindNodeOrInsertPos(ID, DL, IP))) && (!VT.isVector()))
+    return SDValue(N, 0);
 
   if (!N) {
     N = newSDNode<ConstantFPSDNode>(isTarget, Elt, VTs);
@@ -4375,9 +4373,8 @@ KnownBits SelectionDAG::computeKnownBits(SDValue Op, const APInt &DemandedElts,
     // the minimum of the clamp min/max range.
     bool IsMax = (Opcode == ISD::SMAX);
     ConstantSDNode *CstLow = nullptr, *CstHigh = nullptr;
-    if ((CstLow = isConstOrConstSplat(Op.getOperand(1), DemandedElts)))
-      if (Op.getOperand(0).getOpcode() == (IsMax ? ISD::SMIN : ISD::SMAX))
-        CstHigh =
+    if (((CstLow = isConstOrConstSplat(Op.getOperand(1), DemandedElts))) && (Op.getOperand(0).getOpcode() == (IsMax ? ISD::SMIN : ISD::SMAX)))
+      CstHigh =
             isConstOrConstSplat(Op.getOperand(0).getOperand(1), DemandedElts);
     if (CstLow && CstHigh) {
       if (!IsMax)
@@ -4756,9 +4753,8 @@ bool SelectionDAG::isKnownToBeAPowerOfTwo(SDValue Val,
 
   case ISD::SPLAT_VECTOR:
     // Is the operand of a splat vector a constant power of two?
-    if (auto *C = dyn_cast<ConstantSDNode>(Val->getOperand(0)))
-      if (IsPowerOfTwoOrZero(C))
-        return true;
+    if (auto *C = dyn_cast<ConstantSDNode>(Val->getOperand(0)); C && (IsPowerOfTwoOrZero(C)))
+      return true;
     break;
 
   case ISD::EXTRACT_VECTOR_ELT: {
@@ -5150,9 +5146,8 @@ unsigned SelectionDAG::ComputeNumSignBits(SDValue Op, const APInt &DemandedElts,
     // the minimum of the clamp min/max range.
     bool IsMax = (Opcode == ISD::SMAX);
     ConstantSDNode *CstLow = nullptr, *CstHigh = nullptr;
-    if ((CstLow = isConstOrConstSplat(Op.getOperand(1), DemandedElts)))
-      if (Op.getOperand(0).getOpcode() == (IsMax ? ISD::SMIN : ISD::SMAX))
-        CstHigh =
+    if (((CstLow = isConstOrConstSplat(Op.getOperand(1), DemandedElts))) && (Op.getOperand(0).getOpcode() == (IsMax ? ISD::SMIN : ISD::SMAX)))
+      CstHigh =
             isConstOrConstSplat(Op.getOperand(0).getOperand(1), DemandedElts);
     if (CstLow && CstHigh) {
       if (!IsMax)
@@ -5242,8 +5237,8 @@ unsigned SelectionDAG::ComputeNumSignBits(SDValue Op, const APInt &DemandedElts,
 
     // Special case decrementing a value (ADD X, -1):
     if (ConstantSDNode *CRHS =
-            isConstOrConstSplat(Op.getOperand(1), DemandedElts))
-      if (CRHS->isAllOnes()) {
+            isConstOrConstSplat(Op.getOperand(1), DemandedElts); CRHS && (CRHS->isAllOnes()))
+      {
         KnownBits Known =
             computeKnownBits(Op.getOperand(0), DemandedElts, Depth + 1);
 
@@ -5270,8 +5265,8 @@ unsigned SelectionDAG::ComputeNumSignBits(SDValue Op, const APInt &DemandedElts,
 
     // Handle NEG.
     if (ConstantSDNode *CLHS =
-            isConstOrConstSplat(Op.getOperand(0), DemandedElts))
-      if (CLHS->isZero()) {
+            isConstOrConstSplat(Op.getOperand(0), DemandedElts); CLHS && (CLHS->isZero()))
+      {
         KnownBits Known =
             computeKnownBits(Op.getOperand(1), DemandedElts, Depth + 1);
         // If the input is known to be 0 or 1, the output is 0/-1, which is all
@@ -5578,19 +5573,19 @@ unsigned SelectionDAG::ComputeNumSignBits(SDValue Op, const APInt &DemandedElts,
   }
 
   // Allow the target to implement this method for its nodes.
-  if (Opcode >= ISD::BUILTIN_OP_END ||
+  if ((Opcode >= ISD::BUILTIN_OP_END ||
       Opcode == ISD::INTRINSIC_WO_CHAIN ||
       Opcode == ISD::INTRINSIC_W_CHAIN ||
-      Opcode == ISD::INTRINSIC_VOID) {
+      Opcode == ISD::INTRINSIC_VOID) && (!VT.isScalableVector())) 
     // TODO: This can probably be removed once target code is audited.  This
     // is here purely to reduce patch size and review complexity.
-    if (!VT.isScalableVector()) {
+    {
       unsigned NumBits =
         TLI->ComputeNumSignBitsForTargetNode(Op, DemandedElts, *this, Depth);
       if (NumBits > 1)
         FirstAnswer = std::max(FirstAnswer, NumBits);
     }
-  }
+  
 
   // Finally, if we can prove that the top bits of the result are 0's or 1's,
   // use this information.
@@ -6504,9 +6499,8 @@ bool SelectionDAG::isKnownNeverZero(SDValue Op, const APInt &DemandedElts,
 
   case ISD::SPLAT_VECTOR:
     // Is the operand of a splat vector a constant non-zero?
-    if (auto *C = dyn_cast<ConstantSDNode>(Op->getOperand(0)))
-      if (IsNeverZero(C))
-        return true;
+    if (auto *C = dyn_cast<ConstantSDNode>(Op->getOperand(0)); C && (IsNeverZero(C)))
+      return true;
     break;
 
   case ISD::EXTRACT_VECTOR_ELT: {
@@ -6654,10 +6648,9 @@ bool SelectionDAG::isKnownNeverZero(SDValue Op, const APInt &DemandedElts,
     break;
 
   case ISD::ADD:
-    if (Op->getFlags().hasNoUnsignedWrap())
-      if (isKnownNeverZero(Op.getOperand(1), DemandedElts, Depth + 1) ||
-          isKnownNeverZero(Op.getOperand(0), DemandedElts, Depth + 1))
-        return true;
+    if ((Op->getFlags().hasNoUnsignedWrap()) && (isKnownNeverZero(Op.getOperand(1), DemandedElts, Depth + 1) ||
+          isKnownNeverZero(Op.getOperand(0), DemandedElts, Depth + 1)))
+      return true;
     // TODO: There are a lot more cases we can prove for add.
     break;
 
@@ -6672,10 +6665,9 @@ bool SelectionDAG::isKnownNeverZero(SDValue Op, const APInt &DemandedElts,
   }
 
   case ISD::MUL:
-    if (Op->getFlags().hasNoSignedWrap() || Op->getFlags().hasNoUnsignedWrap())
-      if (isKnownNeverZero(Op.getOperand(1), Depth + 1) &&
-          isKnownNeverZero(Op.getOperand(0), Depth + 1))
-        return true;
+    if ((Op->getFlags().hasNoSignedWrap() || Op->getFlags().hasNoUnsignedWrap()) && (isKnownNeverZero(Op.getOperand(1), Depth + 1) &&
+          isKnownNeverZero(Op.getOperand(0), Depth + 1)))
+      return true;
     break;
 
   case ISD::ZERO_EXTEND:
@@ -6763,8 +6755,8 @@ bool SelectionDAG::isEqualTo(SDValue A, SDValue B) const {
 
   // For negative and positive zero.
   if (const ConstantFPSDNode *CA = dyn_cast<ConstantFPSDNode>(A))
-    if (const ConstantFPSDNode *CB = dyn_cast<ConstantFPSDNode>(B))
-      if (CA->isZero() && CB->isZero()) return true;
+    if (const ConstantFPSDNode *CB = dyn_cast<ConstantFPSDNode>(B); CB && (CA->isZero() && CB->isZero()))
+      return true;
 
   // Otherwise they may not be equal.
   return false;
@@ -7160,8 +7152,8 @@ SDValue SelectionDAG::getNode(unsigned Opcode, const SDLoc &DL, EVT VT,
     // use to recognise zext_inreg patterns.
     if (OpOpcode == ISD::TRUNCATE) {
       SDValue OpOp = N1.getOperand(0);
-      if (OpOp.getValueType() == VT) {
-        if (OpOp.getOpcode() != ISD::AND) {
+      if ((OpOp.getValueType() == VT) && (OpOp.getOpcode() != ISD::AND)) 
+        {
           APInt HiBits = APInt::getBitsSetFrom(VT.getScalarSizeInBits(),
                                                N1.getScalarValueSizeInBits());
           if (MaskedValueIsZero(OpOp, HiBits)) {
@@ -7169,7 +7161,7 @@ SDValue SelectionDAG::getNode(unsigned Opcode, const SDLoc &DL, EVT VT,
             return OpOp;
           }
         }
-      }
+      
     }
     break;
   case ISD::ANY_EXTEND:
@@ -8041,9 +8033,8 @@ SDValue SelectionDAG::foldConstantFPMath(unsigned Opcode, const SDLoc &DL,
   switch (Opcode) {
   case ISD::FSUB:
     // -0.0 - undef --> undef (consistent with "fneg undef")
-    if (ConstantFPSDNode *N1C = isConstOrConstSplatFP(N1, /*AllowUndefs*/ true))
-      if (N1C && N1C->getValueAPF().isNegZero() && N2.isUndef())
-        return getUNDEF(VT);
+    if (ConstantFPSDNode *N1C = isConstOrConstSplatFP(N1, /*AllowUndefs*/ true); N1C && (N1C && N1C->getValueAPF().isNegZero() && N2.isUndef()))
+      return getUNDEF(VT);
     [[fallthrough]];
 
   case ISD::FADD:
@@ -9079,9 +9070,8 @@ SDValue SelectionDAG::getStackArgumentTokenFactor(SDValue Chain) {
   // Add a chain value for each stack argument.
   for (SDNode *U : getEntryNode().getNode()->users())
     if (LoadSDNode *L = dyn_cast<LoadSDNode>(U))
-      if (FrameIndexSDNode *FI = dyn_cast<FrameIndexSDNode>(L->getBasePtr()))
-        if (FI->getIndex() < 0)
-          ArgChains.push_back(SDValue(L, 1));
+      if (FrameIndexSDNode *FI = dyn_cast<FrameIndexSDNode>(L->getBasePtr()); FI && (FI->getIndex() < 0))
+        ArgChains.push_back(SDValue(L, 1));
 
   // Build a tokenfactor for all the chains.
   return getNode(ISD::TokenFactor, SDLoc(Chain), MVT::Other, ArgChains);
@@ -11585,25 +11575,21 @@ SDValue SelectionDAG::simplifyFPBinop(unsigned Opcode, SDValue X, SDValue Y,
     return SDValue();
 
   // X + -0.0 --> X
-  if (Opcode == ISD::FADD)
-    if (YC->getValueAPF().isNegZero())
-      return X;
+  if ((Opcode == ISD::FADD) && (YC->getValueAPF().isNegZero()))
+    return X;
 
   // X - +0.0 --> X
-  if (Opcode == ISD::FSUB)
-    if (YC->getValueAPF().isPosZero())
-      return X;
+  if ((Opcode == ISD::FSUB) && (YC->getValueAPF().isPosZero()))
+    return X;
 
   // X * 1.0 --> X
   // X / 1.0 --> X
-  if (Opcode == ISD::FMUL || Opcode == ISD::FDIV)
-    if (YC->getValueAPF().isExactlyValue(1.0))
-      return X;
+  if ((Opcode == ISD::FMUL || Opcode == ISD::FDIV) && (YC->getValueAPF().isExactlyValue(1.0)))
+    return X;
 
   // X * 0.0 --> 0.0
-  if (Opcode == ISD::FMUL && Flags.hasNoNaNs() && Flags.hasNoSignedZeros())
-    if (YC->getValueAPF().isZero())
-      return getConstantFP(0.0, SDLoc(Y), Y.getValueType());
+  if ((Opcode == ISD::FMUL && Flags.hasNoNaNs() && Flags.hasNoSignedZeros()) && (YC->getValueAPF().isZero()))
+    return getConstantFP(0.0, SDLoc(Y), Y.getValueType());
 
   return SDValue();
 }
@@ -12088,9 +12074,8 @@ SDNode *SelectionDAG::UpdateNodeOperands(SDNode *N, SDValue Op) {
     return Existing;
 
   // Nope it doesn't.  Remove the node from its current place in the maps.
-  if (InsertPos)
-    if (!RemoveNodeFromCSEMaps(N))
-      InsertPos = nullptr;
+  if ((InsertPos) && (!RemoveNodeFromCSEMaps(N)))
+    InsertPos = nullptr;
 
   // Now we update the operands.
   N->OperandList[0].set(Op);
@@ -12114,9 +12099,8 @@ SDNode *SelectionDAG::UpdateNodeOperands(SDNode *N, SDValue Op1, SDValue Op2) {
     return Existing;
 
   // Nope it doesn't.  Remove the node from its current place in the maps.
-  if (InsertPos)
-    if (!RemoveNodeFromCSEMaps(N))
-      InsertPos = nullptr;
+  if ((InsertPos) && (!RemoveNodeFromCSEMaps(N)))
+    InsertPos = nullptr;
 
   // Now we update the operands.
   if (N->OperandList[0] != Op1)
@@ -12166,9 +12150,8 @@ UpdateNodeOperands(SDNode *N, ArrayRef<SDValue> Ops) {
     return Existing;
 
   // Nope it doesn't.  Remove the node from its current place in the maps.
-  if (InsertPos)
-    if (!RemoveNodeFromCSEMaps(N))
-      InsertPos = nullptr;
+  if ((InsertPos) && (!RemoveNodeFromCSEMaps(N)))
+    InsertPos = nullptr;
 
   // Now we update the operands.
   for (unsigned i = 0; i != NumOps; ++i)
@@ -13927,7 +13910,7 @@ bool SDValue::reachesChainWithoutSideEffects(SDValue Dest,
   // If this is a token factor, all inputs to the TF happen in parallel.
   if (getOpcode() == ISD::TokenFactor) {
     // First, try a shallow search.
-    if (is_contained((*this)->ops(), Dest)) {
+    if ((is_contained((*this)->ops(), Dest)) && (Dest.hasOneUse())) 
       // We found the chain we want as an operand of this TokenFactor.
       // Essentially, we reach the chain without side-effects if we could
       // serialize the TokenFactor into a simple chain of operations with
@@ -13936,9 +13919,8 @@ bool SDValue::reachesChainWithoutSideEffects(SDValue Dest,
       // If the chain has more than one use, we give up: some other
       // use of Dest might force a side-effect between Dest and the current
       // node.
-      if (Dest.hasOneUse())
-        return true;
-    }
+      return true;
+    
     // Next, try a deep search: check whether every operand of the TokenFactor
     // reaches Dest.
     return llvm::all_of((*this)->ops(), [=](SDValue Op) {
@@ -13947,10 +13929,9 @@ bool SDValue::reachesChainWithoutSideEffects(SDValue Dest,
   }
 
   // Loads don't have side effects, look through them.
-  if (LoadSDNode *Ld = dyn_cast<LoadSDNode>(*this)) {
-    if (Ld->isUnordered())
-      return Ld->getChain().reachesChainWithoutSideEffects(Dest, Depth-1);
-  }
+  if (LoadSDNode *Ld = dyn_cast<LoadSDNode>(*this); Ld && (Ld->isUnordered())) 
+    return Ld->getChain().reachesChainWithoutSideEffects(Dest, Depth-1);
+  
   return false;
 }
 
@@ -14837,10 +14818,9 @@ bool SelectionDAG::isConstantIntBuildVectorOrConstantInt(
 
   // Treat a GlobalAddress supporting constant offset folding as a
   // constant integer.
-  if (auto *GA = dyn_cast<GlobalAddressSDNode>(N))
-    if (GA->getOpcode() == ISD::GlobalAddress &&
-        TLI->isOffsetFoldingLegal(GA))
-      return true;
+  if (auto *GA = dyn_cast<GlobalAddressSDNode>(N); GA && (GA->getOpcode() == ISD::GlobalAddress &&
+        TLI->isOffsetFoldingLegal(GA)))
+    return true;
 
   if ((N.getOpcode() == ISD::SPLAT_VECTOR) &&
       isa<ConstantSDNode>(N.getOperand(0)))

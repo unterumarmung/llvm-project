@@ -67,10 +67,9 @@ static void cleanUpTemporaries(NamedMDNode &NamedNode, MDTuple *TemporaryTuple,
   for (auto I = NamedNode.op_begin(); I != NamedNode.op_end(); ++I) {
     // If the node hasn't been traversed yet, add it to the queue of nodes to
     // traverse.
-    if (MDTuple *TupleI = dyn_cast_or_null<MDTuple>((*I))) {
-      if (VisitedNodes.insert(TupleI))
-        NodesToTraverse.push(TupleI);
-    }
+    if (MDTuple *TupleI = dyn_cast_or_null<MDTuple>((*I)); TupleI && (VisitedNodes.insert(TupleI))) 
+      NodesToTraverse.push(TupleI);
+    
   }
 
   while (!NodesToTraverse.empty()) {

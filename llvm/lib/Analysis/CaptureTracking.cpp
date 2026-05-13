@@ -287,9 +287,8 @@ UseCaptureInfo llvm::DetermineUseCaptureKind(const Use &U, const Value *Base) {
 
     // Volatile operations effectively capture the memory location that they
     // load and store to.
-    if (auto *MI = dyn_cast<MemIntrinsic>(Call))
-      if (MI->isVolatile())
-        return CaptureComponents::All;
+    if (auto *MI = dyn_cast<MemIntrinsic>(Call); MI && (MI->isVolatile()))
+      return CaptureComponents::All;
 
     // Calling a function pointer does not in itself cause the pointer to
     // be captured.  This is a subtle point considering that (for example)
@@ -381,9 +380,8 @@ UseCaptureInfo llvm::DetermineUseCaptureKind(const Use &U, const Value *Base) {
       // Don't count comparisons of a no-alias return value against null as
       // captures. This allows us to ignore comparisons of malloc results
       // with null, for example.
-      if (U->getType()->getPointerAddressSpace() == 0)
-        if (isNoAliasCall(U.get()->stripPointerCasts()))
-          return CaptureComponents::None;
+      if ((U->getType()->getPointerAddressSpace() == 0) && (isNoAliasCall(U.get()->stripPointerCasts())))
+        return CaptureComponents::None;
 
       // Check whether this is a comparison of the base pointer against
       // null.

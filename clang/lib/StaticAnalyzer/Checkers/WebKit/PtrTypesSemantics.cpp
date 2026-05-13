@@ -229,20 +229,18 @@ bool isOwnerPtrType(const clang::QualType T) {
 
 std::optional<bool> isUncounted(const QualType T) {
   if (auto *Subst = dyn_cast<SubstTemplateTypeParmType>(T)) {
-    if (auto *Decl = Subst->getAssociatedDecl()) {
-      if (isRefType(safeGetName(Decl)))
-        return false;
-    }
+    if (auto *Decl = Subst->getAssociatedDecl(); Decl && (isRefType(safeGetName(Decl)))) 
+      return false;
+    
   }
   return isUncounted(T->getAsCXXRecordDecl());
 }
 
 std::optional<bool> isUnchecked(const QualType T) {
   if (auto *Subst = dyn_cast<SubstTemplateTypeParmType>(T)) {
-    if (auto *Decl = Subst->getAssociatedDecl()) {
-      if (isCheckedPtr(safeGetName(Decl)))
-        return false;
-    }
+    if (auto *Decl = Subst->getAssociatedDecl(); Decl && (isCheckedPtr(safeGetName(Decl)))) 
+      return false;
+    
   }
   return isUnchecked(T->getAsCXXRecordDecl());
 }
@@ -489,10 +487,9 @@ bool isTrivialBuiltinFunction(const FunctionDecl *F) {
 bool isSingleton(const NamedDecl *F) {
   assert(F);
   // FIXME: check # of params == 1
-  if (auto *MethodDecl = dyn_cast<CXXMethodDecl>(F)) {
-    if (!MethodDecl->isStatic())
-      return false;
-  }
+  if (auto *MethodDecl = dyn_cast<CXXMethodDecl>(F); MethodDecl && (!MethodDecl->isStatic())) 
+    return false;
+  
   const auto &NameStr = safeGetName(F);
   StringRef Name = NameStr; // FIXME: Make safeGetName return StringRef.
   return Name == "singleton" || Name.ends_with("Singleton");
@@ -698,10 +695,9 @@ public:
   bool VisitDeclStmt(const DeclStmt *DS) {
     for (auto &Decl : DS->decls()) {
       // FIXME: Handle DecompositionDecls.
-      if (auto *VD = dyn_cast<VarDecl>(Decl)) {
-        if (!HasTrivialDestructor(VD))
-          return false;
-      }
+      if (auto *VD = dyn_cast<VarDecl>(Decl); VD && (!HasTrivialDestructor(VD))) 
+        return false;
+      
     }
     return VisitChildren(DS);
   }
@@ -858,10 +854,9 @@ public:
   }
 
   bool VisitCXXDefaultArgExpr(const CXXDefaultArgExpr *E) {
-    if (auto *Expr = E->getExpr()) {
-      if (!Visit(Expr))
-        return false;
-    }
+    if (auto *Expr = E->getExpr(); Expr && (!Visit(Expr))) 
+      return false;
+    
     return true;
   }
 
@@ -906,10 +901,9 @@ public:
   }
 
   bool VisitCXXBindTemporaryExpr(const CXXBindTemporaryExpr *BTE) {
-    if (auto *Temp = BTE->getTemporary()) {
-      if (!IsFunctionTrivial(Temp->getDestructor()))
-        return false;
-    }
+    if (auto *Temp = BTE->getTemporary(); Temp && (!IsFunctionTrivial(Temp->getDestructor()))) 
+      return false;
+    
     return Visit(BTE->getSubExpr());
   }
 

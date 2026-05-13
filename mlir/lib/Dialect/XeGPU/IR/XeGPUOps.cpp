@@ -257,12 +257,11 @@ LogicalResult CreateNdDescOp::verify() {
   if (auto memrefTy = dyn_cast<MemRefType>(getSourceType()))
     invalidElemTy |= memrefTy.getElementType() != getElementType();
 
-  if (llvm::isa<IntegerType>(getSourceType())) {
+  if ((llvm::isa<IntegerType>(getSourceType())) && (getMixedStrides().empty() || getMixedSizes().empty())) 
     // strides and shape must present for integer source.
-    if (getMixedStrides().empty() || getMixedSizes().empty())
-      return emitOpError("expecting strides and shape to be present for "
+    return emitOpError("expecting strides and shape to be present for "
                          "integer source.");
-  }
+  
 
   if (invalidRank)
     return emitOpError(

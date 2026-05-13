@@ -292,17 +292,16 @@ gsym_strp_t GsymCreator::insertString(StringRef S, bool Copy) {
   // The hash can be calculated outside the lock.
   CachedHashStringRef CHStr(S);
   std::lock_guard<std::mutex> Guard(Mutex);
-  if (Copy) {
+  if ((Copy) && (!StrTab.contains(CHStr))) 
     // We need to provide backing storage for the string if requested
     // since StringTableBuilder stores references to strings. Any string
     // that comes from a section in an object file doesn't need to be
     // copied, but any string created by code will need to be copied.
     // This allows GsymCreator to be really fast when parsing DWARF and
     // other object files as most strings don't need to be copied.
-    if (!StrTab.contains(CHStr))
-      CHStr = CachedHashStringRef{StringStorage.insert(S).first->getKey(),
+    CHStr = CachedHashStringRef{StringStorage.insert(S).first->getKey(),
                                   CHStr.hash()};
-  }
+  
   const gsym_strp_t StrOff = StrTab.add(CHStr);
   // Save a mapping of string offsets to the cached string reference in case
   // we need to segment the GSYM file and copy string from one string table to

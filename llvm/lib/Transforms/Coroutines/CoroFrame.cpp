@@ -859,12 +859,12 @@ static void buildFrameLayout(Function &F, const DominatorTree &DT,
     MaybeAlign MA;
     // For byval arguments, we need to store the pointed value in the frame,
     // instead of the pointer itself.
-    if (const Argument *A = dyn_cast<Argument>(S.first)) {
-      if (A->hasByValAttr()) {
+    if (const Argument *A = dyn_cast<Argument>(S.first); A && (A->hasByValAttr())) 
+      {
         FieldType = A->getParamByValType();
         MA = A->getParamAlign();
       }
-    }
+    
     FieldIDType Id =
         B.addField(FieldType, MA, false /*header*/, true /*IsSpillOfValue*/);
     FrameData.setFieldIndex(S.first, Id);
@@ -1427,9 +1427,9 @@ static void rewritePHIs(BasicBlock &BB) {
 
   LandingPadInst *LandingPad = nullptr;
   PHINode *ReplPHI = nullptr;
-  if (!BB.empty()) {
-    if ((LandingPad =
-             dyn_cast_or_null<LandingPadInst>(BB.getFirstNonPHIIt()))) {
+  if ((!BB.empty()) && ((LandingPad =
+             dyn_cast_or_null<LandingPadInst>(BB.getFirstNonPHIIt())))) 
+    {
       // ehAwareSplitEdge will clone the LandingPad in all the edge blocks.
       // We replace the original landing pad with a PHINode that will collect the
       // results from all of them.
@@ -1440,7 +1440,7 @@ static void rewritePHIs(BasicBlock &BB) {
       // We will erase the original landing pad at the end of this function after
       // ehAwareSplitEdge cloned it in the transition blocks.
     }
-  }
+  
 
   SmallVector<BasicBlock *, 8> Preds(predecessors(&BB));
   for (BasicBlock *Pred : Preds) {
@@ -1463,9 +1463,8 @@ static void rewritePHIs(Function &F) {
   SmallVector<BasicBlock *, 8> WorkList;
 
   for (BasicBlock &BB : F)
-    if (auto *PN = dyn_cast<PHINode>(&BB.front()))
-      if (PN->getNumIncomingValues() > 1)
-        WorkList.push_back(&BB);
+    if (auto *PN = dyn_cast<PHINode>(&BB.front()); PN && (PN->getNumIncomingValues() > 1))
+      WorkList.push_back(&BB);
 
   for (BasicBlock *BB : WorkList)
     rewritePHIs(*BB);
@@ -1475,12 +1474,12 @@ static void rewritePHIs(Function &F) {
 // instruction in the block with a single predecessor.
 static BasicBlock *splitBlockIfNotFirst(Instruction *I, const Twine &Name) {
   auto *BB = I->getParent();
-  if (&BB->front() == I) {
-    if (BB->getSinglePredecessor()) {
+  if ((&BB->front() == I) && (BB->getSinglePredecessor())) 
+    {
       BB->setName(Name);
       return BB;
     }
-  }
+  
   return BB->splitBasicBlock(I, Name);
 }
 

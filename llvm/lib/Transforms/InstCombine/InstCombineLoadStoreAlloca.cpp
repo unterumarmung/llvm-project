@@ -196,8 +196,8 @@ static Instruction *simplifyAllocaArraySize(InstCombinerImpl &IC,
   }
 
   // Convert: alloca Ty, C - where C is a constant != 1 into: alloca [C x Ty], 1
-  if (const ConstantInt *C = dyn_cast<ConstantInt>(AI.getArraySize())) {
-    if (C->getValue().getActiveBits() <= 64) {
+  if (const ConstantInt *C = dyn_cast<ConstantInt>(AI.getArraySize()); C && (C->getValue().getActiveBits() <= 64)) 
+    {
       Type *NewTy = ArrayType::get(AI.getAllocatedType(), C->getZExtValue());
       AllocaInst *New = IC.Builder.CreateAlloca(NewTy, AI.getAddressSpace(),
                                                 nullptr, AI.getName());
@@ -207,7 +207,7 @@ static Instruction *simplifyAllocaArraySize(InstCombinerImpl &IC,
       replaceAllDbgUsesWith(AI, *New, *New, DT);
       return IC.replaceInstUsesWith(AI, New);
     }
-  }
+  
 
   if (isa<UndefValue>(AI.getArraySize()))
     return IC.replaceInstUsesWith(AI, PoisonValue::get(AI.getType()));
@@ -273,9 +273,8 @@ bool PointerReplacer::collectUsers() {
 
   auto PushUsersToWorklist = [&](Instruction *Inst) {
     for (auto *U : Inst->users())
-      if (auto *I = dyn_cast<Instruction>(U))
-        if (!isAvailable(I) && !ValuesToRevisit.contains(I))
-          Worklist.emplace_back(I);
+      if (auto *I = dyn_cast<Instruction>(U); I && (!isAvailable(I) && !ValuesToRevisit.contains(I)))
+        Worklist.emplace_back(I);
   };
 
   auto TryPushInstOperand = [&](Instruction *InstOp) {
@@ -923,9 +922,8 @@ static bool canReplaceGEPIdxWithZero(InstCombinerImpl &IC,
     unsigned I = 1;
     for (unsigned IE = GEPI->getNumOperands(); I != IE; ++I) {
       Value *V = GEPI->getOperand(I);
-      if (const ConstantInt *CI = dyn_cast<ConstantInt>(V))
-        if (CI->isZero())
-          continue;
+      if (const ConstantInt *CI = dyn_cast<ConstantInt>(V); CI && (CI->isZero()))
+        continue;
 
       break;
     }
@@ -1054,8 +1052,8 @@ Value *InstCombinerImpl::simplifyNonNullOperand(Value *V,
   if (Depth == RecursionLimit)
     return nullptr;
 
-  if (auto *GEP = dyn_cast<GetElementPtrInst>(V)) {
-    if (HasDereferenceable || GEP->isInBounds()) {
+  if (auto *GEP = dyn_cast<GetElementPtrInst>(V); GEP && (HasDereferenceable || GEP->isInBounds())) 
+    {
       if (auto *Res = simplifyNonNullOperand(GEP->getPointerOperand(),
                                              HasDereferenceable, Depth + 1)) {
         replaceOperand(*GEP, 0, Res);
@@ -1063,7 +1061,7 @@ Value *InstCombinerImpl::simplifyNonNullOperand(Value *V,
         return nullptr;
       }
     }
-  }
+  
 
   if (auto *PHI = dyn_cast<PHINode>(V)) {
     bool Changed = false;
@@ -1186,8 +1184,8 @@ Instruction *InstCombinerImpl::visitLoadInst(LoadInst &LI) {
 
   // load(llvm.protected.field.ptr(ptr)) -> llvm.ptrauth.auth(load(ptr))
   if (isa<PointerType>(LI.getType())) {
-    if (auto *II = dyn_cast<IntrinsicInst>(Op)) {
-      if (II->getIntrinsicID() == Intrinsic::protected_field_ptr) {
+    if (auto *II = dyn_cast<IntrinsicInst>(Op); II && (II->getIntrinsicID() == Intrinsic::protected_field_ptr)) 
+      {
         std::vector<OperandBundleDef> DSBundle;
         if (auto Bundle =
                 II->getOperandBundle(LLVMContext::OB_deactivation_symbol))
@@ -1212,7 +1210,7 @@ Instruction *InstCombinerImpl::visitLoadInst(LoadInst &LI) {
         Auth = Builder.CreateIntToPtr(Auth, Builder.getPtrTy());
         return replaceInstUsesWith(LI, Auth);
       }
-    }
+    
   }
 
   return nullptr;
@@ -1320,8 +1318,8 @@ static bool combineStoreToValueType(InstCombinerImpl &IC, StoreInst &SI) {
     }
   }
 
-  if (Value *U = likeBitCastFromVector(IC, V))
-    if (!SI.isAtomic() || isSupportedAtomicType(U->getType())) {
+  if (Value *U = likeBitCastFromVector(IC, V); U && (!SI.isAtomic() || isSupportedAtomicType(U->getType())))
+    {
       combineStoreToNewValue(IC, SI, U);
       return true;
     }
@@ -1454,9 +1452,8 @@ static bool equivalentAddressValues(Value *A, Value *B) {
       isa<CastInst>(A) ||
       isa<PHINode>(A) ||
       isa<GetElementPtrInst>(A))
-    if (Instruction *BI = dyn_cast<Instruction>(B))
-      if (cast<Instruction>(A)->isIdenticalToWhenDefined(BI))
-        return true;
+    if (Instruction *BI = dyn_cast<Instruction>(B); BI && (cast<Instruction>(A)->isIdenticalToWhenDefined(BI)))
+      return true;
 
   // Otherwise they may not be equivalent.
   return false;
@@ -1487,12 +1484,11 @@ Instruction *InstCombinerImpl::visitStoreInst(StoreInst &SI) {
   if (Ptr->hasOneUse()) {
     if (isa<AllocaInst>(Ptr))
       return eraseInstFromFunction(SI);
-    if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(Ptr)) {
-      if (isa<AllocaInst>(GEP->getOperand(0))) {
-        if (GEP->getOperand(0)->hasOneUse())
-          return eraseInstFromFunction(SI);
-      }
-    }
+    if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(Ptr); GEP && (isa<AllocaInst>(GEP->getOperand(0))) && (GEP->getOperand(0)->hasOneUse())) 
+      
+        return eraseInstFromFunction(SI);
+      
+    
   }
 
   // If we have a store to a location which is known constant, we can conclude
@@ -1592,8 +1588,8 @@ Instruction *InstCombinerImpl::visitStoreInst(StoreInst &SI) {
   // store(ptr1, llvm.protected.field.ptr(ptr2)) ->
   // store(llvm.ptrauth.sign(ptr1), ptr2)
   if (isa<PointerType>(Val->getType())) {
-    if (auto *II = dyn_cast<IntrinsicInst>(Ptr)) {
-      if (II->getIntrinsicID() == Intrinsic::protected_field_ptr) {
+    if (auto *II = dyn_cast<IntrinsicInst>(Ptr); II && (II->getIntrinsicID() == Intrinsic::protected_field_ptr)) 
+      {
         std::vector<OperandBundleDef> DSBundle;
         if (auto Bundle =
                 II->getOperandBundle(LLVMContext::OB_deactivation_symbol))
@@ -1617,7 +1613,7 @@ Instruction *InstCombinerImpl::visitStoreInst(StoreInst &SI) {
         replaceOperand(SI, 1, II->getOperand(0));
         return &SI;
       }
-    }
+    
   }
 
   return nullptr;

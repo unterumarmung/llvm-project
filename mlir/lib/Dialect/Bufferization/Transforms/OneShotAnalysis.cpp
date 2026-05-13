@@ -132,9 +132,8 @@ OneShotAnalysisState::OneShotAnalysisState(
     if (!options.isOpAllowed(bufferizableOp))
       return WalkResult::skip();
     for (OpOperand &opOperand : bufferizableOp->getOpOperands())
-      if (isa<TensorLikeType>(opOperand.get().getType()))
-        if (bufferizableOp.mustBufferizeInPlace(opOperand, *this))
-          bufferizeInPlace(opOperand);
+      if ((isa<TensorLikeType>(opOperand.get().getType())) && (bufferizableOp.mustBufferizeInPlace(opOperand, *this)))
+        bufferizeInPlace(opOperand);
     return WalkResult::advance();
   });
 }
@@ -717,16 +716,16 @@ hasReadAfterWriteInterference(const DenseSet<OpOperand *> &usesRead,
         // happen before all stores to the same position.
         if (conflictingWritingOp == readingOp) {
           if (auto bufferizableOp = options.dynCastBufferizableOp(readingOp)) {
-            if (bufferizableOp.bufferizesToElementwiseAccess(
-                    state, {uRead, uConflictingWrite})) {
-              if (hasEquivalentValueInReverseUseDefChain(
+            if ((bufferizableOp.bufferizesToElementwiseAccess(
+                    state, {uRead, uConflictingWrite})) && (hasEquivalentValueInReverseUseDefChain(
                       state, uRead, uConflictingWrite->get()) ||
                   hasEquivalentValueInReverseUseDefChain(
-                      state, uConflictingWrite, uRead->get())) {
+                      state, uConflictingWrite, uRead->get()))) 
+              {
                 LDBG() << "  no conflict: op bufferizes to element-wise access";
                 continue;
               }
-            }
+            
           }
         }
       }
@@ -1011,9 +1010,8 @@ LogicalResult
 OneShotAnalysisState::analyzeSingleOp(Operation *op,
                                       const DominanceInfo &domInfo) {
   for (OpOperand &opOperand : op->getOpOperands())
-    if (isa<TensorLikeType>(opOperand.get().getType()))
-      if (failed(bufferizableInPlaceAnalysisImpl(opOperand, *this, domInfo)))
-        return failure();
+    if ((isa<TensorLikeType>(opOperand.get().getType())) && (failed(bufferizableInPlaceAnalysisImpl(opOperand, *this, domInfo))))
+      return failure();
   return success();
 }
 

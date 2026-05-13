@@ -245,11 +245,10 @@ MipsABIInfo::classifyArgumentType(QualType Ty, uint64_t &Offset) const {
     Ty = ED->getIntegerType();
 
   // Make sure we pass indirectly things that are too large.
-  if (const auto *EIT = Ty->getAs<BitIntType>())
-    if (EIT->getNumBits() > 128 ||
+  if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 128 ||
         (EIT->getNumBits() > 64 &&
-         !getContext().getTargetInfo().hasInt128Type()))
-      return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace());
+         !getContext().getTargetInfo().hasInt128Type())))
+    return getNaturalAlignIndirect(Ty, getDataLayout().getAllocaAddrSpace());
 
   // All integral types are promoted to the GPR width.
   if (Ty->isIntegralOrEnumerationType())
@@ -336,11 +335,10 @@ ABIArgInfo MipsABIInfo::classifyReturnType(QualType RetTy) const {
     RetTy = ED->getIntegerType();
 
   // Make sure we pass indirectly things that are too large.
-  if (const auto *EIT = RetTy->getAs<BitIntType>())
-    if (EIT->getNumBits() > 128 ||
+  if (const auto *EIT = RetTy->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 128 ||
         (EIT->getNumBits() > 64 &&
-         !getContext().getTargetInfo().hasInt128Type()))
-      return getNaturalAlignIndirect(RetTy,
+         !getContext().getTargetInfo().hasInt128Type())))
+    return getNaturalAlignIndirect(RetTy,
                                      getDataLayout().getAllocaAddrSpace());
 
   if (isPromotableIntegerTypeForABI(RetTy))

@@ -494,9 +494,8 @@ private:
           if (S.PrefixLength < Best.PrefixLength)
             continue;
           // hidden heuristics should at least be deterministic!
-          if (S.PrefixLength == Best.PrefixLength)
-            if (S.Index > Best.Index)
-              continue;
+          if ((S.PrefixLength == Best.PrefixLength) && (S.Index > Best.Index))
+            continue;
         }
       }
       // PrefixLength was only set above if actually needed for a tiebreak.

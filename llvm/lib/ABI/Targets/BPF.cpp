@@ -28,18 +28,16 @@ private:
       return getNaturalAlignIndirect(RetTy, /*ByVal=*/false);
     }
 
-    if (const auto *IntTy = dyn_cast<IntegerType>(RetTy)) {
-      if (IntTy->isBitInt() && IntTy->getSizeInBits().getFixedValue() > 128)
-        return getNaturalAlignIndirect(RetTy, /*ByVal=*/false);
-    }
+    if (const auto *IntTy = dyn_cast<IntegerType>(RetTy); IntTy && (IntTy->isBitInt() && IntTy->getSizeInBits().getFixedValue() > 128)) 
+      return getNaturalAlignIndirect(RetTy, /*ByVal=*/false);
+    
 
     return ArgInfo::getDirect();
   }
 
   ArgInfo classifyArgumentType(const Type *ArgTy) const {
-    if (const auto *RT = dyn_cast<RecordType>(ArgTy))
-      if (RT->isTransparentUnion() && RT->getNumFields() > 0)
-        ArgTy = RT->getFields()[0].FieldType;
+    if (const auto *RT = dyn_cast<RecordType>(ArgTy); RT && (RT->isTransparentUnion() && RT->getNumFields() > 0))
+      ArgTy = RT->getFields()[0].FieldType;
 
     if (isAggregateTypeForABI(ArgTy)) {
       if (ArgTy->isZeroSize())

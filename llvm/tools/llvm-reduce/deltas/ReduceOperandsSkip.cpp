@@ -50,10 +50,9 @@ static bool shouldReduceOperand(Use &Op) {
   // indexes)
   if (isa<GEPOperator>(Op.getUser()))
     return false;
-  if (auto *CB = dyn_cast<CallBase>(Op.getUser())) {
-    if (CB->isCallee(&Op))
-      return false;
-  }
+  if (auto *CB = dyn_cast<CallBase>(Op.getUser()); CB && (CB->isCallee(&Op))) 
+    return false;
+  
   return true;
 }
 
@@ -121,19 +120,17 @@ opportunities(Function &F,
     // "more reduced" choice that skips over more instructions.
     auto *LHSInst = dyn_cast<Instruction>(LHS);
     auto *RHSInst = dyn_cast<Instruction>(RHS);
-    if (LHSInst && RHSInst) {
-      if (DT.dominates(LHSInst, RHSInst))
-        return true;
-    }
+    if ((LHSInst && RHSInst) && (DT.dominates(LHSInst, RHSInst))) 
+      return true;
+    
 
     // Compress the number of used arguments by prefering the first ones. Unused
     // trailing argument can be removed by the arguments pass.
     auto *LHSArg = dyn_cast<Argument>(LHS);
     auto *RHSArg = dyn_cast<Argument>(RHS);
-    if (LHSArg && RHSArg) {
-      if (LHSArg->getArgNo() < RHSArg->getArgNo())
-        return true;
-    }
+    if ((LHSArg && RHSArg) && (LHSArg->getArgNo() < RHSArg->getArgNo())) 
+      return true;
+    
 
     return false;
   };
@@ -163,10 +160,9 @@ opportunities(Function &F,
           return true;
 
         // Do not introduce address captures of intrinsics.
-        if (Function *F = dyn_cast<Function>(V)) {
-          if (F->isIntrinsic())
-            return true;
-        }
+        if (Function *F = dyn_cast<Function>(V); F && (F->isIntrinsic())) 
+          return true;
+        
 
         // Only consider candidates that are "more reduced" than the original
         // value. This explicitly also rules out candidates with the same

@@ -257,10 +257,9 @@ bool WindowsSecureHotPatching::doInitialization(Module &M) {
   SmallDenseMap<GlobalVariable *, GlobalVariable *> RefMapping;
   bool MadeChanges = false;
   for (auto &F : M.functions()) {
-    if (F.hasFnAttribute("marked_for_windows_hot_patching")) {
-      if (runOnFunction(F, RefMapping))
-        MadeChanges = true;
-    }
+    if ((F.hasFnAttribute("marked_for_windows_hot_patching")) && (runOnFunction(F, RefMapping))) 
+      MadeChanges = true;
+    
   }
   return MadeChanges;
 }

@@ -233,11 +233,10 @@ bool RISCVABIInfo::detectFPCCEligibleStructHelper(QualType Ty, CharUnits CurOff,
     QualType EltTy = ATy->getElementType();
     // Non-zero-length arrays of empty records make the struct ineligible for
     // the FP calling convention in C++.
-    if (const auto *RTy = EltTy->getAsCanonical<RecordType>()) {
-      if (ArraySize != 0 && isa<CXXRecordDecl>(RTy->getDecl()) &&
-          isEmptyRecord(getContext(), EltTy, true, true))
-        return false;
-    }
+    if (const auto *RTy = EltTy->getAsCanonical<RecordType>(); RTy && (ArraySize != 0 && isa<CXXRecordDecl>(RTy->getDecl()) &&
+          isEmptyRecord(getContext(), EltTy, true, true))) 
+      return false;
+    
     CharUnits EltSize = getContext().getTypeSizeInChars(EltTy);
     for (uint64_t i = 0; i < ArraySize; ++i) {
       bool Ret = detectFPCCEligibleStructHelper(EltTy, CurOff, Field1Ty,

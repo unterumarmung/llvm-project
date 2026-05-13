@@ -302,12 +302,12 @@ void UnrollState::unrollRecipeByUF(VPRecipeBase &R) {
   if (match(&R, m_CombineOr(m_BranchOnCond(), m_BranchOnCount())))
     return;
 
-  if (auto *VPI = dyn_cast<VPInstruction>(&R)) {
-    if (vputils::onlyFirstPartUsed(VPI)) {
+  if (auto *VPI = dyn_cast<VPInstruction>(&R); VPI && (vputils::onlyFirstPartUsed(VPI))) 
+    {
       addUniformForAllParts(VPI);
       return;
     }
-  }
+  
   if (auto *RepR = dyn_cast<VPReplicateRecipe>(&R)) {
     if (isa<StoreInst>(RepR->getUnderlyingValue()) &&
         RepR->getOperand(1)->isDefinedOutsideLoopRegions()) {
@@ -454,9 +454,9 @@ void UnrollState::unrollBlock(VPBlockBase *VPB) {
       continue;
     }
 
-    if (Plan.hasScalarVFOnly()) {
-      if (match(&R, m_ExtractLastPart(m_VPValue(Op0))) ||
-          match(&R, m_ExtractPenultimateElement(m_VPValue(Op0)))) {
+    if ((Plan.hasScalarVFOnly()) && (match(&R, m_ExtractLastPart(m_VPValue(Op0))) ||
+          match(&R, m_ExtractPenultimateElement(m_VPValue(Op0))))) 
+      {
         auto *I = cast<VPInstruction>(&R);
         bool IsPenultimatePart =
             I->getOpcode() == VPInstruction::ExtractPenultimateElement;
@@ -465,7 +465,7 @@ void UnrollState::unrollBlock(VPBlockBase *VPB) {
         I->replaceAllUsesWith(getValueForPart(Op0, PartIdx));
         continue;
       }
-    }
+    
     // For vector VF, the penultimate element is always extracted from the last part.
     if (match(&R, m_ExtractLastLaneOfLastPart(m_VPValue(Op0))) ||
         match(&R, m_ExtractPenultimateElement(m_VPValue(Op0)))) {

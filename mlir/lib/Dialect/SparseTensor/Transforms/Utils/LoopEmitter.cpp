@@ -360,11 +360,11 @@ void LoopEmitter::initSubSectIterator(OpBuilder &builder, Location loc) {
 
       auto lvlIt = makeLevelIterator(builder, loc, t, lvl);
       const SparseIterator *parent = lastIter[t];
-      if (!parent && lvl > 0) {
-        if (dependentLvlMap[t][lvl - 1].empty()) {
+      if ((!parent && lvl > 0) && (dependentLvlMap[t][lvl - 1].empty())) 
+        {
           parent = iters[t][lvl - 1].back().get();
         }
-      }
+      
 
       std::unique_ptr<SparseIterator> it;
       if (!remDepStack[t][lvl].empty()) {

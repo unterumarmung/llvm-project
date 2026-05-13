@@ -318,9 +318,8 @@ bool Decl::isTemplated() const {
 }
 
 unsigned Decl::getTemplateDepth() const {
-  if (auto *DC = dyn_cast<DeclContext>(this))
-    if (DC->isFileContext())
-      return 0;
+  if (auto *DC = dyn_cast<DeclContext>(this); DC && (DC->isFileContext()))
+    return 0;
 
   if (auto *TPL = getDescribedTemplateParams())
     return TPL->getDepth() + 1;
@@ -429,9 +428,8 @@ bool Decl::isInLocalScopeForInstantiation() const {
       return true;
     if (!isa<TagDecl>(LDC))
       return false;
-    if (const auto *CRD = dyn_cast<CXXRecordDecl>(LDC))
-      if (CRD->isLambda())
-        return true;
+    if (const auto *CRD = dyn_cast<CXXRecordDecl>(LDC); CRD && (CRD->isLambda()))
+      return true;
     LDC = LDC->getLexicalParent();
   }
   return false;
@@ -439,9 +437,8 @@ bool Decl::isInLocalScopeForInstantiation() const {
 
 bool Decl::isInAnonymousNamespace() const {
   for (const DeclContext *DC = getDeclContext(); DC; DC = DC->getParent()) {
-    if (const auto *ND = dyn_cast<NamespaceDecl>(DC))
-      if (ND->isAnonymousNamespace())
-        return true;
+    if (const auto *ND = dyn_cast<NamespaceDecl>(DC); ND && (ND->isAnonymousNamespace()))
+      return true;
   }
 
   return false;
@@ -832,10 +829,9 @@ VersionTuple Decl::getVersionIntroduced() const {
   for (const auto *A : attrs()) {
     if (const auto *Availability = dyn_cast<AvailabilityAttr>(A)) {
       Availability = Availability->getEffectiveAttr();
-      if (getRealizedPlatform(Availability, Context) == TargetPlatform) {
-        if (!Availability->getIntroduced().empty())
-          return Availability->getIntroduced();
-      }
+      if ((getRealizedPlatform(Availability, Context) == TargetPlatform) && (!Availability->getIntroduced().empty())) 
+        return Availability->getIntroduced();
+      
     }
   }
   return {};
@@ -1336,10 +1332,9 @@ DeclContext::~DeclContext() = default;
 /// is the class in which the friend is declared.
 DeclContext *DeclContext::getLookupParent() {
   // FIXME: Find a better way to identify friends.
-  if (isa<FunctionDecl>(this))
-    if (getParent()->getRedeclContext()->isFileContext() &&
-        getLexicalParent()->getRedeclContext()->isRecord())
-      return getLexicalParent();
+  if ((isa<FunctionDecl>(this)) && (getParent()->getRedeclContext()->isFileContext() &&
+        getLexicalParent()->getRedeclContext()->isRecord()))
+    return getLexicalParent();
 
   // A lookup within the call operator of a lambda never looks in the lambda
   // class; instead, skip to the context in which that closure type is
@@ -1723,9 +1718,8 @@ static bool shouldBeHidden(NamedDecl *D) {
   // from being visible?
   if (isa<ClassTemplateSpecializationDecl>(D))
     return true;
-  if (auto *FD = dyn_cast<FunctionDecl>(D))
-    if (FD->isFunctionTemplateSpecialization())
-      return true;
+  if (auto *FD = dyn_cast<FunctionDecl>(D); FD && (FD->isFunctionTemplateSpecialization()))
+    return true;
 
   // Hide destructors that are invalid. There should always be one destructor,
   // but if it is an invalid decl, another one is created. We need to hide the
@@ -1887,19 +1881,17 @@ void DeclContext::buildLookupImpl(DeclContext *DCtx, bool Internal) {
     // FindExternalVisibleDeclsByName if needed. Exception: if we're not
     // in C++, we do not track external visible decls for the TU, so in
     // that case we need to collect them all here.
-    if (auto *ND = dyn_cast<NamedDecl>(D))
-      if (ND->getDeclContext() == DCtx && !shouldBeHidden(ND) &&
+    if (auto *ND = dyn_cast<NamedDecl>(D); ND && (ND->getDeclContext() == DCtx && !shouldBeHidden(ND) &&
           (!ND->isFromASTFile() ||
            (isTranslationUnit() &&
-            !getParentASTContext().getLangOpts().CPlusPlus)))
-        makeDeclVisibleInContextImpl(ND, Internal);
+            !getParentASTContext().getLangOpts().CPlusPlus))))
+      makeDeclVisibleInContextImpl(ND, Internal);
 
     // If this declaration is itself a transparent declaration context
     // or inline namespace, add the members of this declaration of that
     // context (recursively).
-    if (auto *InnerCtx = dyn_cast<DeclContext>(D))
-      if (InnerCtx->isTransparentContext() || InnerCtx->isInlineNamespace())
-        buildLookupImpl(InnerCtx, Internal);
+    if (auto *InnerCtx = dyn_cast<DeclContext>(D); InnerCtx && (InnerCtx->isTransparentContext() || InnerCtx->isInlineNamespace()))
+      buildLookupImpl(InnerCtx, Internal);
   }
 }
 
@@ -2041,9 +2033,8 @@ void DeclContext::localUncachedLookup(DeclarationName Name,
   // FIXME: If we have lazy external declarations, this will not find them!
   // FIXME: Should we CollectAllContexts and walk them all here?
   for (Decl *D = FirstDecl; D; D = D->getNextDeclInContext()) {
-    if (auto *ND = dyn_cast<NamedDecl>(D))
-      if (ND->getDeclName() == Name)
-        Results.push_back(ND);
+    if (auto *ND = dyn_cast<NamedDecl>(D); ND && (ND->getDeclName() == Name))
+      Results.push_back(ND);
   }
 }
 
@@ -2172,9 +2163,8 @@ void DeclContext::makeDeclVisibleInContextImpl(NamedDecl *D, bool Internal) {
   // If the lookup table contains an entry about this name it means that we
   // have already checked the external source.
   if (!Internal)
-    if (ExternalASTSource *Source = getParentASTContext().getExternalSource())
-      if (hasExternalVisibleStorage() && !Map->contains(D->getDeclName()))
-        Source->FindExternalVisibleDeclsByName(this, D->getDeclName(),
+    if (ExternalASTSource *Source = getParentASTContext().getExternalSource(); Source && (hasExternalVisibleStorage() && !Map->contains(D->getDeclName())))
+      Source->FindExternalVisibleDeclsByName(this, D->getDeclName(),
                                                D->getDeclContext());
 
   // Insert this declaration into the map.

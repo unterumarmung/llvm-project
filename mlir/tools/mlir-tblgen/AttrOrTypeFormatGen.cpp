@@ -1138,9 +1138,8 @@ DefFormatParser::verifyOptionalGroupElements(llvm::SMLoc loc,
     } else if (auto *custom = dyn_cast<CustomDirective>(el)) {
       for (FormatElement *el : custom->getElements()) {
         // If the custom argument is a variable, then it must be optional.
-        if (auto *param = dyn_cast<ParameterElement>(el))
-          if (!param->isOptional())
-            return emitError(loc,
+        if (auto *param = dyn_cast<ParameterElement>(el); param && (!param->isOptional()))
+          return emitError(loc,
                              "`custom` is only allowed in an optional group if "
                              "all captured parameters are optional");
       }

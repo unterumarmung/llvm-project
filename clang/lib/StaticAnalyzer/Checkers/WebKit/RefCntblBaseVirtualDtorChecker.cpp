@@ -90,10 +90,9 @@ public:
         return VisitLambdaArgument(VD->getInit());
       return false;
     }
-    if (auto *Lambda = dyn_cast<LambdaExpr>(E)) {
-      if (VisitBody(Lambda->getBody()))
-        return true;
-    }
+    if (auto *Lambda = dyn_cast<LambdaExpr>(E); Lambda && (VisitBody(Lambda->getBody()))) 
+      return true;
+    
     if (auto *ConstructE = dyn_cast<CXXConstructExpr>(E)) {
       for (unsigned i = 0; i < ConstructE->getNumArgs(); ++i) {
         if (VisitLambdaArgument(ConstructE->getArg(i)))
@@ -126,10 +125,9 @@ public:
           } else if (auto *ST =
                          dyn_cast<SubstTemplateTypeParmType>(PointeeType)) {
             auto Type = ST->getReplacementType();
-            if (auto *RD = dyn_cast<RecordType>(Type)) {
-              if (declaresSameEntity(RD->getDecl(), ClassDecl))
-                return true;
-            }
+            if (auto *RD = dyn_cast<RecordType>(Type); RD && (declaresSameEntity(RD->getDecl(), ClassDecl))) 
+              return true;
+            
           }
         }
       } else

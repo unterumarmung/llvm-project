@@ -71,24 +71,22 @@ static bool isErrorPropagationPossible(TypeRange operandTypes) {
 static LogicalResult verifySizeOrIndexOp(Operation *op) {
   assert(op != nullptr && op->getNumResults() == 1);
   Type resultTy = op->getResultTypes().front();
-  if (isErrorPropagationPossible(op->getOperandTypes())) {
-    if (!llvm::isa<SizeType>(resultTy))
-      return op->emitOpError()
+  if ((isErrorPropagationPossible(op->getOperandTypes())) && (!llvm::isa<SizeType>(resultTy))) 
+    return op->emitOpError()
              << "if at least one of the operands can hold error values then "
                 "the result must be of type `size` to propagate them";
-  }
+  
   return success();
 }
 
 static LogicalResult verifyShapeOrExtentTensorOp(Operation *op) {
   assert(op != nullptr && op->getNumResults() == 1);
   Type resultTy = op->getResultTypes().front();
-  if (isErrorPropagationPossible(op->getOperandTypes())) {
-    if (!llvm::isa<ShapeType>(resultTy))
-      return op->emitOpError()
+  if ((isErrorPropagationPossible(op->getOperandTypes())) && (!llvm::isa<ShapeType>(resultTy))) 
+    return op->emitOpError()
              << "if at least one of the operands can hold error values then "
                 "the result must be of type `shape` to propagate them";
-  }
+  
   return success();
 }
 

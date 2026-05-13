@@ -450,12 +450,12 @@ void CheckHelper::Check(const Symbol &symbol) {
             "An assumed-length CHARACTER(*) function cannot be PURE"_err_en_US);
       }
     }
-    if (const Symbol *result{FindFunctionResult(symbol)}) {
-      if (IsPointer(*result)) {
+    if (const Symbol *result{FindFunctionResult(symbol)}; result && (IsPointer(*result))) 
+      {
         messages_.Say(
             "An assumed-length CHARACTER(*) function cannot return a POINTER"_err_en_US);
       }
-    }
+    
     if (IsProcedurePointer(symbol) && IsDummy(symbol)) {
       Warn(common::UsageWarning::Portability,
           "A dummy procedure pointer should not have assumed-length CHARACTER(*) result type"_port_en_US);
@@ -1155,13 +1155,13 @@ void CheckHelper::CheckObjectEntity(
   }
   if (details.cudaDataAttr()) {
     if (auto dyType{evaluate::DynamicType::From(symbol)}) {
-      if (dyType->category() != TypeCategory::Derived) {
-        if (!IsCUDAIntrinsicType(*dyType)) {
+      if ((dyType->category() != TypeCategory::Derived) && (!IsCUDAIntrinsicType(*dyType))) 
+        {
           messages_.Say(
               "'%s' has intrinsic type '%s' that is not available on the device"_err_en_US,
               symbol.name(), dyType->AsFortran());
         }
-      }
+      
     }
     auto attr{*details.cudaDataAttr()};
     switch (attr) {
@@ -1638,11 +1638,11 @@ void CheckHelper::CheckSubprogram(
       }
     }
     if (error) {
-      if (auto *msg{messages_.Say(symbol.name(), *error)}) {
-        if (subprogram) {
+      if (auto *msg{messages_.Say(symbol.name(), *error)}; msg && (subprogram)) 
+        {
           msg->Attach(subprogram->name(), "Containing subprogram"_en_US);
         }
-      }
+      
     }
   }
   if (details.isFunction() &&
@@ -1861,13 +1861,13 @@ void CheckHelper::CheckDerivedType(
         parentDerived->typeSymbol().attrs().test(Attr::ABSTRACT)) {
       ScopeComponentIterator components{*parentDerived};
       for (const Symbol &component : components) {
-        if (component.attrs().test(Attr::DEFERRED)) {
-          if (scope->FindComponent(component.name()) == &component) {
+        if ((component.attrs().test(Attr::DEFERRED)) && (scope->FindComponent(component.name()) == &component)) 
+          {
             SayWithDeclaration(component,
                 "Non-ABSTRACT extension of ABSTRACT derived type '%s' lacks a binding for DEFERRED procedure '%s'"_err_en_US,
                 parentDerived->typeSymbol().name(), component.name());
           }
-        }
+        
       }
     }
     DerivedTypeSpec derived{derivedType.name(), derivedType};
@@ -1937,13 +1937,13 @@ bool CheckHelper::CheckFinal(
   }
   const auto &arg{proc->dummyArguments[0]};
   const Symbol *errSym{&subroutine};
-  if (const auto *details{subroutine.detailsIf<SubprogramDetails>()}) {
-    if (!details->dummyArgs().empty()) {
+  if (const auto *details{subroutine.detailsIf<SubprogramDetails>()}; details && (!details->dummyArgs().empty())) 
+    {
       if (const Symbol *argSym{details->dummyArgs()[0]}) {
         errSym = argSym;
       }
     }
-  }
+  
   const auto *ddo{std::get_if<DummyDataObject>(&arg.u)};
   if (!ddo) {
     SayWithDeclaration(subroutine, finalName,
@@ -2135,14 +2135,14 @@ void CheckHelper::CollectSpecifics(DistinguishabilityHelper &helper,
     }
   }
   if (const Scope * parent{generic.owner().GetDerivedTypeParent()}) {
-    if (const Symbol * inherited{parent->FindComponent(generic.name())}) {
-      if (IsAccessible(*inherited, generic.owner().parent())) {
+    if (const Symbol * inherited{parent->FindComponent(generic.name())}; inherited && (IsAccessible(*inherited, generic.owner().parent()))) 
+      {
         if (const auto *details{inherited->detailsIf<GenericDetails>()}) {
           // Include specifics of inherited generic of the same name, too
           CollectSpecifics(helper, *inherited, *details);
         }
       }
-    }
+    
   }
 }
 
@@ -2287,11 +2287,11 @@ bool CheckHelper::CheckDefinedOperator(SourceName opName, GenericKind kind,
 std::optional<parser::MessageFixedText> CheckHelper::CheckNumberOfArgs(
     const GenericKind &kind, std::size_t nargs) {
   if (!kind.IsIntrinsicOperator()) {
-    if (nargs < 1 || nargs > 2) {
-      if (context_.ShouldWarn(common::UsageWarning::DefinedOperatorArgs)) {
+    if ((nargs < 1 || nargs > 2) && (context_.ShouldWarn(common::UsageWarning::DefinedOperatorArgs))) 
+      {
         return "%s function '%s' should have 1 or 2 dummy arguments"_warn_en_US;
       }
-    }
+    
     return std::nullopt;
   }
   std::size_t min{2}, max{2}; // allowed number of args; default is binary
@@ -2700,13 +2700,13 @@ void CheckHelper::CheckProcBinding(
   const Symbol *overridden{
       FindOverriddenBinding(symbol, isInaccessibleDeferred)};
   if (symbol.attrs().test(Attr::DEFERRED)) {
-    if (const Symbol *dtSymbol{dtScope.symbol()}) {
-      if (!dtSymbol->attrs().test(Attr::ABSTRACT)) { // C733
+    if (const Symbol *dtSymbol{dtScope.symbol()}; dtSymbol && (!dtSymbol->attrs().test(Attr::ABSTRACT))) 
+      { // C733
         SayWithDeclaration(*dtSymbol,
             "Procedure bound to non-ABSTRACT derived type '%s' may not be DEFERRED"_err_en_US,
             dtSymbol->name());
       }
-    }
+    
     if (symbol.attrs().test(Attr::NON_OVERRIDABLE)) {
       messages_.Say(
           "Type-bound procedure '%s' may not be both DEFERRED and NON_OVERRIDABLE"_err_en_US,
@@ -3508,8 +3508,8 @@ void CheckHelper::CheckBindC(const Symbol &symbol) {
   }
   parser::Messages whyNot;
   if (const std::string * bindName{symbol.GetBindName()};
-      bindName) { // has a binding name
-    if (!bindName->empty()) {
+      (bindName) && (!bindName->empty())) // has a binding name
+    {
       bool ok{bindName->front() == '_' || parser::IsLetter(bindName->front())};
       for (char ch : *bindName) {
         ok &= ch == '_' || parser::IsLetter(ch) || parser::IsDecimalDigit(ch);
@@ -3520,7 +3520,7 @@ void CheckHelper::CheckBindC(const Symbol &symbol) {
         context_.SetError(symbol);
       }
     }
-  }
+  
   if (symbol.GetIsExplicitBindName()) { // BIND(C,NAME=...); C1552, C1529
     auto defClass{ClassifyProcedure(symbol)};
     if (IsProcedurePointer(symbol)) {

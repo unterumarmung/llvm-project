@@ -546,9 +546,8 @@ static ConstantInt *getConstantInt(Value *V, const DataLayout &DL) {
 
   // IntToPtr const int, we can look through this if the semantics of
   // inttoptr for this address space are a simple (truncating) bitcast.
-  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V))
-    if (CE->getOpcode() == Instruction::IntToPtr)
-      if (ConstantInt *CI = dyn_cast<ConstantInt>(CE->getOperand(0))) {
+  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V); CE && (CE->getOpcode() == Instruction::IntToPtr))
+    if (ConstantInt *CI = dyn_cast<ConstantInt>(CE->getOperand(0))) {
         // The constant is very likely to have the right type already.
         if (CI->getType() == IntPtrTy)
           return CI;
@@ -864,15 +863,14 @@ Value *SimplifyCFGOpt::isValueEqualityComparison(Instruction *TI) {
     // predecessors unless there is only one predecessor.
     if (!SI->getParent()->hasNPredecessorsOrMore(128 / SI->getNumSuccessors()))
       CV = SI->getCondition();
-  } else if (CondBrInst *BI = dyn_cast<CondBrInst>(TI))
-    if (BI->getCondition()->hasOneUse()) {
+  } else if (CondBrInst *BI = dyn_cast<CondBrInst>(TI); BI && (BI->getCondition()->hasOneUse()))
+    {
       if (ICmpInst *ICI = dyn_cast<ICmpInst>(BI->getCondition())) {
         if (ICI->isEquality() && getConstantInt(ICI->getOperand(1), DL))
           CV = ICI->getOperand(0);
-      } else if (auto *Trunc = dyn_cast<TruncInst>(BI->getCondition())) {
-        if (Trunc->hasNoUnsignedWrap())
-          CV = Trunc->getOperand(0);
-      }
+      } else if (auto *Trunc = dyn_cast<TruncInst>(BI->getCondition()); Trunc && (Trunc->hasNoUnsignedWrap())) 
+        CV = Trunc->getOperand(0);
+      
     }
 
   // Unwrap any lossless ptrtoint cast (except for unstable pointers).
@@ -1551,17 +1549,15 @@ static bool isSafeToHoistInstr(Instruction *I, unsigned Flags) {
 
   // Hoisting of llvm.deoptimize is only legal together with the next return
   // instruction, which this pass is not always able to do.
-  if (auto *CB = dyn_cast<CallBase>(I))
-    if (CB->getIntrinsicID() == Intrinsic::experimental_deoptimize)
-      return false;
+  if (auto *CB = dyn_cast<CallBase>(I); CB && (CB->getIntrinsicID() == Intrinsic::experimental_deoptimize))
+    return false;
 
   // It's also unsafe/illegal to hoist an instruction above its instruction
   // operands
   BasicBlock *BB = I->getParent();
   for (Value *Op : I->operands()) {
-    if (auto *J = dyn_cast<Instruction>(Op))
-      if (J->getParent() == BB)
-        return false;
+    if (auto *J = dyn_cast<Instruction>(Op); J && (J->getParent() == BB))
+      return false;
   }
 
   return true;
@@ -1581,21 +1577,18 @@ static bool shouldHoistCommonInstructions(Instruction *I1, Instruction *I2,
   // a return.
   auto *C1 = dyn_cast<CallInst>(I1);
   auto *C2 = dyn_cast<CallInst>(I2);
-  if (C1 && C2)
-    if (C1->isMustTailCall() != C2->isMustTailCall())
-      return false;
+  if ((C1 && C2) && (C1->isMustTailCall() != C2->isMustTailCall()))
+    return false;
 
   if (!TTI.isProfitableToHoist(I1) || !TTI.isProfitableToHoist(I2))
     return false;
 
   // If any of the two call sites has nomerge or convergent attribute, stop
   // hoisting.
-  if (const auto *CB1 = dyn_cast<CallBase>(I1))
-    if (CB1->cannotMerge() || CB1->isConvergent())
-      return false;
-  if (const auto *CB2 = dyn_cast<CallBase>(I2))
-    if (CB2->cannotMerge() || CB2->isConvergent())
-      return false;
+  if (const auto *CB1 = dyn_cast<CallBase>(I1); CB1 && (CB1->cannotMerge() || CB1->isConvergent()))
+    return false;
+  if (const auto *CB2 = dyn_cast<CallBase>(I2); CB2 && (CB2->cannotMerge() || CB2->isConvergent()))
+    return false;
 
   return true;
 }
@@ -2208,9 +2201,8 @@ static bool canSinkInstructions(
     // and merging inline-asm instructions can potentially create arguments
     // that cannot satisfy the inline-asm constraints.
     // If the instruction has nomerge or convergent attribute, return false.
-    if (const auto *C = dyn_cast<CallBase>(I))
-      if (C->isInlineAsm() || C->cannotMerge() || C->isConvergent())
-        return false;
+    if (const auto *C = dyn_cast<CallBase>(I); C && (C->isInlineAsm() || C->cannotMerge() || C->isConvergent()))
+      return false;
 
     if (!NumUses)
       NumUses = I->getNumUses();
@@ -3063,9 +3055,9 @@ static Value *isSafeToSpeculateStore(Instruction *I, BasicBlock *BrBB,
       return nullptr; // Unknown store.
     }
 
-    if (auto *LI = dyn_cast<LoadInst>(&CurI)) {
-      if (LI->getPointerOperand() == StorePtr && LI->getType() == StoreTy &&
-          LI->isSimple() && LI->getAlign() >= StoreToHoist->getAlign()) {
+    if (auto *LI = dyn_cast<LoadInst>(&CurI); LI && (LI->getPointerOperand() == StorePtr && LI->getType() == StoreTy &&
+          LI->isSimple() && LI->getAlign() >= StoreToHoist->getAlign())) 
+      {
         Value *Obj = getUnderlyingObject(StorePtr);
         bool ExplicitlyDereferenceableOnly;
         if (isWritableObject(Obj, ExplicitlyDereferenceableOnly) &&
@@ -3080,7 +3072,7 @@ static Value *isSafeToSpeculateStore(Instruction *I, BasicBlock *BrBB,
         }
       }
       // The load didn't work out, but we may still find a store.
-    }
+    
   }
 
   return nullptr;
@@ -3448,9 +3440,8 @@ static bool blockIsSimpleEnoughToThreadThrough(BasicBlock *BB) {
   // (values only feeding assumes).
   for (Instruction &I : reverse(*BB)) {
     // Can't fold blocks that contain noduplicate or convergent calls.
-    if (CallInst *CI = dyn_cast<CallInst>(&I))
-      if (CI->cannotDuplicate() || CI->isConvergent())
-        return false;
+    if (CallInst *CI = dyn_cast<CallInst>(&I); CI && (CI->cannotDuplicate() || CI->isConvergent()))
+      return false;
 
     // Ignore ephemeral values which are deleted during codegen.
     // We will delete Phis while threading, so Phis should not be accounted in
@@ -3620,9 +3611,8 @@ foldCondBranchOnValueKnownInPredecessorImpl(CondBrInst *BI, DomTreeUpdater *DTU,
         N->cloneDebugInfoFrom(&*BBI);
 
         // Register the new instruction with the assumption cache if necessary.
-        if (auto *Assume = dyn_cast<AssumeInst>(N))
-          if (AC)
-            AC->registerAssumption(Assume);
+        if (auto *Assume = dyn_cast<AssumeInst>(N); Assume && (AC))
+          AC->registerAssumption(Assume);
       }
     }
 
@@ -3733,9 +3723,8 @@ static bool foldTwoEntryPHINode(PHINode *PN, const TargetTransformInfo &TTI,
 
   // Don't try to fold an unreachable block. For example, the phi node itself
   // can't be the candidate if-condition for a select that we want to form.
-  if (auto *IfCondPhiInst = dyn_cast<PHINode>(IfCond))
-    if (IfCondPhiInst->getParent() == BB)
-      return false;
+  if (auto *IfCondPhiInst = dyn_cast<PHINode>(IfCond); IfCondPhiInst && (IfCondPhiInst->getParent() == BB))
+    return false;
 
   // Okay, we found that we can merge this two-entry phi node into a select.
   // Doing so would require us to fold *all* two entry phi nodes in this block.
@@ -3938,11 +3927,10 @@ shouldFoldCondBranchesToCommonDestination(CondBrInst *BI, CondBrInst *PBI,
     // Speculate the 2nd condition unless the 1st is probably true.
     if (PBITrueProb.isUnknown() || PBITrueProb < Likely)
       return {{BI->getSuccessor(1), Instruction::And, true}};
-  } else if (PBI->getSuccessor(1) == BI->getSuccessor(0)) {
+  } else if ((PBI->getSuccessor(1) == BI->getSuccessor(0)) && (PBITrueProb.isUnknown() || PBITrueProb.getCompl() < Likely)) 
     // Speculate the 2nd condition unless the 1st is probably false.
-    if (PBITrueProb.isUnknown() || PBITrueProb.getCompl() < Likely)
-      return {{BI->getSuccessor(0), Instruction::Or, true}};
-  }
+    return {{BI->getSuccessor(0), Instruction::Or, true}};
+  
   return std::nullopt;
 }
 
@@ -4048,8 +4036,8 @@ static bool performBranchToCommonDestFolding(CondBrInst *BI, CondBrInst *PBI,
   PBI->setCondition(
       createLogicalOp(Builder, Opc, PBI->getCondition(), BICond, "or.cond"));
   if (!ProfcheckDisableMetadataFixes)
-    if (auto *SI = dyn_cast<SelectInst>(PBI->getCondition()))
-      if (!MDWeights.empty()) {
+    if (auto *SI = dyn_cast<SelectInst>(PBI->getCondition()); SI && (!MDWeights.empty()))
+      {
         assert(isSelectInRoleOfConjunctionOrDisjunction(SI));
         setFittedBranchWeights(*SI, {MDWeights[0], MDWeights[1]},
                                /*IsExpected=*/false, /*ElideAllZero=*/true);
@@ -4320,9 +4308,8 @@ static bool mergeConditionalStoreToAddress(
         continue;
       // If this is one the stores that we want to speculate out of this BB,
       // then don't count it's cost, consider it to be free.
-      if (auto *S = dyn_cast<StoreInst>(&I))
-        if (llvm::find(FreeStores, S))
-          continue;
+      if (auto *S = dyn_cast<StoreInst>(&I); S && (llvm::find(FreeStores, S)))
+        continue;
       // Else, we have a white-list of instructions that we are ak speculating.
       if (!isa<BinaryOperator>(I) && !isa<GetElementPtrInst>(I))
         return false; // Not in white-list - not worthwhile folding.
@@ -4597,19 +4584,19 @@ static bool SimplifyCondBranchToCondBranch(CondBrInst *PBI, CondBrInst *BI,
   // If this block ends with a branch instruction, and if there is a
   // predecessor that ends on a branch of the same condition, make
   // this conditional branch redundant.
-  if (PBI->getCondition() == BI->getCondition() &&
-      PBI->getSuccessor(0) != PBI->getSuccessor(1)) {
+  if ((PBI->getCondition() == BI->getCondition() &&
+      PBI->getSuccessor(0) != PBI->getSuccessor(1)) && (BB->getSinglePredecessor())) 
     // Okay, the outcome of this conditional branch is statically
     // knowable.  If this block had a single pred, handle specially, otherwise
     // foldCondBranchOnValueKnownInPredecessor() will handle it.
-    if (BB->getSinglePredecessor()) {
+    {
       // Turn this into a branch on constant.
       bool CondIsTrue = PBI->getSuccessor(0) == BB;
       BI->setCondition(
           ConstantInt::get(Type::getInt1Ty(BB->getContext()), CondIsTrue));
       return true; // Nuke the branch on constant.
     }
-  }
+  
 
   // If the previous block ended with a widenable branch, determine if reusing
   // the target block is profitable and legal.  This will have the effect of
@@ -6355,12 +6342,10 @@ getCaseResults(SwitchInst *SI, ConstantInt *CaseVal, BasicBlock *CaseDest,
       // no longer dominate all its uses.
       for (auto &Use : I.uses()) {
         User *User = Use.getUser();
-        if (Instruction *I = dyn_cast<Instruction>(User))
-          if (I->getParent() == CaseDest)
-            continue;
-        if (PHINode *Phi = dyn_cast<PHINode>(User))
-          if (Phi->getIncomingBlock(Use) == CaseDest)
-            continue;
+        if (Instruction *I = dyn_cast<Instruction>(User); I && (I->getParent() == CaseDest))
+          continue;
+        if (PHINode *Phi = dyn_cast<PHINode>(User); Phi && (Phi->getIncomingBlock(Use) == CaseDest))
+          continue;
         return false;
       }
 
@@ -8188,20 +8173,17 @@ bool SimplifyCFGOpt::simplifySwitch(SwitchInst *SI, IRBuilder<> &Builder) {
   if (isValueEqualityComparison(SI)) {
     // If we only have one predecessor, and if it is a branch on this value,
     // see if that predecessor totally determines the outcome of this switch.
-    if (BasicBlock *OnlyPred = BB->getSinglePredecessor())
-      if (simplifyEqualityComparisonWithOnlyPredecessor(SI, OnlyPred, Builder))
-        return requestResimplify();
+    if (BasicBlock *OnlyPred = BB->getSinglePredecessor(); OnlyPred && (simplifyEqualityComparisonWithOnlyPredecessor(SI, OnlyPred, Builder)))
+      return requestResimplify();
 
     Value *Cond = SI->getCondition();
-    if (SelectInst *Select = dyn_cast<SelectInst>(Cond))
-      if (simplifySwitchOnSelect(SI, Select))
-        return requestResimplify();
+    if (SelectInst *Select = dyn_cast<SelectInst>(Cond); Select && (simplifySwitchOnSelect(SI, Select)))
+      return requestResimplify();
 
     // If the block only contains the switch, see if we can fold the block
     // away into any preds.
-    if (SI == &*BB->begin())
-      if (foldValueComparisonIntoPredecessors(SI, Builder))
-        return requestResimplify();
+    if ((SI == &*BB->begin()) && (foldValueComparisonIntoPredecessors(SI, Builder)))
+      return requestResimplify();
   }
 
   // Try to transform the switch into an icmp and a branch.
@@ -8226,10 +8208,9 @@ bool SimplifyCFGOpt::simplifySwitch(SwitchInst *SI, IRBuilder<> &Builder) {
   // The conversion of switches to arithmetic or lookup table is disabled in
   // the early optimization pipeline, as it may lose information or make the
   // resulting code harder to analyze.
-  if (Options.ConvertSwitchToArithmetic || Options.ConvertSwitchToLookupTable)
-    if (simplifySwitchLookup(SI, Builder, DTU, DL, TTI,
-                             Options.ConvertSwitchToLookupTable))
-      return requestResimplify();
+  if ((Options.ConvertSwitchToArithmetic || Options.ConvertSwitchToLookupTable) && (simplifySwitchLookup(SI, Builder, DTU, DL, TTI,
+                             Options.ConvertSwitchToLookupTable)))
+    return requestResimplify();
 
   if (simplifySwitchOfPowersOfTwo(SI, Builder, DTU, DL, TTI))
     return requestResimplify();
@@ -8307,10 +8288,9 @@ bool SimplifyCFGOpt::simplifyIndirectBr(IndirectBrInst *IBI) {
       NewBranchWeights[I] += TargetWeight.find(IBI->getDestination(I))->second;
     setFittedBranchWeights(*IBI, NewBranchWeights, /*IsExpected=*/false);
   }
-  if (SelectInst *SI = dyn_cast<SelectInst>(IBI->getAddress())) {
-    if (simplifyIndirectBrOnSelect(IBI, SI))
-      return requestResimplify();
-  }
+  if (SelectInst *SI = dyn_cast<SelectInst>(IBI->getAddress()); SI && (simplifyIndirectBrOnSelect(IBI, SI))) 
+    return requestResimplify();
+  
   return Changed;
 }
 
@@ -8412,8 +8392,8 @@ bool SimplifyCFGOpt::simplifyUncondBranch(UncondBrInst *BI,
 
   // If the only instruction in the block is a seteq/setne comparison against a
   // constant, try to simplify the block.
-  if (ICmpInst *ICI = dyn_cast<ICmpInst>(I)) {
-    if (ICI->isEquality() && isa<ConstantInt>(ICI->getOperand(1))) {
+  if (ICmpInst *ICI = dyn_cast<ICmpInst>(I); ICI && (ICI->isEquality() && isa<ConstantInt>(ICI->getOperand(1)))) 
+    {
       ++I;
       if (I->isTerminator() &&
           tryToSimplifyUncondBranchWithICmpInIt(ICI, Builder))
@@ -8423,7 +8403,7 @@ bool SimplifyCFGOpt::simplifyUncondBranch(UncondBrInst *BI,
                                                       Builder))
         return true;
     }
-  }
+  
 
   // See if we can merge an empty landing pad block with another which is
   // equivalent.
@@ -8552,9 +8532,8 @@ bool SimplifyCFGOpt::simplifyCondBranch(CondBrInst *BI, IRBuilder<> &Builder) {
     // If we only have one predecessor, and if it is a branch on this value,
     // see if that predecessor totally determines the outcome of this
     // switch.
-    if (BasicBlock *OnlyPred = BB->getSinglePredecessor())
-      if (simplifyEqualityComparisonWithOnlyPredecessor(BI, OnlyPred, Builder))
-        return requestResimplify();
+    if (BasicBlock *OnlyPred = BB->getSinglePredecessor(); OnlyPred && (simplifyEqualityComparisonWithOnlyPredecessor(BI, OnlyPred, Builder)))
+      return requestResimplify();
 
     // This block must be empty, except for the setcond inst, if it exists.
     // Ignore pseudo intrinsics.
@@ -8562,9 +8541,8 @@ bool SimplifyCFGOpt::simplifyCondBranch(CondBrInst *BI, IRBuilder<> &Builder) {
       if (isa<PseudoProbeInst>(I) ||
           &I == cast<Instruction>(BI->getCondition()))
         continue;
-      if (&I == BI)
-        if (foldValueComparisonIntoPredecessors(BI, Builder))
-          return requestResimplify();
+      if ((&I == BI) && (foldValueComparisonIntoPredecessors(BI, Builder)))
+        return requestResimplify();
       break;
     }
   }
@@ -8635,19 +8613,17 @@ bool SimplifyCFGOpt::simplifyCondBranch(CondBrInst *BI, IRBuilder<> &Builder) {
       // If Successor #1 has multiple preds, we may be able to conditionally
       // execute Successor #0 if it branches to Successor #1.
       Instruction *Succ0TI = BI->getSuccessor(0)->getTerminator();
-      if (Succ0TI->getNumSuccessors() == 1 &&
-          Succ0TI->getSuccessor(0) == BI->getSuccessor(1))
-        if (speculativelyExecuteBB(BI, BI->getSuccessor(0)))
-          return requestResimplify();
+      if ((Succ0TI->getNumSuccessors() == 1 &&
+          Succ0TI->getSuccessor(0) == BI->getSuccessor(1)) && (speculativelyExecuteBB(BI, BI->getSuccessor(0))))
+        return requestResimplify();
     }
   } else if (BI->getSuccessor(1)->getSinglePredecessor()) {
     // If Successor #0 has multiple preds, we may be able to conditionally
     // execute Successor #1 if it branches to Successor #0.
     Instruction *Succ1TI = BI->getSuccessor(1)->getTerminator();
-    if (Succ1TI->getNumSuccessors() == 1 &&
-        Succ1TI->getSuccessor(0) == BI->getSuccessor(0))
-      if (speculativelyExecuteBB(BI, BI->getSuccessor(1)))
-        return requestResimplify();
+    if ((Succ1TI->getNumSuccessors() == 1 &&
+        Succ1TI->getSuccessor(0) == BI->getSuccessor(0)) && (speculativelyExecuteBB(BI, BI->getSuccessor(1))))
+      return requestResimplify();
   }
 
   // If this is a branch on something for which we know the constant value in
@@ -8658,18 +8634,14 @@ bool SimplifyCFGOpt::simplifyCondBranch(CondBrInst *BI, IRBuilder<> &Builder) {
 
   // Scan predecessor blocks for conditional branches.
   for (BasicBlock *Pred : predecessors(BB))
-    if (CondBrInst *PBI = dyn_cast<CondBrInst>(Pred->getTerminator()))
-      if (PBI != BI)
-        if (SimplifyCondBranchToCondBranch(PBI, BI, DTU, DL, TTI))
-          return requestResimplify();
+    if (CondBrInst *PBI = dyn_cast<CondBrInst>(Pred->getTerminator()); PBI && (PBI != BI) && (SimplifyCondBranchToCondBranch(PBI, BI, DTU, DL, TTI)))
+      return requestResimplify();
 
   // Look for diamond patterns.
   if (MergeCondStores)
     if (BasicBlock *PrevBB = allPredecessorsComeFromSameSource(BB))
-      if (CondBrInst *PBI = dyn_cast<CondBrInst>(PrevBB->getTerminator()))
-        if (PBI != BI)
-          if (mergeConditionalStores(PBI, BI, DTU, DL, TTI))
-            return requestResimplify();
+      if (CondBrInst *PBI = dyn_cast<CondBrInst>(PrevBB->getTerminator()); PBI && (PBI != BI) && (mergeConditionalStores(PBI, BI, DTU, DL, TTI)))
+        return requestResimplify();
 
   // Look for nested conditional branches.
   if (mergeNestedCondBranch(BI, DTU))
@@ -8736,8 +8708,8 @@ static bool passingValueIsAlwaysUndefined(Value *V, Instruction *I, bool PtrValu
       return false;
 
     // Look through GEPs. A load from a GEP derived from NULL is still undefined
-    if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(User))
-      if (GEP->getPointerOperand() == I) {
+    if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(User); GEP && (GEP->getPointerOperand() == I))
+      {
         // The type of GEP may differ from the type of base pointer.
         // Bail out on vector GEPs, as they are not handled by other checks.
         if (GEP->getType()->isVectorTy())
@@ -8771,24 +8743,21 @@ static bool passingValueIsAlwaysUndefined(Value *V, Instruction *I, bool PtrValu
     }
 
     // Load from null is undefined.
-    if (LoadInst *LI = dyn_cast<LoadInst>(User))
-      if (!LI->isVolatile())
-        return !NullPointerIsDefined(LI->getFunction(),
+    if (LoadInst *LI = dyn_cast<LoadInst>(User); LI && (!LI->isVolatile()))
+      return !NullPointerIsDefined(LI->getFunction(),
                                      LI->getPointerAddressSpace());
 
     // Store to null is undefined.
-    if (StoreInst *SI = dyn_cast<StoreInst>(User))
-      if (!SI->isVolatile())
-        return (!NullPointerIsDefined(SI->getFunction(),
+    if (StoreInst *SI = dyn_cast<StoreInst>(User); SI && (!SI->isVolatile()))
+      return (!NullPointerIsDefined(SI->getFunction(),
                                       SI->getPointerAddressSpace())) &&
                SI->getPointerOperand() == I;
 
     // llvm.assume(false/undef) always triggers immediate UB.
-    if (auto *Assume = dyn_cast<AssumeInst>(User)) {
+    if (auto *Assume = dyn_cast<AssumeInst>(User); Assume && (I == Assume->getArgOperand(0))) 
       // Ignore assume operand bundles.
-      if (I == Assume->getArgOperand(0))
-        return true;
-    }
+      return true;
+    
 
     if (auto *CB = dyn_cast<CallBase>(User)) {
       if (C->isNullValue() && NullPointerIsDefined(CB->getFunction()))
@@ -8933,11 +8902,9 @@ bool SimplifyCFGOpt::simplifyOnce(BasicBlock *BB) {
       !BB->getParent()->hasFnAttribute(Attribute::OptForFuzzing)) {
     // If there is a trivial two-entry PHI node in this basic block, and we can
     // eliminate it, do so now.
-    if (auto *PN = dyn_cast<PHINode>(BB->begin()))
-      if (PN->getNumIncomingValues() == 2)
-        if (foldTwoEntryPHINode(PN, TTI, DTU, Options.AC, DL,
-                                Options.SpeculateUnpredictables))
-          return true;
+    if (auto *PN = dyn_cast<PHINode>(BB->begin()); PN && (PN->getNumIncomingValues() == 2) && (foldTwoEntryPHINode(PN, TTI, DTU, Options.AC, DL,
+                                Options.SpeculateUnpredictables)))
+      return true;
   }
 
   IRBuilder<> Builder(BB);

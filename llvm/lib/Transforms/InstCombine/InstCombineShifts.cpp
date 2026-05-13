@@ -958,8 +958,8 @@ Instruction *InstCombinerImpl::FoldShiftByConstant(Value *Op0, Constant *C1,
     // If the operand is a bitwise operator with a constant RHS, and the
     // shift is the only use, we can pull it out of the shift.
     const APInt *Op0C;
-    if (match(Op0BO->getOperand(1), m_APInt(Op0C))) {
-      if (canShiftBinOpWithConstantRHS(I, Op0BO)) {
+    if ((match(Op0BO->getOperand(1), m_APInt(Op0C))) && (canShiftBinOpWithConstantRHS(I, Op0BO))) 
+      {
         Value *NewRHS =
             Builder.CreateBinOp(I.getOpcode(), Op0BO->getOperand(1), C1);
 
@@ -969,7 +969,7 @@ Instruction *InstCombinerImpl::FoldShiftByConstant(Value *Op0, Constant *C1,
 
         return BinaryOperator::Create(Op0BO->getOpcode(), NewShift, NewRHS);
       }
-    }
+    
   }
 
   // If we have a select that conditionally executes some binary operator,
@@ -1129,14 +1129,14 @@ static bool setShiftFlags(BinaryOperator &I, const SimplifyQuery &Q) {
       Changed = true;
     }
     // If we have more sign bits than maximum shift cnt we have nsw.
-    if (!I.hasNoSignedWrap()) {
-      if (MaxCnt < KnownAmt.countMinSignBits() ||
+    if ((!I.hasNoSignedWrap()) && (MaxCnt < KnownAmt.countMinSignBits() ||
           MaxCnt <
-              ComputeNumSignBits(I.getOperand(0), Q.DL, Q.AC, Q.CxtI, Q.DT)) {
+              ComputeNumSignBits(I.getOperand(0), Q.DL, Q.AC, Q.CxtI, Q.DT))) 
+      {
         I.setHasNoSignedWrap();
         Changed = true;
       }
-    }
+    
     return Changed;
   }
 
@@ -1665,14 +1665,14 @@ Instruction *InstCombinerImpl::visitLShr(BinaryOperator &I) {
     }
 
     // lshr (mul nsw (X, 2^N + 1)), N -> add nsw (X, lshr(X, N))
-    if (match(Op0, m_OneUse(m_NSWMul(m_Value(X), m_APInt(MulC))))) {
-      if (BitWidth > 2 && (*MulC - 1).isPowerOf2() &&
-          MulC->logBase2() == ShAmtC) {
+    if ((match(Op0, m_OneUse(m_NSWMul(m_Value(X), m_APInt(MulC))))) && (BitWidth > 2 && (*MulC - 1).isPowerOf2() &&
+          MulC->logBase2() == ShAmtC)) 
+      {
         return BinaryOperator::CreateNSWAdd(
             X, Builder.CreateLShr(X, ConstantInt::get(Ty, ShAmtC), "",
                                   I.isExact()));
       }
-    }
+    
 
     // Try to narrow bswap.
     // In the case where the shift amount equals the bitwidth difference, the

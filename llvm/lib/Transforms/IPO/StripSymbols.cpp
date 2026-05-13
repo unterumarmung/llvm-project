@@ -61,12 +61,11 @@ static void RemoveDeadConstant(Constant *C) {
   if (GlobalVariable *GV = dyn_cast<GlobalVariable>(C)) {
     if (!GV->hasLocalLinkage()) return;   // Don't delete non-static globals.
     GV->eraseFromParent();
-  } else if (!isa<Function>(C)) {
+  } else if ((!isa<Function>(C)) && (isa<StructType>(C->getType()) || isa<ArrayType>(C->getType()) ||
+        isa<VectorType>(C->getType()))) 
     // FIXME: Why does the type of the constant matter here?
-    if (isa<StructType>(C->getType()) || isa<ArrayType>(C->getType()) ||
-        isa<VectorType>(C->getType()))
-      C->destroyConstant();
-  }
+    C->destroyConstant();
+  
 
   // If the constant referenced anything, see if we can delete it as well.
   for (Constant *O : Operands)
@@ -124,15 +123,13 @@ static bool StripSymbolNames(Module &M, bool PreserveDbgInfo) {
   findUsedValues(M.getGlobalVariable("llvm.compiler.used"), llvmUsedValues);
 
   for (GlobalVariable &GV : M.globals()) {
-    if (GV.hasLocalLinkage() && !llvmUsedValues.contains(&GV))
-      if (!PreserveDbgInfo || !GV.getName().starts_with("llvm.dbg"))
-        GV.setName(""); // Internal symbols can't participate in linkage
+    if ((GV.hasLocalLinkage() && !llvmUsedValues.contains(&GV)) && (!PreserveDbgInfo || !GV.getName().starts_with("llvm.dbg")))
+      GV.setName(""); // Internal symbols can't participate in linkage
   }
 
   for (Function &I : M) {
-    if (I.hasLocalLinkage() && !llvmUsedValues.contains(&I))
-      if (!PreserveDbgInfo || !I.getName().starts_with("llvm.dbg"))
-        I.setName(""); // Internal symbols can't participate in linkage
+    if ((I.hasLocalLinkage() && !llvmUsedValues.contains(&I)) && (!PreserveDbgInfo || !I.getName().starts_with("llvm.dbg")))
+      I.setName(""); // Internal symbols can't participate in linkage
     if (auto *Symtab = I.getValueSymbolTable())
       StripSymtab(*Symtab, PreserveDbgInfo);
   }
@@ -308,9 +305,8 @@ PreservedAnalyses StripDeadCGProfilePass::run(Module &M,
 
   SmallVector<Metadata *, 16> ValidCGEdges;
   for (Metadata *Edge : CGProf->operands()) {
-    if (auto *EdgeAsNode = dyn_cast_or_null<MDNode>(Edge))
-      if (!llvm::is_contained(EdgeAsNode->operands(), nullptr))
-        ValidCGEdges.push_back(Edge);
+    if (auto *EdgeAsNode = dyn_cast_or_null<MDNode>(Edge); EdgeAsNode && (!llvm::is_contained(EdgeAsNode->operands(), nullptr)))
+      ValidCGEdges.push_back(Edge);
   }
   M.setModuleFlag(Module::Append, "CG Profile",
                   MDTuple::getDistinct(M.getContext(), ValidCGEdges));

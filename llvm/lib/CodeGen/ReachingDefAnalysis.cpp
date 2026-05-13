@@ -810,9 +810,8 @@ void ReachingDefInfo::collectKilledOperands(MachineInstr *MI,
   for (auto &MO : MI->operands()) {
     if (!isValidRegUse(MO))
       continue;
-    if (MachineInstr *Def = getMIOperand(MI, MO))
-      if (IsDead(Def, MO.getReg()))
-        collectKilledOperands(Def, Dead);
+    if (MachineInstr *Def = getMIOperand(MI, MO); Def && (IsDead(Def, MO.getReg())))
+      collectKilledOperands(Def, Dead);
   }
 }
 

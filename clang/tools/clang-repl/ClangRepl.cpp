@@ -115,14 +115,13 @@ static llvm::Error sanitizeOopArguments(const char *ArgV0) {
   // -oop-executor or -oop-executor-connect mode.
   //
   // FIXME: Remove once we enable remote slab allocation.
-  if (SlabAllocateSizeString != "") {
-    if (OOPExecutor.getNumOccurrences() ||
-        OOPExecutorConnect.getNumOccurrences())
-      return llvm::make_error<llvm::StringError>(
+  if ((SlabAllocateSizeString != "") && (OOPExecutor.getNumOccurrences() ||
+        OOPExecutorConnect.getNumOccurrences())) 
+    return llvm::make_error<llvm::StringError>(
           "-slab-allocate cannot be used with -oop-executor or "
           "-oop-executor-connect",
           llvm::inconvertibleErrorCode());
-  }
+  
 
   // Out-of-process executors require the ORC runtime. ORC Runtime Path
   // resolution is done in Interpreter.cpp.

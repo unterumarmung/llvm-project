@@ -80,9 +80,8 @@ public:
     // class. Other cases are more complicated because of how the base classes
     // & fields might interact, so we don't bother dealing with them.
     // TODO: Support other combinations of base classes and fields.
-    if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD))
-      if (CXXRD->field_empty() && CXXRD->getNumBases() == 1)
-        return visitRecord(CXXRD->bases().begin()->getType()->getAsRecordDecl(),
+    if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RD); CXXRD && (CXXRD->field_empty() && CXXRD->getNumBases() == 1))
+      return visitRecord(CXXRD->bases().begin()->getType()->getAsRecordDecl(),
                            PadMultiplier);
 
     auto &ASTContext = RD->getASTContext();

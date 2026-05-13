@@ -959,9 +959,8 @@ bool llvm::isEscapeSource(const Value *V) {
     return true;
 
   // Same for inttoptr constant expressions.
-  if (auto *CE = dyn_cast<ConstantExpr>(V))
-    if (CE->getOpcode() == Instruction::IntToPtr)
-      return true;
+  if (auto *CE = dyn_cast<ConstantExpr>(V); CE && (CE->getOpcode() == Instruction::IntToPtr))
+    return true;
 
   return false;
 }

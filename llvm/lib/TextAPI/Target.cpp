@@ -27,14 +27,14 @@ Expected<Target> Target::create(StringRef TargetValue) {
 #include "llvm/BinaryFormat/MachO.def"
                  .Default(PLATFORM_UNKNOWN);
 
-  if (Platform == PLATFORM_UNKNOWN) {
-    if (PlatformStr.starts_with("<") && PlatformStr.ends_with(">")) {
+  if ((Platform == PLATFORM_UNKNOWN) && (PlatformStr.starts_with("<") && PlatformStr.ends_with(">"))) 
+    {
       PlatformStr = PlatformStr.drop_front().drop_back();
       unsigned long long RawValue;
       if (!PlatformStr.getAsInteger(10, RawValue))
         Platform = (PlatformType)RawValue;
     }
-  }
+  
 
   return Target{Architecture, Platform};
 }

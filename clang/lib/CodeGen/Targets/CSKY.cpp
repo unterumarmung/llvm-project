@@ -123,10 +123,9 @@ ABIArgInfo CSKYABIInfo::classifyArgumentType(QualType Ty, int &ArgGPRsLeft,
     if (Size < XLen && Ty->isIntegralOrEnumerationType())
       return ABIArgInfo::getExtend(Ty);
 
-    if (const auto *EIT = Ty->getAs<BitIntType>()) {
-      if (EIT->getNumBits() < XLen)
-        return ABIArgInfo::getExtend(Ty);
-    }
+    if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && (EIT->getNumBits() < XLen)) 
+      return ABIArgInfo::getExtend(Ty);
+    
 
     return ABIArgInfo::getDirect();
   }

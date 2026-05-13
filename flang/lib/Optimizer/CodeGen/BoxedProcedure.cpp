@@ -380,8 +380,8 @@ private:
             // address_of generated inside a structured fir.if),
             // clone it into the entry block.
             mlir::Value funcValInEntry{funcVal};
-            if (auto *funcDef{funcVal.getDefiningOp()}) {
-              if (funcDef->getBlock() != &entryBlock) {
+            if (auto *funcDef{funcVal.getDefiningOp()}; funcDef && (funcDef->getBlock() != &entryBlock)) 
+              {
                 if (ancestorInEntry)
                   rewriter.setInsertionPoint(entryAncestor);
                 else
@@ -389,7 +389,7 @@ private:
                 auto *cloned{rewriter.clone(*funcDef)};
                 funcValInEntry = cloned->getResult(0);
               }
-            }
+            
 
             // The host link (closure pointer) must already be in the entry
             // block. In practice it is always either a function block argument
@@ -398,15 +398,15 @@ private:
             // producing incorrect code. Assert that invariant rather than
             // attempting a broken clone.
             mlir::Value hostValInEntry{embox.getHost()};
-            if (auto *hostDef{embox.getHost().getDefiningOp()}) {
-              if (hostDef->getBlock() != &entryBlock) {
+            if (auto *hostDef{embox.getHost().getDefiningOp()}; hostDef && (hostDef->getBlock() != &entryBlock)) 
+              {
                 mlir::emitError(loc,
                                 "host link value is not defined in the entry "
                                 "block of the host function; cannot hoist "
                                 "TrampolineInit safely");
                 return;
               }
-            }
+            
 
             // Insert Init/Adjust at the determined position.
             FirOpBuilder builder(rewriter, module);

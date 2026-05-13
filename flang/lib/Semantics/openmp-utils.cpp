@@ -868,11 +868,11 @@ bool IsValidInterveningCode(const parser::ExecutionPartConstruct &x) {
         parser::Unwrap<parser::WhereStmt>(action->u)) {
       return false;
     }
-    if (auto *assign{parser::Unwrap<parser::AssignmentStmt>(&action->u)}) {
-      if (!isScalar(std::get<parser::Variable>(assign->t))) {
+    if (auto *assign{parser::Unwrap<parser::AssignmentStmt>(&action->u)}; assign && (!isScalar(std::get<parser::Variable>(assign->t)))) 
+      {
         return false;
       }
-    }
+    
   } else { // Not ActionStmt
     if (parser::Unwrap<parser::LabelDoStmt>(exec->u) ||
         parser::Unwrap<parser::DoConstruct>(exec->u) ||
@@ -1395,11 +1395,11 @@ const LoopSequence *LoopSequence::getNestedDoConcurrent() const {
   // invalid loop construct, but it may also point to DO WHILE.
   for (auto &sequence : children()) {
     auto &owner{DEREF(sequence.entry_->owner)};
-    if (auto *loop{parser::Unwrap<parser::DoConstruct>(owner)}) {
-      if (loop->IsDoConcurrent()) {
+    if (auto *loop{parser::Unwrap<parser::DoConstruct>(owner)}; loop && (loop->IsDoConcurrent())) 
+      {
         return &sequence;
       }
-    }
+    
   }
   return nullptr;
 }
@@ -1743,11 +1743,11 @@ WithReason<bool> LoopSequence::isWellFormedSequence() const {
 
 WithReason<bool> LoopSequence::isWellFormedNest() const {
   // DO CONCURRENT is allowed at the top level in OpenMP 6.0+.
-  if (invalidIC_) {
-    if (!IsDoConcurrentLegal(version_) || !IsDoConcurrent(*invalidIC_)) {
+  if ((invalidIC_) && (!IsDoConcurrentLegal(version_) || !IsDoConcurrent(*invalidIC_))) 
+    {
       return {false, WhyNotWellFormed(*invalidIC_, false)};
     }
-  }
+  
   return {true, Reason()};
 }
 

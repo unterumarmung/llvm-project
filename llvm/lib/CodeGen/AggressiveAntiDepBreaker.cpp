@@ -255,10 +255,9 @@ void AggressiveAntiDepBreaker::GetPassthruRegs(
 static void AntiDepEdges(const SUnit *SU, std::vector<const SDep *> &Edges) {
   SmallSet<Register, 4> RegSet;
   for (const SDep &Pred : SU->Preds) {
-    if ((Pred.getKind() == SDep::Anti) || (Pred.getKind() == SDep::Output)) {
-      if (RegSet.insert(Pred.getReg()).second)
-        Edges.push_back(&Pred);
-    }
+    if (((Pred.getKind() == SDep::Anti) || (Pred.getKind() == SDep::Output)) && (RegSet.insert(Pred.getReg()).second)) 
+      Edges.push_back(&Pred);
+    
   }
 }
 

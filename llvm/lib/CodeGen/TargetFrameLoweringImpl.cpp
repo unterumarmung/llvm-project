@@ -163,9 +163,8 @@ bool TargetFrameLowering::isSafeForNoCSROpt(const Function &F) {
     return false;
   // Function should not be optimized as tail call.
   for (const User *U : F.users())
-    if (auto *CB = dyn_cast<CallBase>(U))
-      if (CB->isTailCall())
-        return false;
+    if (auto *CB = dyn_cast<CallBase>(U); CB && (CB->isTailCall()))
+      return false;
   return true;
 }
 

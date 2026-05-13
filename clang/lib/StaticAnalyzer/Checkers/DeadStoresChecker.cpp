@@ -300,13 +300,11 @@ public:
 
     const DeclRefExpr *DR;
 
-    if ((DR = dyn_cast<DeclRefExpr>(BRHS->getLHS()->IgnoreParenCasts())))
-      if (DR->getDecl() == VD)
-        return true;
+    if (((DR = dyn_cast<DeclRefExpr>(BRHS->getLHS()->IgnoreParenCasts()))) && (DR->getDecl() == VD))
+      return true;
 
-    if ((DR = dyn_cast<DeclRefExpr>(BRHS->getRHS()->IgnoreParenCasts())))
-      if (DR->getDecl() == VD)
-        return true;
+    if (((DR = dyn_cast<DeclRefExpr>(BRHS->getRHS()->IgnoreParenCasts()))) && (DR->getDecl() == VD))
+      return true;
 
     return false;
   }
@@ -335,16 +333,14 @@ public:
           QualType T = VD->getType();
           if (T.isVolatileQualified())
             return;
-          if (T->isPointerType() || T->isObjCObjectPointerType()) {
-            if (RHS->isNullPointerConstant(Ctx, Expr::NPC_ValueDependentIsNull))
-              return;
-          }
+          if ((T->isPointerType() || T->isObjCObjectPointerType()) && (RHS->isNullPointerConstant(Ctx, Expr::NPC_ValueDependentIsNull))) 
+            return;
+          
 
           // Special case: self-assignments.  These are often used to shut up
           //  "unused variable" compiler warnings.
-          if (const DeclRefExpr *RhsDR = dyn_cast<DeclRefExpr>(RHS))
-            if (VD == dyn_cast<VarDecl>(RhsDR->getDecl()))
-              return;
+          if (const DeclRefExpr *RhsDR = dyn_cast<DeclRefExpr>(RHS); RhsDR && (VD == dyn_cast<VarDecl>(RhsDR->getDecl())))
+            return;
 
           // Otherwise, issue a warning.
           DeadStoreKind dsk = Parents.isConsumedExpr(B)
@@ -535,9 +531,8 @@ void DeadStoresChecker::checkASTCodeBody(const Decl *D, AnalysisManager &mgr,
   // Proving that code in a template instantiation is "dead"
   // means proving that it is dead in all instantiations.
   // This same problem exists with -Wunreachable-code.
-  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
-    if (FD->isTemplateInstantiation())
-      return;
+  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D); FD && (FD->isTemplateInstantiation()))
+    return;
 
   if (LiveVariables *L = mgr.getAnalysis<LiveVariables>(D)) {
     CFG &cfg = *mgr.getCFG(D);

@@ -80,13 +80,13 @@ static bool DefinesComponentPointerTarget(
           },
           dataRef.u)}) {
     const Symbol &compSym{component->GetLastSymbol()};
-    if (IsPointer(compSym) ||
+    if ((IsPointer(compSym) ||
         (flags.test(DefinabilityFlag::AcceptAllocatable) &&
-            IsAllocatable(compSym))) {
-      if (!flags.test(DefinabilityFlag::PointerDefinition)) {
+            IsAllocatable(compSym))) && (!flags.test(DefinabilityFlag::PointerDefinition))) 
+      {
         return true;
       }
-    }
+    
     flags.reset(DefinabilityFlag::PointerDefinition);
     return DefinesComponentPointerTarget(component->base(), flags);
   } else {
@@ -350,8 +350,8 @@ std::optional<parser::Message> WhyNotDefinable(parser::CharBlock at,
               for (auto ref : FinalsForDerivedTypeInstantiation(*spec)) {
                 const Symbol &ultimate{ref->GetUltimate()};
                 anyElemental |= ultimate.attrs().test(Attr::ELEMENTAL);
-                if (const auto *subp{ultimate.detailsIf<SubprogramDetails>()}) {
-                  if (!subp->dummyArgs().empty()) {
+                if (const auto *subp{ultimate.detailsIf<SubprogramDetails>()}; subp && (!subp->dummyArgs().empty())) 
+                  {
                     if (const Symbol * arg{subp->dummyArgs()[0]}) {
                       const auto *object{arg->detailsIf<ObjectEntityDetails>()};
                       if (arg->Rank() == rank ||
@@ -360,7 +360,7 @@ std::optional<parser::Message> WhyNotDefinable(parser::CharBlock at,
                       }
                     }
                   }
-                }
+                
               }
               if (anyRankMatch && !anyElemental) {
                 if (!portabilityWarning &&

@@ -202,16 +202,16 @@ void ErrnoChecker::checkPreCall(const CallEvent &Call,
   // A list of special functions can be used that are allowed here without
   // generation of diagnostic. For now the only such case is 'errno' itself.
   // Probably 'strerror'?
-  if (CallF->isExternC() && CallF->isGlobal() &&
+  if ((CallF->isExternC() && CallF->isGlobal() &&
       C.getSourceManager().isInSystemHeader(CallF->getLocation()) &&
-      !isErrnoLocationCall(Call)) {
-    if (getErrnoState(C.getState()) == MustBeChecked) {
+      !isErrnoLocationCall(Call)) && (getErrnoState(C.getState()) == MustBeChecked)) 
+    {
       std::optional<ento::Loc> ErrnoLoc = getErrnoLoc(C.getState());
       assert(ErrnoLoc && "ErrnoLoc should exist if an errno state is set.");
       generateErrnoNotCheckedBug(C, setErrnoStateIrrelevant(C.getState()),
                                  ErrnoLoc->getAsRegion(), &Call);
     }
-  }
+  
 }
 
 ProgramStateRef ErrnoChecker::checkRegionChanges(

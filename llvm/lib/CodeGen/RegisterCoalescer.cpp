@@ -1040,9 +1040,8 @@ RegisterCoalescer::removeCopyByCommutingDef(const CoalescerPair &CP,
     for (LiveInterval::SubRange &SB : IntB.subranges()) {
       if ((SB.LaneMask & MaskA).any())
         continue;
-      if (LiveRange::Segment *S = SB.getSegmentContaining(CopyIdx))
-        if (S->start.getBaseIndex() == CopyIdx.getBaseIndex())
-          SB.removeSegment(*S, true);
+      if (LiveRange::Segment *S = SB.getSegmentContaining(CopyIdx); S && (S->start.getBaseIndex() == CopyIdx.getBaseIndex()))
+        SB.removeSegment(*S, true);
     }
   }
 
@@ -1995,11 +1994,10 @@ bool RegisterCoalescer::copyValueUndefInPredecessors(
     LiveRange &S, const MachineBasicBlock *MBB, LiveQueryResult SLRQ) {
   for (const MachineBasicBlock *Pred : MBB->predecessors()) {
     SlotIndex PredEnd = LIS->getMBBEndIdx(Pred);
-    if (VNInfo *V = S.getVNInfoAt(PredEnd.getPrevSlot())) {
+    if (VNInfo *V = S.getVNInfoAt(PredEnd.getPrevSlot()); V && (V->id != SLRQ.valueOutOrDead()->id)) 
       // If this is a self loop, we may be reading the same value.
-      if (V->id != SLRQ.valueOutOrDead()->id)
-        return false;
-    }
+      return false;
+    
   }
 
   return true;
@@ -2208,9 +2206,8 @@ bool RegisterCoalescer::joinCopy(
 
     // Try and see if we can partially eliminate the copy by moving the copy to
     // its predecessor.
-    if (!CP.isPartial() && !CP.isPhys())
-      if (removePartialRedundancy(CP, *CopyMI))
-        return true;
+    if ((!CP.isPartial() && !CP.isPhys()) && (removePartialRedundancy(CP, *CopyMI)))
+      return true;
 
     // Otherwise, we are unable to join the intervals.
     LLVM_DEBUG(dbgs() << "\tInterference!\n");
@@ -3459,9 +3456,8 @@ void JoinVals::pruneSubRegValues(LiveInterval &LI, LaneBitmask &ShrinkMask) {
 /// Check if any of the subranges of @p LI contain a definition at @p Def.
 static bool isDefInSubRange(LiveInterval &LI, SlotIndex Def) {
   for (LiveInterval::SubRange &SR : LI.subranges()) {
-    if (VNInfo *VNI = SR.Query(Def).valueOutOrDead())
-      if (VNI->def == Def)
-        return true;
+    if (VNInfo *VNI = SR.Query(Def).valueOutOrDead(); VNI && (VNI->def == Def))
+      return true;
   }
   return false;
 }
@@ -3802,11 +3798,10 @@ bool RegisterCoalescer::joinVirtRegs(CoalescerPair &CP) {
       //                ->
       //        %3:gr32.sub_16bit = some-inst
       // Test for subregister move:
-      if (CP.getSrcIdx() != 0 || CP.getDstIdx() != 0)
+      if ((CP.getSrcIdx() != 0 || CP.getDstIdx() != 0) && (PHIIt->second.SubReg && PHIIt->second.SubReg != CP.getSrcIdx()))
         // If we're moving between different subregisters, ignore this join.
         // The PHI will not get a location, dropping variable locations.
-        if (PHIIt->second.SubReg && PHIIt->second.SubReg != CP.getSrcIdx())
-          continue;
+        continue;
 
       // Update our tracking of where the PHI is.
       PHIIt->second.Reg = CP.getDstReg();

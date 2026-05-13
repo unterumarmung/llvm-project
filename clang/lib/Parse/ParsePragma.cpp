@@ -1847,9 +1847,8 @@ bool Parser::ParsePragmaAttributeSubjectMatchRuleSet(
     }
   } while (IsAny && TryConsumeToken(tok::comma));
 
-  if (IsAny)
-    if (AnyParens.consumeClose())
-      return true;
+  if ((IsAny) && (AnyParens.consumeClose()))
+    return true;
 
   return false;
 }
@@ -2035,12 +2034,12 @@ void Parser::HandlePragmaAttribute() {
     ParseMicrosoftDeclSpecs(Attrs);
   } else {
     Diag(Tok, diag::err_pragma_attribute_expected_attribute_syntax);
-    if (Tok.getIdentifierInfo()) {
+    if ((Tok.getIdentifierInfo()) && (ParsedAttr::getParsedKind(
+              Tok.getIdentifierInfo(), /*ScopeName=*/nullptr,
+              ParsedAttr::AS_GNU) != ParsedAttr::UnknownAttribute)) 
       // If we suspect that this is an attribute suggest the use of
       // '__attribute__'.
-      if (ParsedAttr::getParsedKind(
-              Tok.getIdentifierInfo(), /*ScopeName=*/nullptr,
-              ParsedAttr::AS_GNU) != ParsedAttr::UnknownAttribute) {
+      {
         SourceLocation InsertStartLoc = Tok.getLocation();
         ConsumeToken();
         if (Tok.is(tok::l_paren)) {
@@ -2053,7 +2052,7 @@ void Parser::HandlePragmaAttribute() {
             << FixItHint::CreateInsertion(InsertStartLoc, "__attribute__((")
             << FixItHint::CreateInsertion(Tok.getEndLoc(), "))");
       }
-    }
+    
     SkipToEnd();
     return;
   }

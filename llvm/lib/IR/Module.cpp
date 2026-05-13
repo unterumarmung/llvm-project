@@ -250,9 +250,8 @@ Function *Module::getFunction(StringRef Name) const {
 GlobalVariable *Module::getGlobalVariable(StringRef Name,
                                           bool AllowLocal) const {
   if (GlobalVariable *Result =
-      dyn_cast_or_null<GlobalVariable>(getNamedValue(Name)))
-    if (AllowLocal || !Result->hasLocalLinkage())
-      return Result;
+      dyn_cast_or_null<GlobalVariable>(getNamedValue(Name)); Result && (AllowLocal || !Result->hasLocalLinkage()))
+    return Result;
   return nullptr;
 }
 

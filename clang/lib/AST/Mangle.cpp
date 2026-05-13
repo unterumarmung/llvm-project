@@ -93,9 +93,8 @@ static CCMangling getCallingConvMangling(const ASTContext &Context,
   // On wasm, the argc/argv form of "main" is renamed so that the startup code
   // can call it with the correct function signature.
   if (Triple.isWasm())
-    if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(ND))
-      if (FD->isMain() && FD->getNumParams() == 2)
-        return CCM_WasmMainArgcArgv;
+    if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(ND); FD && (FD->isMain() && FD->getNumParams() == 2))
+      return CCM_WasmMainArgcArgv;
 
   if (!TI.shouldUseMicrosoftCCforMangling())
     return CCM_Other;
@@ -279,9 +278,8 @@ void MangleContext::mangleName(GlobalDecl GD, raw_ostream &Out) {
   }
   assert(!Proto->isVariadic());
   unsigned ArgWords = 0;
-  if (const CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(FD))
-    if (MD->isImplicitObjectMemberFunction())
-      ++ArgWords;
+  if (const CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(FD); MD && (MD->isImplicitObjectMemberFunction()))
+    ++ArgWords;
   uint64_t DefaultPtrWidth = TI.getPointerWidth(LangAS::Default);
   for (const auto &AT : Proto->param_types()) {
     // If an argument type is incomplete there is no way to get its size to
@@ -563,14 +561,11 @@ public:
     if (const auto *CD = dyn_cast_or_null<CXXConstructorDecl>(ND)) {
       Manglings.emplace_back(getMangledStructor(CD, Ctor_Base));
 
-      if (Ctx.getTargetInfo().getCXXABI().isItaniumFamily())
-        if (!CD->getParent()->isAbstract())
-          Manglings.emplace_back(getMangledStructor(CD, Ctor_Complete));
+      if ((Ctx.getTargetInfo().getCXXABI().isItaniumFamily()) && (!CD->getParent()->isAbstract()))
+        Manglings.emplace_back(getMangledStructor(CD, Ctor_Complete));
 
-      if (Ctx.getTargetInfo().getCXXABI().isMicrosoft())
-        if (CD->hasAttr<DLLExportAttr>() && CD->isDefaultConstructor())
-          if (!(hasDefaultCXXMethodCC(Ctx, CD) && CD->getNumParams() == 0))
-            Manglings.emplace_back(getMangledStructor(CD, Ctor_DefaultClosure));
+      if ((Ctx.getTargetInfo().getCXXABI().isMicrosoft()) && (CD->hasAttr<DLLExportAttr>() && CD->isDefaultConstructor()) && (!(hasDefaultCXXMethodCC(Ctx, CD) && CD->getNumParams() == 0)))
+        Manglings.emplace_back(getMangledStructor(CD, Ctor_DefaultClosure));
     } else if (const auto *DD = dyn_cast_or_null<CXXDestructorDecl>(ND)) {
       Manglings.emplace_back(getMangledStructor(DD, Dtor_Base));
       if (Ctx.getTargetInfo().getCXXABI().isItaniumFamily()) {

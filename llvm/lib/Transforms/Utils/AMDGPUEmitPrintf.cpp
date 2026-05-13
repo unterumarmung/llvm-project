@@ -353,11 +353,11 @@ static Value *processNonStringArg(Value *Arg, IRBuilder<> &Builder) {
   const DataLayout &DL = Builder.GetInsertBlock()->getDataLayout();
   auto Ty = Arg->getType();
 
-  if (auto IntTy = dyn_cast<IntegerType>(Ty)) {
-    if (IntTy->getBitWidth() < 64) {
+  if (auto IntTy = dyn_cast<IntegerType>(Ty); IntTy && (IntTy->getBitWidth() < 64)) 
+    {
       return Builder.CreateZExt(Arg, Builder.getInt64Ty());
     }
-  }
+  
 
   if (Ty->isFloatingPointTy()) {
     if (DL.getTypeAllocSize(Ty) < 8) {

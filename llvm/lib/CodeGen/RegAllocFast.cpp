@@ -564,15 +564,15 @@ bool RegAllocFastImpl::mayLiveOut(Register VirtReg) {
       return !MBB->succ_empty();
     }
 
-    if (SelfLoopDef) {
+    if ((SelfLoopDef) && (SelfLoopDef == &UseInst ||
+          !dominates(PosIndexes, *SelfLoopDef, UseInst))) 
       // Try to handle some simple cases to avoid spilling and reloading every
       // value inside a self looping block.
-      if (SelfLoopDef == &UseInst ||
-          !dominates(PosIndexes, *SelfLoopDef, UseInst)) {
+      {
         MayLiveAcrossBlocks.set(VirtReg.virtRegIndex());
         return true;
       }
-    }
+    
   }
 
   return false;
@@ -1096,8 +1096,8 @@ bool RegAllocFastImpl::defineVirtReg(MachineInstr &MI, unsigned OpNum,
   LiveRegMap::iterator LRI;
   bool New;
   std::tie(LRI, New) = LiveVirtRegs.insert(LiveReg(VirtReg));
-  if (New) {
-    if (!MO.isDead()) {
+  if ((New) && (!MO.isDead())) 
+    {
       if (mayLiveOut(VirtReg)) {
         LRI->LiveOut = true;
       } else {
@@ -1105,7 +1105,7 @@ bool RegAllocFastImpl::defineVirtReg(MachineInstr &MI, unsigned OpNum,
         MO.setIsDead(true);
       }
     }
-  }
+  
   if (LRI->PhysReg == 0) {
     allocVirtReg(MI, *LRI, 0, LookAtPhysRegUses);
   } else {
@@ -1390,12 +1390,12 @@ void RegAllocFastImpl::findAndSortDefOperandIndexes(const MachineInstr &MI) {
     if (!MO.isReg())
       continue;
     Register Reg = MO.getReg();
-    if (MO.readsReg()) {
-      if (Reg.isPhysical()) {
+    if ((MO.readsReg()) && (Reg.isPhysical())) 
+      {
         LLVM_DEBUG(dbgs() << "mark extra used: " << printReg(Reg, TRI) << '\n');
         markPhysRegUsedInInstr(Reg);
       }
-    }
+    
 
     if (MO.isDef() && Reg.isVirtual() && shouldAllocateRegister(Reg))
       DefOperandIndexes.push_back(I);

@@ -1028,12 +1028,12 @@ static bool GetFieldOffset(ASTContext &Ctx, const RecordDecl *RD,
       return true;
     }
 
-    if (const auto *RD = Field->getType()->getAsRecordDecl()) {
-      if (GetFieldOffset(Ctx, RD, FD, Offset)) {
+    if (const auto *RD = Field->getType()->getAsRecordDecl(); RD && (GetFieldOffset(Ctx, RD, FD, Offset))) 
+      {
         Offset += Layout.getFieldOffset(FieldNo);
         return true;
       }
-    }
+    
 
     if (!RD->isUnion())
       ++FieldNo;
@@ -2079,10 +2079,9 @@ static Value *EmitOverflowCheckedAbs(CodeGenFunction &CGF, const CallExpr *E,
   Value *ArgValue = CGF.EmitScalarExpr(E->getArg(0));
 
   // Try to eliminate overflow check.
-  if (const auto *VCI = dyn_cast<llvm::ConstantInt>(ArgValue)) {
-    if (!VCI->isMinSignedValue())
-      return EmitAbs(CGF, ArgValue, true);
-  }
+  if (const auto *VCI = dyn_cast<llvm::ConstantInt>(ArgValue); VCI && (!VCI->isMinSignedValue())) 
+    return EmitAbs(CGF, ArgValue, true);
+  
 
   SmallVector<SanitizerKind::SanitizerOrdinal, 1> Ordinals;
   SanitizerHandler CheckHandler;
@@ -3273,9 +3272,8 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
       SkippedChecks.clear(SanitizerKind::Alignment);
       SourceLocation Loc = Arg->getExprLoc();
       // Strip an implicit cast.
-      if (auto *CE = dyn_cast<ImplicitCastExpr>(Arg))
-        if (CE->getCastKind() == CK_BitCast)
-          Arg = CE->getSubExpr();
+      if (auto *CE = dyn_cast<ImplicitCastExpr>(Arg); CE && (CE->getCastKind() == CK_BitCast))
+        Arg = CE->getSubExpr();
       EmitTypeCheck(Kind, Loc, Val, Arg->getType(), A.getAlignment(),
                     SkippedChecks);
     }
@@ -6614,9 +6612,8 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
             XRayInstrKind::Custom))
       return RValue::getIgnored();
 
-    if (const auto *XRayAttr = CurFuncDecl->getAttr<XRayInstrumentAttr>())
-      if (XRayAttr->neverXRayInstrument() && !AlwaysEmitXRayCustomEvents())
-        return RValue::getIgnored();
+    if (const auto *XRayAttr = CurFuncDecl->getAttr<XRayInstrumentAttr>(); XRayAttr && (XRayAttr->neverXRayInstrument() && !AlwaysEmitXRayCustomEvents()))
+      return RValue::getIgnored();
 
     Function *F = CGM.getIntrinsic(Intrinsic::xray_customevent);
     auto FTy = F->getFunctionType();
@@ -6648,9 +6645,8 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
             XRayInstrKind::Typed))
       return RValue::getIgnored();
 
-    if (const auto *XRayAttr = CurFuncDecl->getAttr<XRayInstrumentAttr>())
-      if (XRayAttr->neverXRayInstrument() && !AlwaysEmitXRayTypedEvents())
-        return RValue::getIgnored();
+    if (const auto *XRayAttr = CurFuncDecl->getAttr<XRayInstrumentAttr>(); XRayAttr && (XRayAttr->neverXRayInstrument() && !AlwaysEmitXRayTypedEvents()))
+      return RValue::getIgnored();
 
     Function *F = CGM.getIntrinsic(Intrinsic::xray_typedevent);
     auto FTy = F->getFunctionType();
@@ -6767,14 +6763,14 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
       llvm::Type *PTy = FTy->getParamType(i);
       if (PTy != ArgValue->getType()) {
         // XXX - vector of pointers?
-        if (auto *PtrTy = dyn_cast<llvm::PointerType>(PTy)) {
-          if (PtrTy->getAddressSpace() !=
-              ArgValue->getType()->getPointerAddressSpace()) {
+        if (auto *PtrTy = dyn_cast<llvm::PointerType>(PTy); PtrTy && (PtrTy->getAddressSpace() !=
+              ArgValue->getType()->getPointerAddressSpace())) 
+          {
             ArgValue = Builder.CreateAddrSpaceCast(
                 ArgValue, llvm::PointerType::get(getLLVMContext(),
                                                  PtrTy->getAddressSpace()));
           }
-        }
+        
 
         // Cast vector type (e.g., v256i32) to x86_amx, this only happen
         // in amx intrinsics.
@@ -6797,13 +6793,13 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
 
     if (RetTy != V->getType()) {
       // XXX - vector of pointers?
-      if (auto *PtrTy = dyn_cast<llvm::PointerType>(RetTy)) {
-        if (PtrTy->getAddressSpace() != V->getType()->getPointerAddressSpace()) {
+      if (auto *PtrTy = dyn_cast<llvm::PointerType>(RetTy); PtrTy && (PtrTy->getAddressSpace() != V->getType()->getPointerAddressSpace())) 
+        {
           V = Builder.CreateAddrSpaceCast(
               V, llvm::PointerType::get(getLLVMContext(),
                                         PtrTy->getAddressSpace()));
         }
-      }
+      
 
       // Cast x86_amx to vector type (e.g., v256i32), this only happen
       // in amx intrinsics.

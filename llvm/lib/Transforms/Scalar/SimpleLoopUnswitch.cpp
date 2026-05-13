@@ -230,12 +230,11 @@ collectHomogenousInstGraphLoopInvariants(const Loop &L, Instruction &Root,
       // If not an instruction with the same opcode, nothing we can do.
       Instruction *OpI = dyn_cast<Instruction>(skipTrivialSelect(OpV));
 
-      if (OpI && ((IsRootAnd && match(OpI, m_LogicalAnd())) ||
-                  (IsRootOr  && match(OpI, m_LogicalOr())))) {
+      if ((OpI && ((IsRootAnd && match(OpI, m_LogicalAnd())) ||
+                  (IsRootOr  && match(OpI, m_LogicalOr())))) && (Visited.insert(OpI).second)) 
         // Visit this operand.
-        if (Visited.insert(OpI).second)
-          Worklist.push_back(OpI);
-      }
+        Worklist.push_back(OpI);
+      
     }
   } while (!Worklist.empty());
 
@@ -478,9 +477,8 @@ static void hoistLoopToNewParent(Loop &L, BasicBlock &Preheader,
   L.getExitBlocks(Exits);
   Loop *NewParentL = nullptr;
   for (auto *ExitBB : Exits)
-    if (Loop *ExitL = LI.getLoopFor(ExitBB))
-      if (!NewParentL || NewParentL->contains(ExitL))
-        NewParentL = ExitL;
+    if (Loop *ExitL = LI.getLoopFor(ExitBB); ExitL && (!NewParentL || NewParentL->contains(ExitL)))
+      NewParentL = ExitL;
 
   if (NewParentL == OldParentL)
     return;
@@ -616,14 +614,14 @@ static bool unswitchTrivialBranch(Loop &L, CondBrInst &BI, DominatorTree &DT,
   // be done when the exit block is along the true edge and the branch condition
   // is a graph of `or` operations, or the exit block is along the false edge
   // and the condition is a graph of `and` operations.
-  if (!FullUnswitch) {
-    if (ExitDirection ? !match(Cond, m_LogicalOr())
-                      : !match(Cond, m_LogicalAnd())) {
+  if ((!FullUnswitch) && (ExitDirection ? !match(Cond, m_LogicalOr())
+                      : !match(Cond, m_LogicalAnd()))) 
+    {
       LLVM_DEBUG(dbgs() << "   Branch condition is in improper form for "
                            "non-full unswitch!\n");
       return false;
     }
-  }
+  
 
   LLVM_DEBUG({
     dbgs() << "    unswitching trivial invariant conditions for: " << BI
@@ -1127,9 +1125,8 @@ static bool unswitchAllTrivialConditions(Loop &L, DominatorTree &DT,
     // volatile loads) in the part of the loop that the code *would* execute
     // without unswitching.
     if (MSSAU) // Possible early exit with MSSA
-      if (auto *Defs = MSSAU->getMemorySSA()->getBlockDefs(CurrentBB))
-        if (!isa<MemoryPhi>(*Defs->begin()) || (++Defs->begin() != Defs->end()))
-          return Changed;
+      if (auto *Defs = MSSAU->getMemorySSA()->getBlockDefs(CurrentBB); Defs && (!isa<MemoryPhi>(*Defs->begin()) || (++Defs->begin() != Defs->end())))
+        return Changed;
     if (llvm::any_of(*CurrentBB,
                      [](Instruction &I) { return I.mayHaveSideEffects(); }))
       return Changed;
@@ -1733,8 +1730,8 @@ deleteDeadClonedBlocks(Loop &L, ArrayRef<BasicBlock *> ExitBlocks,
   SmallVector<BasicBlock *, 16> DeadBlocks;
   for (BasicBlock *BB : llvm::concat<BasicBlock *const>(L.blocks(), ExitBlocks))
     for (const auto &VMap : VMaps)
-      if (BasicBlock *ClonedBB = cast_or_null<BasicBlock>(VMap->lookup(BB)))
-        if (!DT.isReachableFromEntry(ClonedBB)) {
+      if (BasicBlock *ClonedBB = cast_or_null<BasicBlock>(VMap->lookup(BB)); ClonedBB && (!DT.isReachableFromEntry(ClonedBB)))
+        {
           for (BasicBlock *SuccBB : successors(ClonedBB))
             SuccBB->removePredecessor(ClonedBB);
           DeadBlocks.push_back(ClonedBB);
@@ -1896,8 +1893,8 @@ static SmallPtrSet<const BasicBlock *, 16> recomputeLoopBlockSet(Loop &L,
     // loop structure to jump immediately across the entire nested loop.
     // Further, because it is in loop simplified form, we can directly jump
     // to its preheader afterward.
-    if (Loop *InnerL = LI.getLoopFor(BB))
-      if (InnerL != &L) {
+    if (Loop *InnerL = LI.getLoopFor(BB); InnerL && (InnerL != &L))
+      {
         assert(L.contains(InnerL) &&
                "Should not reach a loop *outside* this loop!");
         // The preheader is the only possible predecessor of the loop so
@@ -2098,9 +2095,8 @@ static bool rebuildLoopAfterUnswitch(Loop &L, ArrayRef<BasicBlock *> ExitBlocks,
     // opposed to a child loop) update the map to point to this exit loop. This
     // just updates a map and so the fact that the order is unstable is fine.
     for (auto *BB : NewExitLoopBlocks)
-      if (Loop *BBL = LI.getLoopFor(BB))
-        if (BBL == &L || !L.contains(BBL))
-          LI.changeLoopFor(BB, &ExitL);
+      if (Loop *BBL = LI.getLoopFor(BB); BBL && (BBL == &L || !L.contains(BBL)))
+        LI.changeLoopFor(BB, &ExitL);
 
     // We will remove the remaining unlooped blocks from this loop in the next
     // iteration or below.
@@ -2112,9 +2108,8 @@ static bool rebuildLoopAfterUnswitch(Loop &L, ArrayRef<BasicBlock *> ExitBlocks,
   for (; PrevExitL; PrevExitL = PrevExitL->getParentLoop())
     RemoveUnloopedBlocksFromLoop(*PrevExitL, UnloopedBlocks);
   for (auto *BB : UnloopedBlocks)
-    if (Loop *BBL = LI.getLoopFor(BB))
-      if (BBL == &L || !L.contains(BBL))
-        LI.changeLoopFor(BB, nullptr);
+    if (Loop *BBL = LI.getLoopFor(BB); BBL && (BBL == &L || !L.contains(BBL)))
+      LI.changeLoopFor(BB, nullptr);
 
   // Sink all the child loops whose headers are no longer in the loop set to
   // the parent (or to be top level loops). We reach into the loop and directly
@@ -2263,13 +2258,13 @@ static void unswitchNontrivialInvariants(
             PartiallyInvariant) &&
            "Only `or`, `and`, an `select`, partially invariant instructions "
            "can combine invariants being unswitched.");
-    if (!match(Cond, m_LogicalOr())) {
-      if (match(Cond, m_LogicalAnd()) ||
-          (PartiallyInvariant && !PartialIVInfo.KnownValue->isOneValue())) {
+    if ((!match(Cond, m_LogicalOr())) && (match(Cond, m_LogicalAnd()) ||
+          (PartiallyInvariant && !PartialIVInfo.KnownValue->isOneValue()))) 
+      {
         Direction = false;
         ClonedSucc = 1;
       }
-    }
+    
   }
 
   BasicBlock *RetainedSuccBB =

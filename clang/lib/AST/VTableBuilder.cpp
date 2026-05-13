@@ -1127,15 +1127,14 @@ void ItaniumVTableBuilder::ComputeThisAdjustments() {
       Overriders.getOverrider(MD, MethodInfo.BaseOffset);
 
     // Check if we need an adjustment at all.
-    if (MethodInfo.BaseOffsetInLayoutClass == Overrider.Offset) {
+    if ((MethodInfo.BaseOffsetInLayoutClass == Overrider.Offset) && (VTableThunks.lookup(VTableIndex).Return.isEmpty())) 
       // When a return thunk is needed by a derived class that overrides a
       // virtual base, gcc uses a virtual 'this' adjustment as well.
       // While the thunk itself might be needed by vtables in subclasses or
       // in construction vtables, there doesn't seem to be a reason for using
       // the thunk in this vtable. Still, we do so to match gcc.
-      if (VTableThunks.lookup(VTableIndex).Return.isEmpty())
-        continue;
-    }
+      continue;
+    
 
     ThisAdjustment ThisAdjustment =
       ComputeThisAdjustment(MD, MethodInfo.BaseOffsetInLayoutClass, Overrider);
@@ -1534,9 +1533,9 @@ void ItaniumVTableBuilder::AddMethods(
     // base. If this is the case, and the return type doesn't require adjustment
     // then we can just use the member function from the primary base.
     if (const CXXMethodDecl *OverriddenMD =
-          FindNearestOverriddenMethod(MD, PrimaryBases)) {
-      if (ComputeReturnAdjustmentBaseOffset(Context, MD,
-                                            OverriddenMD).isEmpty()) {
+          FindNearestOverriddenMethod(MD, PrimaryBases); OverriddenMD && (ComputeReturnAdjustmentBaseOffset(Context, MD,
+                                            OverriddenMD).isEmpty())) 
+      {
         VTables.setOriginalMethod(MD, OverriddenMD);
 
         // Replace the method info of the overridden method with our own
@@ -1584,7 +1583,7 @@ void ItaniumVTableBuilder::AddMethods(
 
         continue;
       }
-    }
+    
 
     if (MD->isImplicit())
       NewImplicitVirtualFunctions.push_back(MD);
@@ -1803,15 +1802,14 @@ ItaniumVTableBuilder::LayoutSecondaryVTables(BaseSubobject Base,
     if (!BaseDecl->isDynamicClass())
       continue;
 
-    if (isBuildingConstructorVTable()) {
+    if ((isBuildingConstructorVTable()) && (!BaseIsMorallyVirtual && !BaseDecl->getNumVBases())) 
       // Itanium C++ ABI 2.6.4:
       //   Some of the base class subobjects may not need construction virtual
       //   tables, which will therefore not be present in the construction
       //   virtual table group, even though the subobject virtual tables are
       //   present in the main virtual table group for the complete object.
-      if (!BaseIsMorallyVirtual && !BaseDecl->getNumVBases())
-        continue;
-    }
+      continue;
+    
 
     // Get the base offset of this base.
     CharUnits RelativeBaseOffset = Layout.getBaseClassOffset(BaseDecl);
@@ -1843,10 +1841,10 @@ void ItaniumVTableBuilder::DeterminePrimaryVirtualBases(
   const ASTRecordLayout &Layout = Context.getASTRecordLayout(RD);
 
   // Check if this base has a primary base.
-  if (const CXXRecordDecl *PrimaryBase = Layout.getPrimaryBase()) {
+  if (const CXXRecordDecl *PrimaryBase = Layout.getPrimaryBase(); PrimaryBase && (Layout.isPrimaryBaseVirtual())) 
 
     // Check if it's virtual.
-    if (Layout.isPrimaryBaseVirtual()) {
+    {
       bool IsPrimaryVirtualBase = true;
 
       if (isBuildingConstructorVTable()) {
@@ -1867,7 +1865,7 @@ void ItaniumVTableBuilder::DeterminePrimaryVirtualBases(
       if (IsPrimaryVirtualBase)
         PrimaryVirtualBases.insert(PrimaryBase);
     }
-  }
+  
 
   // Traverse bases, looking for more primary virtual bases.
   for (const auto &B : RD->bases()) {
@@ -3022,9 +3020,8 @@ static void GroupNewVirtualOverloads(
         std::make_pair(ND->getDeclName(), Groups.size()));
     if (Inserted)
       Groups.push_back(MethodGroup());
-    if (const auto *MD = dyn_cast<CXXMethodDecl>(ND))
-      if (MicrosoftVTableContext::hasVtableSlot(MD))
-        Groups[J->second].push_back(MD->getCanonicalDecl());
+    if (const auto *MD = dyn_cast<CXXMethodDecl>(ND); MD && (MicrosoftVTableContext::hasVtableSlot(MD)))
+      Groups[J->second].push_back(MD->getCanonicalDecl());
   }
 
   for (const MethodGroup &Group : Groups)

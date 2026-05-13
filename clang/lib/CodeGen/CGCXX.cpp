@@ -254,14 +254,13 @@ llvm::FunctionCallee CodeGenModule::getAddrAndTypeOfCXXStructor(
     bool DontDefer, ForDefinition_t IsForDefinition) {
   auto *MD = cast<CXXMethodDecl>(GD.getDecl());
 
-  if (isa<CXXDestructorDecl>(MD)) {
+  if ((isa<CXXDestructorDecl>(MD)) && (getTarget().getCXXABI().isMicrosoft() &&
+        GD.getDtorType() == Dtor_Complete &&
+        MD->getParent()->getNumVBases() == 0)) 
     // Always alias equivalent complete destructors to base destructors in the
     // MS ABI.
-    if (getTarget().getCXXABI().isMicrosoft() &&
-        GD.getDtorType() == Dtor_Complete &&
-        MD->getParent()->getNumVBases() == 0)
-      GD = GD.getWithDtorType(Dtor_Base);
-  }
+    GD = GD.getWithDtorType(Dtor_Base);
+  
 
   if (!FnType) {
     if (!FnInfo)

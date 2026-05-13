@@ -182,9 +182,8 @@ protected:
 
     // Assume no aliasing if both values are function arguments and any of them
     // have restrict attr.
-    if (isFuncArg(lhs) && isFuncArg(rhs))
-      if (isRestrict(lhs) || isRestrict(rhs))
-        return AliasResult::NoAlias;
+    if ((isFuncArg(lhs) && isFuncArg(rhs)) && (isRestrict(lhs) || isRestrict(rhs)))
+      return AliasResult::NoAlias;
 
     return LocalAliasAnalysis::aliasImpl(lhs, rhs);
   }

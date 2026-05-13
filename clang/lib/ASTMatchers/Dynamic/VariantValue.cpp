@@ -148,12 +148,12 @@ public:
     for (size_t i = 0, e = Matchers.size(); i != e; ++i) {
       bool IsExactMatch;
       if (Ops.canConstructFrom(Matchers[i], IsExactMatch)) {
-        if (Found) {
-          if (FoundIsExact) {
+        if ((Found) && (FoundIsExact)) 
+          {
             assert(!IsExactMatch && "We should not have two exact matches.");
             continue;
           }
-        }
+        
         Found = &Matchers[i];
         FoundIsExact = IsExactMatch;
         ++NumFound;

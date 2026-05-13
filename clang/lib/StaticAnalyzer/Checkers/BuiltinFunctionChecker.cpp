@@ -331,13 +331,12 @@ bool BuiltinFunctionChecker::evalCall(const CallEvent &Call,
       V = SVB.makeIntVal(Result);
     }
 
-    if (FD->getBuiltinID() == Builtin::BI__builtin_constant_p) {
+    if ((FD->getBuiltinID() == Builtin::BI__builtin_constant_p) && (V.isUnknown())) 
       // If we didn't manage to figure out if the value is constant or not,
       // it is safe to assume that it's not constant and unsafe to assume
       // that it's constant.
-      if (V.isUnknown())
-        V = SVB.makeIntVal(0, CE->getType());
-    }
+      V = SVB.makeIntVal(0, CE->getType());
+    
 
     C.addTransition(state->BindExpr(CE, LCtx, V));
     return true;

@@ -544,11 +544,10 @@ ParseResult spirv::ConstantOp::parse(OpAsmParser &parser,
       return failure();
   }
 
-  if (isa<TensorArmType>(type)) {
-    if (parser.parseOptionalColon().succeeded())
-      if (parser.parseType(type))
+  if ((isa<TensorArmType>(type)) && (parser.parseOptionalColon().succeeded())) 
+    if (parser.parseType(type))
         return failure();
-  }
+  
 
   return parser.addTypeToList(type, result.types);
 }

@@ -612,11 +612,10 @@ static void printFileSectionSizes(StringRef file) {
               MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(o);
               if (OutputFormat == sysv)
                 outs() << o->getFileName() << "  :\n";
-              else if (MachO && OutputFormat == darwin) {
-                if (MoreThanOneFile || ArchFlags.size() > 1)
-                  outs() << o->getFileName() << " (for architecture "
+              else if ((MachO && OutputFormat == darwin) && (MoreThanOneFile || ArchFlags.size() > 1)) 
+                outs() << o->getFileName() << " (for architecture "
                          << I->getArchFlagName() << "): \n";
-              }
+              
               printObjectSectionSizes(o);
               if (OutputFormat == berkeley) {
                 if (!MachO || MoreThanOneFile || ArchFlags.size() > 1)
@@ -702,11 +701,10 @@ static void printFileSectionSizes(StringRef file) {
             MachOObjectFile *MachO = dyn_cast<MachOObjectFile>(o);
             if (OutputFormat == sysv)
               outs() << o->getFileName() << "  :\n";
-            else if (MachO && OutputFormat == darwin) {
-              if (MoreThanOneFile)
-                outs() << o->getFileName() << " (for architecture "
+            else if ((MachO && OutputFormat == darwin) && (MoreThanOneFile)) 
+              outs() << o->getFileName() << " (for architecture "
                        << I->getArchFlagName() << "):\n";
-            }
+            
             printObjectSectionSizes(o);
             if (OutputFormat == berkeley) {
               if (!MachO || MoreThanOneFile)

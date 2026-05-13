@@ -239,11 +239,10 @@ bool GISelAddressing::instMayAlias(const MachineInstr &MI,
 
   // If one operation reads from invariant memory, and the other may store, they
   // cannot alias.
-  if (MUC0.MMO && MUC1.MMO) {
-    if ((MUC0.MMO->isInvariant() && MUC1.MMO->isStore()) ||
-        (MUC1.MMO->isInvariant() && MUC0.MMO->isStore()))
-      return false;
-  }
+  if ((MUC0.MMO && MUC1.MMO) && ((MUC0.MMO->isInvariant() && MUC1.MMO->isStore()) ||
+        (MUC1.MMO->isInvariant() && MUC0.MMO->isStore()))) 
+    return false;
+  
 
   // If NumBytes is scalable and offset is not 0, conservatively return may
   // alias

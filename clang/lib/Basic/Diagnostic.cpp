@@ -622,10 +622,9 @@ void DiagnosticsEngine::Report(Level DiagLevel, const Diagnostic &Info) {
   assert(!getDiagnosticIDs()->isTrapDiag(Info.getID()) &&
          "Trap diagnostics should not be consumed by the DiagnosticsEngine");
   Client->HandleDiagnostic(DiagLevel, Info);
-  if (Client->IncludeInDiagnosticCounts()) {
-    if (DiagLevel == Warning)
-      ++NumWarnings;
-  }
+  if ((Client->IncludeInDiagnosticCounts()) && (DiagLevel == Warning)) 
+    ++NumWarnings;
+  
 }
 
 /// ProcessDiag - This is the method used to report a diagnostic that is

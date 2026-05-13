@@ -41,9 +41,8 @@ bool ProvenanceAnalysis::relatedSelect(const SelectInst *A,
                                        const Value *B) {
   // If the values are Selects with the same condition, we can do a more precise
   // check: just check for relations between the values on corresponding arms.
-  if (const SelectInst *SB = dyn_cast<SelectInst>(B))
-    if (A->getCondition() == SB->getCondition())
-      return related(A->getTrueValue(), SB->getTrueValue()) ||
+  if (const SelectInst *SB = dyn_cast<SelectInst>(B); SB && (A->getCondition() == SB->getCondition()))
+    return related(A->getTrueValue(), SB->getTrueValue()) ||
              related(A->getFalseValue(), SB->getFalseValue());
 
   // Check both arms of the Select node individually.
@@ -55,8 +54,8 @@ bool ProvenanceAnalysis::relatedPHI(const PHINode *A,
   // If the values are PHIs in the same block, we can do a more precise as well
   // as efficient check: just check for relations between the values on
   // corresponding edges.
-  if (const PHINode *PNB = dyn_cast<PHINode>(B))
-    if (PNB->getParent() == A->getParent()) {
+  if (const PHINode *PNB = dyn_cast<PHINode>(B); PNB && (PNB->getParent() == A->getParent()))
+    {
       for (unsigned i = 0, e = A->getNumIncomingValues(); i != e; ++i)
         if (related(A->getIncomingValue(i),
                     PNB->getIncomingValueForBlock(A->getIncomingBlock(i))))
@@ -138,11 +137,10 @@ bool ProvenanceAnalysis::relatedCheck(const Value *A, const Value *B) {
       // Both pointers are identified and escapes aren't an evident problem.
       return false;
     }
-  } else if (BIsIdentified) {
+  } else if ((BIsIdentified) && (isa<LoadInst>(A))) 
     // Check for an obvious escape.
-    if (isa<LoadInst>(A))
-      return IsStoredObjCPointer(B);
-  }
+    return IsStoredObjCPointer(B);
+  
 
    // Special handling for PHI and Select.
   if (const PHINode *PN = dyn_cast<PHINode>(A))

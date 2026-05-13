@@ -166,13 +166,13 @@ bool CanonicalizeFreezeInLoopsImpl::run() {
 
     Info.StepValIdx = Info.StepInst->getOperand(0) == &PHI;
     Value *StepV = Info.StepInst->getOperand(Info.StepValIdx);
-    if (auto *StepI = dyn_cast<Instruction>(StepV)) {
-      if (L->contains(StepI->getParent())) {
+    if (auto *StepI = dyn_cast<Instruction>(StepV); StepI && (L->contains(StepI->getParent()))) 
+      {
         // The step value is inside the loop. Freezing step value will introduce
         // another freeze into the loop, so skip this PHI.
         continue;
       }
-    }
+    
 
     auto Visit = [&](User *U) {
       if (auto *FI = dyn_cast<FreezeInst>(U)) {

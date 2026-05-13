@@ -1398,9 +1398,9 @@ bool MasmParser::parsePrimaryExpr(const MCExpr *&Res, SMLoc &EndLoc,
   case AsmToken::At:
   case AsmToken::Identifier: {
     StringRef Identifier;
-    if (parseIdentifier(Identifier)) {
+    if ((parseIdentifier(Identifier)) && (getTok().is(AsmToken::Dollar))) 
       // We may have failed but $ may be a valid token.
-      if (getTok().is(AsmToken::Dollar)) {
+      {
         if (Lexer.getMAI().getDollarIsPC()) {
           Lex();
           // This is a '$' reference, which references the current PC.  Emit a
@@ -1413,7 +1413,7 @@ bool MasmParser::parsePrimaryExpr(const MCExpr *&Res, SMLoc &EndLoc,
         }
         return Error(FirstTokenLoc, "invalid token in expression");
       }
-    }
+    
     // Parse named bitwise negation.
     if (Identifier.equals_insensitive("not")) {
       if (parsePrimaryExpr(Res, EndLoc, nullptr))
@@ -5003,12 +5003,12 @@ bool MasmParser::parseDirectiveEnd(SMLoc DirectiveLoc) {
 /// parseDirectiveError
 ///   ::= .err [message]
 bool MasmParser::parseDirectiveError(SMLoc DirectiveLoc) {
-  if (!TheCondStack.empty()) {
-    if (TheCondStack.back().Ignore) {
+  if ((!TheCondStack.empty()) && (TheCondStack.back().Ignore)) 
+    {
       eatToEndOfStatement();
       return false;
     }
-  }
+  
 
   std::string Message = ".err directive invoked in source file";
   if (Lexer.isNot(AsmToken::EndOfStatement))
@@ -5021,12 +5021,12 @@ bool MasmParser::parseDirectiveError(SMLoc DirectiveLoc) {
 /// parseDirectiveErrorIfb
 ///   ::= .errb textitem[, message]
 bool MasmParser::parseDirectiveErrorIfb(SMLoc DirectiveLoc, bool ExpectBlank) {
-  if (!TheCondStack.empty()) {
-    if (TheCondStack.back().Ignore) {
+  if ((!TheCondStack.empty()) && (TheCondStack.back().Ignore)) 
+    {
       eatToEndOfStatement();
       return false;
     }
-  }
+  
 
   std::string Text;
   if (parseTextItem(Text))
@@ -5049,12 +5049,12 @@ bool MasmParser::parseDirectiveErrorIfb(SMLoc DirectiveLoc, bool ExpectBlank) {
 ///   ::= .errdef name[, message]
 bool MasmParser::parseDirectiveErrorIfdef(SMLoc DirectiveLoc,
                                           bool ExpectDefined) {
-  if (!TheCondStack.empty()) {
-    if (TheCondStack.back().Ignore) {
+  if ((!TheCondStack.empty()) && (TheCondStack.back().Ignore)) 
+    {
       eatToEndOfStatement();
       return false;
     }
-  }
+  
 
   bool IsDefined = false;
   MCRegister Reg;
@@ -5093,12 +5093,12 @@ bool MasmParser::parseDirectiveErrorIfdef(SMLoc DirectiveLoc,
 ///   ::= .erridn textitem, textitem[, message]
 bool MasmParser::parseDirectiveErrorIfidn(SMLoc DirectiveLoc, bool ExpectEqual,
                                           bool CaseInsensitive) {
-  if (!TheCondStack.empty()) {
-    if (TheCondStack.back().Ignore) {
+  if ((!TheCondStack.empty()) && (TheCondStack.back().Ignore)) 
+    {
       eatToEndOfStatement();
       return false;
     }
-  }
+  
 
   std::string String1, String2;
 
@@ -5152,12 +5152,12 @@ bool MasmParser::parseDirectiveErrorIfidn(SMLoc DirectiveLoc, bool ExpectEqual,
 /// parseDirectiveErrorIfe
 ///   ::= .erre expression[, message]
 bool MasmParser::parseDirectiveErrorIfe(SMLoc DirectiveLoc, bool ExpectZero) {
-  if (!TheCondStack.empty()) {
-    if (TheCondStack.back().Ignore) {
+  if ((!TheCondStack.empty()) && (TheCondStack.back().Ignore)) 
+    {
       eatToEndOfStatement();
       return false;
     }
-  }
+  
 
   int64_t ExprValue;
   if (parseAbsoluteExpression(ExprValue))

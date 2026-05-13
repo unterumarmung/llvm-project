@@ -343,9 +343,9 @@ bool SafeStack::IsSafeStackAlloca(const Value *AllocaPtr, uint64_t AllocaSize) {
         // the function being called.
         auto B = CS.arg_begin(), E = CS.arg_end();
         for (const auto *A = B; A != E; ++A)
-          if (A->get() == V)
-            if (!(CS.doesNotCapture(A - B) && (CS.doesNotAccessMemory(A - B) ||
-                                               CS.doesNotAccessMemory()))) {
+          if ((A->get() == V) && (!(CS.doesNotCapture(A - B) && (CS.doesNotAccessMemory(A - B) ||
+                                               CS.doesNotAccessMemory()))))
+            {
               LLVM_DEBUG(dbgs() << "[SafeStack] Unsafe alloca: " << *AllocaPtr
                                 << "\n            unsafe call: " << *I << "\n");
               return false;
@@ -409,11 +409,10 @@ void SafeStack::findInsts(Function &F,
     } else if (auto LP = dyn_cast<LandingPadInst>(&I)) {
       // Exception landing pads require stack restore.
       StackRestorePoints.push_back(LP);
-    } else if (auto II = dyn_cast<IntrinsicInst>(&I)) {
-      if (II->getIntrinsicID() == Intrinsic::gcroot)
-        report_fatal_error(
+    } else if (auto II = dyn_cast<IntrinsicInst>(&I); II && (II->getIntrinsicID() == Intrinsic::gcroot)) 
+      report_fatal_error(
             "gcroot intrinsic not compatible with safestack attribute");
-    }
+    
   }
   for (Argument &Arg : F.args()) {
     if (!Arg.hasByValAttr())

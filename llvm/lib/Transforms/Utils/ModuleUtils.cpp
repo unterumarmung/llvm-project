@@ -306,12 +306,11 @@ llvm::getOrCreateSanitizerCtorAndInitFunctions(
     StringRef VersionCheckName, bool Weak) {
   assert(!CtorName.empty() && "Expected ctor function name");
 
-  if (Function *Ctor = M.getFunction(CtorName))
+  if (Function *Ctor = M.getFunction(CtorName); Ctor && (Ctor->arg_empty() ||
+        Ctor->getReturnType() == Type::getVoidTy(M.getContext())))
     // FIXME: Sink this logic into the module, similar to the handling of
     // globals. This will make moving to a concurrent model much easier.
-    if (Ctor->arg_empty() ||
-        Ctor->getReturnType() == Type::getVoidTy(M.getContext()))
-      return {Ctor,
+    return {Ctor,
               declareSanitizerInitFunction(M, InitName, InitArgTypes, Weak)};
 
   Function *Ctor;

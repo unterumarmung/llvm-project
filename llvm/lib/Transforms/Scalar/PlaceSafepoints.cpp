@@ -387,10 +387,9 @@ PreservedAnalyses PlaceSafepointsPass::run(Function &F,
 static bool needsStatepoint(CallBase *Call, const TargetLibraryInfo &TLI) {
   if (callsGCLeafFunction(Call, TLI))
     return false;
-  if (auto *CI = dyn_cast<CallInst>(Call)) {
-    if (CI->isInlineAsm())
-      return false;
-  }
+  if (auto *CI = dyn_cast<CallInst>(Call); CI && (CI->isInlineAsm())) 
+    return false;
+  
 
   return !(isa<GCStatepointInst>(Call) || isa<GCRelocateInst>(Call) ||
            isa<GCResultInst>(Call));
@@ -419,15 +418,14 @@ static bool containsUnconditionalCallSafepoint(Loop *L, BasicBlock *Header,
   BasicBlock *Current = Pred;
   while (true) {
     for (Instruction &I : *Current) {
-      if (auto *Call = dyn_cast<CallBase>(&I))
+      if (auto *Call = dyn_cast<CallBase>(&I); Call && (needsStatepoint(Call, TLI)))
         // Note: Technically, needing a safepoint isn't quite the right
         // condition here.  We should instead be checking if the target method
         // has an
         // unconditional poll. In practice, this is only a theoretical concern
         // since we don't have any methods with conditional-only safepoint
         // polls.
-        if (needsStatepoint(Call, TLI))
-          return true;
+        return true;
     }
 
     if (Current == Header)

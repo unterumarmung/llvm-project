@@ -104,9 +104,8 @@ void LoopSafetyInfo::computeBlockColors(const Loop *CurLoop) {
   // personality routine.
   Function *Fn = CurLoop->getHeader()->getParent();
   if (Fn->hasPersonalityFn())
-    if (Constant *PersonalityFn = Fn->getPersonalityFn())
-      if (isScopedEHPersonality(classifyEHPersonality(PersonalityFn)))
-        BlockColors = colorEHFunclets(*Fn);
+    if (Constant *PersonalityFn = Fn->getPersonalityFn(); PersonalityFn && (isScopedEHPersonality(classifyEHPersonality(PersonalityFn))))
+      BlockColors = colorEHFunclets(*Fn);
 }
 
 /// Return true if we can prove that the given ExitBlock is not reached on the
@@ -236,8 +235,9 @@ bool LoopSafetyInfo::allLoopPathsLeadToBlock(const Loop *CurLoop,
       continue;
 
     for (const auto *Succ : successors(Pred))
-      if (CheckedSuccessors.insert(Succ).second &&
-          Succ != BB && !Predecessors.count(Succ))
+      if ((CheckedSuccessors.insert(Succ).second &&
+          Succ != BB && !Predecessors.count(Succ)) && (CurLoop->contains(Succ) ||
+            !CanProveNotTakenFirstIteration(Succ, DT, CurLoop)))
         // By discharging conditions that are not executed on the 1st iteration,
         // we guarantee that *at least* on the first iteration all paths from
         // header that *may* execute will lead us to the block of interest. So
@@ -252,9 +252,7 @@ bool LoopSafetyInfo::allLoopPathsLeadToBlock(const Loop *CurLoop,
         // TODO: If we somehow know the number of iterations in loop, the same
         // check may be done for any arbitrary N-th iteration as long as N is
         // not greater than minimum number of iterations in this loop.
-        if (CurLoop->contains(Succ) ||
-            !CanProveNotTakenFirstIteration(Succ, DT, CurLoop))
-          return false;
+        return false;
   }
 
   // All predecessors can only lead us to BB.

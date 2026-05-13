@@ -26,20 +26,18 @@ extractOperandsFromModule(Oracle &O, ReducerWorkItem &WorkItem,
     for (auto &I : instructions(&F)) {
       if (PHINode *Phi = dyn_cast<PHINode>(&I)) {
         for (auto &Op : Phi->incoming_values()) {
-          if (Value *Reduced = ReduceValue(Op)) {
-            if (!O.shouldKeep())
-              Phi->setIncomingValueForBlock(Phi->getIncomingBlock(Op), Reduced);
-          }
+          if (Value *Reduced = ReduceValue(Op); Reduced && (!O.shouldKeep())) 
+            Phi->setIncomingValueForBlock(Phi->getIncomingBlock(Op), Reduced);
+          
         }
 
         continue;
       }
 
       for (auto &Op : I.operands()) {
-        if (Value *Reduced = ReduceValue(Op)) {
-          if (!O.shouldKeep())
-            Op.set(Reduced);
-        }
+        if (Value *Reduced = ReduceValue(Op); Reduced && (!O.shouldKeep())) 
+          Op.set(Reduced);
+        
       }
     }
   }
@@ -69,10 +67,9 @@ static bool shouldReduceOperand(Use &Op) {
   // indexes)
   if (isa<GEPOperator>(Op.getUser()))
     return false;
-  if (auto *CB = dyn_cast<CallBase>(Op.getUser())) {
-    if (&CB->getCalledOperandUse() == &Op)
-      return false;
-  }
+  if (auto *CB = dyn_cast<CallBase>(Op.getUser()); CB && (&CB->getCalledOperandUse() == &Op)) 
+    return false;
+  
   // lifetime intrinsic argument must be an alloca.
   if (isa<LifetimeIntrinsic>(Op.getUser()))
     return false;
@@ -134,9 +131,8 @@ void llvm::reduceOperandsZeroDeltaPass(Oracle &O, ReducerWorkItem &WorkItem) {
       return nullptr;
 
     // Don't duplicate an existing switch case.
-    if (auto *IntTy = dyn_cast<IntegerType>(Op->getType()))
-      if (switchCaseExists(Op, ConstantInt::get(IntTy, 0)))
-        return nullptr;
+    if (auto *IntTy = dyn_cast<IntegerType>(Op->getType()); IntTy && (switchCaseExists(Op, ConstantInt::get(IntTy, 0))))
+      return nullptr;
 
     if (auto *TET = dyn_cast<TargetExtType>(Op->getType())) {
       if (isa<ConstantTargetNone, PoisonValue>(Op))

@@ -2585,11 +2585,11 @@ void ASTReader::updateOutOfDateIdentifier(const IdentifierInfo &II) {
   // provably do not have any results for this identifier.
   GlobalModuleIndex::HitSet Hits;
   GlobalModuleIndex::HitSet *HitsPtr = nullptr;
-  if (!loadGlobalIndex()) {
-    if (GlobalIndex->lookupIdentifier(II.getName(), Hits)) {
+  if ((!loadGlobalIndex()) && (GlobalIndex->lookupIdentifier(II.getName(), Hits))) 
+    {
       HitsPtr = &Hits;
     }
-  }
+  
 
   IdentifierLookupVisitor Visitor(II.getName(), PriorGeneration,
                                   NumIdentifierLookups,
@@ -5647,10 +5647,9 @@ void ASTReader::InitializeContext() {
 
   // Load the special types.
   if (SpecialTypes.size() >= NumSpecialTypeIDs) {
-    if (TypeID String = SpecialTypes[SPECIAL_TYPE_CF_CONSTANT_STRING]) {
-      if (!Context.CFConstantStringTypeDecl)
-        Context.setCFConstantStringType(GetType(String));
-    }
+    if (TypeID String = SpecialTypes[SPECIAL_TYPE_CF_CONSTANT_STRING]; String && (!Context.CFConstantStringTypeDecl)) 
+      Context.setCFConstantStringType(GetType(String));
+    
 
     if (TypeID File = SpecialTypes[SPECIAL_TYPE_FILE]) {
       QualType FileType = GetType(File);
@@ -5712,22 +5711,19 @@ void ASTReader::InitializeContext() {
       }
     }
 
-    if (TypeID ObjCIdRedef = SpecialTypes[SPECIAL_TYPE_OBJC_ID_REDEFINITION]) {
-      if (Context.ObjCIdRedefinitionType.isNull())
-        Context.ObjCIdRedefinitionType = GetType(ObjCIdRedef);
-    }
+    if (TypeID ObjCIdRedef = SpecialTypes[SPECIAL_TYPE_OBJC_ID_REDEFINITION]; ObjCIdRedef && (Context.ObjCIdRedefinitionType.isNull())) 
+      Context.ObjCIdRedefinitionType = GetType(ObjCIdRedef);
+    
 
     if (TypeID ObjCClassRedef =
-            SpecialTypes[SPECIAL_TYPE_OBJC_CLASS_REDEFINITION]) {
-      if (Context.ObjCClassRedefinitionType.isNull())
-        Context.ObjCClassRedefinitionType = GetType(ObjCClassRedef);
-    }
+            SpecialTypes[SPECIAL_TYPE_OBJC_CLASS_REDEFINITION]; ObjCClassRedef && (Context.ObjCClassRedefinitionType.isNull())) 
+      Context.ObjCClassRedefinitionType = GetType(ObjCClassRedef);
+    
 
     if (TypeID ObjCSelRedef =
-            SpecialTypes[SPECIAL_TYPE_OBJC_SEL_REDEFINITION]) {
-      if (Context.ObjCSelRedefinitionType.isNull())
-        Context.ObjCSelRedefinitionType = GetType(ObjCSelRedef);
-    }
+            SpecialTypes[SPECIAL_TYPE_OBJC_SEL_REDEFINITION]; ObjCSelRedef && (Context.ObjCSelRedefinitionType.isNull())) 
+      Context.ObjCSelRedefinitionType = GetType(ObjCSelRedef);
+    
 
     if (TypeID Ucontext_t = SpecialTypes[SPECIAL_TYPE_UCONTEXT_T]) {
       QualType Ucontext_tType = GetType(Ucontext_t);
@@ -6428,10 +6424,10 @@ Module *ASTReader::getSubmodule(uint32_t GlobalID) {
 
       if (!ParentModule) {
         if ([[maybe_unused]] const ModuleFileKey *CurFileKey =
-                CurrentModule->getASTFileKey()) {
+                CurrentModule->getASTFileKey(); CurFileKey && (!bool(PP.getPreprocessorOpts().DisablePCHOrModuleValidation &
+                    DisableValidationForModuleKind::Module))) 
           // Don't emit module relocation error if we have -fno-validate-pch
-          if (!bool(PP.getPreprocessorOpts().DisablePCHOrModuleValidation &
-                    DisableValidationForModuleKind::Module)) {
+          {
             assert(*CurFileKey != F.FileKey &&
                    "ModuleManager did not de-duplicate");
 
@@ -6448,7 +6444,7 @@ Module *ASTReader::getSubmodule(uint32_t GlobalID) {
 
             return nullptr;
           }
-        }
+        
 
         F.DidReadTopLevelSubmodule = true;
         CurrentModule->setASTFileNameAndKey(F.FileName, F.FileKey);
@@ -9383,11 +9379,11 @@ IdentifierInfo *ASTReader::get(StringRef Name) {
     // provably do not have any results for this identifier.
     GlobalModuleIndex::HitSet Hits;
     GlobalModuleIndex::HitSet *HitsPtr = nullptr;
-    if (!loadGlobalIndex()) {
-      if (GlobalIndex->lookupIdentifier(Name, Hits)) {
+    if ((!loadGlobalIndex()) && (GlobalIndex->lookupIdentifier(Name, Hits))) 
+      {
         HitsPtr = &Hits;
       }
-    }
+    
 
     ModuleMgr.visit(Visitor, HitsPtr);
   }
@@ -11097,9 +11093,8 @@ void ASTReader::diagnoseOdrViolations() {
         Found = true;
         break;
       }
-      if (auto *ND = dyn_cast<NamedDecl>(CanonMember))
-        if (ND->getDeclName() == D->getDeclName())
-          Candidates.push_back(ND);
+      if (auto *ND = dyn_cast<NamedDecl>(CanonMember); ND && (ND->getDeclName() == D->getDeclName()))
+        Candidates.push_back(ND);
     }
 
     if (!Found) {
@@ -11353,13 +11348,12 @@ void ASTReader::pushExternalDeclIntoScope(NamedDecl *D, DeclarationName Name) {
 
   if (SemaObj->IdResolver.tryAddTopLevelDecl(D, Name) && SemaObj->TUScope) {
     SemaObj->TUScope->AddDecl(D);
-  } else if (SemaObj->TUScope) {
+  } else if ((SemaObj->TUScope) && (llvm::is_contained(SemaObj->IdResolver.decls(Name), D))) 
     // Adding the decl to IdResolver may have failed because it was already in
     // (even though it was not added in scope). If it is already in, make sure
     // it gets in the scope as well.
-    if (llvm::is_contained(SemaObj->IdResolver.decls(Name), D))
-      SemaObj->TUScope->AddDecl(D);
-  }
+    SemaObj->TUScope->AddDecl(D);
+  
 }
 
 ASTReader::ASTReader(Preprocessor &PP, ModuleCache &ModCache,

@@ -212,12 +212,12 @@ void CriticalAntiDepBreaker::PrescanInstruction(MachineInstr &MI) {
     if (Classes[Reg.id()] != reinterpret_cast<TargetRegisterClass *>(-1))
       RegRefs.emplace(Reg, &MO);
 
-    if (MO.isUse() && Special) {
-      if (!KeepRegs.test(Reg.id())) {
+    if ((MO.isUse() && Special) && (!KeepRegs.test(Reg.id()))) 
+      {
         for (MCPhysReg SubReg : TRI->subregs_inclusive(Reg))
           KeepRegs.set(SubReg);
       }
-    }
+    
   }
 
   for (unsigned I = 0, E = MI.getNumOperands(); I != E; ++I) {

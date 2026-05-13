@@ -49,11 +49,10 @@ static llvm::Type *X86AdjustInlineAsmType(CodeGen::CodeGenFunction &CGF,
 static bool isX86VectorTypeForVectorCall(ASTContext &Context, QualType Ty) {
   if (const BuiltinType *BT = Ty->getAs<BuiltinType>()) {
     if (BT->isFloatingPoint() && BT->getKind() != BuiltinType::Half) {
-      if (BT->getKind() == BuiltinType::LongDouble) {
-        if (&Context.getTargetInfo().getLongDoubleFormat() ==
-            &llvm::APFloat::x87DoubleExtended())
-          return false;
-      }
+      if ((BT->getKind() == BuiltinType::LongDouble) && (&Context.getTargetInfo().getLongDoubleFormat() ==
+            &llvm::APFloat::x87DoubleExtended())) 
+        return false;
+      
       return true;
     }
   } else if (const VectorType *VT = Ty->getAs<VectorType>()) {
@@ -546,10 +545,9 @@ ABIArgInfo X86_32ABIInfo::classifyReturnType(QualType RetTy,
       // floating-point register. (MSVC does not apply this special case.)
       // We apply a similar transformation for pointer types to improve the
       // quality of the generated IR.
-      if (const Type *SeltTy = isSingleElementStruct(RetTy, getContext()))
-        if ((!IsWin32StructABI && SeltTy->isRealFloatingType())
-            || SeltTy->hasPointerRepresentation())
-          return ABIArgInfo::getDirect(CGT.ConvertType(QualType(SeltTy, 0)));
+      if (const Type *SeltTy = isSingleElementStruct(RetTy, getContext()); SeltTy && ((!IsWin32StructABI && SeltTy->isRealFloatingType())
+            || SeltTy->hasPointerRepresentation()))
+        return ABIArgInfo::getDirect(CGT.ConvertType(QualType(SeltTy, 0)));
 
       // FIXME: We should be able to narrow this integer in cases with dead
       // padding.
@@ -563,9 +561,8 @@ ABIArgInfo X86_32ABIInfo::classifyReturnType(QualType RetTy,
   if (const auto *ED = RetTy->getAsEnumDecl())
     RetTy = ED->getIntegerType();
 
-  if (const auto *EIT = RetTy->getAs<BitIntType>())
-    if (EIT->getNumBits() > 64)
-      return getIndirectReturnResult(RetTy, State);
+  if (const auto *EIT = RetTy->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 64))
+    return getIndirectReturnResult(RetTy, State);
 
   return (isPromotableIntegerTypeForABI(RetTy) ? ABIArgInfo::getExtend(RetTy)
                                                : ABIArgInfo::getDirect());
@@ -578,14 +575,13 @@ unsigned X86_32ABIInfo::getTypeStackAlignInBytes(QualType Ty,
   if (Align <= MinABIStackAlignInBytes)
     return 0; // Use default alignment.
 
-  if (IsLinuxABI) {
+  if ((IsLinuxABI) && (Ty->isVectorType() && (Align == 16 || Align == 32 || Align == 64))) 
     // Exclude other System V OS (e.g Darwin, PS4 and FreeBSD) since we don't
     // want to spend any effort dealing with the ramifications of ABI breaks.
     //
     // If the vector type is __m128/__m256/__m512, return the default alignment.
-    if (Ty->isVectorType() && (Align == 16 || Align == 32 || Align == 64))
-      return Align;
-  }
+    return Align;
+  
   // On non-Darwin, the stack type alignment is always 4.
   if (!IsDarwinVectorABI) {
     // Set explicit alignment, since we may need to realign the top.
@@ -738,14 +734,14 @@ void X86_32ABIInfo::runVectorCallFirstPass(CGFunctionInfo &FI, CCState &State) c
     const Type *Base = nullptr;
     uint64_t NumElts = 0;
     const QualType &Ty = Args[I].type;
-    if ((Ty->isVectorType() || Ty->isBuiltinType()) &&
-        isHomogeneousAggregate(Ty, Base, NumElts)) {
-      if (State.FreeSSERegs >= NumElts) {
+    if (((Ty->isVectorType() || Ty->isBuiltinType()) &&
+        isHomogeneousAggregate(Ty, Base, NumElts)) && (State.FreeSSERegs >= NumElts)) 
+      {
         State.FreeSSERegs -= NumElts;
         Args[I].info = ABIArgInfo::getDirectInReg();
         State.IsPreassigned.set(I);
       }
-    }
+    
   }
 }
 
@@ -875,12 +871,11 @@ ABIArgInfo X86_32ABIInfo::classifyArgumentType(QualType Ty, CCState &State,
 
     // On Darwin, some vectors are passed in memory, we handle this by passing
     // it as an i8/i16/i32/i64.
-    if (IsDarwinVectorABI) {
-      if ((TI.Width == 8 || TI.Width == 16 || TI.Width == 32) ||
-          (TI.Width == 64 && VT->getNumElements() == 1))
-        return ABIArgInfo::getDirect(
+    if ((IsDarwinVectorABI) && ((TI.Width == 8 || TI.Width == 16 || TI.Width == 32) ||
+          (TI.Width == 64 && VT->getNumElements() == 1))) 
+      return ABIArgInfo::getDirect(
             llvm::IntegerType::get(getVMContext(), TI.Width));
-    }
+    
 
     if (IsX86_MMXType(CGT.ConvertType(Ty)))
       return ABIArgInfo::getDirect(llvm::IntegerType::get(getVMContext(), 64));
@@ -938,15 +933,15 @@ void X86_32ABIInfo::computeInfo(CGFunctionInfo &FI) const {
 
   if (!::classifyReturnType(getCXXABI(), FI, *this)) {
     FI.getReturnInfo() = classifyReturnType(FI.getReturnType(), State);
-  } else if (FI.getReturnInfo().isIndirect()) {
+  } else if ((FI.getReturnInfo().isIndirect()) && (State.FreeRegs)) 
     // The C++ ABI is not aware of register usage, so we have to check if the
     // return value was sret and put it in a register ourselves if appropriate.
-    if (State.FreeRegs) {
+    {
       --State.FreeRegs;  // The sret parameter consumes a register.
       if (!IsMCUABI)
         FI.getReturnInfo().setInReg(true);
     }
-  }
+  
 
   // The chain argument effectively gives us another free register.
   if (FI.isChainCall())
@@ -2926,9 +2921,8 @@ bool X86_64ABIInfo::passRegCallStructTypeDirectly(
       CoerceElts.push_back(CoerceTy);
     }
 
-    if (const auto *VT = MTy->getAs<VectorType>())
-      if (getContext().getTypeSize(VT) > MaxVectorWidth)
-        MaxVectorWidth = getContext().getTypeSize(VT);
+    if (const auto *VT = MTy->getAs<VectorType>(); VT && (getContext().getTypeSize(VT) > MaxVectorWidth))
+      MaxVectorWidth = getContext().getTypeSize(VT);
 
     NeededInt += LocalNeededInt;
     NeededSSE += LocalNeededSSE;

@@ -130,10 +130,9 @@ public:
             } else if (auto *EIM = dyn_cast<EmitIntegerMatcher>(N)) {
               if (!EIM->getVT().isSimple())
                 getValueTypeID(EIM->getVT());
-            } else if (auto *ERM = dyn_cast<EmitRegisterMatcher>(N)) {
-              if (!ERM->getVT().isSimple())
-                getValueTypeID(ERM->getVT());
-            }
+            } else if (auto *ERM = dyn_cast<EmitRegisterMatcher>(N); ERM && (!ERM->getVT().isSimple())) 
+              getValueTypeID(ERM->getVT());
+            
 
             if (const auto *EN = dyn_cast<EmitNodeMatcherCommon>(N)) {
               ArrayRef<unsigned> Ops = EN->getOperandList();

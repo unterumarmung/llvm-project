@@ -497,18 +497,18 @@ Value *InstCombinerImpl::SimplifyDemandedUseBits(Instruction *I,
     // then we may be able to truncate it before the shift.
     Value *X;
     const APInt *C;
-    if (match(I->getOperand(0), m_OneUse(m_LShr(m_Value(X), m_APInt(C))))) {
+    if ((match(I->getOperand(0), m_OneUse(m_LShr(m_Value(X), m_APInt(C))))) && (C->ult(VTy->getScalarSizeInBits()) &&
+          C->ule(DemandedMask.countl_zero()))) 
       // The shift amount must be valid (not poison) in the narrow type, and
       // it must not be greater than the high bits demanded of the result.
-      if (C->ult(VTy->getScalarSizeInBits()) &&
-          C->ule(DemandedMask.countl_zero())) {
+      {
         // trunc (lshr X, C) --> lshr (trunc X), C
         IRBuilderBase::InsertPointGuard Guard(Builder);
         Builder.SetInsertPoint(I);
         Value *Trunc = Builder.CreateTrunc(X, VTy);
         return Builder.CreateLShr(Trunc, C->getZExtValue());
       }
-    }
+    
   }
     [[fallthrough]];
   case Instruction::ZExt: {
@@ -1532,11 +1532,11 @@ Value *InstCombinerImpl::SimplifyDemandedVectorElts(Value *V,
   if (Depth == SimplifyDemandedVectorEltsDepthLimit)
     return nullptr;
 
-  if (!AllowMultipleUsers) {
+  if ((!AllowMultipleUsers) && (!V->hasOneUse())) 
     // If multiple users are using the root value, proceed with
     // simplification conservatively assuming that all elements
     // are needed.
-    if (!V->hasOneUse()) {
+    {
       // Quit if we find multiple users of a non-root value though.
       // They'll be handled when it's their turn to be visited by
       // the main instcombine process.
@@ -1547,7 +1547,7 @@ Value *InstCombinerImpl::SimplifyDemandedVectorElts(Value *V,
       // Conservatively assume that all elements are needed.
       DemandedElts = EltMask;
     }
-  }
+  
 
   Instruction *I = dyn_cast<Instruction>(V);
   if (!I) return nullptr;        // Only analyze instructions.
@@ -1987,14 +1987,12 @@ Value *InstCombinerImpl::SimplifyDemandedVectorElts(Value *V,
         for (User *U : OtherOp->users()) {
           ArrayRef<int> Mask;
           auto Shuf = m_Shuffle(m_Specific(ShufOp), m_Value(), m_Mask(Mask));
-          if (BO->isCommutative()
+          if ((BO->isCommutative()
                   ? match(U, m_c_BinOp(Opcode, Shuf, m_Specific(OtherOp)))
                   : MatchShufAsOp0
                         ? match(U, m_BinOp(Opcode, Shuf, m_Specific(OtherOp)))
-                        : match(U, m_BinOp(Opcode, m_Specific(OtherOp), Shuf)))
-            if (match(Mask, m_ZeroMask()) && Mask[0] != PoisonMaskElem)
-              if (DT.dominates(U, I))
-                return U;
+                        : match(U, m_BinOp(Opcode, m_Specific(OtherOp), Shuf))) && (match(Mask, m_ZeroMask()) && Mask[0] != PoisonMaskElem) && (DT.dominates(U, I)))
+            return U;
         }
         return nullptr;
       };
@@ -2085,19 +2083,17 @@ static Value *simplifyDemandedFPClassFabs(KnownFPClass &Known, Value *Src,
 static FastMathFlags inferFastMathValueFlags(FastMathFlags FMF,
                                              FPClassTest ValidResults,
                                              ArrayRef<KnownFPClass> Known) {
-  if (!FMF.noNaNs() && (ValidResults & fcNan) == fcNone) {
-    if (all_of(Known, [](const KnownFPClass KnownSrc) {
+  if ((!FMF.noNaNs() && (ValidResults & fcNan) == fcNone) && (all_of(Known, [](const KnownFPClass KnownSrc) {
           return KnownSrc.isKnownNeverNaN();
-        }))
-      FMF.setNoNaNs();
-  }
+        }))) 
+    FMF.setNoNaNs();
+  
 
-  if (!FMF.noInfs() && (ValidResults & fcInf) == fcNone) {
-    if (all_of(Known, [](const KnownFPClass KnownSrc) {
+  if ((!FMF.noInfs() && (ValidResults & fcInf) == fcNone) && (all_of(Known, [](const KnownFPClass KnownSrc) {
           return KnownSrc.isKnownNeverInfinity();
-        }))
-      FMF.setNoInfs();
-  }
+        }))) 
+    FMF.setNoInfs();
+  
 
   return FMF;
 }

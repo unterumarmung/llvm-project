@@ -263,7 +263,7 @@ createNestedNameSpecifierForScopeOf(const ASTContext &Ctx, const Decl *Decl,
   if (Outer) {
     if (const auto *CxxDecl = dyn_cast<CXXRecordDecl>(DC)) {
       if (ClassTemplateDecl *ClassTempl =
-              CxxDecl->getDescribedClassTemplate()) {
+              CxxDecl->getDescribedClassTemplate(); ClassTempl && (!ClassTempl->specializations().empty())) 
         // We are in the case of a type(def) that was declared in a
         // class template but is *not* type dependent.  In clang, it
         // gets attached to the class template declaration rather than
@@ -274,12 +274,12 @@ createNestedNameSpecifierForScopeOf(const ASTContext &Ctx, const Decl *Decl,
         //
         // Make the situation is 'useable' but looking a bit odd by
         // picking a random instance as the declaring context.
-        if (!ClassTempl->specializations().empty()) {
+        {
           Decl = *(ClassTempl->spec_begin());
           Outer = dyn_cast<NamedDecl>(Decl);
           OuterNS = dyn_cast<NamespaceDecl>(Decl);
         }
-      }
+      
     }
 
     if (OuterNS) {

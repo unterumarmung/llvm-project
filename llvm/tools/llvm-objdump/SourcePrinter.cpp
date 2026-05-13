@@ -721,9 +721,8 @@ StringRef SourcePrinter::getLine(const DILineInfo &LineInfo,
   if (LineInfo.LineSource)
     return LineInfo.LineSource.value();
 
-  if (SourceCache.find(LineInfo.FileName) == SourceCache.end())
-    if (!cacheSource(LineInfo))
-      return {};
+  if ((SourceCache.find(LineInfo.FileName) == SourceCache.end()) && (!cacheSource(LineInfo)))
+    return {};
 
   auto LineBuffer = LineCache.find(LineInfo.FileName);
   if (LineBuffer == LineCache.end())

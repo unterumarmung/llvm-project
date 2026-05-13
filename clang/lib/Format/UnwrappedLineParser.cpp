@@ -1088,10 +1088,9 @@ void UnwrappedLineParser::conditionalCompilationAlternative() {
 
 void UnwrappedLineParser::conditionalCompilationEnd() {
   assert(PPBranchLevel < (int)PPLevelBranchIndex.size());
-  if (PPBranchLevel >= 0 && !PPChainBranchIndex.empty()) {
-    if (PPChainBranchIndex.top() + 1 > PPLevelBranchCount[PPBranchLevel])
-      PPLevelBranchCount[PPBranchLevel] = PPChainBranchIndex.top() + 1;
-  }
+  if ((PPBranchLevel >= 0 && !PPChainBranchIndex.empty()) && (PPChainBranchIndex.top() + 1 > PPLevelBranchCount[PPBranchLevel])) 
+    PPLevelBranchCount[PPBranchLevel] = PPChainBranchIndex.top() + 1;
+  
   // Guard against #endif's without #if.
   if (PPBranchLevel > -1)
     --PPBranchLevel;
@@ -4842,16 +4841,15 @@ void UnwrappedLineParser::nextToken(int LevelDifference) {
   else
     readTokenWithJavaScriptASI();
   FormatTok->Previous = Previous;
-  if (Style.isVerilog()) {
+  if ((Style.isVerilog()) && (Keywords.isVerilogEnd(*FormatTok))) 
     // Blocks in Verilog can have `begin` and `end` instead of braces.  For
     // keywords like `begin`, we can't treat them the same as left braces
     // because some contexts require one of them.  For example structs use
     // braces and if blocks use keywords, and a left brace can occur in an if
     // statement, but it is not a block.  For keywords like `end`, we simply
     // treat them the same as right braces.
-    if (Keywords.isVerilogEnd(*FormatTok))
-      FormatTok->Tok.setKind(tok::r_brace);
-  }
+    FormatTok->Tok.setKind(tok::r_brace);
+  
 }
 
 void UnwrappedLineParser::distributeComments(

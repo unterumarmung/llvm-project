@@ -101,15 +101,15 @@ static IMAKind ClassifyImplicitMemberAccess(Sema &SemaRef,
   bool couldInstantiateToStatic = false;
   bool isStaticOrExplicitContext = SemaRef.CXXThisTypeOverride.isNull();
 
-  if (auto *MD = dyn_cast<CXXMethodDecl>(DC)) {
-    if (MD->isImplicitObjectMemberFunction()) {
+  if (auto *MD = dyn_cast<CXXMethodDecl>(DC); MD && (MD->isImplicitObjectMemberFunction())) 
+    {
       isStaticOrExplicitContext = false;
       // A dependent class scope function template explicit specialization
       // that is neither declared 'static' nor with an explicit object
       // parameter could instantiate to a static or non-static member function.
       couldInstantiateToStatic = MD->getDependentSpecializationInfo();
     }
-  }
+  
 
   if (R.isUnresolvableResult()) {
     if (couldInstantiateToStatic)
@@ -417,14 +417,14 @@ CheckExtVectorComponent(Sema &S, QualType baseType, ExprValueKind &VK,
     } while (*compStr && (Idx = vecType->getPointAccessorIdx(*compStr)) != -1);
 
     // Emit a warning if an rgba selector is used earlier than OpenCL C 3.0.
-    if (HasRGBA || (*compStr && IsRGBA(*compStr))) {
-      if (S.getLangOpts().OpenCL &&
-          S.getLangOpts().getOpenCLCompatibleVersion() < 300) {
+    if ((HasRGBA || (*compStr && IsRGBA(*compStr))) && (S.getLangOpts().OpenCL &&
+          S.getLangOpts().getOpenCLCompatibleVersion() < 300)) 
+      {
         const char *DiagBegin = HasRGBA ? CompName->getNameStart() : compStr;
         S.Diag(OpLoc, diag::ext_opencl_ext_vector_type_rgba_selector)
             << StringRef(DiagBegin, 1) << SourceRange(CompLoc);
       }
-    }
+    
   } else {
     if (HexSwizzle) compStr++;
     while ((Idx = vecType->getNumericAccessorIdx(*compStr)) != -1) {
@@ -846,12 +846,12 @@ MemberExpr *Sema::BuildMemberExpr(
   //   An exception-specification is considered to be needed when:
   //   - in an expression the function is the unique lookup result or the
   //     selected member of a set of overloaded functions
-  if (auto *FPT = Ty->getAs<FunctionProtoType>()) {
-    if (isUnresolvedExceptionSpec(FPT->getExceptionSpecType())) {
+  if (auto *FPT = Ty->getAs<FunctionProtoType>(); FPT && (isUnresolvedExceptionSpec(FPT->getExceptionSpecType()))) 
+    {
       if (auto *NewFPT = ResolveExceptionSpec(MemberNameInfo.getLoc(), FPT))
         E->setType(Context.getQualifiedType(NewFPT, Ty.getQualifiers()));
     }
-  }
+  
 
   return E;
 }
@@ -1450,12 +1450,11 @@ static ExprResult LookupMemberExpr(Sema &S, LookupResult &R,
     bool warn = true;
     if (S.getLangOpts().ObjCWeak) {
       Expr *BaseExp = BaseExpr.get()->IgnoreParenImpCasts();
-      if (UnaryOperator *UO = dyn_cast<UnaryOperator>(BaseExp))
-        if (UO->getOpcode() == UO_Deref)
-          BaseExp = UO->getSubExpr()->IgnoreParenCasts();
+      if (UnaryOperator *UO = dyn_cast<UnaryOperator>(BaseExp); UO && (UO->getOpcode() == UO_Deref))
+        BaseExp = UO->getSubExpr()->IgnoreParenCasts();
 
-      if (DeclRefExpr *DE = dyn_cast<DeclRefExpr>(BaseExp))
-        if (DE->getType().getObjCLifetime() == Qualifiers::OCL_Weak) {
+      if (DeclRefExpr *DE = dyn_cast<DeclRefExpr>(BaseExp); DE && (DE->getType().getObjCLifetime() == Qualifiers::OCL_Weak))
+        {
           S.Diag(DE->getLocation(), diag::err_arc_weak_ivar_access);
           warn = false;
         }
@@ -1474,11 +1473,10 @@ static ExprResult LookupMemberExpr(Sema &S, LookupResult &R,
         IV, IV->getUsageType(BaseType), MemberLoc, OpLoc, BaseExpr.get(),
         IsArrow);
 
-    if (IV->getType().getObjCLifetime() == Qualifiers::OCL_Weak) {
-      if (!S.isUnevaluatedContext() &&
-          !S.Diags.isIgnored(diag::warn_arc_repeated_use_of_weak, MemberLoc))
-        S.getCurFunction()->recordUseOfWeak(Result);
-    }
+    if ((IV->getType().getObjCLifetime() == Qualifiers::OCL_Weak) && (!S.isUnevaluatedContext() &&
+          !S.Diags.isIgnored(diag::warn_arc_repeated_use_of_weak, MemberLoc))) 
+      S.getCurFunction()->recordUseOfWeak(Result);
+    
 
     return Result;
   }
@@ -1669,9 +1667,9 @@ static ExprResult LookupMemberExpr(Sema &S, LookupResult &R,
   //   - 'type' is an Objective C type
   //   - 'bar' is a pseudo-destructor name which happens to refer to
   //     the appropriate pointer type
-  if (const PointerType *Ptr = BaseType->getAs<PointerType>()) {
-    if (!IsArrow && Ptr->getPointeeType()->isRecordType() &&
-        MemberName.getNameKind() != DeclarationName::CXXDestructorName) {
+  if (const PointerType *Ptr = BaseType->getAs<PointerType>(); Ptr && (!IsArrow && Ptr->getPointeeType()->isRecordType() &&
+        MemberName.getNameKind() != DeclarationName::CXXDestructorName)) 
+    {
       S.Diag(OpLoc, diag::err_typecheck_member_reference_suggestion)
           << BaseType << int(IsArrow) << BaseExpr.get()->getSourceRange()
           << FixItHint::CreateReplacement(OpLoc, "->");
@@ -1684,7 +1682,7 @@ static ExprResult LookupMemberExpr(Sema &S, LookupResult &R,
       return LookupMemberExpr(S, R, BaseExpr, IsArrow, OpLoc, SS,
                               ObjCImpDecl, HasTemplateArgs, TemplateKWLoc);
     }
-  }
+  
 
   // If the user is trying to apply -> or . to a function name, it's probably
   // because they forgot parentheses to call that function.
@@ -1758,9 +1756,8 @@ ExprResult Sema::ActOnMemberAccessExpr(Scope *S, Expr *Base,
 
       if (getLangOpts().HLSL) {
         QualType Ty = Res.get()->getType();
-        if (Ty->isHLSLResourceRecord() || Ty->isHLSLResourceRecordArray())
-          if (!HLSL().ActOnResourceMemberAccessExpr(ME))
-            Res = ExprError();
+        if ((Ty->isHLSLResourceRecord() || Ty->isHLSLResourceRecordArray()) && (!HLSL().ActOnResourceMemberAccessExpr(ME)))
+          Res = ExprError();
       }
     }
   }
@@ -1791,10 +1788,9 @@ void Sema::CheckMemberAccessOfNoDeref(const MemberExpr *E) {
     }
   } else if (E->isArrow()) {
     if (const auto *Ptr = dyn_cast<PointerType>(
-            E->getBase()->getType().getDesugaredType(Context))) {
-      if (Ptr->getPointeeType()->hasAttr(attr::NoDeref))
-        ExprEvalContexts.back().PossibleDerefs.insert(E);
-    }
+            E->getBase()->getType().getDesugaredType(Context)); Ptr && (Ptr->getPointeeType()->hasAttr(attr::NoDeref))) 
+      ExprEvalContexts.back().PossibleDerefs.insert(E);
+    
   }
 }
 

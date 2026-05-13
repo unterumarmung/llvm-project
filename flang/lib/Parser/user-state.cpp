@@ -39,11 +39,11 @@ EndDoStmtForCapturedLabelDoStmt::Parse(ParseState &state) {
       statement(indirect(construct<EndDoStmt>("END DO" >> maybe(name))))};
   if (auto enddo{parser.Parse(state)}) {
     if (enddo->label) {
-      if (const auto *ustate{state.userState()}) {
-        if (ustate->IsDoLabel(enddo->label.value())) {
+      if (const auto *ustate{state.userState()}; ustate && (ustate->IsDoLabel(enddo->label.value()))) 
+        {
           return enddo;
         }
-      }
+      
     }
   }
   return std::nullopt;
@@ -70,11 +70,11 @@ std::optional<Success> LeaveDoConstruct::Parse(ParseState &state) {
 
 std::optional<Name> OldStructureComponentName::Parse(ParseState &state) {
   if (std::optional<Name> n{name.Parse(state)}) {
-    if (const auto *ustate{state.userState()}) {
-      if (ustate->IsOldStructureComponent(n->source)) {
+    if (const auto *ustate{state.userState()}; ustate && (ustate->IsOldStructureComponent(n->source))) 
+      {
         return n;
       }
-    }
+    
   }
   return std::nullopt;
 }

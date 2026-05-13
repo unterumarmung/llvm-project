@@ -322,14 +322,14 @@ private:
 
     // Builtin calls have their custom operation, meaning this is a
     // straightforward emission.
-    if (callee == "transpose") {
-      if (call.getArgs().size() != 1) {
+    if ((callee == "transpose") && (call.getArgs().size() != 1)) 
+      {
         emitError(location, "MLIR codegen encountered an error: toy.transpose "
                             "does not accept multiple arguments");
         return nullptr;
       }
       return TransposeOp::create(builder, location, operands[0]);
-    }
+    
 
     // Otherwise this is a call to a user-defined function. Calls to
     // user-defined functions are mapped to a custom call that takes the callee

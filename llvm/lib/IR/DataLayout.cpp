@@ -276,10 +276,9 @@ static Error parseAddrSpaceAndName(StringRef Str, unsigned &AddrSpace,
   if (Str.empty())
     return createStringError("address space component cannot be empty");
 
-  if (isDigit(Str.front())) {
-    if (Str.consumeInteger(10, AddrSpace) || !isUInt<24>(AddrSpace))
-      return createStringError("address space must be a 24-bit integer");
-  }
+  if ((isDigit(Str.front())) && (Str.consumeInteger(10, AddrSpace) || !isUInt<24>(AddrSpace))) 
+    return createStringError("address space must be a 24-bit integer");
+  
 
   if (Str.empty())
     return Error::success();

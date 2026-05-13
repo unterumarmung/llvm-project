@@ -722,17 +722,15 @@ static bool isDebuggingContext(CheckerContext &C) {
   if (!D)
     return false;
 
-  if (auto *ND = dyn_cast<NamedDecl>(D)) {
-    if (isDebuggingName(ND->getNameAsString()))
-      return true;
-  }
+  if (auto *ND = dyn_cast<NamedDecl>(D); ND && (isDebuggingName(ND->getNameAsString()))) 
+    return true;
+  
 
   const DeclContext *DC = D->getDeclContext();
 
-  if (auto *CD = dyn_cast<ObjCContainerDecl>(DC)) {
-    if (isDebuggingName(CD->getNameAsString()))
-      return true;
-  }
+  if (auto *CD = dyn_cast<ObjCContainerDecl>(DC); CD && (isDebuggingName(CD->getNameAsString()))) 
+    return true;
+  
 
   return false;
 }
@@ -1152,12 +1150,12 @@ void EmptyLocalizationContextChecker::MethodCrawler::VisitObjCMessageExpr(
     Result = I;
   }
 
-  if (isAnyIdentifier(Result.getKind())) {
-    if (Result.getRawIdentifier() == "nil") {
+  if ((isAnyIdentifier(Result.getKind())) && (Result.getRawIdentifier() == "nil")) 
+    {
       reportEmptyContextError(ME);
       return;
     }
-  }
+  
 
   if (!isStringLiteral(Result.getKind()))
     return;
@@ -1297,12 +1295,12 @@ bool PluralMisuseChecker::MethodCrawler::VisitObjCMessageExpr(
 
   const IdentifierInfo *odInfo = OD->getIdentifier();
 
-  if (odInfo->isStr("NSBundle") &&
-      ME->getSelector().getAsString() == "localizedStringForKey:value:table:") {
-    if (InMatchingStatement) {
+  if ((odInfo->isStr("NSBundle") &&
+      ME->getSelector().getAsString() == "localizedStringForKey:value:table:") && (InMatchingStatement)) 
+    {
       reportPluralMisuseError(ME);
     }
-  }
+  
   return true;
 }
 
@@ -1317,12 +1315,12 @@ bool PluralMisuseChecker::MethodCrawler::TraverseIfStmt(IfStmt *I) {
 // after traversing the IfStmt
 bool PluralMisuseChecker::MethodCrawler::EndVisitIfStmt(IfStmt *I) {
   MatchingStatements.pop_back();
-  if (!MatchingStatements.empty()) {
-    if (MatchingStatements.back() != nullptr) {
+  if ((!MatchingStatements.empty()) && (MatchingStatements.back() != nullptr)) 
+    {
       InMatchingStatement = true;
       return true;
     }
-  }
+  
   InMatchingStatement = false;
   return true;
 }

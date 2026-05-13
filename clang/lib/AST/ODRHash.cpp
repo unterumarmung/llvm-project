@@ -675,8 +675,8 @@ void ODRHash::AddFunctionDecl(const FunctionDecl *Function,
   const DeclContext *DC = Function;
   while (DC) {
     if (isa<ClassTemplateSpecializationDecl>(DC)) return;
-    if (auto *F = dyn_cast<FunctionDecl>(DC)) {
-      if (F->isFunctionTemplateSpecialization()) {
+    if (auto *F = dyn_cast<FunctionDecl>(DC); F && (F->isFunctionTemplateSpecialization())) 
+      {
         if (!isa<CXXMethodDecl>(DC)) return;
         if (DC->getLexicalParent()->isFileContext()) return;
         // Skip class scope explicit function template specializations,
@@ -686,7 +686,7 @@ void ODRHash::AddFunctionDecl(const FunctionDecl *Function,
         // Inline method specializations are the only supported
         // specialization for now.
       }
-    }
+    
     DC = DC->getParent();
   }
 
@@ -837,9 +837,8 @@ void ODRHash::AddDecl(const Decl *D) {
     Args = CTSD->getTemplateArgs().asArray();
   else if (auto *VTSD = dyn_cast<VarTemplateSpecializationDecl>(D))
     Args = VTSD->getTemplateArgs().asArray();
-  else if (auto *FD = dyn_cast<FunctionDecl>(D))
-    if (FD->getTemplateSpecializationArgs())
-      Args = FD->getTemplateSpecializationArgs()->asArray();
+  else if (auto *FD = dyn_cast<FunctionDecl>(D); FD && (FD->getTemplateSpecializationArgs()))
+    Args = FD->getTemplateSpecializationArgs()->asArray();
 
   for (auto &TA : Args)
     AddTemplateArgument(TA);

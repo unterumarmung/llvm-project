@@ -124,11 +124,10 @@ static Instruction *foldSelectBinOpIdentity(SelectInst &Sel,
 
     // +0.0 compares equal to -0.0, and so it does not behave as required for
     // this transform. Bail out if we can not exclude that possibility.
-    if (const auto *FPO = dyn_cast<FPMathOperator>(BO))
-      if (!FPO->hasNoSignedZeros() &&
+    if (const auto *FPO = dyn_cast<FPMathOperator>(BO); FPO && (!FPO->hasNoSignedZeros() &&
           !cannotBeNegativeZero(Y,
-                                IC.getSimplifyQuery().getWithInstruction(&Sel)))
-        return nullptr;
+                                IC.getSimplifyQuery().getWithInstruction(&Sel))))
+      return nullptr;
 
     FoldedVal = Y;
   }
@@ -484,13 +483,12 @@ Instruction *InstCombinerImpl::foldSelectOpOp(SelectInst &SI, Instruction *TI,
   // didn't exist in the original code:
   // Cond ? x/y : x/z --> x / (Cond ? y : z)
   auto *BO = dyn_cast<BinaryOperator>(TI);
-  if (BO && BO->isIntDivRem() && !isGuaranteedNotToBePoison(Cond)) {
+  if ((BO && BO->isIntDivRem() && !isGuaranteedNotToBePoison(Cond)) && (BO->getOpcode() == Instruction::SDiv ||
+        BO->getOpcode() == Instruction::SRem || MatchIsOpZero)) 
     // A udiv/urem with a common divisor is safe because UB can only occur with
     // div-by-zero, and that would be present in the original code.
-    if (BO->getOpcode() == Instruction::SDiv ||
-        BO->getOpcode() == Instruction::SRem || MatchIsOpZero)
-      Cond = Builder.CreateFreeze(Cond);
-  }
+    Cond = Builder.CreateFreeze(Cond);
+  
 
   // If we reach here, they do have operations in common.
   Value *NewSI = Builder.CreateSelect(Cond, OtherOpT, OtherOpF,
@@ -1703,11 +1701,10 @@ Instruction *InstCombinerImpl::foldSelectValueEquivalence(SelectInst &Sel,
     // with different operands, which should not cause side-effects or trigger
     // undefined behavior). Only do this if CmpRHS is a constant, as
     // profitability is not clear for other cases.
-    if (OldOp == CmpLHS && match(NewOp, m_ImmConstant()) &&
+    if ((OldOp == CmpLHS && match(NewOp, m_ImmConstant()) &&
         !match(OldOp, m_Constant()) &&
-        isGuaranteedNotToBeUndef(NewOp, SQ.AC, &Sel, &DT))
-      if (replaceInInstruction(TrueVal, OldOp, NewOp))
-        return &Sel;
+        isGuaranteedNotToBeUndef(NewOp, SQ.AC, &Sel, &DT)) && (replaceInInstruction(TrueVal, OldOp, NewOp)))
+      return &Sel;
     return nullptr;
   };
 
@@ -2281,9 +2278,9 @@ Value *InstCombinerImpl::foldSelectWithConstOpToBinOp(ICmpInst *Cmp,
 
   // If we can attach no-wrap flags to the new instruction, do so if the
   // old instruction had them and C1 BinOp C2 does not overflow.
-  if (Instruction *BinOpInst = dyn_cast<Instruction>(BinOp)) {
-    if (BinOpc == Instruction::Add || BinOpc == Instruction::Sub ||
-        BinOpc == Instruction::Mul) {
+  if (Instruction *BinOpInst = dyn_cast<Instruction>(BinOp); BinOpInst && (BinOpc == Instruction::Add || BinOpc == Instruction::Sub ||
+        BinOpc == Instruction::Mul)) 
+    {
       Instruction *OldBinOp = cast<BinaryOperator>(TrueVal);
       if (OldBinOp->hasNoSignedWrap() &&
           willNotOverflow(BinOpc, RHS, C2, *BinOpInst, /*IsSigned=*/true))
@@ -2292,7 +2289,7 @@ Value *InstCombinerImpl::foldSelectWithConstOpToBinOp(ICmpInst *Cmp,
           willNotOverflow(BinOpc, RHS, C2, *BinOpInst, /*IsSigned=*/false))
         BinOpInst->setHasNoUnsignedWrap();
     }
-  }
+  
   return BinOp;
 }
 
@@ -2447,13 +2444,12 @@ Instruction *InstCombinerImpl::foldSPFofSPF(Instruction *Inner,
   if (Outer.getType() != Inner->getType())
     return nullptr;
 
-  if (C == A || C == B) {
+  if ((C == A || C == B) && (SPF1 == SPF2 && SelectPatternResult::isMinOrMax(SPF1))) 
     // MAX(MAX(A, B), B) -> MAX(A, B)
     // MIN(MIN(a, b), a) -> MIN(a, b)
     // TODO: This could be done in instsimplify.
-    if (SPF1 == SPF2 && SelectPatternResult::isMinOrMax(SPF1))
-      return replaceInstUsesWith(Outer, Inner);
-  }
+    return replaceInstUsesWith(Outer, Inner);
+  
 
   return nullptr;
 }
@@ -2861,11 +2857,9 @@ static Value *foldSelectCmpXchg(SelectInst &SI) {
   // If the select has a single user, and this user is a select instruction that
   // we can simplify, skip the cmpxchg simplification for now.
   if (SI.hasOneUse())
-    if (auto *Select = dyn_cast<SelectInst>(SI.user_back()))
-      if (Select->getCondition() == SI.getCondition())
-        if (Select->getFalseValue() == SI.getTrueValue() ||
-            Select->getTrueValue() == SI.getFalseValue())
-          return nullptr;
+    if (auto *Select = dyn_cast<SelectInst>(SI.user_back()); Select && (Select->getCondition() == SI.getCondition()) && (Select->getFalseValue() == SI.getTrueValue() ||
+            Select->getTrueValue() == SI.getFalseValue()))
+      return nullptr;
 
   // Ensure the select condition is the returned flag of a cmpxchg instruction.
   auto *CmpXchg = isExtractFromCmpXchg(SI.getCondition(), 1);
@@ -2875,18 +2869,16 @@ static Value *foldSelectCmpXchg(SelectInst &SI) {
   // Check the true value case: The true value of the select is the returned
   // value of the same cmpxchg used by the condition, and the false value is the
   // cmpxchg instruction's compare operand.
-  if (auto *X = isExtractFromCmpXchg(SI.getTrueValue(), 0))
-    if (X == CmpXchg &&
-        isCompareSameAsValue(X->getCompareOperand(), SI.getFalseValue()))
-      return SI.getFalseValue();
+  if (auto *X = isExtractFromCmpXchg(SI.getTrueValue(), 0); X && (X == CmpXchg &&
+        isCompareSameAsValue(X->getCompareOperand(), SI.getFalseValue())))
+    return SI.getFalseValue();
 
   // Check the false value case: The false value of the select is the returned
   // value of the same cmpxchg used by the condition, and the true value is the
   // cmpxchg instruction's compare operand.
-  if (auto *X = isExtractFromCmpXchg(SI.getFalseValue(), 0))
-    if (X == CmpXchg &&
-        isCompareSameAsValue(X->getCompareOperand(), SI.getTrueValue()))
-      return SI.getFalseValue();
+  if (auto *X = isExtractFromCmpXchg(SI.getFalseValue(), 0); X && (X == CmpXchg &&
+        isCompareSameAsValue(X->getCompareOperand(), SI.getTrueValue())))
+    return SI.getFalseValue();
 
   return nullptr;
 }
@@ -3146,9 +3138,8 @@ static Instruction *foldSelectToPhiImpl(SelectInst &Sel, BasicBlock *BB,
     else
       return nullptr;
     // Check availability.
-    if (auto *Insn = dyn_cast<Instruction>(Inputs[Pred]))
-      if (!DT.dominates(Insn, Pred->getTerminator()))
-        return nullptr;
+    if (auto *Insn = dyn_cast<Instruction>(Inputs[Pred]); Insn && (!DT.dominates(Insn, Pred->getTerminator())))
+      return nullptr;
   }
 
   Builder.SetInsertPoint(BB, BB->begin());
@@ -4507,14 +4498,14 @@ Instruction *InstCombinerImpl::visitSelectInst(SelectInst &SI) {
     FCmpInst::Predicate Pred = FCmp->getPredicate();
     Value *Cmp0 = FCmp->getOperand(0), *Cmp1 = FCmp->getOperand(1);
     // Are we selecting a value based on a comparison of the two values?
-    if ((Cmp0 == TrueVal && Cmp1 == FalseVal) ||
-        (Cmp0 == FalseVal && Cmp1 == TrueVal)) {
+    if (((Cmp0 == TrueVal && Cmp1 == FalseVal) ||
+        (Cmp0 == FalseVal && Cmp1 == TrueVal)) && (FCmp->hasOneUse() && FCmpInst::isUnordered(Pred))) 
       // Canonicalize to use ordered comparisons by swapping the select
       // operands.
       //
       // e.g.
       // (X ugt Y) ? X : Y -> (X ole Y) ? Y : X
-      if (FCmp->hasOneUse() && FCmpInst::isUnordered(Pred)) {
+      {
         FCmpInst::Predicate InvPred = FCmp->getInversePredicate();
         Value *NewCond = Builder.CreateFCmpFMF(InvPred, Cmp0, Cmp1, FCmp,
                                                FCmp->getName() + ".inv");
@@ -4528,7 +4519,7 @@ Instruction *InstCombinerImpl::visitSelectInst(SelectInst &SI) {
             Builder.CreateSelectFMF(NewCond, FalseVal, TrueVal, FMF);
         return replaceInstUsesWith(SI, NewSel);
       }
-    }
+    
 
     if (SIFPOp) {
       // Fold out scale-if-equals-zero pattern.
@@ -4606,8 +4597,8 @@ Instruction *InstCombinerImpl::visitSelectInst(SelectInst &SI) {
           const fltSemantics &FPSem = EltTy->getFltSemantics();
           DenormalMode Mode = F.getDenormalMode(FPSem);
 
-          if (RcpIfNan) {
-            if (Mode == DenormalMode::getIEEE()) {
+          if ((RcpIfNan) && (Mode == DenormalMode::getIEEE())) 
+            {
               // Special case for the other select operand. Otherwise, we may
               // need to insert freeze on Cmp0 in the compare and select.
               if (CanonicalizeIfNotNan)
@@ -4631,7 +4622,7 @@ Instruction *InstCombinerImpl::visitSelectInst(SelectInst &SI) {
               return replaceOperand(SI, Pred == CmpInst::FCMP_ORD ? 2 : 1,
                                     FrCmp0);
             }
-          }
+          
 
           if (CanonicalizeIfNotNan) {
             // IEEE handling does not have non-canonical values, so the
@@ -4850,8 +4841,8 @@ Instruction *InstCombinerImpl::visitSelectInst(SelectInst &SI) {
     if (Instruction *NV = foldOpIntoPhi(SI, PN))
       return NV;
 
-  if (SelectInst *TrueSI = dyn_cast<SelectInst>(TrueVal)) {
-    if (TrueSI->getCondition()->getType() == CondVal->getType()) {
+  if (SelectInst *TrueSI = dyn_cast<SelectInst>(TrueVal); TrueSI && (TrueSI->getCondition()->getType() == CondVal->getType())) 
+    {
       // Fold nested selects if the inner condition can be implied by the outer
       // condition.
       if (Value *V = simplifyNestedSelectsUsingImpliedCond(
@@ -4887,9 +4878,9 @@ Instruction *InstCombinerImpl::visitSelectInst(SelectInst &SI) {
         }
       }
     }
-  }
-  if (SelectInst *FalseSI = dyn_cast<SelectInst>(FalseVal)) {
-    if (FalseSI->getCondition()->getType() == CondVal->getType()) {
+  
+  if (SelectInst *FalseSI = dyn_cast<SelectInst>(FalseVal); FalseSI && (FalseSI->getCondition()->getType() == CondVal->getType())) 
+    {
       // Fold nested selects if the inner condition can be implied by the outer
       // condition.
       if (Value *V = simplifyNestedSelectsUsingImpliedCond(
@@ -4922,7 +4913,7 @@ Instruction *InstCombinerImpl::visitSelectInst(SelectInst &SI) {
         }
       }
     }
-  }
+  
 
   // Try to simplify a binop sandwiched between 2 selects with the same
   // condition. This is not valid for div/rem because the select might be
@@ -4932,39 +4923,39 @@ Instruction *InstCombinerImpl::visitSelectInst(SelectInst &SI) {
   // select(C, binop(select(C, X, Y), W), Z) -> select(C, binop(X, W), Z)
   BinaryOperator *TrueBO;
   if (match(TrueVal, m_OneUse(m_BinOp(TrueBO))) && !TrueBO->isIntDivRem()) {
-    if (auto *TrueBOSI = dyn_cast<SelectInst>(TrueBO->getOperand(0))) {
-      if (TrueBOSI->getCondition() == CondVal) {
+    if (auto *TrueBOSI = dyn_cast<SelectInst>(TrueBO->getOperand(0)); TrueBOSI && (TrueBOSI->getCondition() == CondVal)) 
+      {
         replaceOperand(*TrueBO, 0, TrueBOSI->getTrueValue());
         Worklist.push(TrueBO);
         return &SI;
       }
-    }
-    if (auto *TrueBOSI = dyn_cast<SelectInst>(TrueBO->getOperand(1))) {
-      if (TrueBOSI->getCondition() == CondVal) {
+    
+    if (auto *TrueBOSI = dyn_cast<SelectInst>(TrueBO->getOperand(1)); TrueBOSI && (TrueBOSI->getCondition() == CondVal)) 
+      {
         replaceOperand(*TrueBO, 1, TrueBOSI->getTrueValue());
         Worklist.push(TrueBO);
         return &SI;
       }
-    }
+    
   }
 
   // select(C, Z, binop(select(C, X, Y), W)) -> select(C, Z, binop(Y, W))
   BinaryOperator *FalseBO;
   if (match(FalseVal, m_OneUse(m_BinOp(FalseBO))) && !FalseBO->isIntDivRem()) {
-    if (auto *FalseBOSI = dyn_cast<SelectInst>(FalseBO->getOperand(0))) {
-      if (FalseBOSI->getCondition() == CondVal) {
+    if (auto *FalseBOSI = dyn_cast<SelectInst>(FalseBO->getOperand(0)); FalseBOSI && (FalseBOSI->getCondition() == CondVal)) 
+      {
         replaceOperand(*FalseBO, 0, FalseBOSI->getFalseValue());
         Worklist.push(FalseBO);
         return &SI;
       }
-    }
-    if (auto *FalseBOSI = dyn_cast<SelectInst>(FalseBO->getOperand(1))) {
-      if (FalseBOSI->getCondition() == CondVal) {
+    
+    if (auto *FalseBOSI = dyn_cast<SelectInst>(FalseBO->getOperand(1)); FalseBOSI && (FalseBOSI->getCondition() == CondVal)) 
+      {
         replaceOperand(*FalseBO, 1, FalseBOSI->getFalseValue());
         Worklist.push(FalseBO);
         return &SI;
       }
-    }
+    
   }
 
   Value *NotCond;

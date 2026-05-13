@@ -165,16 +165,14 @@ RecordInitListHelper::RecordInitListHelper(
 
 static void insertIfGlobal(const Decl &D,
                            llvm::SetVector<const VarDecl *> &Globals) {
-  if (auto *V = dyn_cast<VarDecl>(&D))
-    if (V->hasGlobalStorage())
-      Globals.insert(V);
+  if (auto *V = dyn_cast<VarDecl>(&D); V && (V->hasGlobalStorage()))
+    Globals.insert(V);
 }
 
 static void insertIfLocal(const Decl &D,
                           llvm::SetVector<const VarDecl *> &Locals) {
-  if (auto *V = dyn_cast<VarDecl>(&D))
-    if (V->hasLocalStorage() && !isa<ParmVarDecl>(V))
-      Locals.insert(V);
+  if (auto *V = dyn_cast<VarDecl>(&D); V && (V->hasLocalStorage() && !isa<ParmVarDecl>(V)))
+    Locals.insert(V);
 }
 
 static void insertIfFunction(const Decl &D,

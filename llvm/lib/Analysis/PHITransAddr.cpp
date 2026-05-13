@@ -188,11 +188,10 @@ Value *PHITransAddr::translateSubExpr(Value *V, BasicBlock *CurBB,
     // Otherwise we have to see if a casted version of the incoming pointer
     // is available.  If so, we can use it, otherwise we have to fail.
     for (User *U : PHIIn->users()) {
-      if (CastInst *CastI = dyn_cast<CastInst>(U))
-        if (CastI->getOpcode() == Cast->getOpcode() &&
+      if (CastInst *CastI = dyn_cast<CastInst>(U); CastI && (CastI->getOpcode() == Cast->getOpcode() &&
             CastI->getType() == Cast->getType() &&
-            (!DT || DT->dominates(CastI->getParent(), PredBB)))
-          return CastI;
+            (!DT || DT->dominates(CastI->getParent(), PredBB))))
+        return CastI;
     }
     return nullptr;
   }
@@ -228,15 +227,14 @@ Value *PHITransAddr::translateSubExpr(Value *V, BasicBlock *CurBB,
       return nullptr;
 
     for (User *U : APHIOp->users()) {
-      if (GetElementPtrInst *GEPI = dyn_cast<GetElementPtrInst>(U))
-        if (GEPI->getType() == GEP->getType() &&
+      if (GetElementPtrInst *GEPI = dyn_cast<GetElementPtrInst>(U); GEPI && (GEPI->getType() == GEP->getType() &&
             GEPI->getSourceElementType() == GEP->getSourceElementType() &&
             GEPI->getNumOperands() == GEPOps.size() &&
             GEPI->getParent()->getParent() == CurBB->getParent() &&
-            (!DT || DT->dominates(GEPI->getParent(), PredBB))) {
-          if (std::equal(GEPOps.begin(), GEPOps.end(), GEPI->op_begin()))
-            return GEPI;
-        }
+            (!DT || DT->dominates(GEPI->getParent(), PredBB))) && (std::equal(GEPOps.begin(), GEPOps.end(), GEPI->op_begin())))
+        
+          return GEPI;
+        
     }
     return nullptr;
   }
@@ -253,9 +251,8 @@ Value *PHITransAddr::translateSubExpr(Value *V, BasicBlock *CurBB,
     if (!LHS) return nullptr;
 
     // If the PHI translated LHS is an add of a constant, fold the immediates.
-    if (BinaryOperator *BOp = dyn_cast<BinaryOperator>(LHS))
-      if (BOp->getOpcode() == Instruction::Add)
-        if (ConstantInt *CI = dyn_cast<ConstantInt>(BOp->getOperand(1))) {
+    if (BinaryOperator *BOp = dyn_cast<BinaryOperator>(LHS); BOp && (BOp->getOpcode() == Instruction::Add))
+      if (ConstantInt *CI = dyn_cast<ConstantInt>(BOp->getOperand(1))) {
           LHS = BOp->getOperand(0);
           RHS = ConstantExpr::getAdd(RHS, CI);
           isNSW = isNUW = false;
@@ -281,12 +278,11 @@ Value *PHITransAddr::translateSubExpr(Value *V, BasicBlock *CurBB,
 
     // Otherwise, see if we have this add available somewhere.
     for (User *U : LHS->users()) {
-      if (BinaryOperator *BO = dyn_cast<BinaryOperator>(U))
-        if (BO->getOpcode() == Instruction::Add &&
+      if (BinaryOperator *BO = dyn_cast<BinaryOperator>(U); BO && (BO->getOpcode() == Instruction::Add &&
             BO->getOperand(0) == LHS && BO->getOperand(1) == RHS &&
             BO->getParent()->getParent() == CurBB->getParent() &&
-            (!DT || DT->dominates(BO->getParent(), PredBB)))
-          return BO;
+            (!DT || DT->dominates(BO->getParent(), PredBB))))
+        return BO;
     }
 
     return nullptr;
@@ -312,9 +308,8 @@ Value *PHITransAddr::translateValue(BasicBlock *CurBB, BasicBlock *PredBB,
 
   if (MustDominate)
     // Make sure the value is live in the predecessor.
-    if (Instruction *Inst = dyn_cast_or_null<Instruction>(Addr))
-      if (!DT->dominates(Inst->getParent(), PredBB))
-        Addr = nullptr;
+    if (Instruction *Inst = dyn_cast_or_null<Instruction>(Addr); Inst && (!DT->dominates(Inst->getParent(), PredBB)))
+      Addr = nullptr;
 
   return Addr;
 }

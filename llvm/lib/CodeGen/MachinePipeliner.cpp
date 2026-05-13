@@ -2048,11 +2048,10 @@ bool SwingSchedulerDAG::Circuits::circuit(int V, int S, NodeSetType &NodeSets,
       ++NumPaths;
       break;
     }
-    if (!Blocked.test(W)) {
-      if (circuit(W, S, NodeSets, DAG,
-                  Node2Idx->at(W) < Node2Idx->at(V) ? true : HasBackedge))
-        F = true;
-    }
+    if ((!Blocked.test(W)) && (circuit(W, S, NodeSets, DAG,
+                  Node2Idx->at(W) < Node2Idx->at(V) ? true : HasBackedge))) 
+      F = true;
+    
   }
 
   if (F)
@@ -3351,9 +3350,8 @@ void SMSchedule::orderDependence(const SwingSchedulerDAG *SSD, SUnit *SU,
 
       Register Reg = MO.getReg();
       unsigned BasePos, OffsetPos;
-      if (ST.getInstrInfo()->getBaseAndOffsetPosition(*MI, BasePos, OffsetPos))
-        if (MI->getOperand(BasePos).getReg() == Reg)
-          if (Register NewReg = SSD->getInstrBaseReg(SU))
+      if ((ST.getInstrInfo()->getBaseAndOffsetPosition(*MI, BasePos, OffsetPos)) && (MI->getOperand(BasePos).getReg() == Reg))
+        if (Register NewReg = SSD->getInstrBaseReg(SU))
             Reg = NewReg;
       bool Reads, Writes;
       std::tie(Reads, Writes) =
@@ -3388,13 +3386,13 @@ void SMSchedule::orderDependence(const SwingSchedulerDAG *SSD, SUnit *SU,
         OrderBeforeUse = true;
         if (MoveUse == 0)
           MoveUse = Pos;
-      } else if (MO.isUse() && stageScheduled(*I) == StageInst1 &&
-                 isLoopCarriedDefOfUse(SSD, (*I)->getInstr(), MO)) {
-        if (MoveUse == 0) {
+      } else if ((MO.isUse() && stageScheduled(*I) == StageInst1 &&
+                 isLoopCarriedDefOfUse(SSD, (*I)->getInstr(), MO)) && (MoveUse == 0)) 
+        {
           OrderBeforeDef = true;
           MoveUse = Pos;
         }
-      }
+      
     }
     // Check for order dependences between instructions. Make sure the source
     // is ordered before the destination.
@@ -3636,8 +3634,8 @@ bool SMSchedule::isValidSchedule(SwingSchedulerDAG *SSD) {
     assert(StageDef != -1 && "Instruction should have been scheduled.");
     for (auto &OE : SSD->getDDG()->getOutEdges(&SU)) {
       SUnit *Dst = OE.getDst();
-      if (OE.isAssignedRegDep() && !Dst->isBoundaryNode())
-        if (OE.getReg().isPhysical()) {
+      if ((OE.isAssignedRegDep() && !Dst->isBoundaryNode()) && (OE.getReg().isPhysical()))
+        {
           if (stageScheduled(Dst) != StageDef)
             return false;
           if (InstrToCycle[Dst] <= CycleDef)

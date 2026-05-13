@@ -305,11 +305,10 @@ static void ProcessAPINotes(Sema &S, Decl *D,
         },
         [](const Decl *D) {
           return llvm::find_if(D->attrs(), [](const Attr *attr) {
-            if (const auto *swiftAttr = dyn_cast<SwiftAttrAttr>(attr)) {
-              if (swiftAttr->getAttribute() == "safe" ||
-                  swiftAttr->getAttribute() == "unsafe")
-                return true;
-            }
+            if (const auto *swiftAttr = dyn_cast<SwiftAttrAttr>(attr); swiftAttr && (swiftAttr->getAttribute() == "safe" ||
+                  swiftAttr->getAttribute() == "unsafe")) 
+              return true;
+            
             return false;
           });
         });
@@ -459,11 +458,10 @@ void Sema::ApplyNullability(Decl *D, NullabilityKind Nullability) {
       Value->setType(*Modified);
 
       // Make it a context-sensitive keyword if we can.
-      if (auto Parm = dyn_cast<ParmVarDecl>(D)) {
-        if (Parm->isObjCMethodParameter() && !isIndirectPointerType(*Modified))
-          Parm->setObjCDeclQualifier(Decl::ObjCDeclQualifier(
+      if (auto Parm = dyn_cast<ParmVarDecl>(D); Parm && (Parm->isObjCMethodParameter() && !isIndirectPointerType(*Modified))) 
+        Parm->setObjCDeclQualifier(Decl::ObjCDeclQualifier(
               Parm->getObjCDeclQualifier() | Decl::OBJC_TQ_CSNullability));
-      }
+      
     }
   } else if (auto Property = dyn_cast<ObjCPropertyDecl>(D)) {
     if (auto Modified = GetModified(D, Property->getType(), Nullability)) {
@@ -1202,10 +1200,10 @@ void Sema::ProcessAPINotes(Decl *D) {
   }
 
   if (auto TagContext = dyn_cast<TagDecl>(DC)) {
-    if (auto CXXMethod = dyn_cast<CXXMethodDecl>(D)) {
-      if (!isa<CXXConstructorDecl>(CXXMethod) &&
+    if (auto CXXMethod = dyn_cast<CXXMethodDecl>(D); CXXMethod && (!isa<CXXConstructorDecl>(CXXMethod) &&
           !isa<CXXDestructorDecl>(CXXMethod) &&
-          !isa<CXXConversionDecl>(CXXMethod)) {
+          !isa<CXXConversionDecl>(CXXMethod))) 
+      {
         for (auto Reader : APINotes.findAPINotes(D->getLocation())) {
           if (auto Context = UnwindTagContext(TagContext, APINotes)) {
             std::string MethodName;
@@ -1221,10 +1219,10 @@ void Sema::ProcessAPINotes(Decl *D) {
           }
         }
       }
-    }
+    
 
-    if (auto Field = dyn_cast<FieldDecl>(D)) {
-      if (!Field->isUnnamedBitField() && !Field->isAnonymousStructOrUnion()) {
+    if (auto Field = dyn_cast<FieldDecl>(D); Field && (!Field->isUnnamedBitField() && !Field->isAnonymousStructOrUnion())) 
+      {
         for (auto Reader : APINotes.findAPINotes(D->getLocation())) {
           if (auto Context = UnwindTagContext(TagContext, APINotes)) {
             auto Info = Reader->lookupField(Context->id, Field->getName());
@@ -1232,7 +1230,7 @@ void Sema::ProcessAPINotes(Decl *D) {
           }
         }
       }
-    }
+    
 
     if (auto Tag = dyn_cast<TagDecl>(D)) {
       for (auto Reader : APINotes.findAPINotes(D->getLocation())) {

@@ -1607,13 +1607,13 @@ std::string Triple::normalize(StringRef Str, CanonicalForm Form) {
     Components[2] = "windows";
     Components[3] = "cygnus";
   }
-  if (IsMinGW32 || IsCygwin ||
-      (OS == Triple::Win32 && Environment != UnknownEnvironment)) {
-    if (ObjectFormat != UnknownObjectFormat && ObjectFormat != Triple::COFF) {
+  if ((IsMinGW32 || IsCygwin ||
+      (OS == Triple::Win32 && Environment != UnknownEnvironment)) && (ObjectFormat != UnknownObjectFormat && ObjectFormat != Triple::COFF)) 
+    {
       Components.resize(5);
       Components[4] = getObjectFormatTypeName(ObjectFormat);
     }
-  }
+  
 
   // Normalize DXIL triple if it does not include DXIL version number.
   // Determine DXIL version number using the minor version number of Shader
@@ -1699,15 +1699,15 @@ StringRef Triple::getEnvironmentVersionString() const {
   StringRef EnvironmentTypeName = getEnvironmentTypeName(getEnvironment());
   EnvironmentName.consume_front(EnvironmentTypeName);
 
-  if (EnvironmentName.contains("-")) {
+  if ((EnvironmentName.contains("-")) && (getObjectFormat() != Triple::UnknownObjectFormat)) 
     // -obj is the suffix
-    if (getObjectFormat() != Triple::UnknownObjectFormat) {
+    {
       StringRef ObjectFormatTypeName =
           getObjectFormatTypeName(getObjectFormat());
       const std::string tmp = (Twine("-") + ObjectFormatTypeName).str();
       EnvironmentName.consume_back(tmp);
     }
-  }
+  
   return EnvironmentName;
 }
 
@@ -2539,9 +2539,8 @@ bool Triple::isCompatibleWith(const Triple &Other) const {
 
 std::string Triple::merge(const Triple &Other) const {
   // If vendor is apple, pick the triple with the larger version number.
-  if (getVendor() == Triple::Apple)
-    if (Other.isOSVersionLT(*this))
-      return str();
+  if ((getVendor() == Triple::Apple) && (Other.isOSVersionLT(*this)))
+    return str();
 
   return Other.str();
 }

@@ -625,8 +625,8 @@ static void computeBlockInfo(CodeGenModule &CGM, CodeGenFunction *CGF,
     QualType VT = getCaptureFieldType(*CGF, CI);
 
     if (CGM.getLangOpts().CPlusPlus)
-      if (const CXXRecordDecl *record = VT->getAsCXXRecordDecl())
-        if (CI.hasCopyExpr() || !record->hasTrivialDestructor()) {
+      if (const CXXRecordDecl *record = VT->getAsCXXRecordDecl(); record && (CI.hasCopyExpr() || !record->hasTrivialDestructor()))
+        {
           info.HasCXXObject = true;
           if (!record->isExternallyVisible())
             info.CapturesNonExternalType = true;
@@ -1094,9 +1094,8 @@ llvm::Value *CodeGenFunction::EmitBlockLiteral(const CGBlockInfo &blockInfo) {
       auto *EWC = llvm::dyn_cast_or_null<ExprWithCleanups>(RetExpr);
       if (EWC)
         for (auto &C : EWC->getObjects())
-          if (auto *BD = C.dyn_cast<BlockDecl *>())
-            if (BD == blockDecl)
-              return true;
+          if (auto *BD = C.dyn_cast<BlockDecl *>(); BD && (BD == blockDecl))
+            return true;
       return false;
     };
 
@@ -1420,15 +1419,15 @@ void CodeGenFunction::setBlockContextParameter(const ImplicitParamDecl *D,
   // debug info at -O0. The mem2reg pass will eliminate it when optimizing.
   RawAddress alloc = CreateMemTemp(D->getType(), D->getName() + ".addr");
   Builder.CreateStore(arg, alloc);
-  if (CGDebugInfo *DI = getDebugInfo()) {
-    if (CGM.getCodeGenOpts().hasReducedDebugInfo()) {
+  if (CGDebugInfo *DI = getDebugInfo(); DI && (CGM.getCodeGenOpts().hasReducedDebugInfo())) 
+    {
       DI->setLocation(D->getLocation());
       DI->EmitDeclareOfBlockLiteralArgVariable(
           *BlockInfo, D->getName(), argNum,
           cast<llvm::AllocaInst>(alloc.getPointer()->stripPointerCasts()),
           Builder);
     }
-  }
+  
 
   SourceLocation StartLoc = BlockInfo->getBlockExpr()->getBody()->getBeginLoc();
   ApplyDebugLocation Scope(*this, StartLoc);
@@ -1788,14 +1787,12 @@ static std::string getBlockCaptureStr(const CGBlockInfo::Capture &Cap,
       else {
         // If CaptureStrKind::Merged is passed, check both the copy expression
         // and the destructor.
-        if (StrKind != CaptureStrKind::DisposeHelper) {
-          if (Ctx.getBlockVarCopyInit(Var).canThrow())
-            Str += "c";
-        }
-        if (StrKind != CaptureStrKind::CopyHelper) {
-          if (CodeGenFunction::cxxDestructorCanThrow(CaptureTy))
-            Str += "d";
-        }
+        if ((StrKind != CaptureStrKind::DisposeHelper) && (Ctx.getBlockVarCopyInit(Var).canThrow())) 
+          Str += "c";
+        
+        if ((StrKind != CaptureStrKind::CopyHelper) && (CodeGenFunction::cxxDestructorCanThrow(CaptureTy))) 
+          Str += "d";
+        
       }
     } else {
       assert((F & BLOCK_FIELD_IS_OBJECT) && "unexpected flag value");

@@ -145,9 +145,8 @@ static Expected<BitstreamCursor> initStream(MemoryBufferRef Buffer) {
 
   // If we have a wrapper header, parse it and ignore the non-bc file contents.
   // The magic number is 0x0B17C0DE stored in little endian.
-  if (isBitcodeWrapper(BufPtr, BufEnd))
-    if (SkipBitcodeWrapperHeader(BufPtr, BufEnd, true))
-      return error("Invalid bitcode wrapper header");
+  if ((isBitcodeWrapper(BufPtr, BufEnd)) && (SkipBitcodeWrapperHeader(BufPtr, BufEnd, true)))
+    return error("Invalid bitcode wrapper header");
 
   BitstreamCursor Stream(ArrayRef<uint8_t>(BufPtr, BufEnd));
   if (Error Err = hasInvalidBitcodeHeader(Stream))
@@ -3348,9 +3347,8 @@ Error BitcodeReader::parseConstants() {
     case bitc::CST_CODE_NULL:      // NULL
       if (CurTy->isVoidTy() || CurTy->isFunctionTy() || CurTy->isLabelTy())
         return error("Invalid type for a constant null value");
-      if (auto *TETy = dyn_cast<TargetExtType>(CurTy))
-        if (!TETy->hasProperty(TargetExtType::HasZeroInit))
-          return error("Invalid type for a constant null value");
+      if (auto *TETy = dyn_cast<TargetExtType>(CurTy); TETy && (!TETy->hasProperty(TargetExtType::HasZeroInit)))
+        return error("Invalid type for a constant null value");
       V = Constant::getNullValue(CurTy);
       break;
     case bitc::CST_CODE_INTEGER:   // INTEGER: [intval]
@@ -3499,13 +3497,12 @@ Error BitcodeReader::parseConstants() {
               Flags |= OverflowingBinaryOperator::NoSignedWrap;
             if (Record[3] & (1 << bitc::OBO_NO_UNSIGNED_WRAP))
               Flags |= OverflowingBinaryOperator::NoUnsignedWrap;
-          } else if (Opc == Instruction::SDiv ||
+          } else if ((Opc == Instruction::SDiv ||
                      Opc == Instruction::UDiv ||
                      Opc == Instruction::LShr ||
-                     Opc == Instruction::AShr) {
-            if (Record[3] & (1 << bitc::PEO_EXACT))
-              Flags |= PossiblyExactOperator::IsExact;
-          }
+                     Opc == Instruction::AShr) && (Record[3] & (1 << bitc::PEO_EXACT))) 
+            Flags |= PossiblyExactOperator::IsExact;
+          
         }
         V = BitcodeConstant::create(Alloc, CurTy, {(uint8_t)Opc, Flags},
                                     {(unsigned)Record[1], (unsigned)Record[2]});
@@ -5191,13 +5188,13 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
       I = UnaryOperator::Create((Instruction::UnaryOps)Opc, LHS);
       ResTypeID = TypeID;
       InstructionList.push_back(I);
-      if (OpNum < Record.size()) {
-        if (isa<FPMathOperator>(I)) {
+      if ((OpNum < Record.size()) && (isa<FPMathOperator>(I))) 
+        {
           FastMathFlags FMF = getDecodedFastMathFlags(Record[OpNum]);
           if (FMF.any())
             I->setFastMathFlags(FMF);
         }
-      }
+      
       break;
     }
     case bitc::FUNC_CODE_INST_BINOP: {    // BINOP: [opval, ty, opval, opcode]
@@ -6985,8 +6982,8 @@ OutOfRecordLoop:
     return error("Operand bundles found with no consumer");
 
   // Check the function list for unresolved values.
-  if (Argument *A = dyn_cast<Argument>(ValueList.back())) {
-    if (!A->getParent()) {
+  if (Argument *A = dyn_cast<Argument>(ValueList.back()); A && (!A->getParent())) 
+    {
       // We found at least one unresolved value.  Nuke them all to avoid leaks.
       for (unsigned i = ModuleValueListSize, e = ValueList.size(); i != e; ++i){
         if ((A = dyn_cast_or_null<Argument>(ValueList[i])) && !A->getParent()) {
@@ -6996,7 +6993,7 @@ OutOfRecordLoop:
       }
       return error("Never resolved value found in function");
     }
-  }
+  
 
   // Unexpected unresolved metadata about to be dropped.
   if (MDLoader->hasFwdRefs())

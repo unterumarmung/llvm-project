@@ -944,8 +944,8 @@ fp16_fml_fallthrough:
   if (!ForAS && !ForMultilib) {
     // Supported only on ARMv6T2 and ARMv7 and above.
     // Cannot be combined with -mno-movt.
-    if (Arg *A = Args.getLastArg(options::OPT_mexecute_only, options::OPT_mno_execute_only)) {
-      if (A->getOption().matches(options::OPT_mexecute_only)) {
+    if (Arg *A = Args.getLastArg(options::OPT_mexecute_only, options::OPT_mno_execute_only); A && (A->getOption().matches(options::OPT_mexecute_only))) 
+      {
         if (getARMSubArchVersionNumber(Triple) < 7 &&
             llvm::ARM::parseArch(Triple.getArchName()) != llvm::ARM::ArchKind::ARMV6T2 &&
             llvm::ARM::parseArch(Triple.getArchName()) != llvm::ARM::ArchKind::ARMV6M)
@@ -961,7 +961,7 @@ fp16_fml_fallthrough:
               << A->getAsString(Args) << B->getAsString(Args);
         Features.push_back("+execute-only");
       }
-    }
+    
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_mno_unaligned_access,
@@ -1065,9 +1065,8 @@ fp16_fml_fallthrough:
       }
     }
 
-    if (EnableRetBr || EnableBlr)
-      if (!(isARMAProfile(Triple) && getARMSubArchVersionNumber(Triple) >= 7))
-        D.Diag(diag::err_sls_hardening_arm_not_supported)
+    if ((EnableRetBr || EnableBlr) && (!(isARMAProfile(Triple) && getARMSubArchVersionNumber(Triple) >= 7)))
+      D.Diag(diag::err_sls_hardening_arm_not_supported)
             << Scope << A->getAsString(Args);
 
     if (EnableRetBr)

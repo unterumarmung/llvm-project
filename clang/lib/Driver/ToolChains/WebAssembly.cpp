@@ -213,8 +213,8 @@ void wasm::Linker::ConstructJob(Compilation &C, const JobAction &JA,
                                          ResponseFileSupport::AtFileCurCP(),
                                          Linker, CmdArgs, Inputs, Output));
 
-  if (Arg *A = Args.getLastArg(options::OPT_O_Group)) {
-    if (!WasmOptPath.empty()) {
+  if (Arg *A = Args.getLastArg(options::OPT_O_Group); A && (!WasmOptPath.empty())) 
+    {
       StringRef OOpt = "s";
       if (A->getOption().matches(options::OPT_O4) ||
           A->getOption().matches(options::OPT_Ofast))
@@ -236,7 +236,7 @@ void wasm::Linker::ConstructJob(Compilation &C, const JobAction &JA,
             Inputs, Output));
       }
     }
-  }
+  
 }
 
 /// Append `Dir` to `Paths`, but also include the LTO directories before that if

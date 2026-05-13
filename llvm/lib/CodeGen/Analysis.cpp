@@ -568,12 +568,11 @@ bool llvm::isInTailCallPosition(const CallBase &Call, const TargetMachine &TM,
       continue;
     // A lifetime end, assume or noalias.decl intrinsic should not stop tail
     // call optimization.
-    if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(BBI))
-      if (II->getIntrinsicID() == Intrinsic::lifetime_end ||
+    if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(BBI); II && (II->getIntrinsicID() == Intrinsic::lifetime_end ||
           II->getIntrinsicID() == Intrinsic::assume ||
           II->getIntrinsicID() == Intrinsic::experimental_noalias_scope_decl ||
-          II->getIntrinsicID() == Intrinsic::fake_use)
-        continue;
+          II->getIntrinsicID() == Intrinsic::fake_use))
+      continue;
     if (BBI->mayHaveSideEffects() || BBI->mayReadFromMemory() ||
         !isSafeToSpeculativelyExecute(&*BBI))
       return false;

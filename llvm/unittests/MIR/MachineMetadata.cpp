@@ -52,17 +52,15 @@ protected:
     // Setup hooks to assign slot numbers for the specified machine metadata.
     MST.setProcessHook([&MO](AbstractSlotTrackerStorage *AST, const Module *M,
                              bool ShouldInitializeAllMetadata) {
-      if (ShouldInitializeAllMetadata) {
-        if (MO.isMetadata())
-          AST->createMetadataSlot(MO.getMetadata());
-      }
+      if ((ShouldInitializeAllMetadata) && (MO.isMetadata())) 
+        AST->createMetadataSlot(MO.getMetadata());
+      
     });
     MST.setProcessHook([&MO](AbstractSlotTrackerStorage *AST, const Function *F,
                              bool ShouldInitializeAllMetadata) {
-      if (!ShouldInitializeAllMetadata) {
-        if (MO.isMetadata())
-          AST->createMetadataSlot(MO.getMetadata());
-      }
+      if ((!ShouldInitializeAllMetadata) && (MO.isMetadata())) 
+        AST->createMetadataSlot(MO.getMetadata());
+      
     });
   }
 

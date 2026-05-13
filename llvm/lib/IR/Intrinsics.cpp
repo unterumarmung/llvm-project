@@ -1168,9 +1168,8 @@ std::optional<Function *> Intrinsic::remangleIntrinsicFunction(Function *F) {
 
   Function *NewDecl = [&] {
     if (auto *ExistingGV = F->getParent()->getNamedValue(WantedName)) {
-      if (auto *ExistingF = dyn_cast<Function>(ExistingGV))
-        if (ExistingF->getFunctionType() == F->getFunctionType())
-          return ExistingF;
+      if (auto *ExistingF = dyn_cast<Function>(ExistingGV); ExistingF && (ExistingF->getFunctionType() == F->getFunctionType()))
+        return ExistingF;
 
       // The name already exists, but is not a function or has the wrong
       // prototype. Make place for the new one by renaming the old version.

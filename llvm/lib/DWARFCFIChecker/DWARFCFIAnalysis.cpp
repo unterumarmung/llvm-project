@@ -141,11 +141,10 @@ void DWARFCFIAnalysis::update(const MCInst &Inst,
 
   for (unsigned I = 0; I < Inst.getNumOperands(); I++) {
     auto &&Op = Inst.getOperand(I);
-    if (Op.isReg()) {
-      if (I < MCInstInfo.getNumDefs())
-        Writes.insert(
+    if ((Op.isReg()) && (I < MCInstInfo.getNumDefs())) 
+      Writes.insert(
             MCRI->getDwarfRegNum(getSuperReg(MCRI, Op.getReg()), IsEH));
-    }
+    
   }
 
   auto MaybeNextRow = State.getCurrentUnwindRow();

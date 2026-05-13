@@ -1013,10 +1013,9 @@ void StdLibraryFunctionsChecker::RangeConstraint::applyOnOutOfRange(
   for (size_t I = 1; I != E; ++I) {
     const llvm::APSInt &Min = BVF.getValue(R[I - 1].second + 1ULL, ArgT);
     const llvm::APSInt &Max = BVF.getValue(R[I].first - 1ULL, ArgT);
-    if (Min <= Max) {
-      if (!F(Min, Max))
-        return;
-    }
+    if ((Min <= Max) && (!F(Min, Max))) 
+      return;
+    
   }
   // Check the interval [T_MIN, min(R) - 1].
   if (RangeLeft != PlusInf) {
@@ -1731,8 +1730,8 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
       if (LookupRes.empty())
         return false;
       for (Decl *D : LookupRes) {
-        if (auto *FD = dyn_cast<FunctionDecl>(D)) {
-          if (Sum.matchesAndSet(Sign, FD)) {
+        if (auto *FD = dyn_cast<FunctionDecl>(D); FD && (Sum.matchesAndSet(Sign, FD))) 
+          {
             auto Res = Map.insert({FD->getCanonicalDecl(), Sum});
             assert(Res.second && "Function already has a summary set!");
             (void)Res;
@@ -1743,7 +1742,7 @@ void StdLibraryFunctionsChecker::initFunctionSummaries(
             }
             return true;
           }
-        }
+        
       }
       return false;
     }

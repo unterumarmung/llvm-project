@@ -602,12 +602,12 @@ bool llvm::sinkRegion(DomTreeNode *N, AAResults *AA, LoopInfo *LI,
       //
       bool FoldableInLoop = false;
       bool LoopNestMode = OutermostLoop != nullptr;
-      if (!I.mayHaveSideEffects() &&
+      if ((!I.mayHaveSideEffects() &&
           isNotUsedOrFoldableInLoop(I, LoopNestMode ? OutermostLoop : CurLoop,
                                     SafetyInfo, TTI, FoldableInLoop,
                                     LoopNestMode) &&
-          canSinkOrHoistInst(I, AA, DT, CurLoop, MSSAU, true, Flags, ORE)) {
-        if (sink(I, LI, DT, CurLoop, SafetyInfo, MSSAU, ORE)) {
+          canSinkOrHoistInst(I, AA, DT, CurLoop, MSSAU, true, Flags, ORE)) && (sink(I, LI, DT, CurLoop, SafetyInfo, MSSAU, ORE))) 
+        {
           if (!FoldableInLoop) {
             ++II;
             salvageDebugInfo(I);
@@ -615,7 +615,7 @@ bool llvm::sinkRegion(DomTreeNode *N, AAResults *AA, LoopInfo *LI,
           }
           Changed = true;
         }
-      }
+      
     }
   }
   if (VerifyMemorySSA)
@@ -983,8 +983,8 @@ bool llvm::hoistRegion(DomTreeNode *N, AAResults *AA, LoopInfo *LI,
         continue;
       }
 
-      if (PHINode *PN = dyn_cast<PHINode>(&I)) {
-        if (CFH.canHoistPHI(PN)) {
+      if (PHINode *PN = dyn_cast<PHINode>(&I); PN && (CFH.canHoistPHI(PN))) 
+        {
           // Redirect incoming blocks first to ensure that we create hoisted
           // versions of those blocks before we hoist the phi.
           for (unsigned int i = 0; i < PN->getNumIncomingValues(); ++i)
@@ -996,7 +996,7 @@ bool llvm::hoistRegion(DomTreeNode *N, AAResults *AA, LoopInfo *LI,
           Changed = true;
           continue;
         }
-      }
+      
 
       // Try to reassociate instructions so that part of computations can be
       // done out of loop.
@@ -1342,10 +1342,9 @@ static bool isNotUsedOrFoldableInLoop(const Instruction &I, const Loop *CurLoop,
 
       // We need to sink a callsite to a unique funclet.  Avoid sinking if the
       // phi use is too muddled.
-      if (isa<CallInst>(I))
-        if (!BlockColors.empty() &&
-            BlockColors.find(const_cast<BasicBlock *>(BB))->second.size() != 1)
-          return false;
+      if ((isa<CallInst>(I)) && (!BlockColors.empty() &&
+            BlockColors.find(const_cast<BasicBlock *>(BB))->second.size() != 1))
+        return false;
 
       if (LoopNestMode) {
         while (isa<PHINode>(UI) && UI->hasOneUser() &&
@@ -2040,10 +2039,10 @@ bool llvm::promoteLoopAccessesToScalars(
         // sufficient alignment at the target location.  Proving it guaranteed
         // to execute does as well.  Thus we can increase our guaranteed
         // alignment as well.
-        if (!DereferenceableInPH || (InstAlignment > Alignment))
-          if (isSafeToExecuteUnconditionally(
+        if ((!DereferenceableInPH || (InstAlignment > Alignment)) && (isSafeToExecuteUnconditionally(
                   *Load, DT, TLI, CurLoop, SafetyInfo, ORE,
-                  Preheader->getTerminator(), AC, AllowSpeculation)) {
+                  Preheader->getTerminator(), AC, AllowSpeculation)))
+          {
             DereferenceableInPH = true;
             Alignment = std::max(Alignment, InstAlignment);
           }
@@ -2397,9 +2396,8 @@ static bool pointerInvalidatedByLoop(MemorySSA *MSSA, MemoryUse *MU,
 bool pointerInvalidatedByBlock(BasicBlock &BB, MemorySSA &MSSA, MemoryUse &MU) {
   if (const auto *Accesses = MSSA.getBlockDefs(&BB))
     for (const auto &MA : *Accesses)
-      if (const auto *MD = dyn_cast<MemoryDef>(&MA))
-        if (MU.getBlock() != MD->getBlock() || !MSSA.locallyDominates(MD, &MU))
-          return true;
+      if (const auto *MD = dyn_cast<MemoryDef>(&MA); MD && (MU.getBlock() != MD->getBlock() || !MSSA.locallyDominates(MD, &MU)))
+        return true;
   return false;
 }
 

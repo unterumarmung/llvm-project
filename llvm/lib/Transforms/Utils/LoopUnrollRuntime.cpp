@@ -130,11 +130,11 @@ static void ConnectProlog(Loop *L, Value *BECount, unsigned Count,
       }
 
       Value *V = PN.getIncomingValueForBlock(Latch);
-      if (Instruction *I = dyn_cast<Instruction>(V)) {
-        if (L->contains(I)) {
+      if (Instruction *I = dyn_cast<Instruction>(V); I && (L->contains(I))) 
+        {
           V = VMap.lookup(I);
         }
-      }
+      
       // Adding a value to the new PHI node from the last prolog block
       // that was created.
       NewPN->addIncoming(V, PrologLatch);
@@ -825,8 +825,8 @@ bool llvm::UnrollRuntimeLoopRemainder(
     // to account for the fact that our epilogue is still in the same outer
     // loop. Note that this leaves loopinfo temporarily out of sync with the
     // CFG until the actual epilogue loop is inserted.
-    if (auto *ParentL = L->getParentLoop())
-      if (LI->getLoopFor(LatchExit) != ParentL) {
+    if (auto *ParentL = L->getParentLoop(); ParentL && (LI->getLoopFor(LatchExit) != ParentL))
+      {
         LI->removeBlock(NewExit);
         ParentL->addBasicBlockToLoop(NewExit, *LI);
         LI->removeBlock(EpilogPreHeader);
@@ -970,9 +970,8 @@ bool llvm::UnrollRuntimeLoopRemainder(
          continue;
 
        auto *V = PN.getIncomingValue(i);
-       if (Instruction *I = dyn_cast<Instruction>(V))
-         if (L->contains(I))
-           V = VMap.lookup(I);
+       if (Instruction *I = dyn_cast<Instruction>(V); I && (L->contains(I)))
+         V = VMap.lookup(I);
        PN.addIncoming(V, cast<BasicBlock>(VMap[PredBB]));
      }
    }
@@ -1096,9 +1095,8 @@ bool llvm::UnrollRuntimeLoopRemainder(
     SmallVector<WeakTrackingVH, 16> DeadInsts;
     for (BasicBlock *BB : RemainderBlocks) {
       for (Instruction &Inst : llvm::make_early_inc_range(*BB)) {
-        if (Value *V = simplifyInstruction(&Inst, {DL, nullptr, DT, AC}))
-          if (LI->replacementPreservesLCSSAForm(&Inst, V))
-            Inst.replaceAllUsesWith(V);
+        if (Value *V = simplifyInstruction(&Inst, {DL, nullptr, DT, AC}); V && (LI->replacementPreservesLCSSAForm(&Inst, V)))
+          Inst.replaceAllUsesWith(V);
         if (isInstructionTriviallyDead(&Inst))
           DeadInsts.emplace_back(&Inst);
       }

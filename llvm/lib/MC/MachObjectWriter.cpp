@@ -1091,16 +1091,16 @@ uint64_t MachObjectWriter::writeObject() {
       // special handling.
       const MCSectionMachO &Section =
           static_cast<const MCSectionMachO &>(*ISD.Section);
-      if (Section.getType() == MachO::S_NON_LAZY_SYMBOL_POINTERS) {
+      if ((Section.getType() == MachO::S_NON_LAZY_SYMBOL_POINTERS) && (ISD.Symbol->isDefined() && !ISD.Symbol->isExternal())) 
         // If this symbol is defined and internal, mark it as such.
-        if (ISD.Symbol->isDefined() && !ISD.Symbol->isExternal()) {
+        {
           uint32_t Flags = MachO::INDIRECT_SYMBOL_LOCAL;
           if (ISD.Symbol->isAbsolute())
             Flags |= MachO::INDIRECT_SYMBOL_ABS;
           W.write<uint32_t>(Flags);
           continue;
         }
-      }
+      
 
       W.write<uint32_t>(ISD.Symbol->getIndex());
     }

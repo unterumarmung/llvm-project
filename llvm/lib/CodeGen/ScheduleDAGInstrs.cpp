@@ -1408,10 +1408,9 @@ protected:
     // pinch point.
     unsigned NumDataSucs = 0;
     for (const SDep &SuccDep : PredSU->Succs) {
-      if (SuccDep.getKind() == SDep::Data) {
-        if (++NumDataSucs >= 4)
-          return false;
-      }
+      if ((SuccDep.getKind() == SDep::Data) && (++NumDataSucs >= 4)) 
+        return false;
+      
     }
     if (CheckLimit && R.DFSNodeData[PredNum].InstrCount > R.SubtreeLimit)
       return false;

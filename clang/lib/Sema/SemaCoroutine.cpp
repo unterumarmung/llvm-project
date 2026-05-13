@@ -71,8 +71,8 @@ static QualType lookupPromiseType(Sema &S, const FunctionDecl *FD,
   AddArg(FnType->getReturnType());
   // If the function is a non-static member function, add the type
   // of the implicit object parameter before the formal parameters.
-  if (auto *MD = dyn_cast<CXXMethodDecl>(FD)) {
-    if (MD->isImplicitObjectMemberFunction()) {
+  if (auto *MD = dyn_cast<CXXMethodDecl>(FD); MD && (MD->isImplicitObjectMemberFunction())) 
+    {
       // [over.match.funcs]4
       // For non-static member functions, the type of the implicit object
       // parameter is
@@ -86,7 +86,7 @@ static QualType lookupPromiseType(Sema &S, const FunctionDecl *FD,
               : S.Context.getLValueReferenceType(T, /*SpelledAsLValue*/ true);
       AddArg(T);
     }
-  }
+  
   for (QualType T : FnType->getParamTypes())
     AddArg(T);
 
@@ -493,8 +493,8 @@ VarDecl *Sema::buildCoroutinePromise(SourceLocation Loc) {
   llvm::SmallVector<Expr *, 4> CtorArgExprs;
 
   // Add implicit object parameter.
-  if (auto *MD = dyn_cast<CXXMethodDecl>(FD)) {
-    if (MD->isImplicitObjectMemberFunction() && !isLambdaCallOperator(MD)) {
+  if (auto *MD = dyn_cast<CXXMethodDecl>(FD); MD && (MD->isImplicitObjectMemberFunction() && !isLambdaCallOperator(MD))) 
+    {
       ExprResult ThisExpr = ActOnCXXThis(Loc);
       if (ThisExpr.isInvalid())
         return nullptr;
@@ -503,7 +503,7 @@ VarDecl *Sema::buildCoroutinePromise(SourceLocation Loc) {
         return nullptr;
       CtorArgExprs.push_back(ThisExpr.get());
     }
-  }
+  
 
   // Add the coroutine function's parameters.
   auto &Moves = ScopeInfo->CoroutineParameterMoves;
@@ -602,7 +602,7 @@ static void checkNoThrow(Sema &S, const Stmt *E,
     // In the case of dtor, the call to dtor is implicit and hence we should
     // pass nullptr to canCalleeThrow.
     if (Sema::canCalleeThrow(S, IsDtor ? nullptr : cast<Expr>(E), D)) {
-      if (const auto *FD = dyn_cast<FunctionDecl>(D)) {
+      if (const auto *FD = dyn_cast<FunctionDecl>(D); FD && (FD->getBuiltinID() == Builtin::BI__builtin_coro_resume)) 
         // co_await promise.final_suspend() could end up calling
         // __builtin_coro_resume for symmetric transfer if await_suspend()
         // returns a handle. In that case, even __builtin_coro_resume is not
@@ -610,9 +610,8 @@ static void checkNoThrow(Sema &S, const Stmt *E,
         // coroutine that just suspended, but rather throws back out from
         // whoever called coroutine_handle::resume(), hence we claim that
         // logically it does not throw.
-        if (FD->getBuiltinID() == Builtin::BI__builtin_coro_resume)
-          return;
-      }
+        return;
+      
       if (ThrowingDecls.empty()) {
         // [dcl.fct.def.coroutine]p15
         //   The expression co_await promise.final_suspend() shall not be
@@ -1367,8 +1366,8 @@ bool CoroutineStmtBuilder::makeReturnOnAllocFailure() {
 // otherwise.
 static bool collectPlacementArgs(Sema &S, FunctionDecl &FD, SourceLocation Loc,
                                  SmallVectorImpl<Expr *> &PlacementArgs) {
-  if (auto *MD = dyn_cast<CXXMethodDecl>(&FD)) {
-    if (MD->isImplicitObjectMemberFunction() && !isLambdaCallOperator(MD)) {
+  if (auto *MD = dyn_cast<CXXMethodDecl>(&FD); MD && (MD->isImplicitObjectMemberFunction() && !isLambdaCallOperator(MD))) 
+    {
       ExprResult ThisExpr = S.ActOnCXXThis(Loc);
       if (ThisExpr.isInvalid())
         return false;
@@ -1377,7 +1376,7 @@ static bool collectPlacementArgs(Sema &S, FunctionDecl &FD, SourceLocation Loc,
         return false;
       PlacementArgs.push_back(ThisExpr.get());
     }
-  }
+  
 
   for (auto *PD : FD.parameters()) {
     if (PD->getType()->isDependentType())
@@ -1496,7 +1495,8 @@ bool CoroutineStmtBuilder::makeNewAndDeleteExpr() {
 
   LookupAllocationFunction();
 
-  if (PromiseContainsNew && !PlacementArgs.empty()) {
+  if ((PromiseContainsNew && !PlacementArgs.empty()) && (!OperatorNew || (S.getLangOpts().CoroAlignedAllocation &&
+                         !isAlignedAllocation(IAP.PassAlignment)))) 
     // [dcl.fct.def.coroutine]p9
     //   If no viable function is found ([over.match.viable]), overload
     //   resolution
@@ -1509,11 +1509,9 @@ bool CoroutineStmtBuilder::makeNewAndDeleteExpr() {
     // by passing the amount of space requested as an argument of type
     // std::size_t as the first argument, and the requested alignment as
     // an argument of type std:align_val_t as the second argument.
-    if (!OperatorNew || (S.getLangOpts().CoroAlignedAllocation &&
-                         !isAlignedAllocation(IAP.PassAlignment)))
-      LookupAllocationFunction(/*NewScope*/ AllocationFunctionScope::Class,
+    LookupAllocationFunction(/*NewScope*/ AllocationFunctionScope::Class,
                                /*WithoutPlacementArgs*/ true);
-  }
+  
 
   // Proposed Change of [dcl.fct.def.coroutine]p12 in P2014R0:
   //   Otherwise, overload resolution is performed again on a function call
@@ -1534,8 +1532,8 @@ bool CoroutineStmtBuilder::makeNewAndDeleteExpr() {
 
   // Helper variable to emit warnings.
   bool FoundNonAlignedInPromise = false;
-  if (PromiseContainsNew && S.getLangOpts().CoroAlignedAllocation)
-    if (!OperatorNew || !isAlignedAllocation(IAP.PassAlignment)) {
+  if ((PromiseContainsNew && S.getLangOpts().CoroAlignedAllocation) && (!OperatorNew || !isAlignedAllocation(IAP.PassAlignment)))
+    {
       FoundNonAlignedInPromise = OperatorNew;
 
       LookupAllocationFunction(/*NewScope*/ AllocationFunctionScope::Class,

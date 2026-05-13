@@ -153,12 +153,12 @@ StackAddrEscapeChecker::getCapturedStackRegions(const BlockDataRegion &B,
 
 static void EmitReturnedAsPartOfError(llvm::raw_ostream &OS, SVal ReturnedVal,
                                       const MemRegion *LeakedRegion) {
-  if (const MemRegion *ReturnedRegion = ReturnedVal.getAsRegion()) {
-    if (isa<BlockDataRegion>(ReturnedRegion)) {
+  if (const MemRegion *ReturnedRegion = ReturnedVal.getAsRegion(); ReturnedRegion && (isa<BlockDataRegion>(ReturnedRegion))) 
+    {
       OS << " is captured by a returned block";
       return;
     }
-  }
+  
 
   // Generic message
   OS << " returned to caller";

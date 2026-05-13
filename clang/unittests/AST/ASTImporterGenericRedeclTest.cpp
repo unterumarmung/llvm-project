@@ -177,9 +177,9 @@ struct RedeclChain : ASTImporterOptionSpecificTestBase {
     }
 
     // Specializations.
-    if (auto *PrevF = dyn_cast<FunctionDecl>(Prev)) {
-      if (PrevF->getTemplatedKind() ==
-          FunctionDecl::TK_FunctionTemplateSpecialization) {
+    if (auto *PrevF = dyn_cast<FunctionDecl>(Prev); PrevF && (PrevF->getTemplatedKind() ==
+          FunctionDecl::TK_FunctionTemplateSpecialization)) 
+      {
         // There may be a hidden fwd spec decl before a spec decl.
         // In that case the previous visible decl can be reached through that
         // invisible one.
@@ -193,7 +193,7 @@ struct RedeclChain : ASTImporterOptionSpecificTestBase {
         EXPECT_EQ(FirstSpecD->getCanonicalDecl(), PrevF->getCanonicalDecl());
         return;
       }
-    }
+    
 
     // The rest: Classes, Functions, etc.
     EXPECT_EQ(Current->getPreviousDecl(), Prev);

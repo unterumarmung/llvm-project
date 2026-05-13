@@ -215,10 +215,9 @@ unsigned Input::beginSequence() {
   if (isa<EmptyHNode>(CurrentNode))
     return 0;
   // Treat case where there's a scalar "null" value as an empty sequence.
-  if (ScalarHNode *SN = dyn_cast<ScalarHNode>(CurrentNode)) {
-    if (isNull(SN->value()))
-      return 0;
-  }
+  if (ScalarHNode *SN = dyn_cast<ScalarHNode>(CurrentNode); SN && (isNull(SN->value()))) 
+    return 0;
+  
   // Any other type of HNode is an error.
   setError(CurrentNode, "not a sequence");
   return 0;
@@ -269,12 +268,12 @@ void Input::beginEnumScalar() {
 bool Input::matchEnumScalar(StringRef Str, bool) {
   if (ScalarMatchFound)
     return false;
-  if (ScalarHNode *SN = dyn_cast<ScalarHNode>(CurrentNode)) {
-    if (SN->value() == Str) {
+  if (ScalarHNode *SN = dyn_cast<ScalarHNode>(CurrentNode); SN && (SN->value() == Str)) 
+    {
       ScalarMatchFound = true;
       return true;
     }
-  }
+  
   return false;
 }
 

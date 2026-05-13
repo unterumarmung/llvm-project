@@ -430,9 +430,8 @@ Value *CodeGenFunction::EmitNeonCall(Function *F, SmallVectorImpl<Value*> &Ops,
   unsigned j = 0;
   for (Function::const_arg_iterator ai = F->arg_begin(), ae = F->arg_end();
        ai != ae; ++ai, ++j) {
-    if (F->isConstrainedFPIntrinsic())
-      if (ai->getType()->isMetadataTy())
-        continue;
+    if ((F->isConstrainedFPIntrinsic()) && (ai->getType()->isMetadataTy()))
+      continue;
     if (shift > 0 && shift == j)
       Ops[j] = EmitNeonShiftVector(Ops[j], ai->getType(), rightshift);
     else
@@ -4078,9 +4077,8 @@ Value *CodeGenFunction::EmitAArch64SVEBuiltinExpr(unsigned BuiltinID,
 
     // Predicates must match the main datatype.
     for (Value *&Op : Ops)
-      if (auto PredTy = dyn_cast<llvm::VectorType>(Op->getType()))
-        if (PredTy->getElementType()->isIntegerTy(1))
-          Op = EmitSVEPredicateCast(Op, getSVEType(TypeFlags));
+      if (auto PredTy = dyn_cast<llvm::VectorType>(Op->getType()); PredTy && (PredTy->getElementType()->isIntegerTy(1)))
+        Op = EmitSVEPredicateCast(Op, getSVEType(TypeFlags));
 
     // Splat scalar operand to vector (intrinsics with _n infix)
     if (TypeFlags.hasSplatOperand()) {
@@ -4461,9 +4459,8 @@ Value *CodeGenFunction::EmitAArch64SMEBuiltinExpr(unsigned BuiltinID,
 
   // Predicates must match the main datatype.
   for (Value *&Op : Ops)
-    if (auto PredTy = dyn_cast<llvm::VectorType>(Op->getType()))
-      if (PredTy->getElementType()->isIntegerTy(1))
-        Op = EmitSVEPredicateCast(Op, getSVEType(TypeFlags));
+    if (auto PredTy = dyn_cast<llvm::VectorType>(Op->getType()); PredTy && (PredTy->getElementType()->isIntegerTy(1)))
+      Op = EmitSVEPredicateCast(Op, getSVEType(TypeFlags));
 
   if (BuiltinID == SME::BI__builtin_sme_svldr_zt ||
       BuiltinID == SME::BI__builtin_sme_svstr_zt) {

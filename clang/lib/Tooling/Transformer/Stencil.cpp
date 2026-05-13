@@ -170,12 +170,12 @@ public:
         // Strip off any operator->. This can only occur inside an actual arrow
         // member access, so we treat it as equivalent to an actual object
         // expression.
-        if (const auto *OpCall = dyn_cast<clang::CXXOperatorCallExpr>(E)) {
-          if (OpCall->getOperator() == clang::OO_Arrow &&
-              OpCall->getNumArgs() == 1) {
+        if (const auto *OpCall = dyn_cast<clang::CXXOperatorCallExpr>(E); OpCall && (OpCall->getOperator() == clang::OO_Arrow &&
+              OpCall->getNumArgs() == 1)) 
+          {
             E = OpCall->getArg(0);
           }
-        }
+        
         Source = tooling::buildDereference(*E, *Match.Context);
         break;
       }
@@ -190,12 +190,12 @@ public:
         // Strip off any operator->. This can only occur inside an actual arrow
         // member access, so we treat it as equivalent to an actual object
         // expression.
-        if (const auto *OpCall = dyn_cast<clang::CXXOperatorCallExpr>(E)) {
-          if (OpCall->getOperator() == clang::OO_Arrow &&
-              OpCall->getNumArgs() == 1) {
+        if (const auto *OpCall = dyn_cast<clang::CXXOperatorCallExpr>(E); OpCall && (OpCall->getOperator() == clang::OO_Arrow &&
+              OpCall->getNumArgs() == 1)) 
+          {
             E = OpCall->getArg(0);
           }
-        }
+        
         *Result += tooling::getText(*E, *Match.Context);
         return Error::success();
       }

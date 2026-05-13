@@ -1765,10 +1765,9 @@ void SSANameState::numberValuesInOp(Operation &op) {
   unsigned numResults = op.getNumResults();
   if (numResults == 0) {
     // If value users should be printed, operations with no result need an id.
-    if (printerFlags.shouldPrintValueUsers()) {
-      if (operationIDs.try_emplace(&op, nextValueID).second)
-        ++nextValueID;
-    }
+    if ((printerFlags.shouldPrintValueUsers()) && (operationIDs.try_emplace(&op, nextValueID).second)) 
+      ++nextValueID;
+    
     return;
   }
   Value resultBegin = op.getResult(0);

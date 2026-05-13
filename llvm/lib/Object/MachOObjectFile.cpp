@@ -1323,17 +1323,17 @@ MachOObjectFile::MachOObjectFile(MemoryBufferRef Object, bool IsLittleEndian,
   const char *TwoLevelHintsLoadCmd = nullptr;
   for (unsigned I = 0; I < LoadCommandCount; ++I) {
     if (is64Bit()) {
-      if (Load.C.cmdsize % 8 != 0) {
+      if ((Load.C.cmdsize % 8 != 0) && (getHeader().filetype != MachO::MH_CORE ||
+            Load.C.cmd != MachO::LC_THREAD || Load.C.cmdsize % 4)) 
         // We have a hack here to allow 64-bit Mach-O core files to have
         // LC_THREAD commands that are only a multiple of 4 and not 8 to be
         // allowed since the macOS kernel produces them.
-        if (getHeader().filetype != MachO::MH_CORE ||
-            Load.C.cmd != MachO::LC_THREAD || Load.C.cmdsize % 4) {
+        {
           Err = malformedError("load command " + Twine(I) + " cmdsize not a "
                                "multiple of 8");
           return;
         }
-      }
+      
     } else {
       if (Load.C.cmdsize % 4 != 0) {
         Err = malformedError("load command " + Twine(I) + " cmdsize not a "
@@ -1732,17 +1732,15 @@ Error MachOObjectFile::checkSymbolTable() const {
       NValue = STE.n_value;
     }
     if ((NType & MachO::N_STAB) == 0) {
-      if ((NType & MachO::N_TYPE) == MachO::N_SECT) {
-        if (NSect == 0 || NSect > Sections.size())
-          return malformedError("bad section index: " + Twine((int)NSect) +
+      if (((NType & MachO::N_TYPE) == MachO::N_SECT) && (NSect == 0 || NSect > Sections.size())) 
+        return malformedError("bad section index: " + Twine((int)NSect) +
                                 " for symbol at index " + Twine(SymbolIndex));
-      }
-      if ((NType & MachO::N_TYPE) == MachO::N_INDR) {
-        if (NValue >= S.strsize)
-          return malformedError("bad n_value: " + Twine((int)NValue) + " past "
+      
+      if (((NType & MachO::N_TYPE) == MachO::N_INDR) && (NValue >= S.strsize)) 
+        return malformedError("bad n_value: " + Twine((int)NValue) + " past "
                                 "the end of string table, for N_INDR symbol at "
                                 "index " + Twine(SymbolIndex));
-      }
+      
       if ((Flags & MachO::MH_TWOLEVEL) == MachO::MH_TWOLEVEL &&
           (((NType & MachO::N_TYPE) == MachO::N_UNDF && NValue == 0) ||
            (NType & MachO::N_TYPE) == MachO::N_PBUD)) {
@@ -3110,10 +3108,10 @@ void ExportEntry::pushNode(uint64_t offset) {
         moveToEnd();
         return;
       }
-      if (O != nullptr) {
+      if ((O != nullptr) && ((int64_t)State.Other > 0 && State.Other > O->getLibraryCount())) 
         // Only positive numbers represent library ordinals. Zero and negative
         // numbers have special meaning (see BindSpecialDylib).
-        if ((int64_t)State.Other > 0 && State.Other > O->getLibraryCount()) {
+        {
           *E = malformedError(
               "bad library ordinal: " + Twine((int)State.Other) + " (max " +
               Twine((int)O->getLibraryCount()) +
@@ -3121,7 +3119,7 @@ void ExportEntry::pushNode(uint64_t offset) {
           moveToEnd();
           return;
         }
-      }
+      
       State.ImportName = reinterpret_cast<const char*>(State.Current);
       if (*State.ImportName == '\0') {
         State.Current++;
@@ -4046,10 +4044,9 @@ void MachOBindEntry::moveNext() {
           "mach-o-bind",
           dbgs() << "BIND_OPCODE_SET_SYMBOL_TRAILING_FLAGS_IMM: "
                  << "SymbolName=" << SymbolName << "\n");
-      if (TableKind == Kind::Weak) {
-        if (ImmValue & MachO::BIND_SYMBOL_FLAGS_NON_WEAK_DEFINITION)
-          return;
-      }
+      if ((TableKind == Kind::Weak) && (ImmValue & MachO::BIND_SYMBOL_FLAGS_NON_WEAK_DEFINITION)) 
+        return;
+      
       break;
     case MachO::BIND_OPCODE_SET_TYPE_IMM:
       BindType = ImmValue;

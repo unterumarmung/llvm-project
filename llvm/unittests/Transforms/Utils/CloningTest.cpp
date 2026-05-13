@@ -690,9 +690,8 @@ static bool haveCompileUnitsInCommon(const Module &LHS, const Module &RHS) {
       Found.insert(N);
 
   for (int I = 0, E = RHSCUs->getNumOperands(); I != E; ++I)
-    if (const MDNode *N = RHSCUs->getOperand(I))
-      if (Found.count(N))
-        return true;
+    if (const MDNode *N = RHSCUs->getOperand(I); N && (Found.count(N)))
+      return true;
 
   return false;
 }

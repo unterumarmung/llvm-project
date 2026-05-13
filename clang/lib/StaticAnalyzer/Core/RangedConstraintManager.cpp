@@ -162,9 +162,8 @@ ProgramStateRef RangedConstraintManager::assumeSymRel(ProgramStateRef State,
   // "(exp comparison_op expr) == 0" to true into an assume of
   // "exp comparison_op expr" to false.)
   if (Int == 0 && (Op == BO_EQ || Op == BO_NE)) {
-    if (const BinarySymExpr *SE = dyn_cast<BinarySymExpr>(Sym))
-      if (BinaryOperator::isComparisonOp(SE->getOpcode()))
-        return assumeSym(State, Sym, (Op == BO_NE ? true : false));
+    if (const BinarySymExpr *SE = dyn_cast<BinarySymExpr>(Sym); SE && (BinaryOperator::isComparisonOp(SE->getOpcode())))
+      return assumeSym(State, Sym, (Op == BO_NE ? true : false));
   }
 
   // Get the type used for calculating wraparound.

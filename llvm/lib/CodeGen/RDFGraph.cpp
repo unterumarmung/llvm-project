@@ -597,9 +597,8 @@ bool TargetOperandInfo::isClobbering(const MachineInstr &In,
   if (Op.isRegMask())
     return true;
   assert(Op.isReg());
-  if (In.isCall())
-    if (Op.isDef() && Op.isDead())
-      return true;
+  if ((In.isCall()) && (Op.isDef() && Op.isDead()))
+    return true;
   return false;
 }
 

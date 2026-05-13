@@ -2651,9 +2651,8 @@ bool Qualifiers::isEmptyWhenPrinted(const PrintingPolicy &Policy) const {
   if (getObjCGCAttr())
     return false;
 
-  if (Qualifiers::ObjCLifetime lifetime = getObjCLifetime())
-    if (!(lifetime == Qualifiers::OCL_Strong && Policy.SuppressStrongLifetime))
-      return false;
+  if (Qualifiers::ObjCLifetime lifetime = getObjCLifetime(); lifetime && (!(lifetime == Qualifiers::OCL_Strong && Policy.SuppressStrongLifetime)))
+    return false;
 
   if (PointerAuthQualifier PointerAuth = getPointerAuth();
       PointerAuth && !PointerAuth.isEmptyWhenPrinted(Policy))

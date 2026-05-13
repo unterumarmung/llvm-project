@@ -183,8 +183,8 @@ void CompileUnit::analyzeDWARFStructureRec(const DWARFDebugInfoEntry *DieEntry,
 
 StringEntry *CompileUnit::getFileName(unsigned FileIdx,
                                       StringPool &GlobalStrings) {
-  if (LineTablePtr) {
-    if (LineTablePtr->hasFileAtIndex(FileIdx)) {
+  if ((LineTablePtr) && (LineTablePtr->hasFileAtIndex(FileIdx))) 
+    {
       // Cache the resolved paths based on the index in the line table,
       // because calling realpath is expensive.
       ResolvedPathsMap::const_iterator It = ResolvedFullPaths.find(FileIdx);
@@ -227,7 +227,7 @@ StringEntry *CompileUnit::getFileName(unsigned FileIdx,
 
       return It->second;
     }
-  }
+  
 
   return nullptr;
 }
@@ -1826,8 +1826,8 @@ CompileUnit::getDirAndFilenameFromLineTable(uint64_t FileIdx) {
                           StringRef(FileData->second.second));
 
   if (const DWARFDebugLine::LineTable *LineTable =
-          getOrigUnit().getContext().getLineTableForUnit(&getOrigUnit())) {
-    if (LineTable->hasFileAtIndex(FileIdx)) {
+          getOrigUnit().getContext().getLineTableForUnit(&getOrigUnit()); LineTable && (LineTable->hasFileAtIndex(FileIdx))) 
+    {
 
       const llvm::DWARFDebugLine::FileNameEntry &Entry =
           LineTable->Prologue.getFileNameEntry(FileIdx);
@@ -1900,7 +1900,7 @@ CompileUnit::getDirAndFilenameFromLineTable(uint64_t FileIdx) {
       return std::make_pair(StringRef(FileData->second.first),
                             StringRef(FileData->second.second));
     }
-  }
+  
 
   return std::nullopt;
 }

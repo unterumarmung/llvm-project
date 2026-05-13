@@ -297,9 +297,8 @@ void SjLjEHPrepareImpl::lowerAcrossUnwindEdges(Function &F,
 
       // If this is an alloca in the entry block, it's not a real register
       // value.
-      if (auto *AI = dyn_cast<AllocaInst>(&Inst))
-        if (AI->isStaticAlloca())
-          continue;
+      if (auto *AI = dyn_cast<AllocaInst>(&Inst); AI && (AI->isStaticAlloca()))
+        continue;
 
       // Avoid iterator invalidation by copying users to a temporary vector.
       SmallVector<Instruction *, 16> Users;
@@ -382,8 +381,8 @@ bool SjLjEHPrepareImpl::setupEntryBlockAndCallSites(Function &F) {
   // Look through the terminators of the basic blocks to find invokes.
   for (BasicBlock &BB : F)
     if (auto *II = dyn_cast<InvokeInst>(BB.getTerminator())) {
-      if (Function *Callee = II->getCalledFunction())
-        if (Callee->getIntrinsicID() == Intrinsic::donothing) {
+      if (Function *Callee = II->getCalledFunction(); Callee && (Callee->getIntrinsicID() == Intrinsic::donothing))
+        {
           // Remove the NOP invoke.
           UncondBrInst::Create(II->getNormalDest(), II->getIterator());
           II->eraseFromParent();

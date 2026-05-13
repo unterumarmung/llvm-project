@@ -1708,9 +1708,8 @@ bool InstrRefBasedLDV::transferDebugInstrRef(MachineInstr &MI,
   // Initialized the preferred-location map with illegal locations, to be
   // filled in later.
   for (const DbgOp &Op : DbgOps) {
-    if (!Op.IsConst)
-      if (FoundLocs.try_emplace(Op.ID).second)
-        ValuesToFind.push_back(Op.ID);
+    if ((!Op.IsConst) && (FoundLocs.try_emplace(Op.ID).second))
+      ValuesToFind.push_back(Op.ID);
   }
 
   for (auto Location : MTracker->locations()) {

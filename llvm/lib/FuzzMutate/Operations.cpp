@@ -221,9 +221,8 @@ static uint64_t getAggregateNumElements(Type *T) {
 
 static SourcePred validExtractValueIndex() {
   auto Pred = [](ArrayRef<Value *> Cur, const Value *V) {
-    if (auto *CI = dyn_cast<ConstantInt>(V))
-      if (!CI->uge(getAggregateNumElements(Cur[0]->getType())))
-        return true;
+    if (auto *CI = dyn_cast<ConstantInt>(V); CI && (!CI->uge(getAggregateNumElements(Cur[0]->getType()))))
+      return true;
     return false;
   };
   auto Make = [](ArrayRef<Value *> Cur, ArrayRef<Type *> Ts) {
@@ -278,8 +277,8 @@ static SourcePred matchScalarInAggregate() {
 
 static SourcePred validInsertValueIndex() {
   auto Pred = [](ArrayRef<Value *> Cur, const Value *V) {
-    if (auto *CI = dyn_cast<ConstantInt>(V))
-      if (CI->getBitWidth() == 32) {
+    if (auto *CI = dyn_cast<ConstantInt>(V); CI && (CI->getBitWidth() == 32))
+      {
         Type *Indexed = ExtractValueInst::getIndexedType(Cur[0]->getType(),
                                                          CI->getZExtValue());
         return Indexed == Cur[1]->getType();

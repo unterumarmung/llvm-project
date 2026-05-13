@@ -335,11 +335,11 @@ void ModFileWriter::PrepareRenamings(const Scope &scope) {
         if (generic->derivedType() == &*s || generic->specific() == &*s) {
           continue;
         }
-      } else if (found->has<UseDetails>()) {
-        if (&found->GetUltimate() == &*s) {
+      } else if ((found->has<UseDetails>()) && (&found->GetUltimate() == &*s)) 
+        {
           continue; // already use-associated with same name
         }
-      }
+      
       if (&s->owner() != &found->owner()) { // Symbol needs renaming
         rename = scope.context().SaveTempName(
             DEREF(sMod->symbol()).name().ToString() + "$" +
@@ -1768,11 +1768,11 @@ void SubprogramSymbolCollector::Collect() {
       const auto hasInterface{[&symbol](const Symbol *s) -> bool {
         // Is 's' a procedure with interface 'symbol'?
         if (s) {
-          if (const auto *sDetails{s->detailsIf<ProcEntityDetails>()}) {
-            if (sDetails->procInterface() == &symbol) {
+          if (const auto *sDetails{s->detailsIf<ProcEntityDetails>()}; sDetails && (sDetails->procInterface() == &symbol)) 
+            {
               return true;
             }
-          }
+          
         }
         return false;
       }};

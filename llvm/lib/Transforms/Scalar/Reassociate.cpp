@@ -162,19 +162,17 @@ static bool hasFPAssociativeFlags(Instruction *I) {
 /// only has one use.
 static BinaryOperator *isReassociableOp(Value *V, unsigned Opcode) {
   auto *BO = dyn_cast<BinaryOperator>(V);
-  if (BO && BO->hasOneUse() && BO->getOpcode() == Opcode)
-    if (!isa<FPMathOperator>(BO) || hasFPAssociativeFlags(BO))
-      return BO;
+  if ((BO && BO->hasOneUse() && BO->getOpcode() == Opcode) && (!isa<FPMathOperator>(BO) || hasFPAssociativeFlags(BO)))
+    return BO;
   return nullptr;
 }
 
 static BinaryOperator *isReassociableOp(Value *V, unsigned Opcode1,
                                         unsigned Opcode2) {
   auto *BO = dyn_cast<BinaryOperator>(V);
-  if (BO && BO->hasOneUse() &&
-      (BO->getOpcode() == Opcode1 || BO->getOpcode() == Opcode2))
-    if (!isa<FPMathOperator>(BO) || hasFPAssociativeFlags(BO))
-      return BO;
+  if ((BO && BO->hasOneUse() &&
+      (BO->getOpcode() == Opcode1 || BO->getOpcode() == Opcode2)) && (!isa<FPMathOperator>(BO) || hasFPAssociativeFlags(BO)))
+    return BO;
   return nullptr;
 }
 
@@ -539,16 +537,16 @@ static bool LinearizeExprTree(Instruction *I,
     Ops.push_back(std::make_pair(V, Weight));
     if (Opcode == Instruction::Add && Flags.AllKnownNonNegative && Flags.HasNSW)
       Flags.AllKnownNonNegative &= isKnownNonNegative(V, SimplifyQuery(DL));
-    else if (Opcode == Instruction::Mul) {
+    else if ((Opcode == Instruction::Mul) && (Flags.AllKnownNonZero &&
+          (Flags.HasNUW || (Flags.HasNSW && Flags.AllKnownNonNegative)))) 
       // To preserve NUW we need all inputs non-zero.
       // To preserve NSW we need all inputs strictly positive.
-      if (Flags.AllKnownNonZero &&
-          (Flags.HasNUW || (Flags.HasNSW && Flags.AllKnownNonNegative))) {
+      {
         Flags.AllKnownNonZero &= isKnownNonZero(V, SimplifyQuery(DL));
         if (Flags.HasNSW && Flags.AllKnownNonNegative)
           Flags.AllKnownNonNegative &= isKnownNonNegative(V, SimplifyQuery(DL));
       }
-    }
+    
   }
 
   // For nilpotent operations or addition there may be no operands, for example
@@ -1057,18 +1055,16 @@ static unsigned FindInOperandList(const SmallVectorImpl<ValueEntry> &Ops,
     if (Ops[j].Op == X)
       return j;
     if (Instruction *I1 = dyn_cast<Instruction>(Ops[j].Op))
-      if (Instruction *I2 = dyn_cast<Instruction>(X))
-        if (I1->isIdenticalTo(I2))
-          return j;
+      if (Instruction *I2 = dyn_cast<Instruction>(X); I2 && (I1->isIdenticalTo(I2)))
+        return j;
   }
   // Scan backwards.
   for (unsigned j = i-1; j != ~0U && Ops[j].Rank == XRank; --j) {
     if (Ops[j].Op == X)
       return j;
     if (Instruction *I1 = dyn_cast<Instruction>(Ops[j].Op))
-      if (Instruction *I2 = dyn_cast<Instruction>(X))
-        if (I1->isIdenticalTo(I2))
-          return j;
+      if (Instruction *I2 = dyn_cast<Instruction>(X); I2 && (I1->isIdenticalTo(I2)))
+        return j;
   }
   return i;
 }
@@ -1116,8 +1112,8 @@ Value *ReassociatePass::RemoveFactorFromExpression(Value *V, Value *Factor,
 
     // If this is a negative version of this factor, remove it.
     if (ConstantInt *FC1 = dyn_cast<ConstantInt>(Factor)) {
-      if (ConstantInt *FC2 = dyn_cast<ConstantInt>(Factors[i].Op))
-        if (FC1->getValue() == -FC2->getValue()) {
+      if (ConstantInt *FC2 = dyn_cast<ConstantInt>(Factors[i].Op); FC2 && (FC1->getValue() == -FC2->getValue()))
+        {
           FoundFactor = NeedsNegate = true;
           Factors.erase(Factors.begin()+i);
           break;
@@ -1622,8 +1618,8 @@ Value *ReassociatePass::OptimizeAdd(Instruction *I,
             MaxOccVal = Factor;
           }
         }
-      } else if (ConstantFP *CF = dyn_cast<ConstantFP>(Factor)) {
-        if (CF->isNegative()) {
+      } else if (ConstantFP *CF = dyn_cast<ConstantFP>(Factor); CF && (CF->isNegative())) 
+        {
           APFloat F(CF->getValueAPF());
           F.changeSign();
           Factor = ConstantFP::get(CF->getType(), F);
@@ -1635,7 +1631,7 @@ Value *ReassociatePass::OptimizeAdd(Instruction *I,
             MaxOccVal = Factor;
           }
         }
-      }
+      
     }
   }
 
@@ -1971,9 +1967,8 @@ void ReassociatePass::RecursivelyEraseDeadInsts(Instruction *I,
   llvm::salvageDebugInfo(*I);
   I->eraseFromParent();
   for (auto *Op : Ops)
-    if (Instruction *OpInst = dyn_cast<Instruction>(Op))
-      if (OpInst->use_empty())
-        Insts.insert(OpInst);
+    if (Instruction *OpInst = dyn_cast<Instruction>(Op); OpInst && (OpInst->use_empty()))
+      Insts.insert(OpInst);
 }
 
 /// Zap the given instruction, adding interesting operands to the work list.
@@ -2145,13 +2140,13 @@ void ReassociatePass::OptimizeInst(Instruction *I) {
   if (!isa<UnaryOperator>(I) && !isa<BinaryOperator>(I))
     return;
 
-  if (I->getOpcode() == Instruction::Shl && isa<ConstantInt>(I->getOperand(1)))
-    // If an operand of this shift is a reassociable multiply, or if the shift
-    // is used by a reassociable multiply or add, turn into a multiply.
-    if (isReassociableOp(I->getOperand(0), Instruction::Mul) ||
+  if ((I->getOpcode() == Instruction::Shl && isa<ConstantInt>(I->getOperand(1))) && (isReassociableOp(I->getOperand(0), Instruction::Mul) ||
         (I->hasOneUse() &&
          (isReassociableOp(I->user_back(), Instruction::Mul) ||
-          isReassociableOp(I->user_back(), Instruction::Add)))) {
+          isReassociableOp(I->user_back(), Instruction::Add)))))
+    // If an operand of this shift is a reassociable multiply, or if the shift
+    // is used by a reassociable multiply or add, turn into a multiply.
+    {
       Instruction *NI = ConvertShiftToMul(I);
       RedoInsts.insert(I);
       MadeChange = true;
@@ -2205,12 +2200,12 @@ void ReassociatePass::OptimizeInst(Instruction *I) {
       RedoInsts.insert(I);
       MadeChange = true;
       I = NI;
-    } else if (match(I, m_Neg(m_Value()))) {
+    } else if ((match(I, m_Neg(m_Value()))) && (isReassociableOp(I->getOperand(1), Instruction::Mul) &&
+          (!I->hasOneUse() ||
+           !isReassociableOp(I->user_back(), Instruction::Mul)))) 
       // Otherwise, this is a negation.  See if the operand is a multiply tree
       // and if this is not an inner node of a multiply tree.
-      if (isReassociableOp(I->getOperand(1), Instruction::Mul) &&
-          (!I->hasOneUse() ||
-           !isReassociableOp(I->user_back(), Instruction::Mul))) {
+      {
         Instruction *NI = LowerNegateToMultiply(I);
         // If the negate was simplified, revisit the users to see if we can
         // reassociate further.
@@ -2222,7 +2217,7 @@ void ReassociatePass::OptimizeInst(Instruction *I) {
         MadeChange = true;
         I = NI;
       }
-    }
+    
   } else if (I->getOpcode() == Instruction::FNeg ||
              I->getOpcode() == Instruction::FSub) {
     if (ShouldBreakUpSubtract(I)) {
@@ -2435,15 +2430,14 @@ void ReassociatePass::ReassociateExpression(BinaryOperator *I) {
         if (std::less<Value *>()(Op1, Op0))
           std::swap(Op0, Op1);
         auto it = PairMap[Idx].find({Op0, Op1});
-        if (it != PairMap[Idx].end()) {
+        if ((it != PairMap[Idx].end()) && (it->second.isValid())) 
           // Functions like BreakUpSubtract() can erase the Values we're using
           // as keys and create new Values after we built the PairMap. There's a
           // small chance that the new nodes can have the same address as
           // something already in the table. We shouldn't accumulate the stored
           // score in that case as it refers to the wrong Value.
-          if (it->second.isValid())
-            Score += it->second.Score;
-        }
+          Score += it->second.Score;
+        
 
         unsigned MaxRank = std::max(Ops[i].Rank, Ops[j].Rank);
 

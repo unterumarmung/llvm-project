@@ -55,9 +55,8 @@ static bool isTypeNamed(QualType Type, clang::ArrayRef<clang::StringRef> NS,
                         StringRef Name) {
   if (Type.isNull())
     return false;
-  if (auto *RD = Type->getAsRecordDecl())
-    if (RD->getName() == Name)
-      if (const auto *N = dyn_cast_or_null<NamespaceDecl>(RD->getDeclContext()))
+  if (auto *RD = Type->getAsRecordDecl(); RD && (RD->getName() == Name))
+    if (const auto *N = dyn_cast_or_null<NamespaceDecl>(RD->getDeclContext()))
         return namespaceEquals(N, NS);
   return false;
 }

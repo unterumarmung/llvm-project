@@ -478,23 +478,23 @@ Value VectorizationState::getOrCreateMaskFor(
     return Value();
   }
 
-  if (assumeDynamicDimsMatchVecSizes) {
-    // While for _dynamic_ dim sizes we can _assume_ that the corresponding
-    // vector sizes match, we still need to check the _static_ dim sizes. Only
-    // then we can be 100% sure that masking is not required.
-    if (llvm::all_of(llvm::zip(permutedStaticSizes, maskType.getShape()),
+  if ((assumeDynamicDimsMatchVecSizes) && (llvm::all_of(llvm::zip(permutedStaticSizes, maskType.getShape()),
                      [](auto it) {
                        return std::get<0>(it) == ShapedType::kDynamic
                                   ? true
                                   : std::get<0>(it) == std::get<1>(it);
-                     })) {
+                     }))) 
+    // While for _dynamic_ dim sizes we can _assume_ that the corresponding
+    // vector sizes match, we still need to check the _static_ dim sizes. Only
+    // then we can be 100% sure that masking is not required.
+    {
       LDBG()
           << "Dynamic + static dimensions match vector sizes, masking is not "
              "required.";
       activeMaskCache[maskingMap] = Value();
       return Value();
     }
-  }
+  
 
   // Permute the iteration space value sizes to compute the mask upper bounds.
   SmallVector<Value> upperBounds =
@@ -881,10 +881,9 @@ tensorExtractVectorizationPrecondition(Operation *op, bool vectorizeNDExtract) {
 
   // Check the index type, but only for non 0-d tensors (for which we do need
   // access indices).
-  if (not extractOp.getIndices().empty()) {
-    if (!VectorType::isValidElementType(extractOp.getIndices()[0].getType()))
-      return failure();
-  }
+  if ((not extractOp.getIndices().empty()) && (!VectorType::isValidElementType(extractOp.getIndices()[0].getType()))) 
+    return failure();
+  
 
   if (!llvm::all_of(extractOp->getResultTypes(),
                     VectorType::isValidElementType)) {
@@ -2292,11 +2291,10 @@ vectorizePackOpPrecondition(linalg::PackOp packOp,
 
   ArrayRef<int64_t> resultTensorShape = packOp.getDestType().getShape();
   bool satisfyEmptyCond = true;
-  if (inputVectorSizes.empty()) {
-    if (!packOp.getDestType().hasStaticShape() ||
-        !packOp.getSourceType().hasStaticShape())
-      satisfyEmptyCond = false;
-  }
+  if ((inputVectorSizes.empty()) && (!packOp.getDestType().hasStaticShape() ||
+        !packOp.getSourceType().hasStaticShape())) 
+    satisfyEmptyCond = false;
+  
 
   if (!satisfyEmptyCond &&
       failed(vector::isValidMaskedInputVector(

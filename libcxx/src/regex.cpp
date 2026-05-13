@@ -345,10 +345,9 @@ regex_traits<char>::char_class_type __get_classname(const char* s, bool __icase)
     r = i->mask_;
     if (r == regex_traits<char>::__regex_word)
       r |= ctype_base::alnum | ctype_base::upper | ctype_base::lower;
-    else if (__icase) {
-      if (r & (ctype_base::lower | ctype_base::upper))
-        r |= ctype_base::alpha;
-    }
+    else if ((__icase) && (r & (ctype_base::lower | ctype_base::upper))) 
+      r |= ctype_base::alpha;
+    
   }
   return r;
 }

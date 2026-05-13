@@ -380,8 +380,8 @@ void tools::hlsl::LLVMObjcopy::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(Frs);
   }
 
-  if (const Arg *A = Args.getLastArg(options::OPT_target_profile))
-    if (isRootSignatureTarget(A->getValue())) {
+  if (const Arg *A = Args.getLastArg(options::OPT_target_profile); A && (isRootSignatureTarget(A->getValue())))
+    {
       const char *Fos = Args.MakeArgString("--only-section=RTS0");
       CmdArgs.push_back(Fos);
     }

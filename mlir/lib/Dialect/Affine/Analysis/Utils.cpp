@@ -437,12 +437,11 @@ bool MemRefDependenceGraph::init(bool fullAffineDependences) {
         Node *dstNode = getNode(dstId);
         bool dstHasStoreOrFree =
             dstNode->hasStore(srcMemRef) || dstNode->hasFree(srcMemRef);
-        if ((srcHasStoreOrFree || dstHasStoreOrFree)) {
+        if (((srcHasStoreOrFree || dstHasStoreOrFree)) && (!fullAffineDependences ||
+              mayDependence(*srcNode, *dstNode, srcMemRef))) 
           // Check precise affine deps if asked for; otherwise, conservative.
-          if (!fullAffineDependences ||
-              mayDependence(*srcNode, *dstNode, srcMemRef))
-            addEdge(srcId, dstId, srcMemRef);
-        }
+          addEdge(srcId, dstId, srcMemRef);
+        
       }
     }
   }
@@ -699,12 +698,12 @@ MemRefDependenceGraph::getFusedLoopNestInsertionPoint(unsigned srcId,
   }
 
   if (firstSrcDepPos.has_value()) {
-    if (lastDstDepPos.has_value()) {
-      if (*firstSrcDepPos <= *lastDstDepPos) {
+    if ((lastDstDepPos.has_value()) && (*firstSrcDepPos <= *lastDstDepPos)) 
+      {
         // No valid insertion point exists which preserves dependences.
         return nullptr;
       }
-    }
+    
     // Return the insertion point at 'firstSrcDepPos'.
     return depInsts[*firstSrcDepPos];
   }

@@ -806,15 +806,15 @@ void PromoteMem2Reg::run() {
 
     // If there is only a single store to this value, replace any loads of
     // it that are directly dominated by the definition with the value stored.
-    if (Info.DefiningBlocks.size() == 1) {
-      if (rewriteSingleStoreAlloca(AI, Info, LBI, SQ.DL, DT, AC,
-                                   &DVRAssignsToDelete)) {
+    if ((Info.DefiningBlocks.size() == 1) && (rewriteSingleStoreAlloca(AI, Info, LBI, SQ.DL, DT, AC,
+                                   &DVRAssignsToDelete))) 
+      {
         // The alloca has been processed, move on.
         RemoveFromAllocasList(AllocaNum);
         ++NumSingleStore;
         continue;
       }
-    }
+    
 
     // If the alloca is only read and written in one basic block, just perform a
     // linear sweep over the block to eliminate it.
@@ -1047,11 +1047,10 @@ void PromoteMem2Reg::ComputeLiveInBlocks(
         break;
       }
 
-      if (LoadInst *LI = dyn_cast<LoadInst>(I))
+      if (LoadInst *LI = dyn_cast<LoadInst>(I); LI && (LI->getOperand(0) == AI))
         // Okay, we found a load before a store to the alloca.  It is actually
         // live into this block.
-        if (LI->getOperand(0) == AI)
-          break;
+        break;
     }
   }
 
@@ -1119,10 +1118,10 @@ static void updateForIncomingValueLocation(PHINode *PN, DebugLoc DL,
 void PromoteMem2Reg::RenamePass(BasicBlock *BB, BasicBlock *Pred) {
   // If we are inserting any phi nodes into this BB, they will already be in the
   // block.
-  if (PHINode *APN = dyn_cast<PHINode>(BB->begin())) {
+  if (PHINode *APN = dyn_cast<PHINode>(BB->begin()); APN && (PhiToAllocaMap.count(APN))) 
     // If we have PHI nodes to update, compute the number of edges from Pred to
     // BB.
-    if (PhiToAllocaMap.count(APN)) {
+    {
       // We want to be able to distinguish between PHI nodes being inserted by
       // this invocation of mem2reg from those phi nodes that already existed in
       // the IR before mem2reg was run.  We determine that APN is being inserted
@@ -1172,7 +1171,7 @@ void PromoteMem2Reg::RenamePass(BasicBlock *BB, BasicBlock *Pred) {
         // by this mem2reg invocation so we want to ignore it.
       } while (APN->getNumOperands() == NewPHINumOperands);
     }
-  }
+  
 
   // Don't revisit blocks.
   if (Visited.test(BB->getNumber()))

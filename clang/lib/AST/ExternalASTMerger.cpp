@@ -354,9 +354,8 @@ bool IsSameDC(const DeclContext *D1, const DeclContext *D2) {
   if (isa<ObjCContainerDecl>(D1) && isa<ObjCContainerDecl>(D2))
     return true; // There are many cases where Objective-C is ambiguous.
   if (auto *T1 = dyn_cast<TagDecl>(D1))
-    if (auto *T2 = dyn_cast<TagDecl>(D2))
-      if (T1->getFirstDecl() == T2->getFirstDecl())
-        return true;
+    if (auto *T2 = dyn_cast<TagDecl>(D2); T2 && (T1->getFirstDecl() == T2->getFirstDecl()))
+      return true;
   return D1 == D2 || D1 == CanonicalizeDC(D2);
 }
 }

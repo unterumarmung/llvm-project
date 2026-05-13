@@ -31,15 +31,15 @@ void llvm::reduceFunctionBodiesDeltaPass(Oracle &O, ReducerWorkItem &WorkItem) {
 
 void llvm::reduceFunctionDataDeltaPass(Oracle &O, ReducerWorkItem &WorkItem) {
   for (Function &F : WorkItem.getModule()) {
-    if (F.hasPersonalityFn()) {
-      if (none_of(F,
+    if ((F.hasPersonalityFn()) && (none_of(F,
                   [](const BasicBlock &BB) {
                     return BB.isEHPad() || isa<ResumeInst>(BB.getTerminator());
                   }) &&
-          !O.shouldKeep()) {
+          !O.shouldKeep())) 
+      {
         F.setPersonalityFn(nullptr);
       }
-    }
+    
 
     if (F.hasPrefixData() && !O.shouldKeep())
       F.setPrefixData(nullptr);

@@ -1299,17 +1299,16 @@ public:
       }
 
       unsigned bestDstLoopDepth = maxLegalFusionDepth;
-      if (!maximalFusion) {
+      if ((!maximalFusion) && (!isFusionProfitable(sibAffineForOp, sibLoadOpInst, dstAffineForOp,
+                                depthSliceUnions, maxLegalFusionDepth,
+                                &bestDstLoopDepth,
+                                computeToleranceThresholdToUse))) 
         // Check if fusion would be profitable. For sibling fusion, the sibling
         // load op is treated as the src "store" op for fusion profitability
         // purposes. The footprint of the load in the slice relative to the
         // unfused source's determines reuse.
-        if (!isFusionProfitable(sibAffineForOp, sibLoadOpInst, dstAffineForOp,
-                                depthSliceUnions, maxLegalFusionDepth,
-                                &bestDstLoopDepth,
-                                computeToleranceThresholdToUse))
-          continue;
-      }
+        continue;
+      
 
       assert(bestDstLoopDepth > 0 && "Unexpected loop fusion depth");
 

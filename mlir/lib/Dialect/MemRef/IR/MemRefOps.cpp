@@ -712,23 +712,20 @@ bool CastOp::canFoldIntoConsumerOp(CastOp castOp) {
   // If cast is towards more static sizes along any dimension, don't fold.
   for (auto it : llvm::zip(sourceType.getShape(), resultType.getShape())) {
     auto ss = std::get<0>(it), st = std::get<1>(it);
-    if (ss != st)
-      if (ShapedType::isDynamic(ss) && ShapedType::isStatic(st))
-        return false;
+    if ((ss != st) && (ShapedType::isDynamic(ss) && ShapedType::isStatic(st)))
+      return false;
   }
 
   // If cast is towards more static offset along any dimension, don't fold.
-  if (sourceOffset != resultOffset)
-    if (ShapedType::isDynamic(sourceOffset) &&
-        ShapedType::isStatic(resultOffset))
-      return false;
+  if ((sourceOffset != resultOffset) && (ShapedType::isDynamic(sourceOffset) &&
+        ShapedType::isStatic(resultOffset)))
+    return false;
 
   // If cast is towards more static strides along any dimension, don't fold.
   for (auto it : llvm::zip(sourceStrides, resultStrides)) {
     auto ss = std::get<0>(it), st = std::get<1>(it);
-    if (ss != st)
-      if (ShapedType::isDynamic(ss) && ShapedType::isStatic(st))
-        return false;
+    if ((ss != st) && (ShapedType::isDynamic(ss) && ShapedType::isStatic(st)))
+      return false;
   }
 
   return true;
@@ -1199,13 +1196,13 @@ struct DimOfMemRefReshape : public OpRewritePattern<DimOp> {
 
     // Check condition 1
     if (dim.getIndex().getParentBlock() == reshape->getBlock()) {
-      if (auto *definingOp = dim.getIndex().getDefiningOp()) {
-        if (reshape->isBeforeInBlock(definingOp)) {
+      if (auto *definingOp = dim.getIndex().getDefiningOp(); definingOp && (reshape->isBeforeInBlock(definingOp))) 
+        {
           return rewriter.notifyMatchFailure(
               dim,
               "dim.getIndex is not defined before reshape in the same block.");
         }
-      } // else dim.getIndex is a block argument to reshape->getBlock and
+      // else dim.getIndex is a block argument to reshape->getBlock and
         // dominates reshape
     } // Check condition 2
     else if (dim->getBlock() != reshape->getBlock() &&
@@ -1393,12 +1390,11 @@ LogicalResult DmaStartOp::verify() {
     return emitOpError("incorrect number of operands");
 
   // 5. Strides.
-  if (isStrided()) {
-    if (!getStride().getType().isIndex() ||
-        !getNumElementsPerStride().getType().isIndex())
-      return emitOpError(
+  if ((isStrided()) && (!getStride().getType().isIndex() ||
+        !getNumElementsPerStride().getType().isIndex())) 
+    return emitOpError(
           "expected stride and num elements per stride to be of type index");
-  }
+  
 
   return success();
 }

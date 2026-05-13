@@ -637,12 +637,11 @@ bool AArch64RegisterInfo::hasBasePointer(const MachineFunction &MF) const {
 
     auto &ST = MF.getSubtarget<AArch64Subtarget>();
     const AArch64FunctionInfo *AFI = MF.getInfo<AArch64FunctionInfo>();
-    if (ST.hasSVE() || ST.isStreaming()) {
+    if ((ST.hasSVE() || ST.isStreaming()) && (!AFI->hasCalculatedStackSizeSVE() || AFI->hasSVEStackSize())) 
       // Frames that have variable sized objects and scalable SVE objects,
       // should always use a basepointer.
-      if (!AFI->hasCalculatedStackSizeSVE() || AFI->hasSVEStackSize())
-        return true;
-    }
+      return true;
+    
 
     // Frames with hazard padding can have a large offset between the frame
     // pointer and GPR locals, which includes the emergency spill slot. If the

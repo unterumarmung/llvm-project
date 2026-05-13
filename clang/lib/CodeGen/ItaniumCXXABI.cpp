@@ -709,13 +709,12 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
                             CGM.HasHiddenLTOVisibility(RD);
 
   if (ShouldEmitCFICheck) {
-    if (const auto *BinOp = dyn_cast<BinaryOperator>(E)) {
-      if (BinOp->isPtrMemOp() &&
+    if (const auto *BinOp = dyn_cast<BinaryOperator>(E); BinOp && (BinOp->isPtrMemOp() &&
           BinOp->getRHS()
               ->getType()
-              ->hasPointeeToCFIUncheckedCalleeFunctionType())
-        ShouldEmitCFICheck = false;
-    }
+              ->hasPointeeToCFIUncheckedCalleeFunctionType())) 
+      ShouldEmitCFICheck = false;
+    
   }
 
   bool ShouldEmitVFEInfo = CGM.getCodeGenOpts().VirtualFunctionElimination &&
@@ -3164,10 +3163,9 @@ getThreadLocalWrapperLinkage(const VarDecl *VD, CodeGen::CodeGenModule &CGM) {
     return VarLinkage;
 
   // If the thread wrapper is replaceable, give it appropriate linkage.
-  if (isThreadWrapperReplaceable(VD, CGM))
-    if (!llvm::GlobalVariable::isLinkOnceLinkage(VarLinkage) &&
-        !llvm::GlobalVariable::isWeakODRLinkage(VarLinkage))
-      return VarLinkage;
+  if ((isThreadWrapperReplaceable(VD, CGM)) && (!llvm::GlobalVariable::isLinkOnceLinkage(VarLinkage) &&
+        !llvm::GlobalVariable::isWeakODRLinkage(VarLinkage)))
+    return VarLinkage;
   return llvm::GlobalValue::WeakODRLinkage;
 }
 
@@ -3204,12 +3202,11 @@ ItaniumCXXABI::getOrCreateThreadLocalWrapper(const VarDecl *VD,
   CGM.SetLLVMFunctionAttributes(GlobalDecl(), FI, Wrapper, /*IsThunk=*/false);
 
   // Always resolve references to the wrapper at link time.
-  if (!Wrapper->hasLocalLinkage())
-    if (!isThreadWrapperReplaceable(VD, CGM) ||
+  if ((!Wrapper->hasLocalLinkage()) && (!isThreadWrapperReplaceable(VD, CGM) ||
         llvm::GlobalVariable::isLinkOnceLinkage(Wrapper->getLinkage()) ||
         llvm::GlobalVariable::isWeakODRLinkage(Wrapper->getLinkage()) ||
-        VD->getVisibility() == HiddenVisibility)
-      Wrapper->setVisibility(llvm::GlobalValue::HiddenVisibility);
+        VD->getVisibility() == HiddenVisibility))
+    Wrapper->setVisibility(llvm::GlobalValue::HiddenVisibility);
 
   if (isThreadWrapperReplaceable(VD, CGM)) {
     Wrapper->setCallingConv(llvm::CallingConv::CXX_FAST_TLS);
@@ -3692,12 +3689,12 @@ ItaniumRTTIBuilder::GetAddrOfExternalRTTIDescriptor(QualType Ty) {
     CGM.setGVProperties(GV, RD);
     // Import the typeinfo symbol when all non-inline virtual methods are
     // imported.
-    if (CGM.getTarget().hasPS4DLLImportExport()) {
-      if (RD && CXXRecordNonInlineHasAttr<DLLImportAttr>(RD)) {
+    if ((CGM.getTarget().hasPS4DLLImportExport()) && (RD && CXXRecordNonInlineHasAttr<DLLImportAttr>(RD))) 
+      {
         GV->setDLLStorageClass(llvm::GlobalVariable::DLLImportStorageClass);
         CGM.setDSOLocal(GV);
       }
-    }
+    
   }
 
   return GV;
@@ -3914,10 +3911,9 @@ static bool IsIncompleteClassType(const RecordType *RecordTy) {
 ///     incomplete class type.
 /// is an indirect or direct pointer to an incomplete class type.
 static bool ContainsIncompleteClassType(QualType Ty) {
-  if (const RecordType *RecordTy = dyn_cast<RecordType>(Ty)) {
-    if (IsIncompleteClassType(RecordTy))
-      return true;
-  }
+  if (const RecordType *RecordTy = dyn_cast<RecordType>(Ty); RecordTy && (IsIncompleteClassType(RecordTy))) 
+    return true;
+  
 
   if (const PointerType *PointerTy = dyn_cast<PointerType>(Ty))
     return ContainsIncompleteClassType(PointerTy->getPointeeType());
@@ -4159,10 +4155,9 @@ static llvm::GlobalVariable::LinkageTypes getTypeInfoLinkage(CodeGenModule &CGM,
           cast<CXXRecordDecl>(Record->getDecl())->getDefinitionOrSelf();
       if (RD->hasAttr<WeakAttr>())
         return llvm::GlobalValue::WeakODRLinkage;
-      if (CGM.getTriple().isWindowsItaniumEnvironment())
-        if (RD->hasAttr<DLLImportAttr>() &&
-            ShouldUseExternalRTTIDescriptor(CGM, Ty))
-          return llvm::GlobalValue::ExternalLinkage;
+      if ((CGM.getTriple().isWindowsItaniumEnvironment()) && (RD->hasAttr<DLLImportAttr>() &&
+            ShouldUseExternalRTTIDescriptor(CGM, Ty)))
+        return llvm::GlobalValue::ExternalLinkage;
       // MinGW always uses LinkOnceODRLinkage for type info.
       if (RD->isDynamicClass() &&
           !CGM.getContext().getTargetInfo().getTriple().isOSCygMing())
@@ -4214,14 +4209,13 @@ llvm::Constant *ItaniumRTTIBuilder::BuildTypeInfo(QualType Ty) {
 
   llvm::GlobalValue::DLLStorageClassTypes DLLStorageClass =
       llvm::GlobalValue::DefaultStorageClass;
-  if (auto RD = Ty->getAsCXXRecordDecl()) {
-    if ((CGM.getTriple().isWindowsItaniumEnvironment() &&
+  if (auto RD = Ty->getAsCXXRecordDecl(); RD && ((CGM.getTriple().isWindowsItaniumEnvironment() &&
          RD->hasAttr<DLLExportAttr>()) ||
         (CGM.shouldMapVisibilityToDLLExport(RD) &&
          !llvm::GlobalValue::isLocalLinkage(Linkage) &&
-         llvmVisibility == llvm::GlobalValue::DefaultVisibility))
-      DLLStorageClass = llvm::GlobalValue::DLLExportStorageClass;
-  }
+         llvmVisibility == llvm::GlobalValue::DefaultVisibility))) 
+    DLLStorageClass = llvm::GlobalValue::DLLExportStorageClass;
+  
   return BuildTypeInfo(Ty, Linkage, llvmVisibility, DLLStorageClass);
 }
 
@@ -4621,12 +4615,12 @@ static unsigned extractPBaseFlags(ASTContext &Ctx, QualType &Type) {
   if (ContainsIncompleteClassType(Type))
     Flags |= ItaniumRTTIBuilder::PTI_Incomplete;
 
-  if (auto *Proto = Type->getAs<FunctionProtoType>()) {
-    if (Proto->isNothrow()) {
+  if (auto *Proto = Type->getAs<FunctionProtoType>(); Proto && (Proto->isNothrow())) 
+    {
       Flags |= ItaniumRTTIBuilder::PTI_Noexcept;
       Type = Ctx.getFunctionTypeWithExceptionSpec(Type, EST_None);
     }
-  }
+  
 
   return Flags;
 }

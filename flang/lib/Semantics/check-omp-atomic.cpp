@@ -567,16 +567,16 @@ void OmpStructureChecker::CheckAtomicType(SymbolRef sym,
 
   // Go over all length parameters, if any, and check if they are
   // explicit.
-  if (const DerivedTypeSpec *derived{typeSpec->AsDerived()}) {
-    if (llvm::any_of(derived->parameters(), [](auto &&entry) {
+  if (const DerivedTypeSpec *derived{typeSpec->AsDerived()}; derived && (llvm::any_of(derived->parameters(), [](auto &&entry) {
           // "entry" is a map entry
           return entry.second.isLen() && !entry.second.isExplicit();
-        })) {
+        }))) 
+    {
       context_.Say(source,
           "Atomic variable %s is a pointer to a type with non-constant length parameter"_err_en_US,
           name);
     }
-  }
+  
 }
 
 void OmpStructureChecker::CheckAtomicVariable(

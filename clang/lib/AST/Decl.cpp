@@ -577,9 +577,8 @@ template <typename T> static bool isFirstInExternCContext(T *D) {
 }
 
 static bool isSingleLineLanguageLinkage(const Decl &D) {
-  if (const auto *SD = dyn_cast<LinkageSpecDecl>(D.getDeclContext()))
-    if (!SD->hasBraces())
-      return true;
+  if (const auto *SD = dyn_cast<LinkageSpecDecl>(D.getDeclContext()); SD && (!SD->hasBraces()))
+    return true;
   return false;
 }
 
@@ -1154,12 +1153,10 @@ NamedDecl::isReserved(const LangOptions &LangOpts) const {
     const DeclContext *DC = getDeclContext()->getRedeclContext();
     if (DC->isTranslationUnit())
       return Status;
-    if (auto *VD = dyn_cast<VarDecl>(this))
-      if (VD->isExternC())
-        return ReservedIdentifierStatus::StartsWithUnderscoreAndIsExternC;
-    if (auto *FD = dyn_cast<FunctionDecl>(this))
-      if (FD->isExternC())
-        return ReservedIdentifierStatus::StartsWithUnderscoreAndIsExternC;
+    if (auto *VD = dyn_cast<VarDecl>(this); VD && (VD->isExternC()))
+      return ReservedIdentifierStatus::StartsWithUnderscoreAndIsExternC;
+    if (auto *FD = dyn_cast<FunctionDecl>(this); FD && (FD->isExternC()))
+      return ReservedIdentifierStatus::StartsWithUnderscoreAndIsExternC;
     return ReservedIdentifierStatus::NotReserved;
   }
 
@@ -1170,12 +1167,11 @@ ObjCStringFormatFamily NamedDecl::getObjCFStringFormattingFamily() const {
   StringRef name = getName();
   if (name.empty()) return SFF_None;
 
-  if (name.front() == 'C')
-    if (name == "CFStringCreateWithFormat" ||
+  if ((name.front() == 'C') && (name == "CFStringCreateWithFormat" ||
         name == "CFStringCreateWithFormatAndArguments" ||
         name == "CFStringAppendFormat" ||
-        name == "CFStringAppendFormatAndArguments")
-      return SFF_CFString;
+        name == "CFStringAppendFormatAndArguments"))
+    return SFF_CFString;
   return SFF_None;
 }
 
@@ -2284,19 +2280,17 @@ VarDecl::isThisDeclarationADefinition(ASTContext &C) const {
   if (hasDefiningAttr())
     return Definition;
 
-  if (const auto *SAA = getAttr<SelectAnyAttr>())
-    if (!SAA->isInherited())
-      return Definition;
+  if (const auto *SAA = getAttr<SelectAnyAttr>(); SAA && (!SAA->isInherited()))
+    return Definition;
 
   // A variable template specialization (other than a static data member
   // template or an explicit specialization) is a declaration until we
   // instantiate its initializer.
-  if (auto *VTSD = dyn_cast<VarTemplateSpecializationDecl>(this)) {
-    if (VTSD->getTemplateSpecializationKind() != TSK_ExplicitSpecialization &&
+  if (auto *VTSD = dyn_cast<VarTemplateSpecializationDecl>(this); VTSD && (VTSD->getTemplateSpecializationKind() != TSK_ExplicitSpecialization &&
         !isa<VarTemplatePartialSpecializationDecl>(VTSD) &&
-        !VTSD->IsCompleteDefinition)
-      return DeclarationOnly;
-  }
+        !VTSD->IsCompleteDefinition)) 
+    return DeclarationOnly;
+  
 
   if (hasExternalStorage())
     return DeclarationOnly;
@@ -2375,9 +2369,8 @@ const Expr *VarDecl::getAnyInitializer(const VarDecl *&D) const {
 }
 
 bool VarDecl::hasInit() const {
-  if (auto *P = dyn_cast<ParmVarDecl>(this))
-    if (P->hasUnparsedDefaultArg() || P->hasUninstantiatedDefaultArg())
-      return false;
+  if (auto *P = dyn_cast<ParmVarDecl>(this); P && (P->hasUnparsedDefaultArg() || P->hasUninstantiatedDefaultArg()))
+    return false;
 
   if (auto *Eval = getEvaluatedStmt())
     return Eval->Value.isValid();
@@ -2605,9 +2598,8 @@ APValue *VarDecl::evaluateValueImpl(SmallVectorImpl<PartialDiagnosticAt> &Notes,
 }
 
 APValue *VarDecl::getEvaluatedValue() const {
-  if (EvaluatedStmt *Eval = getEvaluatedStmt())
-    if (Eval->WasEvaluated)
-      return &Eval->Evaluated;
+  if (EvaluatedStmt *Eval = getEvaluatedStmt(); Eval && (Eval->WasEvaluated))
+    return &Eval->Evaluated;
 
   return nullptr;
 }
@@ -2695,18 +2687,18 @@ VarDecl *VarDecl::getTemplateInstantiationPattern() const {
 
   // If this is an instantiated member, walk back to the template from which
   // it was instantiated.
-  if (MemberSpecializationInfo *MSInfo = VD->getMemberSpecializationInfo()) {
-    if (isTemplateInstantiation(MSInfo->getTemplateSpecializationKind())) {
+  if (MemberSpecializationInfo *MSInfo = VD->getMemberSpecializationInfo(); MSInfo && (isTemplateInstantiation(MSInfo->getTemplateSpecializationKind()))) 
+    {
       VD = VD->getInstantiatedFromStaticDataMember();
       while (auto *NewVD = VD->getInstantiatedFromStaticDataMember())
         VD = NewVD;
     }
-  }
+  
 
   // If it's an instantiated variable template specialization, find the
   // template or partial specialization from which it was instantiated.
-  if (auto *VDTemplSpec = dyn_cast<VarTemplateSpecializationDecl>(VD)) {
-    if (isTemplateInstantiation(VDTemplSpec->getTemplateSpecializationKind())) {
+  if (auto *VDTemplSpec = dyn_cast<VarTemplateSpecializationDecl>(VD); VDTemplSpec && (isTemplateInstantiation(VDTemplSpec->getTemplateSpecializationKind()))) 
+    {
       auto From = VDTemplSpec->getInstantiatedFrom();
       if (auto *VTD = From.dyn_cast<VarTemplateDecl *>()) {
         while (!VTD->isMemberSpecialization()) {
@@ -2728,7 +2720,7 @@ VarDecl *VarDecl::getTemplateInstantiationPattern() const {
         return getDefinitionOrSelf<VarDecl>(VTPSD);
       }
     }
-  }
+  
 
   // If this is the pattern of a variable template, find where it was
   // instantiated from. FIXME: Is this necessary?
@@ -2828,9 +2820,8 @@ bool VarDecl::isNoDestroy(const ASTContext &Ctx) const {
 
 QualType::DestructionKind
 VarDecl::needsDestruction(const ASTContext &Ctx) const {
-  if (EvaluatedStmt *Eval = getEvaluatedStmt())
-    if (Eval->HasConstantDestruction)
-      return QualType::DK_none;
+  if (EvaluatedStmt *Eval = getEvaluatedStmt(); Eval && (Eval->HasConstantDestruction))
+    return QualType::DK_none;
 
   if (isNoDestroy(Ctx))
     return QualType::DK_none;
@@ -4657,10 +4648,9 @@ unsigned FunctionDecl::getMemoryFunctionKind() const {
         return Builtin::BIbzero;
       if (FnInfo->isStr("bcopy"))
         return Builtin::BIbcopy;
-    } else if (isInStdNamespace()) {
-      if (FnInfo->isStr("free"))
-        return Builtin::BIfree;
-    }
+    } else if ((isInStdNamespace()) && (FnInfo->isStr("free"))) 
+      return Builtin::BIfree;
+    
     break;
   }
   return 0;
@@ -5132,14 +5122,14 @@ void EnumDecl::setTemplateSpecializationKind(TemplateSpecializationKind TSK,
 }
 
 EnumDecl *EnumDecl::getTemplateInstantiationPattern() const {
-  if (MemberSpecializationInfo *MSInfo = getMemberSpecializationInfo()) {
-    if (isTemplateInstantiation(MSInfo->getTemplateSpecializationKind())) {
+  if (MemberSpecializationInfo *MSInfo = getMemberSpecializationInfo(); MSInfo && (isTemplateInstantiation(MSInfo->getTemplateSpecializationKind()))) 
+    {
       EnumDecl *ED = getInstantiatedFromMemberEnum();
       while (auto *NewED = ED->getInstantiatedFromMemberEnum())
         ED = NewED;
       return ::getDefinitionOrSelf(ED);
     }
-  }
+  
 
   assert(!isTemplateInstantiation(getTemplateSpecializationKind()) &&
          "couldn't find pattern for enum instantiation");
@@ -5173,11 +5163,10 @@ unsigned EnumDecl::getODRHash() {
 SourceRange EnumDecl::getSourceRange() const {
   auto Res = TagDecl::getSourceRange();
   // Set end-point to enum-base, e.g. enum foo : ^bar
-  if (auto *TSI = getIntegerTypeSourceInfo()) {
+  if (auto *TSI = getIntegerTypeSourceInfo(); TSI && (!getBraceRange().getEnd().isValid())) 
     // TagDecl doesn't know about the enum base.
-    if (!getBraceRange().getEnd().isValid())
-      Res.setEnd(TSI->getTypeLoc().getEndLoc());
-  }
+    Res.setEnd(TSI->getTypeLoc().getEndLoc());
+  
   return Res;
 }
 
@@ -5825,10 +5814,9 @@ TypeAliasDecl *TypeAliasDecl::CreateDeserialized(ASTContext &C,
 
 SourceRange TypedefDecl::getSourceRange() const {
   SourceLocation RangeEnd = getLocation();
-  if (TypeSourceInfo *TInfo = getTypeSourceInfo()) {
-    if (TInfo->getType().hasPostfixDeclaratorSyntax())
-      RangeEnd = TInfo->getTypeLoc().getSourceRange().getEnd();
-  }
+  if (TypeSourceInfo *TInfo = getTypeSourceInfo(); TInfo && (TInfo->getType().hasPostfixDeclaratorSyntax())) 
+    RangeEnd = TInfo->getTypeLoc().getSourceRange().getEnd();
+  
   return SourceRange(getBeginLoc(), RangeEnd);
 }
 
@@ -6098,14 +6086,12 @@ ExportDecl *ExportDecl::CreateDeserialized(ASTContext &C, GlobalDeclID ID) {
 
 bool clang::IsArmStreamingFunction(const FunctionDecl *FD,
                                    bool IncludeLocallyStreaming) {
-  if (IncludeLocallyStreaming)
-    if (FD->hasAttr<ArmLocallyStreamingAttr>())
-      return true;
+  if ((IncludeLocallyStreaming) && (FD->hasAttr<ArmLocallyStreamingAttr>()))
+    return true;
 
   assert(!FD->getType().isNull() && "Expected a valid FunctionDecl");
-  if (const auto *FPT = FD->getType()->getAs<FunctionProtoType>())
-    if (FPT->getAArch64SMEAttributes() & FunctionType::SME_PStateSMEnabledMask)
-      return true;
+  if (const auto *FPT = FD->getType()->getAs<FunctionProtoType>(); FPT && (FPT->getAArch64SMEAttributes() & FunctionType::SME_PStateSMEnabledMask))
+    return true;
 
   return false;
 }

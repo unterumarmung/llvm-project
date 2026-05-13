@@ -233,12 +233,12 @@ void KernelInfo::updateForBB(const BasicBlock &BB,
           ++FlatAddrspaceAccesses;
           remarkFlatAddrspaceAccess(ORE, F, I);
         } else if (const AnyMemTransferInst *MT =
-                       dyn_cast<AnyMemTransferInst>(MI)) {
-          if (MT->getSourceAddressSpace() == FlatAddrspace) {
+                       dyn_cast<AnyMemTransferInst>(MI); MT && (MT->getSourceAddressSpace() == FlatAddrspace)) 
+          {
             ++FlatAddrspaceAccesses;
             remarkFlatAddrspaceAccess(ORE, F, I);
           }
-        }
+        
       }
     } else if (const LoadInst *Load = dyn_cast<LoadInst>(&I)) {
       if (Load->getPointerAddressSpace() == FlatAddrspace) {
@@ -255,12 +255,12 @@ void KernelInfo::updateForBB(const BasicBlock &BB,
         ++FlatAddrspaceAccesses;
         remarkFlatAddrspaceAccess(ORE, F, I);
       }
-    } else if (const AtomicCmpXchgInst *At = dyn_cast<AtomicCmpXchgInst>(&I)) {
-      if (At->getPointerAddressSpace() == FlatAddrspace) {
+    } else if (const AtomicCmpXchgInst *At = dyn_cast<AtomicCmpXchgInst>(&I); At && (At->getPointerAddressSpace() == FlatAddrspace)) 
+      {
         ++FlatAddrspaceAccesses;
         remarkFlatAddrspaceAccess(ORE, F, I);
       }
-    }
+    
   }
 }
 

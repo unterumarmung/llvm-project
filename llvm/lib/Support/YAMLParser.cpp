@@ -888,14 +888,14 @@ Token &Scanner::peekNext() {
   // can confirm.
   bool NeedMore = false;
   while (true) {
-    if (TokenQueue.empty() || NeedMore) {
-      if (!fetchMoreTokens()) {
+    if ((TokenQueue.empty() || NeedMore) && (!fetchMoreTokens())) 
+      {
         TokenQueue.clear();
         SimpleKeys.clear();
         TokenQueue.push_back(Token());
         return TokenQueue.front();
       }
-    }
+    
     assert(!TokenQueue.empty() &&
             "fetchMoreTokens lied about getting tokens!");
 
@@ -1729,11 +1729,10 @@ bool Scanner::scanBlockScalar(bool IsLiteral) {
   const auto *Start = Current;
   unsigned BlockExitIndent = Indent < 0 ? 0 : (unsigned)Indent;
   unsigned LineBreaks = 0;
-  if (BlockIndent == 0) {
-    if (!findBlockScalarIndent(BlockIndent, BlockExitIndent, LineBreaks,
-                               IsDone))
-      return false;
-  }
+  if ((BlockIndent == 0) && (!findBlockScalarIndent(BlockIndent, BlockExitIndent, LineBreaks,
+                               IsDone))) 
+    return false;
+  
 
   // Scan the block's scalars body.
   SmallString<256> Str;

@@ -1060,9 +1060,8 @@ bool TargetPassConfig::addCoreISelPasses() {
 
   // Run the SDAG InstSelector, providing a fallback path when we do not want to
   // abort on not-yet-supported input.
-  if (Selector != SelectorType::GlobalISel || !isGlobalISelAbortEnabled())
-    if (addInstSelector())
-      return true;
+  if ((Selector != SelectorType::GlobalISel || !isGlobalISelAbortEnabled()) && (addInstSelector()))
+    return true;
 
   // Expand pseudo-instructions emitted by ISel. Don't run the verifier before
   // FinalizeISel.

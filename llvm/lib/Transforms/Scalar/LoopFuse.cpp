@@ -186,20 +186,20 @@ struct FusionCandidate {
           reportInvalidCandidate(MayThrowException);
           return;
         }
-        if (StoreInst *SI = dyn_cast<StoreInst>(&I)) {
-          if (SI->isVolatile()) {
+        if (StoreInst *SI = dyn_cast<StoreInst>(&I); SI && (SI->isVolatile())) 
+          {
             invalidate();
             reportInvalidCandidate(ContainsVolatileAccess);
             return;
           }
-        }
-        if (LoadInst *LI = dyn_cast<LoadInst>(&I)) {
-          if (LI->isVolatile()) {
+        
+        if (LoadInst *LI = dyn_cast<LoadInst>(&I); LI && (LI->isVolatile())) 
+          {
             invalidate();
             reportInvalidCandidate(ContainsVolatileAccess);
             return;
           }
-        }
+        
         if (I.mayWriteToMemory())
           MemWrites.push_back(&I);
         if (I.mayReadFromMemory())
@@ -1014,15 +1014,15 @@ private:
   // TODO: Move functionality into CodeMoverUtils
   bool canSinkInst(Instruction &I, const FusionCandidate &FC1) const {
     for (User *U : I.users()) {
-      if (auto *UI{dyn_cast<Instruction>(U)}) {
+      if (auto *UI{dyn_cast<Instruction>(U)}; UI && (FC1.L->contains(UI))) 
         // Cannot sink if user in loop
         // If FC1 has phi users of this value, we cannot sink it into FC1.
-        if (FC1.L->contains(UI)) {
+        {
           // Cannot hoist or sink this instruction. No hoisting/sinking
           // should take place, loops should not fuse
           return false;
         }
-      }
+      
     }
 
     // If this isn't a memory inst, sinking is safe
@@ -1218,8 +1218,8 @@ private:
     for (BasicBlock *BB : FC1.L->blocks())
       for (Instruction &I : *BB)
         for (auto &Op : I.operands())
-          if (Instruction *Def = dyn_cast<Instruction>(Op))
-            if (FC0.L->contains(Def->getParent())) {
+          if (Instruction *Def = dyn_cast<Instruction>(Op); Def && (FC0.L->contains(Def->getParent())))
+            {
               return false;
             }
 
@@ -1319,9 +1319,8 @@ private:
     if (auto FC0CmpInst =
             dyn_cast<Instruction>(FC0.GuardBranch->getCondition()))
       if (auto FC1CmpInst =
-              dyn_cast<Instruction>(FC1.GuardBranch->getCondition()))
-        if (!FC0CmpInst->isIdenticalTo(FC1CmpInst))
-          return false;
+              dyn_cast<Instruction>(FC1.GuardBranch->getCondition()); FC1CmpInst && (!FC0CmpInst->isIdenticalTo(FC1CmpInst)))
+        return false;
 
     // The compare instructions are identical.
     // Now make sure the successor of the guards have the same flow into/around

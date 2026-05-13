@@ -240,14 +240,14 @@ void Parser::ConsumeExtraSemi(ExtraSemiKind Kind, DeclSpec::TST TST) {
 bool Parser::expectIdentifier() {
   if (Tok.is(tok::identifier))
     return false;
-  if (const auto *II = Tok.getIdentifierInfo()) {
-    if (II->isCPlusPlusKeyword(getLangOpts())) {
+  if (const auto *II = Tok.getIdentifierInfo(); II && (II->isCPlusPlusKeyword(getLangOpts()))) 
+    {
       Diag(Tok, diag::err_expected_token_instead_of_objcxx_keyword)
           << tok::identifier << Tok.getIdentifierInfo();
       // Objective-C++: Recover by treating this keyword as a valid identifier.
       return false;
     }
-  }
+  
   Diag(Tok, diag::err_expected) << tok::identifier;
   return true;
 }
@@ -1898,12 +1898,12 @@ bool Parser::TryAnnotateTypeOrScopeToken(
                                        /*IsTypename*/ true))
       return true;
     if (SS.isEmpty()) {
-      if (Tok.is(tok::identifier) || Tok.is(tok::annot_template_id) ||
-          Tok.is(tok::annot_decltype)) {
-        // Attempt to recover by skipping the invalid 'typename'
-        if (Tok.is(tok::annot_decltype) ||
+      if ((Tok.is(tok::identifier) || Tok.is(tok::annot_template_id) ||
+          Tok.is(tok::annot_decltype)) && (Tok.is(tok::annot_decltype) ||
             (!TryAnnotateTypeOrScopeToken(AllowImplicitTypename) &&
-             Tok.isAnnotation())) {
+             Tok.isAnnotation()))) 
+        // Attempt to recover by skipping the invalid 'typename'
+        {
           unsigned DiagID = diag::err_expected_qualified_after_typename;
           // MS compatibility: MSVC permits using known types with typename.
           // e.g. "typedef typename T* pointer_type"
@@ -1912,7 +1912,7 @@ bool Parser::TryAnnotateTypeOrScopeToken(
           Diag(Tok.getLocation(), DiagID);
           return false;
         }
-      }
+      
       if (Tok.isEditorPlaceholder())
         return true;
 
@@ -1973,13 +1973,12 @@ bool Parser::TryAnnotateTypeOrScopeToken(
   bool WasScopeAnnotation = Tok.is(tok::annot_cxxscope);
 
   CXXScopeSpec SS;
-  if (getLangOpts().CPlusPlus)
-    if (ParseOptionalCXXScopeSpecifier(
+  if ((getLangOpts().CPlusPlus) && (ParseOptionalCXXScopeSpecifier(
             SS, /*ObjectType=*/nullptr,
             /*ObjectHasErrors=*/false,
             /*EnteringContext=*/false,
-            /*IsAddressOfOperand=*/IsAddressOfOperand))
-      return true;
+            /*IsAddressOfOperand=*/IsAddressOfOperand)))
+    return true;
 
   return TryAnnotateTypeOrScopeTokenAfterScopeSpec(SS, !WasScopeAnnotation,
                                                    AllowImplicitTypename);
@@ -2051,11 +2050,11 @@ bool Parser::TryAnnotateTypeOrScopeTokenAfterScopeSpec(
               getCurScope(), SS,
               /*hasTemplateKeyword=*/false, TemplateName,
               /*ObjectType=*/nullptr, /*EnteringContext*/false, Template,
-              MemberOfUnknownSpecialization)) {
+              MemberOfUnknownSpecialization); TNK && (TNK != TNK_Undeclared_template ||
+            isTemplateArgumentList(1) != TPResult::False)) 
         // Only annotate an undeclared template name as a template-id if the
         // following tokens have the form of a template argument list.
-        if (TNK != TNK_Undeclared_template ||
-            isTemplateArgumentList(1) != TPResult::False) {
+        {
           // Consume the identifier.
           ConsumeToken();
           if (AnnotateTemplateIdToken(Template, TNK, SS, SourceLocation(),
@@ -2066,7 +2065,7 @@ bool Parser::TryAnnotateTypeOrScopeTokenAfterScopeSpec(
             return true;
           }
         }
-      }
+      
     }
 
     // The current token, which is either an identifier or a

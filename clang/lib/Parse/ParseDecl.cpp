@@ -1346,12 +1346,12 @@ void Parser::ParseAvailabilityAttribute(
       continue;
     }
 
-    if (Keyword == Ident_environment) {
-      if (EnvironmentLoc != nullptr) {
+    if ((Keyword == Ident_environment) && (EnvironmentLoc != nullptr)) 
+      {
         Diag(KeywordLoc, diag::err_availability_redundant)
             << Keyword << SourceRange(EnvironmentLoc->getLoc());
       }
-    }
+    
 
     if (Tok.isNot(tok::equal)) {
       Diag(Tok, diag::err_expected_after) << Keyword << tok::equal;
@@ -2450,16 +2450,15 @@ Parser::DeclGroupPtrTy Parser::ParseDeclGroup(ParsingDeclSpec &DS,
   if (DeclEnd)
     *DeclEnd = Tok.getLocation();
 
-  if (ExpectSemi && ExpectAndConsumeSemi(
+  if ((ExpectSemi && ExpectAndConsumeSemi(
                         Context == DeclaratorContext::File
                             ? diag::err_invalid_token_after_toplevel_declarator
-                            : diag::err_expected_semi_declaration)) {
+                            : diag::err_expected_semi_declaration)) && (!isDeclarationSpecifier(ImplicitTypenameContext::No))) 
     // Okay, there was no semicolon and one was expected.  If we see a
     // declaration specifier, just assume it was missing and continue parsing.
     // Otherwise things are very confused and we skip to recover.
-    if (!isDeclarationSpecifier(ImplicitTypenameContext::No))
-      SkipMalformedDecl();
-  }
+    SkipMalformedDecl();
+  
 
   return Actions.FinalizeDeclaratorGroup(getCurScope(), DS, DeclsInGroup);
 }
@@ -6321,11 +6320,10 @@ void Parser::ParseTypeQualifierListOpt(
     case tok::kw___uptr:
       // GNU libc headers in C mode use '__uptr' as an identifier which conflicts
       // with the MS modifier keyword.
-      if ((AttrReqs & AR_DeclspecAttributesParsed) && !getLangOpts().CPlusPlus &&
-          IdentifierRequired && DS.isEmpty() && NextToken().is(tok::semi)) {
-        if (TryKeywordIdentFallback(false))
-          continue;
-      }
+      if (((AttrReqs & AR_DeclspecAttributesParsed) && !getLangOpts().CPlusPlus &&
+          IdentifierRequired && DS.isEmpty() && NextToken().is(tok::semi)) && (TryKeywordIdentFallback(false))) 
+        continue;
+      
       [[fallthrough]];
     case tok::kw___sptr:
     case tok::kw___w64:

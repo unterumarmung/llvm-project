@@ -67,10 +67,9 @@ public:
       return Roles;
     auto It = StmtStack.end()-2;
     while (isa<CastExpr>(*It) || isa<ParenExpr>(*It)) {
-      if (auto ICE = dyn_cast<ImplicitCastExpr>(*It)) {
-        if (ICE->getCastKind() == CK_LValueToRValue)
-          Roles |= (unsigned)SymbolRole::Read;
-      }
+      if (auto ICE = dyn_cast<ImplicitCastExpr>(*It); ICE && (ICE->getCastKind() == CK_LValueToRValue)) 
+        Roles |= (unsigned)SymbolRole::Read;
+      
       if (It == StmtStack.begin())
         break;
       --It;
@@ -81,12 +80,12 @@ public:
       if (BO->getOpcode() == BO_Assign) {
         if (BO->getLHS()->IgnoreParenCasts() == E)
           Roles |= (unsigned)SymbolRole::Write;
-      } else if (auto CA = dyn_cast<CompoundAssignOperator>(Parent)) {
-        if (CA->getLHS()->IgnoreParenCasts() == E) {
+      } else if (auto CA = dyn_cast<CompoundAssignOperator>(Parent); CA && (CA->getLHS()->IgnoreParenCasts() == E)) 
+        {
           Roles |= (unsigned)SymbolRole::Read;
           Roles |= (unsigned)SymbolRole::Write;
         }
-      }
+      
     } else if (auto UO = dyn_cast<UnaryOperator>(Parent)) {
       if (UO->isIncrementDecrementOp()) {
         Roles |= (unsigned)SymbolRole::Read;
@@ -99,8 +98,8 @@ public:
       if (CE->getCallee()->IgnoreParenCasts() == E) {
         addCallRole(Roles, Relations);
         if (auto *ME = dyn_cast<MemberExpr>(E)) {
-          if (auto *CXXMD = dyn_cast_or_null<CXXMethodDecl>(ME->getMemberDecl()))
-            if (CXXMD->isVirtual() && !ME->hasQualifier()) {
+          if (auto *CXXMD = dyn_cast_or_null<CXXMethodDecl>(ME->getMemberDecl()); CXXMD && (CXXMD->isVirtual() && !ME->hasQualifier()))
+            {
               Roles |= (unsigned)SymbolRole::Dynamic;
               auto BaseTy = ME->getBase()->IgnoreImpCasts()->getType();
               if (!BaseTy.isNull())
@@ -109,8 +108,8 @@ public:
                                          CXXRD);
             }
         }
-      } else if (auto CXXOp = dyn_cast<CXXOperatorCallExpr>(CE)) {
-        if (CXXOp->getNumArgs() > 0 && CXXOp->getArg(0)->IgnoreParenCasts() == E) {
+      } else if (auto CXXOp = dyn_cast<CXXOperatorCallExpr>(CE); CXXOp && (CXXOp->getNumArgs() > 0 && CXXOp->getArg(0)->IgnoreParenCasts() == E)) 
+        {
           OverloadedOperatorKind Op = CXXOp->getOperator();
           if (Op == OO_Equal) {
             Roles |= (unsigned)SymbolRole::Write;
@@ -123,7 +122,7 @@ public:
             Roles |= (unsigned)SymbolRole::AddressOf;
           }
         }
-      }
+      
     }
 
     return Roles;
@@ -234,10 +233,9 @@ public:
       if (MsgE->getReceiverKind() != ObjCMessageExpr::Instance)
         return false;
       if (auto *RecE = dyn_cast<ObjCMessageExpr>(
-              MsgE->getInstanceReceiver()->IgnoreParenCasts())) {
-        if (RecE->getMethodFamily() == OMF_alloc)
-          return false;
-      }
+              MsgE->getInstanceReceiver()->IgnoreParenCasts()); RecE && (RecE->getMethodFamily() == OMF_alloc)) 
+        return false;
+      
       return true;
     };
 
@@ -256,14 +254,13 @@ public:
           return false;
         if (PRE->isExplicitProperty())
           return false;
-        if (const ObjCMethodDecl *Getter = PRE->getImplicitPropertyGetter()) {
+        if (const ObjCMethodDecl *Getter = PRE->getImplicitPropertyGetter(); Getter && (Getter->isClassMethod() &&
+              Getter->getCanonicalDecl()->findPropertyDecl())) 
           // Class properties that are explicitly defined using @property
           // declarations are represented implicitly as there is no ivar for
           // class properties.
-          if (Getter->isClassMethod() &&
-              Getter->getCanonicalDecl()->findPropertyDecl())
-            return false;
-        }
+          return false;
+        
         return true;
       };
       bool IsPropCall = isa_and_nonnull<PseudoObjectExpr>(Containing);
@@ -307,11 +304,11 @@ public:
       SymbolRoleSet Roles = getRolesForRef(E, Relations);
       return IndexCtx.handleReference(E->getExplicitProperty(), E->getLocation(),
                                       Parent, ParentDC, Roles, Relations, E);
-    } else if (const ObjCMethodDecl *Getter = E->getImplicitPropertyGetter()) {
+    } else if (const ObjCMethodDecl *Getter = E->getImplicitPropertyGetter(); Getter && (Getter->isClassMethod())) 
       // Class properties that are explicitly defined using @property
       // declarations are represented implicitly as there is no ivar for class
       // properties.
-      if (Getter->isClassMethod()) {
+      {
         if (const auto *PD = Getter->getCanonicalDecl()->findPropertyDecl()) {
           SmallVector<SymbolRelation, 2> Relations;
           SymbolRoleSet Roles = getRolesForRef(E, Relations);
@@ -319,7 +316,7 @@ public:
                                           ParentDC, Roles, Relations, E);
         }
       }
-    }
+    
 
     // No need to do a handleReference for the objc method, because there will
     // be a message expr as part of PseudoObjectExpr.

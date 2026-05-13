@@ -239,9 +239,8 @@ static const MemRegion *getThisRegionBaseOrNull(const CallEvent &Call) {
 ProgramStateRef CallEvent::invalidateRegions(unsigned BlockCount,
                                              ProgramStateRef State) const {
   // Don't invalidate anything if the callee is marked pure/const.
-  if (const Decl *Callee = getDecl())
-    if (Callee->hasAttr<PureAttr>() || Callee->hasAttr<ConstAttr>())
-      return State;
+  if (const Decl *Callee = getDecl(); Callee && (Callee->hasAttr<PureAttr>() || Callee->hasAttr<ConstAttr>()))
+    return State;
 
   SmallVector<SVal, 8> ValuesToInvalidate;
   RegionAndSymbolInvalidationTraits ETraits;
@@ -284,9 +283,8 @@ ProgramStateRef CallEvent::invalidateRegions(unsigned BlockCount,
     // constructing them directly.
     // TODO: This is unnecessary when there's no destructor, but that's
     // currently hard to figure out.
-    if (getKind() != CE_CXXAllocator)
-      if (isArgumentConstructedDirectly(Idx))
-        if (auto AdjIdx = getAdjustedParameterIndex(Idx))
+    if ((getKind() != CE_CXXAllocator) && (isArgumentConstructedDirectly(Idx)))
+      if (auto AdjIdx = getAdjustedParameterIndex(Idx))
           if (const TypedValueRegion *TVR =
                   getParameterLocation(*AdjIdx, BlockCount))
             ValuesToInvalidate.push_back(loc::MemRegionVal(TVR));
@@ -491,9 +489,8 @@ static void addParameterValuesToBindings(const StackFrame *CalleeSF,
     assert(*I && "Formal parameter has no decl?");
 
     // TODO: Support allocator calls.
-    if (Call.getKind() != CE_CXXAllocator)
-      if (Call.isArgumentConstructedDirectly(Call.getASTArgumentIndex(Idx)))
-        continue;
+    if ((Call.getKind() != CE_CXXAllocator) && (Call.isArgumentConstructedDirectly(Call.getASTArgumentIndex(Idx))))
+      continue;
 
     // TODO: Allocators should receive the correct size and possibly alignment,
     // determined in compile-time but not represented as arg-expressions,
@@ -894,9 +891,8 @@ RuntimeDefinition CXXMemberCall::getRuntimeDefinition() const {
   // id-expression in the class member access expression is a qualified-id,
   // that function is called. Otherwise, its final overrider in the dynamic type
   // of the object expression is called.
-  if (const auto *ME = dyn_cast<MemberExpr>(getOriginExpr()->getCallee()))
-    if (ME->hasQualifier())
-      return AnyFunctionCall::getRuntimeDefinition();
+  if (const auto *ME = dyn_cast<MemberExpr>(getOriginExpr()->getCallee()); ME && (ME->hasQualifier()))
+    return AnyFunctionCall::getRuntimeDefinition();
 
   return CXXInstanceCall::getRuntimeDefinition();
 }

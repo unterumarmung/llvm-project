@@ -250,12 +250,12 @@ LTOModule::objcClassNameFromExpression(const Constant *c, std::string &name) {
     Constant *op = ce->getOperand(0);
     if (GlobalVariable *gvn = dyn_cast<GlobalVariable>(op)) {
       Constant *cn = gvn->getInitializer();
-      if (ConstantDataArray *ca = dyn_cast<ConstantDataArray>(cn)) {
-        if (ca->isCString()) {
+      if (ConstantDataArray *ca = dyn_cast<ConstantDataArray>(cn); ca && (ca->isCString())) 
+        {
           name = (".objc_class_name_" + ca->getAsCString()).str();
           return true;
         }
-      }
+      
     }
   }
   return false;
@@ -701,10 +701,9 @@ bool LTOModule::hasCtorDtor() const {
   for (auto Sym : SymTab.symbols()) {
     if (auto *GV = dyn_cast_if_present<GlobalValue *>(Sym)) {
       StringRef Name = GV->getName();
-      if (Name.consume_front("llvm.global_")) {
-        if (Name == "ctors" || Name == "dtors")
-          return true;
-      }
+      if ((Name.consume_front("llvm.global_")) && (Name == "ctors" || Name == "dtors")) 
+        return true;
+      
     }
   }
   return false;

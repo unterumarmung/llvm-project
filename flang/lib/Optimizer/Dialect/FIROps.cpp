@@ -1873,11 +1873,10 @@ static std::optional<mlir::Type> getVectorElementType(mlir::Type ty) {
 static std::optional<uint64_t> getVectorLen(mlir::Type ty) {
   if (mlir::isa<fir::VectorType>(ty))
     return mlir::dyn_cast<fir::VectorType>(ty).getLen();
-  else if (mlir::isa<mlir::VectorType>(ty)) {
+  else if ((mlir::isa<mlir::VectorType>(ty)) && (!(mlir::dyn_cast<mlir::VectorType>(ty).isScalable()))) 
     // fir.vector only supports 1-D vector
-    if (!(mlir::dyn_cast<mlir::VectorType>(ty).isScalable()))
-      return mlir::dyn_cast<mlir::VectorType>(ty).getShape()[0];
-  }
+    return mlir::dyn_cast<mlir::VectorType>(ty).getShape()[0];
+  
 
   return std::nullopt;
 }
@@ -1978,12 +1977,12 @@ static mlir::LogicalResult verifyVolatility(mlir::Type inType,
 llvm::LogicalResult fir::ConvertOp::verify() {
   mlir::Type inType = getValue().getType();
   mlir::Type outType = getType();
-  if (fir::useStrictVolatileVerification()) {
-    if (failed(verifyVolatility(inType, outType))) {
+  if ((fir::useStrictVolatileVerification()) && (failed(verifyVolatility(inType, outType)))) 
+    {
       return emitOpError("this conversion does not preserve volatility: ")
              << inType << " / " << outType;
     }
-  }
+  
   if (canBeConverted(inType, outType))
     return mlir::success();
   return emitOpError("invalid type conversion")
@@ -5280,11 +5279,10 @@ llvm::LogicalResult fir::BoxOffsetOp::verify() {
   if (getField() != fir::BoxFieldAttr::base_addr &&
       getField() != fir::BoxFieldAttr::derived_type)
     return emitOpError("cannot address provided field");
-  if (getField() == fir::BoxFieldAttr::derived_type) {
-    if (!fir::boxHasAddendum(boxType))
-      return emitOpError("can only address derived_type field of derived type "
+  if ((getField() == fir::BoxFieldAttr::derived_type) && (!fir::boxHasAddendum(boxType))) 
+    return emitOpError("can only address derived_type field of derived type "
                          "or unlimited polymorphic fir.box");
-  }
+  
   return mlir::success();
 }
 

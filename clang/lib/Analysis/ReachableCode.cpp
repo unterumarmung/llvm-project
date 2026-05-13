@@ -200,9 +200,8 @@ static bool isConfigurationValue(const Stmt *S,
     S = Ex->IgnoreCasts();
 
   // Special case looking for the sigil '()' around an integer literal.
-  if (const ParenExpr *PE = dyn_cast<ParenExpr>(S))
-    if (!PE->getBeginLoc().isMacroID())
-      return isConfigurationValue(PE->getSubExpr(), PP, SilenceableCondVal,
+  if (const ParenExpr *PE = dyn_cast<ParenExpr>(S); PE && (!PE->getBeginLoc().isMacroID()))
+    return isConfigurationValue(PE->getSubExpr(), PP, SilenceableCondVal,
                                   IncludeIntegers, true);
 
   if (const Expr *Ex = dyn_cast<Expr>(S))

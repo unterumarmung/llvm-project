@@ -309,9 +309,8 @@ static bool sinkScalarOperands(VPlan &Plan) {
         vputils::cannotHoistOrSinkRecipe(*Candidate, /*Sinking=*/true))
       return;
 
-    if (auto *RepR = dyn_cast<VPReplicateRecipe>(Candidate))
-      if (!ScalarVFOnly && RepR->isSingleScalar())
-        return;
+    if (auto *RepR = dyn_cast<VPReplicateRecipe>(Candidate); RepR && (!ScalarVFOnly && RepR->isSingleScalar()))
+      return;
 
     WorkList.insert({SinkTo, Candidate});
   };
@@ -549,10 +548,9 @@ static void addReplicateRegions(VPlan &Plan) {
   for (VPBasicBlock *VPBB : VPBlockUtils::blocksOnly<VPBasicBlock>(
            vp_depth_first_deep(Plan.getEntry()))) {
     for (VPRecipeBase &R : *VPBB)
-      if (auto *RepR = dyn_cast<VPReplicateRecipe>(&R)) {
-        if (RepR->isPredicated())
-          WorkList.push_back(RepR);
-      }
+      if (auto *RepR = dyn_cast<VPReplicateRecipe>(&R); RepR && (RepR->isPredicated())) 
+        WorkList.push_back(RepR);
+      
   }
 
   unsigned BBNum = 0;
@@ -1685,10 +1683,9 @@ static void simplifyRecipe(VPSingleDefRecipe *Def, VPTypeAnalysis &TypeInfo) {
       Def->replaceAllUsesWith(Def->getOperand(0));
       return;
     }
-    if (auto *Phi = dyn_cast<VPFirstOrderRecurrencePHIRecipe>(Def)) {
-      if (all_equal(Phi->incoming_values()))
-        Phi->replaceAllUsesWith(Phi->getOperand(0));
-    }
+    if (auto *Phi = dyn_cast<VPFirstOrderRecurrencePHIRecipe>(Def); Phi && (all_equal(Phi->incoming_values()))) 
+      Phi->replaceAllUsesWith(Phi->getOperand(0));
+    
     return;
   }
 
@@ -1744,18 +1741,17 @@ static void simplifyRecipe(VPSingleDefRecipe *Def, VPTypeAnalysis &TypeInfo) {
 
   // Simplify unrolled VectorPointer without offset, or with zero offset, to
   // just the pointer operand.
-  if (auto *VPR = dyn_cast<VPVectorPointerRecipe>(Def))
-    if (!VPR->getOffset() || match(VPR->getOffset(), m_ZeroInt()))
-      return VPR->replaceAllUsesWith(VPR->getOperand(0));
+  if (auto *VPR = dyn_cast<VPVectorPointerRecipe>(Def); VPR && (!VPR->getOffset() || match(VPR->getOffset(), m_ZeroInt())))
+    return VPR->replaceAllUsesWith(VPR->getOperand(0));
 
   // VPScalarIVSteps after unrolling can be replaced by their start value, if
   // the start index is zero and only the first lane 0 is demanded.
-  if (auto *Steps = dyn_cast<VPScalarIVStepsRecipe>(Def)) {
-    if (!Steps->getStartIndex() && vputils::onlyFirstLaneUsed(Steps)) {
+  if (auto *Steps = dyn_cast<VPScalarIVStepsRecipe>(Def); Steps && (!Steps->getStartIndex() && vputils::onlyFirstLaneUsed(Steps))) 
+    {
       Steps->replaceAllUsesWith(Steps->getOperand(0));
       return;
     }
-  }
+  
   // Simplify redundant ReductionStartVector recipes after unrolling.
   VPValue *StartV;
   if (match(Def, m_VPInstruction<VPInstruction::ReductionStartVector>(
@@ -1861,13 +1857,12 @@ static void narrowToSingleScalarRecipes(VPlan &Plan) {
       // Predicate to check if a user of Op introduces extra broadcasts.
       auto IntroducesBCastOf = [](const VPValue *Op) {
         return [Op](const VPUser *U) {
-          if (auto *VPI = dyn_cast<VPInstruction>(U)) {
-            if (is_contained({VPInstruction::ExtractLastLane,
+          if (auto *VPI = dyn_cast<VPInstruction>(U); VPI && (is_contained({VPInstruction::ExtractLastLane,
                               VPInstruction::ExtractLastPart,
                               VPInstruction::ExtractPenultimateElement},
-                             VPI->getOpcode()))
-              return false;
-          }
+                             VPI->getOpcode()))) 
+            return false;
+          
           return !U->usesScalars(Op);
         };
       };
@@ -2376,9 +2371,8 @@ struct VPCSEDenseMapInfo : public DenseMapInfo<VPSingleDefRecipe *> {
         Def->getVPRecipeID(), getOpcodeOrIntrinsicID(Def),
         getGEPSourceElementType(Def), TypeInfo.inferScalarType(Def),
         vputils::isSingleScalar(Def), hash_combine_range(Def->operands()));
-    if (auto *RFlags = dyn_cast<VPRecipeWithIRFlags>(Def))
-      if (RFlags->hasPredicate())
-        return hash_combine(Result, RFlags->getPredicate());
+    if (auto *RFlags = dyn_cast<VPRecipeWithIRFlags>(Def); RFlags && (RFlags->hasPredicate()))
+      return hash_combine(Result, RFlags->getPredicate());
     if (auto *SIVSteps = dyn_cast<VPScalarIVStepsRecipe>(Def))
       return hash_combine(Result, SIVSteps->getInductionOpcode());
     return Result;
@@ -2396,15 +2390,13 @@ struct VPCSEDenseMapInfo : public DenseMapInfo<VPSingleDefRecipe *> {
       return false;
     assert(getOpcodeOrIntrinsicID(L) && getOpcodeOrIntrinsicID(R) &&
            "must have valid opcode info for both recipes");
-    if (auto *LFlags = dyn_cast<VPRecipeWithIRFlags>(L))
-      if (LFlags->hasPredicate() &&
+    if (auto *LFlags = dyn_cast<VPRecipeWithIRFlags>(L); LFlags && (LFlags->hasPredicate() &&
           LFlags->getPredicate() !=
-              cast<VPRecipeWithIRFlags>(R)->getPredicate())
-        return false;
-    if (auto *LSIV = dyn_cast<VPScalarIVStepsRecipe>(L))
-      if (LSIV->getInductionOpcode() !=
-          cast<VPScalarIVStepsRecipe>(R)->getInductionOpcode())
-        return false;
+              cast<VPRecipeWithIRFlags>(R)->getPredicate()))
+      return false;
+    if (auto *LSIV = dyn_cast<VPScalarIVStepsRecipe>(L); LSIV && (LSIV->getInductionOpcode() !=
+          cast<VPScalarIVStepsRecipe>(R)->getInductionOpcode()))
+      return false;
     // Recipes in replicate regions implicitly depend on predicate. If either
     // recipe is in a replicate region, only consider them equal if both have
     // the same parent.
@@ -2923,15 +2915,13 @@ static VPRecipeBase *optimizeMaskToEVL(VPValue *HeaderMask,
                                      StoredVal, EVL, Mask);
   }
 
-  if (auto *Rdx = dyn_cast<VPReductionRecipe>(&CurRecipe))
-    if (Rdx->isConditional() &&
-        match(Rdx->getCondOp(), m_RemoveMask(HeaderMask, Mask)))
-      return new VPReductionEVLRecipe(*Rdx, EVL, Mask);
+  if (auto *Rdx = dyn_cast<VPReductionRecipe>(&CurRecipe); Rdx && (Rdx->isConditional() &&
+        match(Rdx->getCondOp(), m_RemoveMask(HeaderMask, Mask))))
+    return new VPReductionEVLRecipe(*Rdx, EVL, Mask);
 
-  if (auto *Interleave = dyn_cast<VPInterleaveRecipe>(&CurRecipe))
-    if (Interleave->getMask() &&
-        match(Interleave->getMask(), m_RemoveMask(HeaderMask, Mask)))
-      return new VPInterleaveEVLRecipe(*Interleave, EVL, Mask);
+  if (auto *Interleave = dyn_cast<VPInterleaveRecipe>(&CurRecipe); Interleave && (Interleave->getMask() &&
+        match(Interleave->getMask(), m_RemoveMask(HeaderMask, Mask))))
+    return new VPInterleaveEVLRecipe(*Interleave, EVL, Mask);
 
   VPValue *LHS, *RHS;
   if (match(&CurRecipe,
@@ -3908,13 +3898,13 @@ void VPlanTransforms::convertToConcreteRecipes(VPlan &Plan) {
         ToRemove.push_back(Blend);
       }
 
-      if (auto *VEPR = dyn_cast<VPVectorEndPointerRecipe>(&R)) {
-        if (!VEPR->getOffset()) {
+      if (auto *VEPR = dyn_cast<VPVectorEndPointerRecipe>(&R); VEPR && (!VEPR->getOffset())) 
+        {
           assert(Plan.getConcreteUF() == 1 &&
                  "Expected unroller to have materialized offset for UF != 1");
           VEPR->materializeOffset();
         }
-      }
+      
 
       if (auto *Expr = dyn_cast<VPExpressionRecipe>(&R)) {
         Expr->decompose();
@@ -6396,15 +6386,15 @@ void VPlanTransforms::createPartialReductions(VPlan &Plan,
 
       // Check if the compute-reduction-result is used by a sunk store.
       // TODO: Also form partial reductions in those cases.
-      if (auto *RdxResult = vputils::findComputeReductionResult(RedPhiR)) {
-        if (any_of(RdxResult->users(), [](VPUser *U) {
+      if (auto *RdxResult = vputils::findComputeReductionResult(RedPhiR); RdxResult && (any_of(RdxResult->users(), [](VPUser *U) {
               auto *RepR = dyn_cast<VPReplicateRecipe>(U);
               return RepR && RepR->getOpcode() == Instruction::Store;
-            })) {
+            }))) 
+        {
           Chains.clear();
           break;
         }
-      }
+      
     }
 
     // Clear the chain if it is not profitable.

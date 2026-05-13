@@ -745,11 +745,11 @@ public:
           ultimate.name());
       return std::nullopt;
     } else if (const auto *object{
-                   ultimate.detailsIf<semantics::ObjectEntityDetails>()}) {
-      if (object->commonBlock()) {
+                   ultimate.detailsIf<semantics::ObjectEntityDetails>()}; object && (object->commonBlock())) 
+      {
         return std::nullopt;
       }
-    }
+    
     if (inInquiry_) {
       return std::nullopt;
     } else {
@@ -886,12 +886,12 @@ public:
         if (const auto *dataDummy{j < proc.dummyArguments.size()
                     ? std::get_if<characteristics::DummyDataObject>(
                           &proc.dummyArguments[j].u)
-                    : nullptr}) {
-          if (dataDummy->attrs.test(characteristics::DummyDataObject::Attr::
-                      OnlyIntrinsicInquiry)) {
+                    : nullptr}; dataDummy && (dataDummy->attrs.test(characteristics::DummyDataObject::Attr::
+                      OnlyIntrinsicInquiry))) 
+          {
             checkArg = false; // value unused, e.g. IEEE_SUPPORT_FLAG(,,,. X)
           }
-        }
+        
         if (arg && checkArg) {
           // Catch CHARACTER(:), ALLOCATABLE :: X; CHARACTER(LEN(X)) :: Y
           if (inInquiry) {
@@ -1756,12 +1756,12 @@ public:
     auto restorer{common::ScopedSet(isDefinition_, false)};
     Result result{(*this)(call.proc())};
     int skipLeading{0};
-    if (const auto *intrinsic{call.proc().GetSpecificIntrinsic()}) {
-      if (context_.intrinsics().GetIntrinsicClass(intrinsic->name) ==
-          IntrinsicClass::inquiryFunction) {
+    if (const auto *intrinsic{call.proc().GetSpecificIntrinsic()}; intrinsic && (context_.intrinsics().GetIntrinsicClass(intrinsic->name) ==
+          IntrinsicClass::inquiryFunction)) 
+      {
         skipLeading = 1; // first argument to inquiry doesn't count as a use
       }
-    }
+    
     for (const auto &maybeArg : call.arguments()) {
       if (skipLeading) {
         --skipLeading;

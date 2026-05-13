@@ -1429,8 +1429,8 @@ llvm::Value *CGOpenMPRuntime::getThreadID(CodeGenFunction &CGF,
   }
   // If exceptions are enabled, do not use parameter to avoid possible crash.
   if (auto *OMPRegionInfo =
-          dyn_cast_or_null<CGOpenMPRegionInfo>(CGF.CapturedStmtInfo)) {
-    if (OMPRegionInfo->getThreadIDVariable()) {
+          dyn_cast_or_null<CGOpenMPRegionInfo>(CGF.CapturedStmtInfo); OMPRegionInfo && (OMPRegionInfo->getThreadIDVariable())) 
+    {
       // Check if this an outlined function with thread id passed as argument.
       LValue LVal = OMPRegionInfo->getThreadIDVariableLValue(CGF);
       llvm::BasicBlock *TopBlock = CGF.AllocaInsertPt->getParent();
@@ -1450,7 +1450,7 @@ llvm::Value *CGOpenMPRuntime::getThreadID(CodeGenFunction &CGF,
         return ThreadID;
       }
     }
-  }
+  
 
   // This is not an outlined function region - need to call __kmpc_int32
   // kmpc_global_thread_num(ident_t *loc).
@@ -2052,9 +2052,8 @@ void CGOpenMPRuntime::emitParallelCall(
 Address CGOpenMPRuntime::emitThreadIDAddress(CodeGenFunction &CGF,
                                              SourceLocation Loc) {
   if (auto *OMPRegionInfo =
-          dyn_cast_or_null<CGOpenMPRegionInfo>(CGF.CapturedStmtInfo))
-    if (OMPRegionInfo->getThreadIDVariable())
-      return OMPRegionInfo->getThreadIDVariableLValue(CGF).getAddress();
+          dyn_cast_or_null<CGOpenMPRegionInfo>(CGF.CapturedStmtInfo); OMPRegionInfo && (OMPRegionInfo->getThreadIDVariable()))
+    return OMPRegionInfo->getThreadIDVariableLValue(CGF).getAddress();
 
   llvm::Value *ThreadID = getThreadID(CGF, Loc);
   QualType Int32Ty =
@@ -2478,8 +2477,8 @@ void CGOpenMPRuntime::emitBarrierCall(CodeGenFunction &CGF, SourceLocation Loc,
   // thread_id);
   llvm::Value *Args[] = {emitUpdateLocation(CGF, Loc, Flags),
                          getThreadID(CGF, Loc)};
-  if (OMPRegionInfo) {
-    if (!ForceSimpleCall && OMPRegionInfo->hasCancel()) {
+  if ((OMPRegionInfo) && (!ForceSimpleCall && OMPRegionInfo->hasCancel())) 
+    {
       llvm::Value *Result = CGF.EmitRuntimeCall(
           OMPBuilder.getOrCreateRuntimeFunction(CGM.getModule(),
                                                 OMPRTL___kmpc_cancel_barrier),
@@ -2501,7 +2500,7 @@ void CGOpenMPRuntime::emitBarrierCall(CodeGenFunction &CGF, SourceLocation Loc,
       }
       return;
     }
-  }
+  
   CGF.EmitRuntimeCall(OMPBuilder.getOrCreateRuntimeFunction(
                           CGM.getModule(), OMPRTL___kmpc_barrier),
                       Args);
@@ -2624,14 +2623,13 @@ static int addMonoNonMonoModifier(CodeGenModule &CGM, OpenMPSchedType Schedule,
   // as if the monotonic modifier is specified. Otherwise, unless the monotonic
   // modifier is specified, the effect is as if the nonmonotonic modifier is
   // specified.
-  if (CGM.getLangOpts().OpenMP >= 50 && Modifier == 0) {
-    if (!(Schedule == OMP_sch_static_chunked || Schedule == OMP_sch_static ||
+  if ((CGM.getLangOpts().OpenMP >= 50 && Modifier == 0) && (!(Schedule == OMP_sch_static_chunked || Schedule == OMP_sch_static ||
           Schedule == OMP_sch_static_balanced_chunked ||
           Schedule == OMP_ord_static_chunked || Schedule == OMP_ord_static ||
           Schedule == OMP_dist_sch_static_chunked ||
-          Schedule == OMP_dist_sch_static))
-      Modifier = OMP_sch_modifier_nonmonotonic;
-  }
+          Schedule == OMP_dist_sch_static))) 
+    Modifier = OMP_sch_modifier_nonmonotonic;
+  
   return Schedule | Modifier;
 }
 
@@ -5248,10 +5246,9 @@ void CGOpenMPRuntime::emitPrivateReduction(
       if (BinOp->getOpcode() == BO_Assign)
         AssignRHS = BinOp->getRHS();
     } else if (const auto *OpCall =
-                   dyn_cast<CXXOperatorCallExpr>(ReductionClauseExpr)) {
-      if (OpCall->getOperator() == OO_Equal)
-        AssignRHS = OpCall->getArg(1);
-    }
+                   dyn_cast<CXXOperatorCallExpr>(ReductionClauseExpr); OpCall && (OpCall->getOperator() == OO_Equal)) 
+      AssignRHS = OpCall->getArg(1);
+    
 
     assert(AssignRHS &&
            "Private Variable Reduction : Invalid ReductionOp expression");
@@ -5534,12 +5531,12 @@ void CGOpenMPRuntime::emitReduction(CodeGenFunction &CGF, SourceLocation Loc,
       const Expr *EExpr = nullptr;
       const Expr *UpExpr = nullptr;
       BinaryOperatorKind BO = BO_Comma;
-      if (const auto *BO = dyn_cast<BinaryOperator>(E)) {
-        if (BO->getOpcode() == BO_Assign) {
+      if (const auto *BO = dyn_cast<BinaryOperator>(E); BO && (BO->getOpcode() == BO_Assign)) 
+        {
           XExpr = BO->getLHS();
           UpExpr = BO->getRHS();
         }
-      }
+      
       // Try to emit update expression as a simple atomic.
       const Expr *RHSExpr = UpExpr;
       if (RHSExpr) {
@@ -6148,10 +6145,10 @@ void CGOpenMPRuntime::emitCancellationPointCall(
   // Build call kmp_int32 __kmpc_cancellationpoint(ident_t *loc, kmp_int32
   // global_tid, kmp_int32 cncl_kind);
   if (auto *OMPRegionInfo =
-          dyn_cast_or_null<CGOpenMPRegionInfo>(CGF.CapturedStmtInfo)) {
+          dyn_cast_or_null<CGOpenMPRegionInfo>(CGF.CapturedStmtInfo); OMPRegionInfo && (CancelRegion == OMPD_taskgroup || OMPRegionInfo->hasCancel())) 
     // For 'cancellation point taskgroup', the task region info may not have a
     // cancel. This may instead happen in another adjacent task.
-    if (CancelRegion == OMPD_taskgroup || OMPRegionInfo->hasCancel()) {
+    {
       llvm::Value *Args[] = {
           emitUpdateLocation(CGF, Loc), getThreadID(CGF, Loc),
           CGF.Builder.getInt32(getCancellationKind(CancelRegion))};
@@ -6177,7 +6174,7 @@ void CGOpenMPRuntime::emitCancellationPointCall(
       CGF.EmitBranchThroughCleanup(CancelDest);
       CGF.EmitBlock(ContBB, /*IsFinished=*/true);
     }
-  }
+  
 }
 
 void CGOpenMPRuntime::emitCancelCall(CodeGenFunction &CGF, SourceLocation Loc,
@@ -6418,17 +6415,15 @@ const Stmt *CGOpenMPRuntime::getSingleCompoundChild(ASTContext &Ctx,
   while (const auto *C = dyn_cast_or_null<CompoundStmt>(Child)) {
     Child = nullptr;
     for (const Stmt *S : C->body()) {
-      if (const auto *E = dyn_cast<Expr>(S)) {
-        if (isTrivial(Ctx, E))
-          continue;
-      }
+      if (const auto *E = dyn_cast<Expr>(S); E && (isTrivial(Ctx, E))) 
+        continue;
+      
       // Some of the statements can be ignored.
       if (isa<AsmStmt>(S) || isa<NullStmt>(S) || isa<OMPFlushDirective>(S) ||
           isa<OMPBarrierDirective>(S) || isa<OMPTaskyieldDirective>(S))
         continue;
       // Analyze declarations.
-      if (const auto *DS = dyn_cast<DeclStmt>(S)) {
-        if (llvm::all_of(DS->decls(), [](const Decl *D) {
+      if (const auto *DS = dyn_cast<DeclStmt>(S); DS && (llvm::all_of(DS->decls(), [](const Decl *D) {
               if (isa<EmptyDecl>(D) || isa<DeclContext>(D) ||
                   isa<TypeDecl>(D) || isa<PragmaCommentDecl>(D) ||
                   isa<PragmaDetectMismatchDecl>(D) || isa<UsingDecl>(D) ||
@@ -6440,9 +6435,9 @@ const Stmt *CGOpenMPRuntime::getSingleCompoundChild(ASTContext &Ctx,
               if (!VD)
                 return false;
               return VD->hasGlobalStorage() || !VD->isUsed();
-            }))
-          continue;
-      }
+            }))) 
+        continue;
+      
       // Found multiple children - cannot get the one child only.
       if (Child)
         return nullptr;
@@ -6815,12 +6810,12 @@ const Expr *CGOpenMPRuntime::getNumThreadsExprForTargetDirective(
     getNumThreads(CGF, CS, NTPtr, UpperBound, UpperBoundOnly, CondVal);
     const Stmt *Child = CGOpenMPRuntime::getSingleCompoundChild(
         CGF.getContext(), CS->getCapturedStmt());
-    if (const auto *Dir = dyn_cast_or_null<OMPExecutableDirective>(Child)) {
-      if (Dir->getDirectiveKind() == OMPD_distribute) {
+    if (const auto *Dir = dyn_cast_or_null<OMPExecutableDirective>(Child); Dir && (Dir->getDirectiveKind() == OMPD_distribute)) 
+      {
         CS = Dir->getInnermostCapturedStmt();
         getNumThreads(CGF, CS, NTPtr, UpperBound, UpperBoundOnly, CondVal);
       }
-    }
+    
     return NT;
   }
   case OMPD_target_teams_distribute:
@@ -7282,9 +7277,8 @@ public:
       if (AttachEntry.second) {
         // Check if the attach pointer expression is a DeclRefExpr that
         // references the captured variable
-        if (const auto *DRE = dyn_cast<DeclRefExpr>(AttachEntry.second))
-          if (DRE->getDecl() == VD)
-            return true;
+        if (const auto *DRE = dyn_cast<DeclRefExpr>(AttachEntry.second); DRE && (DRE->getDecl() == VD))
+          return true;
       }
     }
     return false;
@@ -9813,23 +9807,23 @@ public:
 
         // Check if we have a map like this[0:1]
         if (IsThisCapture) {
-          if (const auto *OASE = dyn_cast<ArraySectionExpr>(FirstExpr)) {
-            if (isa<CXXThisExpr>(OASE->getBase()->IgnoreParenImpCasts())) {
+          if (const auto *OASE = dyn_cast<ArraySectionExpr>(FirstExpr); OASE && (isa<CXXThisExpr>(OASE->getBase()->IgnoreParenImpCasts()))) 
+            {
               FoundExistingMap = true;
               break;
             }
-          }
+          
           continue;
         }
 
         // When the attach-ptr is something like `s.p`, check if
         // `s` itself is mapped explicitly.
-        if (const auto *DRE = dyn_cast<DeclRefExpr>(FirstExpr)) {
-          if (DRE->getDecl() == CapturedVD) {
+        if (const auto *DRE = dyn_cast<DeclRefExpr>(FirstExpr); DRE && (DRE->getDecl() == CapturedVD)) 
+          {
             FoundExistingMap = true;
             break;
           }
-        }
+        
       }
 
       if (FoundExistingMap)
@@ -10189,22 +10183,19 @@ public:
       return true; // Explicit firstprivate only
 
     // Check defaultmap(firstprivate:scalar) for scalar types
-    if (DefaultmapFirstprivateKinds.count(OMPC_DEFAULTMAP_scalar)) {
-      if (Type->isScalarType())
-        return true;
-    }
+    if ((DefaultmapFirstprivateKinds.count(OMPC_DEFAULTMAP_scalar)) && (Type->isScalarType())) 
+      return true;
+    
 
     // Check defaultmap(firstprivate:pointer) for pointer types
-    if (DefaultmapFirstprivateKinds.count(OMPC_DEFAULTMAP_pointer)) {
-      if (Type->isAnyPointerType())
-        return true;
-    }
+    if ((DefaultmapFirstprivateKinds.count(OMPC_DEFAULTMAP_pointer)) && (Type->isAnyPointerType())) 
+      return true;
+    
 
     // Check defaultmap(firstprivate:aggregate) for aggregate types
-    if (DefaultmapFirstprivateKinds.count(OMPC_DEFAULTMAP_aggregate)) {
-      if (Type->isAggregateType())
-        return true;
-    }
+    if ((DefaultmapFirstprivateKinds.count(OMPC_DEFAULTMAP_aggregate)) && (Type->isAggregateType())) 
+      return true;
+    
 
     // Check defaultmap(firstprivate:all) for all types
     return DefaultmapFirstprivateKinds.count(OMPC_DEFAULTMAP_all);
@@ -11274,10 +11265,9 @@ bool CGOpenMPRuntime::emitTargetFunctions(GlobalDecl GD) {
   // If emitting code for the host, we do not process FD here. Instead we do
   // the normal code generation.
   if (!CGM.getLangOpts().OpenMPIsTargetDevice) {
-    if (const auto *FD = dyn_cast<FunctionDecl>(GD.getDecl()))
-      if (isAssumedToBeNotEmitted(cast<ValueDecl>(FD),
-                                  CGM.getLangOpts().OpenMPIsTargetDevice))
-        return true;
+    if (const auto *FD = dyn_cast<FunctionDecl>(GD.getDecl()); FD && (isAssumedToBeNotEmitted(cast<ValueDecl>(FD),
+                                  CGM.getLangOpts().OpenMPIsTargetDevice)))
+      return true;
     return false;
   }
 
@@ -12229,11 +12219,10 @@ void CGOpenMPRuntime::emitDeclareSimdFunction(const FunctionDecl *FD,
           if (validateAArch64Simdlen(CGM, ExprLoc, VLEN, WDS, 's'))
             OMPBuilder.emitAArch64DeclareSimdFunction(
                 Fn, VLEN, ParamAttrs, State, 's', NDS, OutputBecomesInput);
-        } else if (CGM.getTarget().hasFeature("neon")) {
-          if (validateAArch64Simdlen(CGM, ExprLoc, VLEN, WDS, 'n'))
-            OMPBuilder.emitAArch64DeclareSimdFunction(
+        } else if ((CGM.getTarget().hasFeature("neon")) && (validateAArch64Simdlen(CGM, ExprLoc, VLEN, WDS, 'n'))) 
+          OMPBuilder.emitAArch64DeclareSimdFunction(
                 Fn, VLEN, ParamAttrs, State, 'n', NDS, OutputBecomesInput);
-        }
+        
       }
     }
     FD = FD->getPreviousDecl();
@@ -12392,12 +12381,12 @@ void CGOpenMPRuntime::emitCall(CodeGenFunction &CGF, SourceLocation Loc,
   assert(Loc.isValid() && "Outlined function call location must be valid.");
   auto DL = ApplyDebugLocation::CreateDefaultArtificial(CGF, Loc);
 
-  if (auto *Fn = dyn_cast<llvm::Function>(Callee.getCallee())) {
-    if (Fn->doesNotThrow()) {
+  if (auto *Fn = dyn_cast<llvm::Function>(Callee.getCallee()); Fn && (Fn->doesNotThrow())) 
+    {
       CGF.EmitNounwindRuntimeCall(Fn, Args);
       return;
     }
-  }
+  
   CGF.EmitRuntimeCall(Callee, Args);
 }
 
@@ -12853,9 +12842,8 @@ public:
     for (const Stmt *Child : S->children()) {
       if (!Child)
         continue;
-      if (const auto *E = dyn_cast<Expr>(Child))
-        if (!E->isGLValue())
-          continue;
+      if (const auto *E = dyn_cast<Expr>(Child); E && (!E->isGLValue()))
+        continue;
       if (Visit(Child))
         return true;
     }

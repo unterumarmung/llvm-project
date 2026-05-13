@@ -83,8 +83,8 @@ struct EffectiveContext {
     // An implicit deduction guide is semantically in the context enclosing the
     // class template, but for access purposes behaves like the constructor
     // from which it was produced.
-    if (auto *DGD = dyn_cast<CXXDeductionGuideDecl>(DC)) {
-      if (DGD->isImplicit()) {
+    if (auto *DGD = dyn_cast<CXXDeductionGuideDecl>(DC); DGD && (DGD->isImplicit())) 
+      {
         DC = DGD->getCorrespondingConstructor();
         if (!DC) {
           // The copy deduction candidate doesn't have a corresponding
@@ -92,7 +92,7 @@ struct EffectiveContext {
           DC = cast<DeclContext>(DGD->getDeducedTemplate()->getTemplatedDecl());
         }
       }
-    }
+    
 
     // C++11 [class.access.nest]p1:
     //   A nested class is a member and as such has the same access
@@ -803,8 +803,8 @@ static AccessResult HasAccess(Sema &S,
         // to protected member of base class is allowed but only from
         // static member functions.
         if (S.getLangOpts().MSVCCompat && !EC.Functions.empty())
-          if (CXXMethodDecl* MD = dyn_cast<CXXMethodDecl>(EC.Functions.front()))
-            if (MD->isStatic()) return AR_accessible;
+          if (CXXMethodDecl* MD = dyn_cast<CXXMethodDecl>(EC.Functions.front()); MD && (MD->isStatic()))
+            return AR_accessible;
 
         // Despite the standard's confident wording, there is a case
         // where you can have an instance member that's neither in a

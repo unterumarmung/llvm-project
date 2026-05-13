@@ -1042,10 +1042,9 @@ bool LVScopeAggregate::equals(const LVScope *Scope) const {
   if (!LVType::parametersMatch(getTypes(), Scope->getTypes()))
     return false;
 
-  if (!isNamed() && !Scope->isNamed())
+  if ((!isNamed() && !Scope->isNamed()) && (getFilenameIndex() != Scope->getFilenameIndex()))
     // In the case of unnamed union/structure/class compare the file name.
-    if (getFilenameIndex() != Scope->getFilenameIndex())
-      return false;
+    return false;
 
   return true;
 }
@@ -1918,9 +1917,8 @@ bool LVScopeFunctionInlined::equals(const LVScope *Scope) const {
     return false;
 
   // Check if any reference is the same.
-  if (getHasDiscriminator() && Scope->getHasDiscriminator())
-    if (getDiscriminator() != Scope->getDiscriminator())
-      return false;
+  if ((getHasDiscriminator() && Scope->getHasDiscriminator()) && (getDiscriminator() != Scope->getDiscriminator()))
+    return false;
 
   // Check the call site information.
   if (getCallFilenameIndex() != Scope->getCallFilenameIndex() ||

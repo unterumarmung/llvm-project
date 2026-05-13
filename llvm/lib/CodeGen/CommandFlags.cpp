@@ -773,10 +773,9 @@ void codegen::setFunctionAttributes(Function &F, StringRef CPU,
     for (auto &B : F)
       for (auto &I : B)
         if (auto *Call = dyn_cast<CallInst>(&I))
-          if (const auto *F = Call->getCalledFunction())
-            if (F->getIntrinsicID() == Intrinsic::debugtrap ||
-                F->getIntrinsicID() == Intrinsic::trap)
-              Call->addFnAttr(
+          if (const auto *F = Call->getCalledFunction(); F && (F->getIntrinsicID() == Intrinsic::debugtrap ||
+                F->getIntrinsicID() == Intrinsic::trap))
+            Call->addFnAttr(
                   Attribute::get(Ctx, "trap-func-name", getTrapFuncName()));
 
   // Let NewAttrs override Attrs.

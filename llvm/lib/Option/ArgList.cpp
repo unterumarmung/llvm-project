@@ -103,9 +103,8 @@ std::vector<std::string> ArgList::getAllArgValues(OptSpecifier Id) const {
 
 void ArgList::addOptInFlag(ArgStringList &Output, OptSpecifier Pos,
                            OptSpecifier Neg) const {
-  if (Arg *A = getLastArg(Pos, Neg))
-    if (A->getOption().matches(Pos))
-      A->render(*this, Output);
+  if (Arg *A = getLastArg(Pos, Neg); A && (A->getOption().matches(Pos)))
+    A->render(*this, Output);
 }
 
 void ArgList::AddAllArgsExcept(ArgStringList &Output,

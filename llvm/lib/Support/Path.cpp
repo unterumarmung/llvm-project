@@ -69,12 +69,11 @@ namespace {
     if (path.empty())
       return path;
 
-    if (is_style_windows(style)) {
+    if ((is_style_windows(style)) && (path.size() >= 2 &&
+          std::isalpha(static_cast<unsigned char>(path[0])) && path[1] == ':')) 
       // C:
-      if (path.size() >= 2 &&
-          std::isalpha(static_cast<unsigned char>(path[0])) && path[1] == ':')
-        return path.substr(0, 2);
-    }
+      return path.substr(0, 2);
+    
 
     // //net
     if ((path.size() > 2) && is_separator(path[0], style) &&
@@ -101,10 +100,9 @@ namespace {
 
     size_t pos = str.find_last_of(separators(style), str.size() - 1);
 
-    if (is_style_windows(style)) {
-      if (pos == StringRef::npos)
-        pos = str.find_last_of(':', str.size() - 1);
-    }
+    if ((is_style_windows(style)) && (pos == StringRef::npos)) 
+      pos = str.find_last_of(':', str.size() - 1);
+    
 
     if (pos == StringRef::npos || (pos == 1 && is_separator(str[0], style)))
       return 0;
@@ -116,10 +114,9 @@ namespace {
   // directory in str, it returns StringRef::npos.
   size_t root_dir_start(StringRef str, Style style) {
     // case "c:/"
-    if (is_style_windows(style)) {
-      if (str.size() > 2 && str[1] == ':' && is_separator(str[2], style))
-        return 2;
-    }
+    if ((is_style_windows(style)) && (str.size() > 2 && str[1] == ':' && is_separator(str[2], style))) 
+      return 2;
+    
 
     // case "//net"
     if (str.size() > 3 && is_separator(str[0], style) && str[0] == str[1] &&
@@ -694,11 +691,10 @@ bool is_absolute_gnu(const Twine &path, Style style) {
   if (!p.empty() && is_separator(p.front(), style))
     return true;
 
-  if (is_style_windows(style)) {
+  if ((is_style_windows(style)) && (p.size() >= 2 && (p[0] && p[1] == ':'))) 
     // Handle drive letter pattern (a character followed by ':') on Windows.
-    if (p.size() >= 2 && (p[0] && p[1] == ':'))
-      return true;
-  }
+    return true;
+  
 
   return false;
 }
@@ -857,15 +853,15 @@ void createUniquePath(const Twine &Model, SmallVectorImpl<char> &ResultPath,
   assert(llvm::is_contained(ModelStorage, '%') &&
          "createUniquePath: Model must contain at least one '%'");
 
-  if (MakeAbsolute) {
+  if ((MakeAbsolute) && (!sys::path::is_absolute(Twine(ModelStorage)))) 
     // Make model absolute by prepending a temp directory if it's not already.
-    if (!sys::path::is_absolute(Twine(ModelStorage))) {
+    {
       SmallString<128> TDir;
       sys::path::system_temp_directory(true, TDir);
       sys::path::append(TDir, Twine(ModelStorage));
       ModelStorage.swap(TDir);
     }
-  }
+  
 
   ResultPath = ModelStorage;
   ResultPath.push_back(0);

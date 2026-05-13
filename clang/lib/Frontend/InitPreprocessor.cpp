@@ -1025,13 +1025,13 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
   if (!LangOpts.MSVCCompat && LangOpts.CPlusPlus)
     Builder.defineMacro("__private_extern__", "extern");
 
-  if (LangOpts.MicrosoftExt) {
-    if (LangOpts.WChar) {
+  if ((LangOpts.MicrosoftExt) && (LangOpts.WChar)) 
+    {
       // wchar_t supported as a keyword.
       Builder.defineMacro("_WCHAR_T_DEFINED");
       Builder.defineMacro("_NATIVE_WCHAR_T_DEFINED");
     }
-  }
+  
 
   // Macros to help identify the narrow and wide character sets
   // FIXME: clang currently ignores -fexec-charset=. If this changes,

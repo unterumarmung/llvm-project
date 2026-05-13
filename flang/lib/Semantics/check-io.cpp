@@ -798,12 +798,12 @@ void IoChecker::Leave(const parser::PrintStmt &) {
 static const parser::Name *FindNamelist(
     const std::list<parser::IoControlSpec> &controls) {
   for (const auto &control : controls) {
-    if (const parser::Name * namelist{std::get_if<parser::Name>(&control.u)}) {
-      if (namelist->symbol &&
-          namelist->symbol->GetUltimate().has<NamelistDetails>()) {
+    if (const parser::Name * namelist{std::get_if<parser::Name>(&control.u)}; namelist && (namelist->symbol &&
+          namelist->symbol->GetUltimate().has<NamelistDetails>())) 
+      {
         return namelist;
       }
-    }
+    
   }
   return nullptr;
 }
@@ -823,12 +823,12 @@ void IoChecker::Leave(const parser::ReadStmt &readStmt) {
   if (!flags_.test(Flag::InternalUnit)) {
     CheckForPureSubprogram();
   }
-  if (const parser::Name * namelist{FindNamelist(readStmt.controls)}) {
-    if (namelist->symbol) {
+  if (const parser::Name * namelist{FindNamelist(readStmt.controls)}; namelist && (namelist->symbol)) 
+    {
       CheckNamelist(*namelist->symbol, common::DefinedIo::ReadFormatted,
           namelist->source);
     }
-  }
+  
   CheckForDoVariable(readStmt, context_);
   if (!flags_.test(Flag::IoControlList)) {
     Done();
@@ -839,16 +839,16 @@ void IoChecker::Leave(const parser::ReadStmt &readStmt) {
   CheckForProhibitedSpecifier(IoSpecKind::Sign); // C1212
   CheckForProhibitedSpecifier(IoSpecKind::Leading_Zero); // F'2023 C1212
   CheckForProhibitedSpecifier(IoSpecKind::Rec, IoSpecKind::End); // C1220
-  if (specifierSet_.test(IoSpecKind::Size)) {
+  if ((specifierSet_.test(IoSpecKind::Size)) && (context_.ShouldWarn(common::LanguageFeature::ListDirectedSize))) 
     // F'2023 C1214 - allow with a warning
-    if (context_.ShouldWarn(common::LanguageFeature::ListDirectedSize)) {
+    {
       if (specifierSet_.test(IoSpecKind::Nml)) {
         context_.Say("If NML appears, SIZE should not appear"_port_en_US);
       } else if (flags_.test(Flag::StarFmt)) {
         context_.Say("If FMT=* appears, SIZE should not appear"_port_en_US);
       }
     }
-  }
+  
   CheckForRequiredSpecifier(IoSpecKind::Eor,
       specifierSet_.test(IoSpecKind::Advance) && !flags_.test(Flag::AdvanceYes),
       "ADVANCE with value 'NO'"); // C1222 + 12.6.2.1p2
@@ -879,12 +879,12 @@ void IoChecker::Leave(const parser::WriteStmt &writeStmt) {
   if (!flags_.test(Flag::InternalUnit)) {
     CheckForPureSubprogram();
   }
-  if (const parser::Name * namelist{FindNamelist(writeStmt.controls)}) {
-    if (namelist->symbol) {
+  if (const parser::Name * namelist{FindNamelist(writeStmt.controls)}; namelist && (namelist->symbol)) 
+    {
       CheckNamelist(*namelist->symbol, common::DefinedIo::WriteFormatted,
           namelist->source);
     }
-  }
+  
   LeaveReadWrite();
   CheckForProhibitedSpecifier(IoSpecKind::Blank); // C1213
   CheckForProhibitedSpecifier(IoSpecKind::End); // C1213
@@ -1141,15 +1141,15 @@ static const Symbol *FindUnsafeIoDirectComponent(common::DefinedIo which,
         return &symbol;
       }
       if (const auto *details{symbol.detailsIf<ObjectEntityDetails>()}) {
-        if (const DeclTypeSpec * type{details->type()}) {
-          if (type->category() == DeclTypeSpec::Category::TypeDerived) {
+        if (const DeclTypeSpec * type{details->type()}; type && (type->category() == DeclTypeSpec::Category::TypeDerived)) 
+          {
             const DerivedTypeSpec &componentDerived{type->derivedTypeSpec()};
             if (const Symbol *bad{FindUnsafeIoDirectComponent(
                     which, componentDerived, scope, visited)}) {
               return bad;
             }
           }
-        }
+        
       }
     }
   }
@@ -1181,21 +1181,21 @@ static const Symbol *FindInaccessibleComponent(common::DefinedIo which,
         }
         if (const auto *details{symbol.detailsIf<ObjectEntityDetails>()}) {
           const DerivedTypeSpec *componentDerived{nullptr};
-          if (const DeclTypeSpec * type{details->type()}) {
-            if (type->category() == DeclTypeSpec::Category::TypeDerived) {
+          if (const DeclTypeSpec * type{details->type()}; type && (type->category() == DeclTypeSpec::Category::TypeDerived)) 
+            {
               componentDerived = &type->derivedTypeSpec();
             }
-          }
+          
           if (componentDerived &&
               HasDefinedIo(which, *componentDerived, &scope)) {
             continue; // this component and its descendents are fine
           }
-          if (symbol.attrs().test(Attr::PRIVATE) &&
-              !symbol.test(Symbol::Flag::ParentComp)) {
-            if (!DoesScopeContain(module, scope)) {
+          if ((symbol.attrs().test(Attr::PRIVATE) &&
+              !symbol.test(Symbol::Flag::ParentComp)) && (!DoesScopeContain(module, scope))) 
+            {
               return &symbol;
             }
-          }
+          
           if (componentDerived) {
             if (const Symbol *bad{FindInaccessibleComponent(
                     which, *componentDerived, scope, visited)}) {

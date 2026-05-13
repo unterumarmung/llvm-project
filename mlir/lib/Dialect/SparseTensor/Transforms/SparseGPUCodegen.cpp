@@ -342,42 +342,42 @@ static void genGPUCode(PatternRewriter &rewriter, gpu::GPUFuncOp gpuFunc,
 
 /// Helper to detect a + b with arguments taken from given block.
 static bool matchAddOfArgs(Block *block, Value val) {
-  if (auto *def = val.getDefiningOp()) {
-    if (isa<arith::AddFOp, arith::AddIOp>(def)) {
+  if (auto *def = val.getDefiningOp(); def && (isa<arith::AddFOp, arith::AddIOp>(def))) 
+    {
       Value a = block->getArguments()[0];
       Value b = block->getArguments()[1];
       return (def->getOperand(0) == a && def->getOperand(1) == b) ||
              (def->getOperand(0) == b && def->getOperand(1) == a);
     }
-  }
+  
   return false;
 }
 
 /// Helper to detect a * b with arguments taken from given block.
 static bool matchMulOfArgs(Block *block, Value val) {
-  if (auto *def = val.getDefiningOp()) {
-    if (isa<arith::MulFOp, arith::MulIOp>(def)) {
+  if (auto *def = val.getDefiningOp(); def && (isa<arith::MulFOp, arith::MulIOp>(def))) 
+    {
       Value a = block->getArguments()[0];
       Value b = block->getArguments()[1];
       return (def->getOperand(0) == a && def->getOperand(1) == b) ||
              (def->getOperand(0) == b && def->getOperand(1) == a);
     }
-  }
+  
   return false;
 }
 
 /// Helper to detect x = x + a * b
 static bool matchSumOfMultOfArgs(linalg::GenericOp op) {
   auto yieldOp = cast<linalg::YieldOp>(op.getRegion().front().getTerminator());
-  if (auto *def = yieldOp.getOperand(0).getDefiningOp()) {
-    if (isa<arith::AddFOp, arith::AddIOp>(def)) {
+  if (auto *def = yieldOp.getOperand(0).getDefiningOp(); def && (isa<arith::AddFOp, arith::AddIOp>(def))) 
+    {
       Value x = op.getBlock()->getArguments()[2];
       return (def->getOperand(0) == x &&
               matchMulOfArgs(op.getBlock(), def->getOperand(1))) ||
              (def->getOperand(1) == x &&
               matchMulOfArgs(op.getBlock(), def->getOperand(0)));
     }
-  }
+  
   return false;
 }
 

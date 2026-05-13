@@ -138,9 +138,8 @@ static void recordCondition(CallBase &CB, BasicBlock *From, BasicBlock *To,
     return;
 
   ICmpInst *Cmp = cast<ICmpInst>(Cond);
-  if (Pred == ICmpInst::ICMP_EQ || Pred == ICmpInst::ICMP_NE)
-    if (isCondRelevantToAnyCallArgument(Cmp, CB))
-      Conditions.push_back({Cmp, From->getTerminator()->getSuccessor(0) == To
+  if ((Pred == ICmpInst::ICMP_EQ || Pred == ICmpInst::ICMP_NE) && (isCondRelevantToAnyCallArgument(Cmp, CB)))
+    Conditions.push_back({Cmp, From->getTerminator()->getSuccessor(0) == To
                                      ? Pred
                                      : Cmp->getInverseCmpPredicate()});
 }

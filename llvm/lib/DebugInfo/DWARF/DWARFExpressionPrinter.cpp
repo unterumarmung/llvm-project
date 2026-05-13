@@ -63,17 +63,16 @@ static bool printOp(const DWARFExpression::Operation *Op, raw_ostream &OS,
   if (DumpOpts.PrintRegisterOnly) {
     // First, try pretty-printing registers (existing behavior below also does
     // this, but we need to short-circuit here to avoid printing opcode names).
-    if ((Op->getCode() >= DW_OP_breg0 && Op->getCode() <= DW_OP_breg31) ||
+    if (((Op->getCode() >= DW_OP_breg0 && Op->getCode() <= DW_OP_breg31) ||
         (Op->getCode() >= DW_OP_reg0 && Op->getCode() <= DW_OP_reg31) ||
         Op->getCode() == DW_OP_bregx || Op->getCode() == DW_OP_regx ||
         Op->getCode() == DW_OP_regval_type ||
         SubOpcode == DW_OP_LLVM_call_frame_entry_reg ||
-        SubOpcode == DW_OP_LLVM_aspace_bregx) {
-      if (prettyPrintRegisterOp(U, OS, DumpOpts, Op->getCode(),
-                                Op->getRawOperands()))
-        return true;
+        SubOpcode == DW_OP_LLVM_aspace_bregx) && (prettyPrintRegisterOp(U, OS, DumpOpts, Op->getCode(),
+                                Op->getRawOperands()))) 
+      return true;
       // If we couldn't pretty-print, fall through and suppress.
-    }
+    
 
     // Show constants (decimal), suppress everything else.
     if (Op->getCode() == DW_OP_constu) {
@@ -106,15 +105,14 @@ static bool printOp(const DWARFExpression::Operation *Op, raw_ostream &OS,
     }
   }
 
-  if ((Op->getCode() >= DW_OP_breg0 && Op->getCode() <= DW_OP_breg31) ||
+  if (((Op->getCode() >= DW_OP_breg0 && Op->getCode() <= DW_OP_breg31) ||
       (Op->getCode() >= DW_OP_reg0 && Op->getCode() <= DW_OP_reg31) ||
       Op->getCode() == DW_OP_bregx || Op->getCode() == DW_OP_regx ||
       Op->getCode() == DW_OP_regval_type ||
       SubOpcode == DW_OP_LLVM_call_frame_entry_reg ||
-      SubOpcode == DW_OP_LLVM_aspace_bregx)
-    if (prettyPrintRegisterOp(U, OS, DumpOpts, Op->getCode(),
-                              Op->getRawOperands()))
-      return true;
+      SubOpcode == DW_OP_LLVM_aspace_bregx) && (prettyPrintRegisterOp(U, OS, DumpOpts, Op->getCode(),
+                              Op->getRawOperands())))
+    return true;
 
   if (!DumpOpts.PrintRegisterOnly) {
     for (unsigned Operand = 0; Operand < Op->getDescription().Op.size();

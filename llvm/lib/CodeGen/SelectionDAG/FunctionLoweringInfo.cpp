@@ -217,10 +217,9 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
 
         // If we have a musttail call in a variadic function, we need to ensure
         // we forward implicit register parameters.
-        if (const auto *CI = dyn_cast<CallInst>(&I)) {
-          if (CI->isMustTailCall() && Fn->isVarArg())
-            MF->getFrameInfo().setHasMustTailInVarArgFunc(true);
-        }
+        if (const auto *CI = dyn_cast<CallInst>(&I); CI && (CI->isMustTailCall() && Fn->isVarArg())) 
+          MF->getFrameInfo().setHasMustTailInVarArgFunc(true);
+        
 
         // Determine if there is a call to setjmp in the machine function.
         if (Call->hasFnAttr(Attribute::ReturnsTwice))
@@ -229,9 +228,8 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
 
       // Mark values used outside their block as exported, by allocating
       // a virtual register for them.
-      if (isUsedOutsideOfDefiningBlock(&I))
-        if (!isa<AllocaInst>(I) || !StaticAllocaMap.count(cast<AllocaInst>(&I)))
-          InitializeRegForValue(&I);
+      if ((isUsedOutsideOfDefiningBlock(&I)) && (!isa<AllocaInst>(I) || !StaticAllocaMap.count(cast<AllocaInst>(&I))))
+        InitializeRegForValue(&I);
 
       // Decide the preferred extend type for a value. This iterates over all
       // users and therefore isn't cheap, so don't do this at O0.
@@ -279,9 +277,8 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
     // hasAddressTaken flag may be stale if the BlockAddress was optimized away
     // but the constant still exists in the uniquing table.
     if (BB.hasAddressTaken()) {
-      if (BlockAddress *BA = BlockAddress::lookup(&BB))
-        if (!BA->hasZeroLiveUses())
-          MBB->setAddressTakenIRBlock(const_cast<BasicBlock *>(&BB));
+      if (BlockAddress *BA = BlockAddress::lookup(&BB); BA && (!BA->hasZeroLiveUses()))
+        MBB->setAddressTakenIRBlock(const_cast<BasicBlock *>(&BB));
     }
 
     // Mark landing pad blocks.

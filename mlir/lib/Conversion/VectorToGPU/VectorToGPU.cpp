@@ -180,10 +180,9 @@ static bool transferReadSupportsMMAMatrixType(vector::TransferReadOp readOp) {
     return false;
 
   // Only allow integer types if the signedness can be inferred.
-  if (readOp.getVectorType().getElementType().isInteger(8))
-    if (!readOp->hasOneUse() || (!isa<arith::ExtSIOp>(*readOp->user_begin()) &&
-                                 !isa<arith::ExtUIOp>(*readOp->user_begin())))
-      return false;
+  if ((readOp.getVectorType().getElementType().isInteger(8)) && (!readOp->hasOneUse() || (!isa<arith::ExtSIOp>(*readOp->user_begin()) &&
+                                 !isa<arith::ExtUIOp>(*readOp->user_begin()))))
+    return false;
 
   MLIRContext *ctx = readOp.getContext();
   AffineExpr innerDim = getAffineDimExpr(permutationMap.getNumDims() - 1, ctx);

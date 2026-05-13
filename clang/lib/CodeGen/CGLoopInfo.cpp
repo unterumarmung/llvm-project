@@ -827,13 +827,12 @@ void LoopInfoStack::push(BasicBlock *Header, clang::ASTContext &Ctx,
 
   setMustProgress(MustProgress);
 
-  if (CGOpts.OptimizationLevel > 0)
+  if ((CGOpts.OptimizationLevel > 0) && (!CGOpts.UnrollLoops &&
+        (StagedAttrs.UnrollEnable == LoopAttributes::Unspecified &&
+         StagedAttrs.UnrollCount == 0)))
     // Disable unrolling for the loop, if unrolling is disabled (via
     // -fno-unroll-loops) and no pragmas override the decision.
-    if (!CGOpts.UnrollLoops &&
-        (StagedAttrs.UnrollEnable == LoopAttributes::Unspecified &&
-         StagedAttrs.UnrollCount == 0))
-      setUnrollState(LoopAttributes::Disable);
+    setUnrollState(LoopAttributes::Disable);
 
   /// Stage the attributes.
   push(Header, StartLoc, EndLoc);

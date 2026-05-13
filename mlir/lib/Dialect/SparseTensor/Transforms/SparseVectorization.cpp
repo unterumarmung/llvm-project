@@ -73,14 +73,14 @@ static Value genVectorMask(PatternRewriter &rewriter, Location loc, VL vl,
   // so that all subsequent masked memory operations are immediately folded
   // into unconditional memory operations.
   IntegerAttr loInt, hiInt, stepInt;
-  if (matchPattern(lo, m_Constant(&loInt)) &&
+  if ((matchPattern(lo, m_Constant(&loInt)) &&
       matchPattern(hi, m_Constant(&hiInt)) &&
-      matchPattern(step, m_Constant(&stepInt))) {
-    if (((hiInt.getInt() - loInt.getInt()) % stepInt.getInt()) == 0) {
+      matchPattern(step, m_Constant(&stepInt))) && (((hiInt.getInt() - loInt.getInt()) % stepInt.getInt()) == 0)) 
+    {
       Value trueVal = constantI1(rewriter, loc, true);
       return vector::BroadcastOp::create(rewriter, loc, mtp, trueVal);
     }
-  }
+  
   // Otherwise, generate a vector mask that avoids overrunning the upperbound
   // during vector execution. Here we rely on subsequent loop optimizations to
   // avoid executing the mask in all iterations, for example, by splitting the

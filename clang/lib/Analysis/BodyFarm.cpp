@@ -794,12 +794,12 @@ static Stmt *createObjCPropertyGetter(ASTContext &Ctx,
     const ObjCInterfaceDecl *IntD = MD->getClassInterface();
     const ObjCImplementationDecl *ImpD = IntD->getImplementation();
     for (const auto *PI : ImpD->property_impls()) {
-      if (const ObjCPropertyDecl *Candidate = PI->getPropertyDecl()) {
-        if (Candidate->getGetterName() == MD->getSelector()) {
+      if (const ObjCPropertyDecl *Candidate = PI->getPropertyDecl(); Candidate && (Candidate->getGetterName() == MD->getSelector())) 
+        {
           Prop = Candidate;
           IVar = Prop->getPropertyIvarDecl();
         }
-      }
+      
     }
   }
 

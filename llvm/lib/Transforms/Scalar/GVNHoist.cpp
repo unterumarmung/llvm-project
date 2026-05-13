@@ -601,13 +601,13 @@ bool GVNHoist::hasMemoryUse(const Instruction *NewPt, MemoryDef *Def,
         break;
 
       // Do not check whether MU aliases Def when MU occurs before NewPt.
-      if (BB == NewBB) {
-        if (!ReachedNewPt) {
+      if ((BB == NewBB) && (!ReachedNewPt)) 
+        {
           if (firstInBB(Insn, NewPt))
             continue;
           ReachedNewPt = true;
         }
-      }
+      
       if (MemorySSAUtil::defClobbersUseOrDef(Def, MU, *AA))
         return true;
     }
@@ -772,9 +772,8 @@ void GVNHoist::checkSafety(CHIArgs C, BasicBlock *BB, GVNHoist::InsKind K,
       if (safeToHoistScalar(BB, Insn->getParent(), NumBBsOnAllPaths))
         Safe.push_back(CHI);
     } else {
-      if (MemoryUseOrDef *UD = MSSA->getMemoryAccess(Insn))
-        if (safeToHoistLdSt(T, Insn, UD, K, NumBBsOnAllPaths))
-          Safe.push_back(CHI);
+      if (MemoryUseOrDef *UD = MSSA->getMemoryAccess(Insn); UD && (safeToHoistLdSt(T, Insn, UD, K, NumBBsOnAllPaths)))
+        Safe.push_back(CHI);
     }
   }
 }
@@ -876,9 +875,8 @@ void GVNHoist::findHoistableCandidates(OutValuesType &CHIBBs,
 bool GVNHoist::allOperandsAvailable(const Instruction *I,
                                     const BasicBlock *HoistPt) const {
   for (const Use &Op : I->operands())
-    if (const auto *Inst = dyn_cast<Instruction>(&Op))
-      if (!DT->dominates(Inst->getParent(), HoistPt))
-        return false;
+    if (const auto *Inst = dyn_cast<Instruction>(&Op); Inst && (!DT->dominates(Inst->getParent(), HoistPt)))
+      return false;
 
   return true;
 }
@@ -886,8 +884,8 @@ bool GVNHoist::allOperandsAvailable(const Instruction *I,
 bool GVNHoist::allGepOperandsAvailable(const Instruction *I,
                                        const BasicBlock *HoistPt) const {
   for (const Use &Op : I->operands())
-    if (const auto *Inst = dyn_cast<Instruction>(&Op))
-      if (!DT->dominates(Inst->getParent(), HoistPt)) {
+    if (const auto *Inst = dyn_cast<Instruction>(&Op); Inst && (!DT->dominates(Inst->getParent(), HoistPt)))
+      {
         if (const GetElementPtrInst *GepOp =
                 dyn_cast<GetElementPtrInst>(Inst)) {
           if (!allGepOperandsAvailable(GepOp, HoistPt))
@@ -1070,12 +1068,11 @@ std::pair<unsigned, unsigned> GVNHoist::hoist(HoistingPointList &HPL) {
     const SmallVecInsn &InstructionsToHoist = HP.second;
     Instruction *Repl = nullptr;
     for (Instruction *I : InstructionsToHoist)
-      if (I->getParent() == DestBB)
+      if ((I->getParent() == DestBB) && (!Repl || firstInBB(I, Repl)))
         // If there are two instructions in HoistPt to be hoisted in place:
         // update Repl to be the first one, such that we can rename the uses
         // of the second based on the first.
-        if (!Repl || firstInBB(I, Repl))
-          Repl = I;
+        Repl = I;
 
     // Keep track of whether we moved the instruction so we know whether we
     // should move the MemoryAccess.
@@ -1165,11 +1162,10 @@ std::pair<unsigned, unsigned> GVNHoist::hoistExpressions(Function &F) {
       else if (auto *Store = dyn_cast<StoreInst>(&I1))
         SI.insert(Store, VN);
       else if (auto *Call = dyn_cast<CallInst>(&I1)) {
-        if (auto *Intr = dyn_cast<IntrinsicInst>(Call)) {
-          if (Intr->getIntrinsicID() == Intrinsic::assume ||
-              Intr->getIntrinsicID() == Intrinsic::sideeffect)
-            continue;
-        }
+        if (auto *Intr = dyn_cast<IntrinsicInst>(Call); Intr && (Intr->getIntrinsicID() == Intrinsic::assume ||
+              Intr->getIntrinsicID() == Intrinsic::sideeffect)) 
+          continue;
+        
         if (Call->mayHaveSideEffects())
           break;
 

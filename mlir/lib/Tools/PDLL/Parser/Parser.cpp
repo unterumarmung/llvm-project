@@ -1126,9 +1126,9 @@ FailureOr<ast::VariableDecl *> Parser::parseArgumentDecl() {
 
 FailureOr<ast::VariableDecl *> Parser::parseResultDecl(unsigned resultNum) {
   // Check to see if this result is named.
-  if (curToken.is(Token::identifier) || curToken.isDependentKeyword()) {
+  if ((curToken.is(Token::identifier) || curToken.isDependentKeyword()) && (!curDeclScope->lookup<ast::ConstraintDecl>(curToken.getSpelling()))) 
     // Check to see if this name actually refers to a Constraint.
-    if (!curDeclScope->lookup<ast::ConstraintDecl>(curToken.getSpelling())) {
+    {
       // If it wasn't a constraint, parse the result similarly to a variable. If
       // there is already an existing decl, we will emit an error when defining
       // this variable later.
@@ -1146,7 +1146,7 @@ FailureOr<ast::VariableDecl *> Parser::parseResultDecl(unsigned resultNum) {
 
       return createArgOrResultVariableDecl(name, nameLoc, *cst);
     }
-  }
+  
 
   // If it isn't named, we parse the constraint directly and create an unnamed
   // result variable.
@@ -2608,10 +2608,9 @@ LogicalResult Parser::validateVariableConstraint(const ast::ConstraintRef &ref,
                                                  ast::Type &inferredType) {
   ast::Type constraintType;
   if (const auto *cst = dyn_cast<ast::AttrConstraintDecl>(ref.constraint)) {
-    if (const ast::Expr *typeExpr = cst->getTypeExpr()) {
-      if (failed(validateTypeConstraintExpr(typeExpr)))
-        return failure();
-    }
+    if (const ast::Expr *typeExpr = cst->getTypeExpr(); typeExpr && (failed(validateTypeConstraintExpr(typeExpr)))) 
+      return failure();
+    
     constraintType = ast::AttributeType::get(ctx);
   } else if (const auto *cst =
                  dyn_cast<ast::OpConstraintDecl>(ref.constraint)) {
@@ -2623,17 +2622,15 @@ LogicalResult Parser::validateVariableConstraint(const ast::ConstraintRef &ref,
     constraintType = typeRangeTy;
   } else if (const auto *cst =
                  dyn_cast<ast::ValueConstraintDecl>(ref.constraint)) {
-    if (const ast::Expr *typeExpr = cst->getTypeExpr()) {
-      if (failed(validateTypeConstraintExpr(typeExpr)))
-        return failure();
-    }
+    if (const ast::Expr *typeExpr = cst->getTypeExpr(); typeExpr && (failed(validateTypeConstraintExpr(typeExpr)))) 
+      return failure();
+    
     constraintType = valueTy;
   } else if (const auto *cst =
                  dyn_cast<ast::ValueRangeConstraintDecl>(ref.constraint)) {
-    if (const ast::Expr *typeExpr = cst->getTypeExpr()) {
-      if (failed(validateTypeRangeConstraintExpr(typeExpr)))
-        return failure();
-    }
+    if (const ast::Expr *typeExpr = cst->getTypeExpr(); typeExpr && (failed(validateTypeRangeConstraintExpr(typeExpr)))) 
+      return failure();
+    
     constraintType = valueRangeTy;
   } else if (const auto *cst =
                  dyn_cast<ast::UserConstraintDecl>(ref.constraint)) {
@@ -3031,12 +3028,12 @@ LogicalResult Parser::validateOperationOperandsOrResults(
     // If the operand is an Operation, allow converting to a Value or
     // ValueRange. This situations arises quite often with nested operation
     // expressions: `op<my_dialect.foo>(op<my_dialect.bar>)`
-    if (singleTy == valueTy) {
-      if (isa<ast::OperationType>(valueExprType)) {
+    if ((singleTy == valueTy) && (isa<ast::OperationType>(valueExprType))) 
+      {
         valueExpr = convertOpToValue(valueExpr);
         continue;
       }
-    }
+    
 
     // Otherwise, try to convert the expression to a range.
     if (succeeded(convertExpressionTo(valueExpr, rangeTy)))

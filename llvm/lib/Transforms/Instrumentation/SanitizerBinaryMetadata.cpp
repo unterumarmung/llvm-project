@@ -326,24 +326,21 @@ bool hasUseAfterReturnUnsafeUses(Value &V) {
     if (auto *I = dyn_cast<Instruction>(U)) {
       if (I->isLifetimeStartOrEnd() || I->isDroppable())
         continue;
-      if (auto *CI = dyn_cast<CallInst>(U)) {
-        if (isUARSafeCall(CI))
-          continue;
-      }
+      if (auto *CI = dyn_cast<CallInst>(U); CI && (isUARSafeCall(CI))) 
+        continue;
+      
       if (isa<LoadInst>(U))
         continue;
-      if (auto *SI = dyn_cast<StoreInst>(U)) {
+      if (auto *SI = dyn_cast<StoreInst>(U); SI && (SI->getOperand(1) == &V)) 
         // If storing TO the alloca, then the address isn't taken.
-        if (SI->getOperand(1) == &V)
-          continue;
-      }
+        continue;
+      
       if (auto *GEPI = dyn_cast<GetElementPtrInst>(U)) {
         if (!hasUseAfterReturnUnsafeUses(*GEPI))
           continue;
-      } else if (auto *BCI = dyn_cast<BitCastInst>(U)) {
-        if (!hasUseAfterReturnUnsafeUses(*BCI))
-          continue;
-      }
+      } else if (auto *BCI = dyn_cast<BitCastInst>(U); BCI && (!hasUseAfterReturnUnsafeUses(*BCI))) 
+        continue;
+      
     }
     return true;
   }
@@ -397,10 +394,9 @@ bool maybeSharedMutable(const Value *Addr) {
     return false; // Object is on stack but does not escape.
 
   Addr = Addr->stripInBoundsOffsets();
-  if (auto *GV = dyn_cast<GlobalVariable>(Addr)) {
-    if (GV->isConstant())
-      return false; // Shared, but not mutable.
-  }
+  if (auto *GV = dyn_cast<GlobalVariable>(Addr); GV && (GV->isConstant())) 
+    return false; // Shared, but not mutable.
+  
 
   return true;
 }
@@ -413,10 +409,9 @@ bool SanitizerBinaryMetadata::runOn(Instruction &I, MetadataInfoSet &MIS,
   // Only call if at least 1 type of metadata is requested.
   assert(Options.UAR || Options.Atomics);
 
-  if (Options.UAR && !(FeatureMask & kSanitizerBinaryMetadataUAR)) {
-    if (useAfterReturnUnsafe(I))
-      FeatureMask |= kSanitizerBinaryMetadataUAR;
-  }
+  if ((Options.UAR && !(FeatureMask & kSanitizerBinaryMetadataUAR)) && (useAfterReturnUnsafe(I))) 
+    FeatureMask |= kSanitizerBinaryMetadataUAR;
+  
 
   if (Options.Atomics) {
     const Value *Addr = nullptr;

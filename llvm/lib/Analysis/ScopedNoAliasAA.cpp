@@ -131,9 +131,8 @@ ModRefInfo ScopedNoAliasAAResult::getModRefInfo(const CallBase *Call1,
 static void collectMDInDomain(const MDNode *List, const MDNode *Domain,
                               SmallPtrSetImpl<const MDNode *> &Nodes) {
   for (const MDOperand &MDOp : List->operands())
-    if (const MDNode *MD = dyn_cast<MDNode>(MDOp))
-      if (AliasScopeNode(MD).getDomain() == Domain)
-        Nodes.insert(MD);
+    if (const MDNode *MD = dyn_cast<MDNode>(MDOp); MD && (AliasScopeNode(MD).getDomain() == Domain))
+      Nodes.insert(MD);
 }
 
 /// Collect the set of scoped domains relevant to the noalias scopes.

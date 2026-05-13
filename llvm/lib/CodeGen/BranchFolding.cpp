@@ -497,13 +497,13 @@ static void FixTail(MachineBasicBlock *CurMBB, MachineBasicBlock *SuccBB,
     dl = BranchDL;
   if (I != MF->end() && !TII->analyzeBranch(*CurMBB, TBB, FBB, Cond, true)) {
     MachineBasicBlock *NextBB = &*I;
-    if (TBB == NextBB && !Cond.empty() && !FBB) {
-      if (!TII->reverseBranchCondition(Cond)) {
+    if ((TBB == NextBB && !Cond.empty() && !FBB) && (!TII->reverseBranchCondition(Cond))) 
+      {
         TII->removeBranch(*CurMBB);
         TII->insertBranch(*CurMBB, SuccBB, nullptr, Cond, dl);
         return;
       }
-    }
+    
   }
   TII->insertBranch(*CurMBB, SuccBB, nullptr,
                     SmallVector<MachineOperand, 0>(), dl);
@@ -999,17 +999,17 @@ bool BranchFolder::TryTailMergeBlocks(MachineBasicBlock *SuccBB,
       }
     }
 
-    if (commonTailIndex == SameTails.size() ||
+    if ((commonTailIndex == SameTails.size() ||
         (SameTails[commonTailIndex].getBlock() == PredBB &&
-         !SameTails[commonTailIndex].tailIsWholeBlock())) {
+         !SameTails[commonTailIndex].tailIsWholeBlock())) && (!CreateCommonTailOnlyBlock(PredBB, SuccBB,
+                                     maxCommonTailLength, commonTailIndex))) 
       // None of the blocks consist entirely of the common tail.
       // Split a block so that one does.
-      if (!CreateCommonTailOnlyBlock(PredBB, SuccBB,
-                                     maxCommonTailLength, commonTailIndex)) {
+      {
         RemoveBlocksWithHash(CurHash, SuccBB, PredBB, BranchDL);
         continue;
       }
-    }
+    
 
     MachineBasicBlock *MBB = SameTails[commonTailIndex].getBlock();
 
@@ -1135,9 +1135,8 @@ bool BranchFolder::TailMergeBlocks(MachineFunction &MF) {
       // After block placement, only consider predecessors that belong to the
       // same loop as IBB.  The reason is the same as above when skipping loop
       // header.
-      if (AfterBlockPlacement && MLI)
-        if (ML != MLI->getLoopFor(PBB))
-          continue;
+      if ((AfterBlockPlacement && MLI) && (ML != MLI->getLoopFor(PBB)))
+        continue;
 
       MachineBasicBlock *TBB = nullptr, *FBB = nullptr;
       SmallVector<MachineOperand, 4> Cond;
@@ -1564,19 +1563,19 @@ ReoptimizeBlock:
             !TII->analyzeBranch(*Pred, PredTBB, PredFBB, PredCond, true);
 
         // Only eliminate if MBB == TBB (Taken Basic Block)
-        if (PredAnalyzable && !PredCond.empty() && PredTBB == MBB &&
-            PredTBB != PredFBB) {
+        if ((PredAnalyzable && !PredCond.empty() && PredTBB == MBB &&
+            PredTBB != PredFBB) && (TII->canMakeTailCallConditional(PredCond, TailCall))) 
           // The predecessor has a conditional branch to this block which
           // consists of only a tail call. Try to fold the tail call into the
           // conditional branch.
-          if (TII->canMakeTailCallConditional(PredCond, TailCall)) {
+          {
             // TODO: It would be nice if analyzeBranch() could provide a pointer
             // to the branch instruction so replaceBranchWithTailCall() doesn't
             // have to search for it.
             TII->replaceBranchWithTailCall(*Pred, PredCond, TailCall);
             PredsChanged.push_back(Pred);
           }
-        }
+        
         // If the predecessor is falling through to this block, we could reverse
         // the branch condition and fold the tail call into that. However, after
         // that we might have to re-arrange the CFG to fall through to the other
@@ -1939,12 +1938,12 @@ MachineBasicBlock::iterator findHoistingInsertPosAndDeps(MachineBasicBlock *MBB,
     if (MO.isUse()) {
       addRegAndItsAliases(Reg, TRI, Uses);
     } else {
-      if (Uses.erase(Reg)) {
-        if (Reg.isPhysical()) {
+      if ((Uses.erase(Reg)) && (Reg.isPhysical())) 
+        {
           for (MCPhysReg SubReg : TRI->subregs(Reg))
             Uses.erase(SubReg); // Use sub-registers to be conservative
         }
-      }
+      
       addRegAndItsAliases(Reg, TRI, Defs);
     }
   }

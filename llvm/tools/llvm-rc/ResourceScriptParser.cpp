@@ -621,12 +621,12 @@ Expected<Control> RCParser::parseControl() {
   // x, y, width, height
   ASSIGN_OR_RETURN(Args, readIntsWithCommas(4, 4));
 
-  if (ClassUpper != "CONTROL") {
-    if (consumeOptionalType(Kind::Comma)) {
+  if ((ClassUpper != "CONTROL") && (consumeOptionalType(Kind::Comma))) 
+    {
       ASSIGN_OR_RETURN(Val, parseIntExpr1());
       Style = *Val;
     }
-  }
+  
 
   std::optional<uint32_t> ExStyle;
   if (consumeOptionalType(Kind::Comma)) {
@@ -969,8 +969,8 @@ RCParser::ParseOptionType RCParser::parseFontStmt(OptStmtType DialogType) {
   uint32_t FontWeight = 0;
   bool FontItalic = false;
   uint32_t FontCharset = 1;
-  if (DialogType == OptStmtType::DialogExStmt) {
-    if (consumeOptionalType(Kind::Comma)) {
+  if ((DialogType == OptStmtType::DialogExStmt) && (consumeOptionalType(Kind::Comma))) 
+    {
       ASSIGN_OR_RETURN(Args, readIntsWithCommas(/* min = */ 0, /* max = */ 3));
       if (Args->size() >= 1)
         FontWeight = (*Args)[0];
@@ -979,7 +979,7 @@ RCParser::ParseOptionType RCParser::parseFontStmt(OptStmtType DialogType) {
       if (Args->size() >= 3)
         FontCharset = (*Args)[2];
     }
-  }
+  
   return std::make_unique<FontStmt>(*SizeResult, *NameResult, FontWeight,
                                     FontItalic, FontCharset);
 }

@@ -508,15 +508,15 @@ void BinaryInstrProfCorrelator<IntPtrT>::correlateProfileDataImpl(
             "Mach-O fixup not found for covdata offset 0x%llx\n", Offset);
       }
     }
-    if (CounterPtr < CountersStart || CounterPtr >= CountersEnd) {
-      if (UnlimitedWarnings || ++NumSuppressedWarnings < 1) {
+    if ((CounterPtr < CountersStart || CounterPtr >= CountersEnd) && (UnlimitedWarnings || ++NumSuppressedWarnings < 1)) 
+      {
         WithColor::warning()
             << format("CounterPtr out of range for function: Actual=0x%x "
                       "Expected=[0x%x, 0x%x) at data offset=0x%x\n",
                       CounterPtr, CountersStart, CountersEnd,
                       (I - DataStart) * sizeof(RawProfData));
       }
-    }
+    
     // In binary correlation mode, the CounterPtr is an absolute address of the
     // counter, but it's expected to be relative later when iterating Data.
     IntPtrT CounterOffset = CounterPtr - CountersStart;

@@ -210,8 +210,8 @@ llvm::Error PointerFlowMatcher::matchesDecl(const Decl *D,
 llvm::Error matchInitializerListForRecordDecl(PointerFlowMatcher &Matcher,
                                               const RecordDecl *RecordTy,
                                               const InitListExpr *ILE) {
-  if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RecordTy))
-    if (CXXRD->getNumBases() != 0) {
+  if (auto *CXXRD = dyn_cast<CXXRecordDecl>(RecordTy); CXXRD && (CXXRD->getNumBases() != 0))
+    {
       // FIXME: support this:
       return makeErrAtNode(
           Matcher.Ctx, ILE,

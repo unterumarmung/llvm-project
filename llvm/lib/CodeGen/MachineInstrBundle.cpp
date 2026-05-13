@@ -175,10 +175,9 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
           DeadDefSet.insert(Reg);
         }
       } else {
-        if (ExternUses.insert(Reg)) {
-          if (MO.isUndef())
-            UndefUseSet.insert(Reg);
-        }
+        if ((ExternUses.insert(Reg)) && (MO.isUndef())) 
+          UndefUseSet.insert(Reg);
+        
         if (MO.isKill()) {
           // External def is now killed.
           KilledUseSet.insert(Reg);

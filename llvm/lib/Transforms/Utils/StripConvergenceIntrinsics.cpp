@@ -46,11 +46,10 @@ static bool stripConvergenceIntrinsics(Function &F) {
       }
 
       // Collect convergence intrinsics for deferred removal.
-      if (auto *II = dyn_cast<IntrinsicInst>(CI))
-        if (II->getIntrinsicID() == Intrinsic::experimental_convergence_entry ||
+      if (auto *II = dyn_cast<IntrinsicInst>(CI); II && (II->getIntrinsicID() == Intrinsic::experimental_convergence_entry ||
             II->getIntrinsicID() == Intrinsic::experimental_convergence_loop ||
-            II->getIntrinsicID() == Intrinsic::experimental_convergence_anchor)
-          ConvergenceIntrinsics.push_back(II);
+            II->getIntrinsicID() == Intrinsic::experimental_convergence_anchor))
+        ConvergenceIntrinsics.push_back(II);
     }
   }
 

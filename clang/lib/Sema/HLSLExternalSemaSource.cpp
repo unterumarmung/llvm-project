@@ -701,8 +701,8 @@ void HLSLExternalSemaSource::CompleteType(TagDecl *Tag) {
 
   // If this is a specialization, we need to get the underlying templated
   // declaration and complete that.
-  if (auto TDecl = dyn_cast<ClassTemplateSpecializationDecl>(Record)) {
-    if (!isa<ClassTemplatePartialSpecializationDecl>(TDecl)) {
+  if (auto TDecl = dyn_cast<ClassTemplateSpecializationDecl>(Record); TDecl && (!isa<ClassTemplatePartialSpecializationDecl>(TDecl))) 
+    {
       ClassTemplateDecl *Template = TDecl->getSpecializedTemplate();
       llvm::SmallVector<ClassTemplatePartialSpecializationDecl *, 4> Partials;
       Template->getPartialSpecializations(Partials);
@@ -721,7 +721,7 @@ void HLSLExternalSemaSource::CompleteType(TagDecl *Tag) {
       else
         Record = Template->getTemplatedDecl();
     }
-  }
+  
   Record = Record->getCanonicalDecl();
   auto It = Completions.find(Record);
   if (It == Completions.end())

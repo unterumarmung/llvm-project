@@ -1103,9 +1103,8 @@ bool CodeGenPrepare::canMergeBlocks(const BasicBlock *BB,
         const Value *V2 = PN.getIncomingValueForBlock(BB);
 
         // If V2 is a phi node in BB, look up what the mapped value will be.
-        if (const PHINode *V2PN = dyn_cast<PHINode>(V2))
-          if (V2PN->getParent() == BB)
-            V2 = V2PN->getIncomingValueForBlock(Pred);
+        if (const PHINode *V2PN = dyn_cast<PHINode>(V2); V2PN && (V2PN->getParent() == BB))
+          V2 = V2PN->getIncomingValueForBlock(Pred);
 
         // If there is a conflict, bail out.
         if (V1 != V2)
@@ -1145,8 +1144,8 @@ bool CodeGenPrepare::eliminateMostlyEmptyBlock(BasicBlock *BB) {
 
   // If the destination block has a single pred, then this is a trivial edge,
   // just collapse it.
-  if (BasicBlock *SinglePred = DestBB->getSinglePredecessor()) {
-    if (SinglePred != DestBB) {
+  if (BasicBlock *SinglePred = DestBB->getSinglePredecessor(); SinglePred && (SinglePred != DestBB)) 
+    {
       assert(SinglePred == BB &&
              "Single predecessor not the same as predecessor");
       // Merge DestBB into SinglePred/BB and delete it.
@@ -1162,7 +1161,7 @@ bool CodeGenPrepare::eliminateMostlyEmptyBlock(BasicBlock *BB) {
       }
       return false;
     }
-  }
+  
 
   // Otherwise, we have multiple predecessors of BB.  Update the PHIs in DestBB
   // to handle the new incoming edges it is about to have.
@@ -1204,10 +1203,9 @@ bool CodeGenPrepare::eliminateMostlyEmptyBlock(BasicBlock *BB) {
   SmallPtrSet<BasicBlock *, 8> PredOfDestBB(llvm::from_range,
                                             predecessors(DestBB));
   for (auto *Pred : predecessors(BB)) {
-    if (!PredOfDestBB.contains(Pred)) {
-      if (SeenPreds.insert(Pred).second)
-        DTUpdates.push_back({DominatorTree::Insert, Pred, DestBB});
-    }
+    if ((!PredOfDestBB.contains(Pred)) && (SeenPreds.insert(Pred).second)) 
+      DTUpdates.push_back({DominatorTree::Insert, Pred, DestBB});
+    
   }
   SeenPreds.clear();
   for (auto *Pred : predecessors(BB)) {
@@ -1289,9 +1287,8 @@ simplifyRelocatesOffABase(GCRelocateInst *RelocatedBase,
   // be skipped by optimization and we do not care about them.
   for (auto R = RelocatedBase->getParent()->getFirstInsertionPt();
        &*R != RelocatedBase; ++R)
-    if (auto *RI = dyn_cast<GCRelocateInst>(R))
-      if (RI->getStatepoint() == RelocatedBase->getStatepoint())
-        if (RI->getBasePtrIndex() == RelocatedBase->getBasePtrIndex()) {
+    if (auto *RI = dyn_cast<GCRelocateInst>(R); RI && (RI->getStatepoint() == RelocatedBase->getStatepoint()) && (RI->getBasePtrIndex() == RelocatedBase->getBasePtrIndex()))
+      {
           RelocatedBase->moveBefore(RI->getIterator());
           MadeChange = true;
           break;
@@ -1494,11 +1491,10 @@ static bool OptimizeNoopCopyExpression(CastInst *CI, const TargetLowering &TLI,
                                        const DataLayout &DL) {
   // Sink only "cheap" (or nop) address-space casts.  This is a weaker condition
   // than sinking only nop casts, but is helpful on some platforms.
-  if (auto *ASC = dyn_cast<AddrSpaceCastInst>(CI)) {
-    if (!TLI.isFreeAddrSpaceCast(ASC->getSrcAddressSpace(),
-                                 ASC->getDestAddressSpace()))
-      return false;
-  }
+  if (auto *ASC = dyn_cast<AddrSpaceCastInst>(CI); ASC && (!TLI.isFreeAddrSpaceCast(ASC->getSrcAddressSpace(),
+                                 ASC->getDestAddressSpace()))) 
+    return false;
+  
 
   // If this is a noop copy,
   EVT SrcVT = TLI.getValueType(DL, CI->getOperand(0)->getType());
@@ -2806,26 +2802,26 @@ bool CodeGenPrepare::optimizeCallInst(CallInst *CI, ModifyDT &ModifiedDT) {
       return optimizeGatherScatterInst(II, II->getArgOperand(1));
     case Intrinsic::masked_load:
       // Treat v1X masked load as load X type.
-      if (auto *VT = dyn_cast<FixedVectorType>(II->getType())) {
-        if (VT->getNumElements() == 1) {
+      if (auto *VT = dyn_cast<FixedVectorType>(II->getType()); VT && (VT->getNumElements() == 1)) 
+        {
           Value *PtrVal = II->getArgOperand(0);
           unsigned AS = PtrVal->getType()->getPointerAddressSpace();
           if (optimizeMemoryInst(II, PtrVal, VT->getElementType(), AS))
             return true;
         }
-      }
+      
       return false;
     case Intrinsic::masked_store:
       // Treat v1X masked store as store X type.
       if (auto *VT =
-              dyn_cast<FixedVectorType>(II->getArgOperand(0)->getType())) {
-        if (VT->getNumElements() == 1) {
+              dyn_cast<FixedVectorType>(II->getArgOperand(0)->getType()); VT && (VT->getNumElements() == 1)) 
+        {
           Value *PtrVal = II->getArgOperand(1);
           unsigned AS = PtrVal->getType()->getPointerAddressSpace();
           if (optimizeMemoryInst(II, PtrVal, VT->getElementType(), AS))
             return true;
         }
-      }
+      
       return false;
     case Intrinsic::umul_with_overflow:
       return optimizeMulWithOverflow(II, /*IsSigned=*/false, ModifiedDT);
@@ -3098,16 +3094,16 @@ bool CodeGenPrepare::dupRetToEnableTailCallOpts(BasicBlock *BB,
         continue;
       if (Instruction *I = Pred->rbegin()->getPrevNode()) {
         CallInst *CI = dyn_cast<CallInst>(I);
-        if (CI && CI->use_empty() && MayBePermittedAsTailCall(CI)) {
+        if ((CI && CI->use_empty() && MayBePermittedAsTailCall(CI)) && (!V || isa<UndefValue>(V) ||
+              (isIntrinsicOrLFToBeTailCalled(TLInfo, CI) &&
+               V == CI->getArgOperand(0)))) 
           // Either we return void or the return value must be the first
           // argument of a known intrinsic or library function.
-          if (!V || isa<UndefValue>(V) ||
-              (isIntrinsicOrLFToBeTailCalled(TLInfo, CI) &&
-               V == CI->getArgOperand(0))) {
+          {
             TailCallBBs.push_back(Pred);
             CallInsts.push_back(CI);
           }
-        }
+        
       }
     }
   }
@@ -4627,9 +4623,8 @@ bool AddressingModeMatcher::matchScaledValue(Value *ScaleReg, int64_t Scale,
     // inferrable at the point of memory instruction. Otherwise we are replacing
     // well-defined two-complement computation with poison. Currently, to avoid
     // potentially complex analysis needed to prove this, we reject such cases.
-    if (auto *OIVInc = dyn_cast<OverflowingBinaryOperator>(IVInc->first))
-      if (OIVInc->hasNoSignedWrap() || OIVInc->hasNoUnsignedWrap())
-        return std::nullopt;
+    if (auto *OIVInc = dyn_cast<OverflowingBinaryOperator>(IVInc->first); OIVInc && (OIVInc->hasNoSignedWrap() || OIVInc->hasNoUnsignedWrap()))
+      return std::nullopt;
     if (auto *ConstantStep = dyn_cast<ConstantInt>(IVInc->second))
       return std::make_pair(IVInc->first, ConstantStep->getValue());
     return std::nullopt;
@@ -4882,11 +4877,10 @@ bool TypePromotionHelper::canGetThrough(const Instruction *Inst,
 
   // We can get through binary operator, if it is legal. In other words, the
   // binary operator must have a nuw or nsw flag.
-  if (const auto *BinOp = dyn_cast<BinaryOperator>(Inst))
-    if (isa<OverflowingBinaryOperator>(BinOp) &&
+  if (const auto *BinOp = dyn_cast<BinaryOperator>(Inst); BinOp && (isa<OverflowingBinaryOperator>(BinOp) &&
         ((!IsSExt && BinOp->hasNoUnsignedWrap()) ||
-         (IsSExt && BinOp->hasNoSignedWrap())))
-      return true;
+         (IsSExt && BinOp->hasNoSignedWrap()))))
+    return true;
 
   // ext(and(opnd, cst)) --> and(ext(opnd), ext(cst))
   if ((Inst->getOpcode() == Instruction::And ||
@@ -4896,9 +4890,8 @@ bool TypePromotionHelper::canGetThrough(const Instruction *Inst,
   // ext(xor(opnd, cst)) --> xor(ext(opnd), ext(cst))
   if (Inst->getOpcode() == Instruction::Xor) {
     // Make sure it is not a NOT.
-    if (const auto *Cst = dyn_cast<ConstantInt>(Inst->getOperand(1)))
-      if (!Cst->getValue().isAllOnes())
-        return true;
+    if (const auto *Cst = dyn_cast<ConstantInt>(Inst->getOperand(1)); Cst && (!Cst->getValue().isAllOnes()))
+      return true;
   }
 
   // zext(shrl(opnd, cst)) --> shrl(zext(opnd), zext(cst))
@@ -5444,13 +5437,13 @@ bool AddressingModeMatcher::matchOperationAddr(User *AddrInst, unsigned Opcode,
     return true;
   }
   case Instruction::Call:
-    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(AddrInst)) {
-      if (II->getIntrinsicID() == Intrinsic::threadlocal_address) {
+    if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(AddrInst); II && (II->getIntrinsicID() == Intrinsic::threadlocal_address)) 
+      {
         GlobalValue &GV = cast<GlobalValue>(*II->getArgOperand(0));
         if (TLI.addressingModeSupportsTLS(GV))
           return matchAddr(AddrInst->getOperand(0), Depth);
       }
-    }
+    
     break;
   }
   return false;
@@ -5635,12 +5628,11 @@ static bool FindAllMemoryUses(
     }
 
     if (CallInst *CI = dyn_cast<CallInst>(UserI)) {
-      if (CI->hasFnAttr(Attribute::Cold)) {
+      if ((CI->hasFnAttr(Attribute::Cold)) && (!llvm::shouldOptimizeForSize(CI->getParent(), PSI, BFI))) 
         // If this is a cold call, we can sink the addressing calculation into
         // the cold path.  See optimizeCallInst
-        if (!llvm::shouldOptimizeForSize(CI->getParent(), PSI, BFI))
-          continue;
-      }
+        continue;
+      
 
       InlineAsm *IA = dyn_cast<InlineAsm>(CI->getCalledOperand());
       if (!IA)
@@ -5689,9 +5681,8 @@ bool AddressingModeMatcher::valueAlreadyLiveAtInst(Value *Val,
   // If Val is a constant sized alloca in the entry block, it is live, this is
   // true because it is just a reference to the stack/frame pointer, which is
   // live for the whole function.
-  if (AllocaInst *AI = dyn_cast<AllocaInst>(Val))
-    if (AI->isStaticAlloca())
-      return true;
+  if (AllocaInst *AI = dyn_cast<AllocaInst>(Val); AI && (AI->isStaticAlloca()))
+    return true;
 
   // Check to see if this value is already used in the memory instruction's
   // block.  If so, it's already live into the block at the very least, so we
@@ -7943,10 +7934,9 @@ bool CodeGenPrepare::optimizeShuffleVectorInst(ShuffleVectorInst *SVI) {
   // Also hoist the bitcast up to its operand if it they are not in the same
   // block.
   if (auto *BCI = dyn_cast<Instruction>(BC1))
-    if (auto *Op = dyn_cast<Instruction>(BCI->getOperand(0)))
-      if (BCI->getParent() != Op->getParent() && !isa<PHINode>(Op) &&
-          !Op->isTerminator() && !Op->isEHPad())
-        BCI->moveAfter(Op);
+    if (auto *Op = dyn_cast<Instruction>(BCI->getOperand(0)); Op && (BCI->getParent() != Op->getParent() && !isa<PHINode>(Op) &&
+          !Op->isTerminator() && !Op->isEHPad()))
+      BCI->moveAfter(Op);
 
   return true;
 }
@@ -8752,11 +8742,11 @@ static bool tryUnmergingGEPsAcrossIndirectBr(GetElementPtrInst *GEPI,
   // Check that GEP is used outside the block, meaning it's alive on the
   // IndirectBr edge(s).
   if (llvm::none_of(GEPI->users(), [&](User *Usr) {
-        if (auto *I = dyn_cast<Instruction>(Usr)) {
-          if (I->getParent() != SrcBlock) {
+        if (auto *I = dyn_cast<Instruction>(Usr); I && (I->getParent() != SrcBlock)) 
+          {
             return true;
           }
-        }
+        
         return false;
       }))
     return false;
@@ -8966,13 +8956,11 @@ bool CodeGenPrepare::optimizeInst(Instruction *I, ModifyDT &ModifiedDT) {
     return AnyChange;
   }
 
-  if (auto *Cmp = dyn_cast<CmpInst>(I))
-    if (optimizeCmp(Cmp, ModifiedDT))
-      return true;
+  if (auto *Cmp = dyn_cast<CmpInst>(I); Cmp && (optimizeCmp(Cmp, ModifiedDT)))
+    return true;
 
-  if (match(I, m_URem(m_Value(), m_Value())))
-    if (optimizeURem(I))
-      return true;
+  if ((match(I, m_URem(m_Value(), m_Value()))) && (optimizeURem(I)))
+    return true;
 
   if (LoadInst *LI = dyn_cast<LoadInst>(I)) {
     LI->setMetadata(LLVMContext::MD_invariant_group, nullptr);
@@ -9012,9 +9000,8 @@ bool CodeGenPrepare::optimizeInst(Instruction *I, ModifyDT &ModifiedDT) {
   if (BinOp && (BinOp->getOpcode() == Instruction::AShr ||
                 BinOp->getOpcode() == Instruction::LShr)) {
     ConstantInt *CI = dyn_cast<ConstantInt>(BinOp->getOperand(1));
-    if (CI && TLI->hasExtractBitsInsn())
-      if (OptimizeExtractBits(BinOp, CI, *TLI, *DL))
-        return true;
+    if ((CI && TLI->hasExtractBitsInsn()) && (OptimizeExtractBits(BinOp, CI, *TLI, *DL)))
+      return true;
   }
 
   if (GetElementPtrInst *GEPI = dyn_cast<GetElementPtrInst>(I)) {

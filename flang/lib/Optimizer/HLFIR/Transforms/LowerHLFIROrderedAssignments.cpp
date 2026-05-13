@@ -876,9 +876,8 @@ bool OrderedAssignmentRewriter::mustSaveRegionIn(
     llvm::SmallVectorImpl<hlfir::SaveEntity> &saveEntities) const {
   for (auto &action : currentRun->actions)
     if (hlfir::SaveEntity *savedEntity =
-            std::get_if<hlfir::SaveEntity>(&action))
-      if (node.getOperation() == savedEntity->yieldRegion->getParentOp())
-        saveEntities.push_back(*savedEntity);
+            std::get_if<hlfir::SaveEntity>(&action); savedEntity && (node.getOperation() == savedEntity->yieldRegion->getParentOp()))
+      saveEntities.push_back(*savedEntity);
   return !saveEntities.empty();
 }
 

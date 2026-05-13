@@ -457,10 +457,9 @@ buildInputAnnotations(const SourceMgr &SM, unsigned CheckFileBufferID,
 
     // Does this diagnostic mark text that has been successfully matched?
     A.FoundAndExpectedMatch = false;
-    if (const MatchFoundDiag *Found = dyn_cast<MatchFoundDiag>(&Diag)) {
-      if (Found->getStatus() == MatchFoundDiag::Success)
-        A.FoundAndExpectedMatch = true;
-    }
+    if (const MatchFoundDiag *Found = dyn_cast<MatchFoundDiag>(&Diag); Found && (Found->getStatus() == MatchFoundDiag::Success)) 
+      A.FoundAndExpectedMatch = true;
+    
 
     // If Diag has a match range, position the marker there.  If it is a
     // MatchNoneDiag, position the marker at its search range.  Otherwise,

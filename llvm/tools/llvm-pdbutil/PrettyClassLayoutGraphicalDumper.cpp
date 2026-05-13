@@ -51,17 +51,17 @@ bool PrettyClassLayoutGraphicalDumper::start(const UDTLayoutBase &Layout) {
 
     // This might be an empty base, in which case it could extend outside the
     // bounds of the parent class.
-    if (RelativeOffset < UseMap.size() && (Item->getSize() > 0)) {
+    if ((RelativeOffset < UseMap.size() && (Item->getSize() > 0)) && ((NextPaddingByte >= 0) &&
+          (RelativeOffset > uint32_t(NextPaddingByte)))) 
       // If there is any remaining padding in this class, and the offset of the
       // new item is after the padding, then we must have just jumped over some
       // padding.  Print a padding row and then look for where the next block
       // of padding begins.
-      if ((NextPaddingByte >= 0) &&
-          (RelativeOffset > uint32_t(NextPaddingByte))) {
+      {
         printPaddingRow(RelativeOffset - NextPaddingByte);
         NextPaddingByte = UseMap.find_next_unset(RelativeOffset);
       }
-    }
+    
 
     CurrentItem = Item;
     if (Item->isVBPtr()) {
@@ -82,14 +82,14 @@ bool PrettyClassLayoutGraphicalDumper::start(const UDTLayoutBase &Layout) {
   }
 
   auto TailPadding = Layout.tailPadding();
-  if (TailPadding > 0) {
-    if (TailPadding != 1 || Layout.getSize() != 1) {
+  if ((TailPadding > 0) && (TailPadding != 1 || Layout.getSize() != 1)) 
+    {
       Printer.NewLine();
       WithColor(Printer, PDB_ColorItem::Padding).get()
           << "<padding> (" << TailPadding << " bytes)";
       DumpedAnything = true;
     }
-  }
+  
 
   return DumpedAnything;
 }

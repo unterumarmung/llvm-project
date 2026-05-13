@@ -1667,9 +1667,8 @@ bool VectorCombine::foldSelectsFromBitcast(Instruction &I) {
     // Create the vector select and bitcast once for this condition.
     auto InsertPt = std::next(BC->getIterator());
 
-    if (auto *CondInst = dyn_cast<Instruction>(Cond))
-      if (DT.dominates(BC, CondInst))
-        InsertPt = std::next(CondInst->getIterator());
+    if (auto *CondInst = dyn_cast<Instruction>(Cond); CondInst && (DT.dominates(BC, CondInst)))
+      InsertPt = std::next(CondInst->getIterator());
 
     Builder.SetInsertPoint(InsertPt);
     Value *VecSel =
@@ -3687,18 +3686,15 @@ bool VectorCombine::foldShuffleToIdentity(Instruction &I) {
         return false;
       if (V->getValueID() != FrontV->getValueID())
         return false;
-      if (auto *CI = dyn_cast<CmpInst>(V))
-        if (CI->getPredicate() != cast<CmpInst>(FrontV)->getPredicate())
-          return false;
-      if (auto *CI = dyn_cast<CastInst>(V))
-        if (CI->getSrcTy()->getScalarType() !=
-            cast<CastInst>(FrontV)->getSrcTy()->getScalarType())
-          return false;
-      if (auto *SI = dyn_cast<SelectInst>(V))
-        if (!isa<VectorType>(SI->getOperand(0)->getType()) ||
+      if (auto *CI = dyn_cast<CmpInst>(V); CI && (CI->getPredicate() != cast<CmpInst>(FrontV)->getPredicate()))
+        return false;
+      if (auto *CI = dyn_cast<CastInst>(V); CI && (CI->getSrcTy()->getScalarType() !=
+            cast<CastInst>(FrontV)->getSrcTy()->getScalarType()))
+        return false;
+      if (auto *SI = dyn_cast<SelectInst>(V); SI && (!isa<VectorType>(SI->getOperand(0)->getType()) ||
             SI->getOperand(0)->getType() !=
-                cast<SelectInst>(FrontV)->getOperand(0)->getType())
-          return false;
+                cast<SelectInst>(FrontV)->getOperand(0)->getType()))
+        return false;
       if (isa<CallInst>(V) && !isa<IntrinsicInst>(V))
         return false;
       auto *II = dyn_cast<IntrinsicInst>(V);
@@ -5079,9 +5075,8 @@ bool VectorCombine::foldSelectShuffle(Instruction &I, bool FromReduction) {
     if (!SV)
       return M;
     if (isa<UndefValue>(SV->getOperand(1)))
-      if (auto *SSV = dyn_cast<ShuffleVectorInst>(SV->getOperand(0)))
-        if (InputShuffles.contains(SSV))
-          return SSV->getMaskValue(SV->getMaskValue(M));
+      if (auto *SSV = dyn_cast<ShuffleVectorInst>(SV->getOperand(0)); SSV && (InputShuffles.contains(SSV)))
+        return SSV->getMaskValue(SV->getMaskValue(M));
     return SV->getMaskValue(M);
   };
 
@@ -5264,9 +5259,8 @@ bool VectorCombine::foldSelectShuffle(Instruction &I, bool FromReduction) {
     if (!SV)
       return I;
     if (isa<UndefValue>(SV->getOperand(1)))
-      if (auto *SSV = dyn_cast<ShuffleVectorInst>(SV->getOperand(0)))
-        if (InputShuffles.contains(SSV))
-          return SSV->getOperand(Op);
+      if (auto *SSV = dyn_cast<ShuffleVectorInst>(SV->getOperand(0)); SSV && (InputShuffles.contains(SSV)))
+        return SSV->getOperand(Op);
     return SV->getOperand(Op);
   };
   Builder.SetInsertPoint(*SVI0A->getInsertionPointAfterDef());
@@ -5819,9 +5813,8 @@ bool VectorCombine::run() {
         return true;
     }
 
-    if (Opcode == Instruction::Store)
-      if (foldSingleElementStore(I))
-        return true;
+    if ((Opcode == Instruction::Store) && (foldSingleElementStore(I)))
+      return true;
 
     // If this is an early pipeline invocation of this pass, we are done.
     if (TryEarlyFoldsOnly)

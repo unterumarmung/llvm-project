@@ -1163,17 +1163,16 @@ MDNode *MDNode::getMostGenericAliasScope(MDNode *A, MDNode *B) {
 
   for (const MDOperand &MDOp : B->operands())
     if (const MDNode *NAMD = dyn_cast<MDNode>(MDOp))
-      if (const MDNode *Domain = AliasScopeNode(NAMD).getDomain())
-        if (ADomains.contains(Domain)) {
+      if (const MDNode *Domain = AliasScopeNode(NAMD).getDomain(); Domain && (ADomains.contains(Domain)))
+        {
           IntersectDomains.insert(Domain);
           MDs.insert(MDOp);
         }
 
   for (const MDOperand &MDOp : A->operands())
     if (const MDNode *NAMD = dyn_cast<MDNode>(MDOp))
-      if (const MDNode *Domain = AliasScopeNode(NAMD).getDomain())
-        if (IntersectDomains.contains(Domain))
-          MDs.insert(MDOp);
+      if (const MDNode *Domain = AliasScopeNode(NAMD).getDomain(); Domain && (IntersectDomains.contains(Domain)))
+        MDs.insert(MDOp);
 
   return MDs.empty() ? nullptr
                      : getOrSelfReference(A->getContext(), MDs.getArrayRef());
@@ -1306,9 +1305,8 @@ static bool tryMergeRange(SmallVectorImpl<ConstantInt *> &EndPoints,
 
 static void addRange(SmallVectorImpl<ConstantInt *> &EndPoints,
                      ConstantInt *Low, ConstantInt *High) {
-  if (!EndPoints.empty())
-    if (tryMergeRange(EndPoints, Low, High))
-      return;
+  if ((!EndPoints.empty()) && (tryMergeRange(EndPoints, Low, High)))
+    return;
 
   EndPoints.push_back(Low);
   EndPoints.push_back(High);

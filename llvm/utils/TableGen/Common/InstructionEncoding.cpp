@@ -380,10 +380,10 @@ void InstructionEncoding::parseFixedLenOperands(const BitsInit &Bits) {
 
     // Otherwise, if we have an operand with sub-operands, but they aren't
     // named...
-    if (Op.MIOperandInfo && OpInfo.Decoder.empty()) {
+    if ((Op.MIOperandInfo && OpInfo.Decoder.empty()) && (Op.MIOperandInfo->getNumArgs())) 
       // If we have sub-ops, we'd better have a custom decoder.
       // (Otherwise we don't know how to populate them properly...)
-      if (Op.MIOperandInfo->getNumArgs()) {
+      {
         PrintError(EncodingDef,
                    "DecoderEmitter: operand \"" + Op.Name +
                        "\" has non-empty MIOperandInfo, but doesn't "
@@ -391,7 +391,7 @@ void InstructionEncoding::parseFixedLenOperands(const BitsInit &Bits) {
         debugDumpRecord(*EncodingDef);
         continue;
       }
-    }
+    
 
     addOneOperandFields(EncodingDef, Bits, TiedNames, Op.Rec, Op.Name, OpInfo);
     Operands.push_back(std::move(OpInfo));

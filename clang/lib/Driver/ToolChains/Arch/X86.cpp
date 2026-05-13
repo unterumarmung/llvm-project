@@ -132,13 +132,13 @@ void x86::getX86TargetFeatures(const Driver &D, const llvm::Triple &Triple,
   }
 
   // If -march=native, autodetect the feature list.
-  if (const Arg *A = Args.getLastArg(options::OPT_march_EQ)) {
-    if (StringRef(A->getValue()) == "native") {
+  if (const Arg *A = Args.getLastArg(options::OPT_march_EQ); A && (StringRef(A->getValue()) == "native")) 
+    {
       for (auto &F : llvm::sys::getHostCPUFeatures())
         Features.push_back(
             Args.MakeArgString((F.second ? "+" : "-") + F.first()));
     }
-  }
+  
 
   if (Triple.getArchName() == "x86_64h") {
     // x86_64h implies quite a few of the more modern subtarget features
@@ -338,15 +338,13 @@ void x86::getX86TargetFeatures(const Driver &D, const llvm::Triple &Triple,
   // Warn for removed 3dnow support
   if (const Arg *A =
           Args.getLastArg(options::OPT_m3dnowa, options::OPT_mno_3dnowa,
-                          options::OPT_mno_3dnow)) {
-    if (A->getOption().matches(options::OPT_m3dnowa))
-      D.Diag(diag::warn_drv_clang_unsupported) << A->getAsString(Args);
-  }
+                          options::OPT_mno_3dnow); A && (A->getOption().matches(options::OPT_m3dnowa))) 
+    D.Diag(diag::warn_drv_clang_unsupported) << A->getAsString(Args);
+  
   if (const Arg *A =
-          Args.getLastArg(options::OPT_m3dnow, options::OPT_mno_3dnow)) {
-    if (A->getOption().matches(options::OPT_m3dnow))
-      D.Diag(diag::warn_drv_clang_unsupported) << A->getAsString(Args);
-  }
+          Args.getLastArg(options::OPT_m3dnow, options::OPT_mno_3dnow); A && (A->getOption().matches(options::OPT_m3dnow))) 
+    D.Diag(diag::warn_drv_clang_unsupported) << A->getAsString(Args);
+  
 
   // Handle features corresponding to "-ffixed-X" options
   if (Args.hasArg(options::OPT_ffixed_edi)) {

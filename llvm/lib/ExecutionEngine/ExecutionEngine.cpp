@@ -388,9 +388,8 @@ void ExecutionEngine::runStaticConstructorsDestructors(Module &module,
       continue;  // Found a sentinel value, ignore.
 
     // Strip off constant expression casts.
-    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(FP))
-      if (CE->isCast())
-        FP = CE->getOperand(0);
+    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(FP); CE && (CE->isCast()))
+      FP = CE->getOperand(0);
 
     // Execute the ctor/dtor function!
     if (Function *F = dyn_cast<Function>(FP))
@@ -553,10 +552,9 @@ ExecutionEngine *EngineBuilder::create(TargetMachine *TM) {
     return nullptr;
   }
 
-  if ((WhichEngine & EngineKind::JIT) && !ExecutionEngine::MCJITCtor) {
-    if (ErrorStr)
-      *ErrorStr = "JIT has not been linked in.";
-  }
+  if (((WhichEngine & EngineKind::JIT) && !ExecutionEngine::MCJITCtor) && (ErrorStr)) 
+    *ErrorStr = "JIT has not been linked in.";
+  
 
   return nullptr;
 }
@@ -1187,13 +1185,13 @@ void ExecutionEngine::emitGlobals() {
       // In the multi-module case, see what this global maps to.
       if (!LinkedGlobalsMap.empty()) {
         if (const GlobalValue *GVEntry = LinkedGlobalsMap[std::make_pair(
-                std::string(GV.getName()), GV.getType())]) {
+                std::string(GV.getName()), GV.getType())]; GVEntry && (GVEntry != &GV)) 
           // If something else is the canonical global, ignore this one.
-          if (GVEntry != &GV) {
+          {
             NonCanonicalGlobals.push_back(&GV);
             continue;
           }
-        }
+        
       }
 
       if (!GV.isDeclaration()) {

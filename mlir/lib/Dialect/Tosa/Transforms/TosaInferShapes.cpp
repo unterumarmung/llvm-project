@@ -145,12 +145,12 @@ void validateSameOperandsAndResultRankTrait(Region &region) {
       if (!op.getDialect() ||
           op.getDialect()->getNamespace() != TosaDialect::getDialectNamespace())
         continue;
-      if (op.hasTrait<OpTrait::SameOperandsAndResultRank>()) {
-        if (OpTrait::impl::verifySameOperandsAndResultRank(&op).failed()) {
+      if ((op.hasTrait<OpTrait::SameOperandsAndResultRank>()) && (OpTrait::impl::verifySameOperandsAndResultRank(&op).failed())) 
+        {
           errs++;
           (void)errs;
         }
-      }
+      
       WhileOp whileOp = dyn_cast<WhileOp>(op);
       IfOp ifOp = dyn_cast<IfOp>(op);
       if (whileOp || ifOp) {

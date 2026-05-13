@@ -1055,10 +1055,9 @@ LogicalResult ContractionOp::verify() {
   Type accType = getAccType();
   Type resType = getResultType();
 
-  if (llvm::isa<IntegerType>(lhsType.getElementType())) {
-    if (!lhsType.getElementType().isSignlessInteger())
-      return emitOpError("only supports signless integer types");
-  }
+  if ((llvm::isa<IntegerType>(lhsType.getElementType())) && (!lhsType.getElementType().isSignlessInteger())) 
+    return emitOpError("only supports signless integer types");
+  
 
   // Verify that an indexing map was specified for each vector operand.
   if (getIndexingMapsArray().size() != 3)
@@ -6945,12 +6944,12 @@ public:
       // stretching). See https://github.com/llvm/llvm-project/issues/190614.
       // This is detected by a change in the stretching factor. However if the
       // source has a single element, there is no ambiguity.
-      if (srcVectorType.getNumElements() != 1) {
-        if (getBroadcastStretchingFactor(srcShape, dstShape) !=
-            getBroadcastStretchingFactor(srcShape, broadcastShape)) {
+      if ((srcVectorType.getNumElements() != 1) && (getBroadcastStretchingFactor(srcShape, dstShape) !=
+            getBroadcastStretchingFactor(srcShape, broadcastShape))) 
+        {
           return failure();
         }
-      }
+      
     }
 
     rewriter.replaceOpWithNewOp<vector::BroadcastOp>(shapeCastOp, dstVectorType,

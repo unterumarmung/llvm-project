@@ -25,14 +25,12 @@ void llvm::reduceGlobalObjectsDeltaPass(Oracle &O, ReducerWorkItem &Program) {
   for (auto &GO : Program.getModule().global_objects()) {
     if (shouldReduceSection(GO) && !O.shouldKeep())
       GO.setSection("");
-    if (auto *GV = dyn_cast<GlobalVariable>(&GO)) {
-      if (shouldReduceAlign(GV) && !O.shouldKeep())
-        GV->setAlignment(MaybeAlign());
-    }
-    if (auto *F = dyn_cast<Function>(&GO)) {
-      if (shouldReduceAlign(F) && !O.shouldKeep())
-        F->setAlignment(MaybeAlign());
-    }
+    if (auto *GV = dyn_cast<GlobalVariable>(&GO); GV && (shouldReduceAlign(GV) && !O.shouldKeep())) 
+      GV->setAlignment(MaybeAlign());
+    
+    if (auto *F = dyn_cast<Function>(&GO); F && (shouldReduceAlign(F) && !O.shouldKeep())) 
+      F->setAlignment(MaybeAlign());
+    
     if (shouldReduceComdat(GO) && !O.shouldKeep())
       GO.setComdat(nullptr);
   }

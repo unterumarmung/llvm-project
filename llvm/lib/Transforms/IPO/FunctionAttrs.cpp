@@ -738,9 +738,9 @@ ArgumentAccessInfo getArgumentAccessInfo(const Instruction *I,
           return {ArgumentAccessInfo::AccessType::Read, {*AccessRange}};
       }
     }
-  } else if (auto *CB = dyn_cast<CallBase>(I)) {
-    if (CB->isArgOperand(ArgUse.U) &&
-        !CB->isByValArgument(CB->getArgOperandNo(ArgUse.U))) {
+  } else if (auto *CB = dyn_cast<CallBase>(I); CB && (CB->isArgOperand(ArgUse.U) &&
+        !CB->isByValArgument(CB->getArgOperandNo(ArgUse.U)))) 
+    {
       unsigned ArgNo = CB->getArgOperandNo(ArgUse.U);
       bool IsInitialize = CB->paramHasAttr(ArgNo, Attribute::Initializes);
       if (IsInitialize && ArgUse.Offset) {
@@ -758,7 +758,7 @@ ArgumentAccessInfo getArgumentAccessInfo(const Instruction *I,
         return {Access, AccessRanges};
       }
     }
-  }
+  
   // Other unrecognized instructions are considered as unknown.
   return {ArgumentAccessInfo::AccessType::Unknown, {}};
 }
@@ -1323,18 +1323,16 @@ static void addArgumentAttrs(const SCCNodeSet &SCCNodes,
         }
         // Otherwise, it's captured. Don't bother doing SCC analysis on it.
       }
-      if (!HasNonLocalUses && !A.onlyReadsMemory()) {
+      if ((!HasNonLocalUses && !A.onlyReadsMemory()) && (DetermineAccessAttrsForSingleton(&A))) 
         // Can we determine that it's readonly/readnone/writeonly without doing
         // an SCC? Note that we don't allow any calls at all here, or else our
         // result will be dependent on the iteration order through the
         // functions in the SCC.
-        if (DetermineAccessAttrsForSingleton(&A))
-          Changed.insert(F);
-      }
-      if (!SkipInitializes && !A.onlyReadsMemory()) {
-        if (inferInitializes(A, *F))
-          Changed.insert(F);
-      }
+        Changed.insert(F);
+      
+      if ((!SkipInitializes && !A.onlyReadsMemory()) && (inferInitializes(A, *F))) 
+        Changed.insert(F);
+      
     }
   }
 
@@ -1905,13 +1903,12 @@ static bool InstrBreaksNonThrowing(Instruction &I, const SCCNodeSet &SCCNodes) {
   if (!I.mayThrow(/* IncludePhaseOneUnwind */ true))
     return false;
   if (const auto *CI = dyn_cast<CallInst>(&I)) {
-    if (Function *Callee = CI->getCalledFunction()) {
+    if (Function *Callee = CI->getCalledFunction(); Callee && (SCCNodes.contains(Callee))) 
       // I is a may-throw call to a function inside our SCC. This doesn't
       // invalidate our current working assumption that the SCC is no-throw; we
       // just have to scan that other function.
-      if (SCCNodes.contains(Callee))
-        return false;
-    }
+      return false;
+    
   }
   return true;
 }
@@ -1926,9 +1923,8 @@ static bool InstrBreaksNoFree(Instruction &I, const SCCNodeSet &SCCNodes) {
     return false;
 
   // Speculatively assume in SCC.
-  if (Function *Callee = CB->getCalledFunction())
-    if (SCCNodes.contains(Callee))
-      return false;
+  if (Function *Callee = CB->getCalledFunction(); Callee && (SCCNodes.contains(Callee)))
+    return false;
 
   return true;
 }
@@ -1940,9 +1936,8 @@ static bool InstrBreaksNoSync(Instruction &I, const SCCNodeSet &SCCNodes) {
   // Optimistically assume calls within the SCC are nosync: if nothing else in
   // the SCC synchronizes, the assumption holds.
   if (auto *CB = dyn_cast<CallBase>(&I))
-    if (Function *Callee = CB->getCalledFunction())
-      if (SCCNodes.contains(Callee))
-        return false;
+    if (Function *Callee = CB->getCalledFunction(); Callee && (SCCNodes.contains(Callee)))
+      return false;
 
   return true;
 }
@@ -2273,9 +2268,8 @@ deriveAttrsInPostOrder(ArrayRef<Function *> Functions, AARGetterT &&AARGetter,
   // implies another, but for implementation reasons the inference rule for
   // the later is missing (or simply less sophisticated).
   for (Function *F : Nodes.SCCNodes)
-    if (F)
-      if (inferAttributesFromOthers(*F))
-        Changed.insert(F);
+    if ((F) && (inferAttributesFromOthers(*F)))
+      Changed.insert(F);
 
   return Changed;
 }
@@ -2325,10 +2319,9 @@ PreservedAnalyses PostOrderFunctionAttrsPass::run(LazyCallGraph::SCC &C,
     // about whether or not a call's callee modifies memory and queries that
     // through function attributes.
     for (auto *U : Changed->users()) {
-      if (auto *Call = dyn_cast<CallBase>(U)) {
-        if (Call->getCalledOperand() == Changed)
-          FAM.invalidate(*Call->getFunction(), FuncPA);
-      }
+      if (auto *Call = dyn_cast<CallBase>(U); Call && (Call->getCalledOperand() == Changed)) 
+        FAM.invalidate(*Call->getFunction(), FuncPA);
+      
     }
   }
 

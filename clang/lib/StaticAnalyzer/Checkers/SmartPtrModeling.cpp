@@ -277,9 +277,8 @@ bool SmartPtrModeling::evalCall(const CallEvent &Call,
 
   // If any one of the arg is a unique_ptr, then
   // we can try this function
-  if (ModelSmartPtrDereference && isPotentiallyComparisionOpCall(Call))
-    if (handleComparisionOp(Call, C))
-      return true;
+  if ((ModelSmartPtrDereference && isPotentiallyComparisionOpCall(Call)) && (handleComparisionOp(Call, C)))
+    return true;
 
   if (ModelSmartPtrDereference && isStdOstreamOperatorCall(Call))
     return handleOstreamOperator(Call, C);

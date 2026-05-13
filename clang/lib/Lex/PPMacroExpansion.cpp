@@ -403,11 +403,10 @@ static bool isTrivialSingleTokenExpansion(const MacroInfo *MI,
 
   // If the identifier is a macro, and if that macro is enabled, it may be
   // expanded so it's not a trivial expansion.
-  if (auto *ExpansionMI = PP.getMacroInfo(II))
-    if (ExpansionMI->isEnabled() &&
+  if (auto *ExpansionMI = PP.getMacroInfo(II); ExpansionMI && (ExpansionMI->isEnabled() &&
         // Fast expanding "#define X X" is ok, because X would be disabled.
-        II != MacroIdent)
-      return false;
+        II != MacroIdent))
+    return false;
 
   // If this is an object-like macro invocation, it is safe to trivially expand
   // it.
@@ -558,8 +557,8 @@ bool Preprocessor::HandleMacroExpandedIdentifier(Token &Identifier,
     // If this is a disabled macro or #define X X, we must mark the result as
     // unexpandable.
     if (IdentifierInfo *NewII = Identifier.getIdentifierInfo()) {
-      if (MacroInfo *NewMI = getMacroInfo(NewII))
-        if (!NewMI->isEnabled() || NewMI == MI) {
+      if (MacroInfo *NewMI = getMacroInfo(NewII); NewMI && (!NewMI->isEnabled() || NewMI == MI))
+        {
           Identifier.setFlag(Token::DisableExpand);
           // Don't warn for "#define X X" like "#define bool bool" from
           // stdbool.h.
@@ -812,9 +811,8 @@ MacroArgs *Preprocessor::ReadMacroCallArgumentList(Token &MacroName,
         // identifiers we lex as macro arguments correspond to disabled macros.
         // If so, we mark the token as noexpand.  This is a subtle aspect of
         // C99 6.10.3.4p2.
-        if (MacroInfo *MI = getMacroInfo(Tok.getIdentifierInfo()))
-          if (!MI->isEnabled())
-            Tok.setFlag(Token::DisableExpand);
+        if (MacroInfo *MI = getMacroInfo(Tok.getIdentifierInfo()); MI && (!MI->isEnabled()))
+          Tok.setFlag(Token::DisableExpand);
       } else if (Tok.is(tok::code_completion)) {
         ContainsCodeCompletionTok = true;
         if (CodeComplete)
@@ -1460,16 +1458,15 @@ static IdentifierInfo *ExpectFeatureIdentifierInfo(Token &Tok,
 static bool isTargetArch(const TargetInfo &TI, const IdentifierInfo *II) {
   llvm::Triple Arch(II->getName().lower() + "--");
   const llvm::Triple &TT = TI.getTriple();
-  if (TT.isThumb()) {
-    // arm matches thumb or thumbv7. armv7 matches thumbv7.
-    if ((Arch.getSubArch() == llvm::Triple::NoSubArch ||
+  if ((TT.isThumb()) && ((Arch.getSubArch() == llvm::Triple::NoSubArch ||
          Arch.getSubArch() == TT.getSubArch()) &&
         ((TT.getArch() == llvm::Triple::thumb &&
           Arch.getArch() == llvm::Triple::arm) ||
          (TT.getArch() == llvm::Triple::thumbeb &&
-          Arch.getArch() == llvm::Triple::armeb)))
-      return true;
-  }
+          Arch.getArch() == llvm::Triple::armeb)))) 
+    // arm matches thumb or thumbv7. armv7 matches thumbv7.
+    return true;
+  
   // Check the parsed arch when it has no sub arch to allow Clang to
   // match thumb to thumbv7 but to prohibit matching thumbv6 to thumbv7.
   return (Arch.getSubArch() == llvm::Triple::NoSubArch ||

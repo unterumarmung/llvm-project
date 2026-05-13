@@ -284,11 +284,10 @@ void DiagnoseUnused(Sema &S, const Expr *E, std::optional<unsigned> DiagID) {
     return;
 
   E = WarnExpr;
-  if (const auto *Cast = dyn_cast<CastExpr>(E))
-    if (Cast->getCastKind() == CK_NoOp ||
+  if (const auto *Cast = dyn_cast<CastExpr>(E); Cast && (Cast->getCastKind() == CK_NoOp ||
         Cast->getCastKind() == CK_ConstructorConversion ||
-        Cast->getCastKind() == CK_IntegralCast)
-      E = Cast->getSubExpr()->IgnoreImpCasts();
+        Cast->getCastKind() == CK_IntegralCast))
+    E = Cast->getSubExpr()->IgnoreImpCasts();
 
   if (const CallExpr *CE = dyn_cast<CallExpr>(E)) {
     if (E->getType()->isVoidType())
@@ -321,12 +320,11 @@ void DiagnoseUnused(Sema &S, const Expr *E, std::optional<unsigned> DiagID) {
                           /*isCtor=*/true))
       return;
   } else if (const auto *ILE = dyn_cast<InitListExpr>(E)) {
-    if (const TagDecl *TD = ILE->getType()->getAsTagDecl()) {
+    if (const TagDecl *TD = ILE->getType()->getAsTagDecl(); TD && (DiagnoseNoDiscard(S, TD, TD->getAttr<WarnUnusedResultAttr>(), Loc, R1,
+                            R2, /*isCtor=*/false))) 
 
-      if (DiagnoseNoDiscard(S, TD, TD->getAttr<WarnUnusedResultAttr>(), Loc, R1,
-                            R2, /*isCtor=*/false))
-        return;
-    }
+      return;
+    
   } else if (ShouldSuppress)
     return;
 
@@ -360,9 +358,8 @@ void DiagnoseUnused(Sema &S, const Expr *E, std::optional<unsigned> DiagID) {
     if (isa<CXXTemporaryObjectExpr>(E))
       return;
     if (const CXXConstructExpr *CE = dyn_cast<CXXConstructExpr>(E))
-      if (const CXXRecordDecl *RD = CE->getType()->getAsCXXRecordDecl())
-        if (!RD->getAttr<WarnUnusedAttr>())
-          return;
+      if (const CXXRecordDecl *RD = CE->getType()->getAsCXXRecordDecl(); RD && (!RD->getAttr<WarnUnusedAttr>()))
+        return;
   }
 
   if (NoDiscardOnly)
@@ -708,12 +705,12 @@ bool Sema::checkMustTailAttr(const Stmt *St, const Attr &MTA) {
     return false;
   }
 
-  if (const auto *EWC = dyn_cast<ExprWithCleanups>(E)) {
-    if (EWC->cleanupsHaveSideEffects()) {
+  if (const auto *EWC = dyn_cast<ExprWithCleanups>(E); EWC && (EWC->cleanupsHaveSideEffects())) 
+    {
       Diag(St->getBeginLoc(), diag::err_musttail_needs_trivial_args) << &MTA;
       return false;
     }
-  }
+  
 
   // We need to determine the full function type (including "this" type, if any)
   // for both caller and callee.
@@ -2091,9 +2088,8 @@ namespace {
   // variables Increment and DRE.
   bool ProcessIterationStmt(Sema &S, Stmt* Statement, bool &Increment,
                             DeclRefExpr *&DRE) {
-    if (auto Cleanups = dyn_cast<ExprWithCleanups>(Statement))
-      if (!Cleanups->cleanupsHaveSideEffects())
-        Statement = Cleanups->getSubExpr();
+    if (auto Cleanups = dyn_cast<ExprWithCleanups>(Statement); Cleanups && (!Cleanups->cleanupsHaveSideEffects()))
+      Statement = Cleanups->getSubExpr();
 
     if (UnaryOperator *UO = dyn_cast<UnaryOperator>(Statement)) {
       switch (UO->getOpcode()) {
@@ -2296,7 +2292,7 @@ StmtResult Sema::ActOnForStmt(SourceLocation ForLoc, SourceLocation LParenLoc,
                  getLangOpts().C23
                      ? diag::warn_c17_non_local_variable_decl_in_for
                      : diag::ext_c23_non_local_variable_decl_in_for);
-        } else if (!NonVarSeen) {
+        } else if ((!NonVarSeen) && (!isa<StaticAssertDecl>(DI))) 
           // Keep track of the first non-variable declaration we saw so that
           // we can diagnose if we don't see any variable declarations. This
           // covers a case like declaring a typedef, function, or structure
@@ -2304,9 +2300,8 @@ StmtResult Sema::ActOnForStmt(SourceLocation ForLoc, SourceLocation LParenLoc,
           //
           // Note, _Static_assert is acceptable because it does not declare an
           // identifier at all, so "for object having" does not apply.
-          if (!isa<StaticAssertDecl>(DI))
-            NonVarSeen = DI;
-        }
+          NonVarSeen = DI;
+        
       }
       // Diagnose if we saw a non-variable declaration but no variable
       // declarations.
@@ -2488,12 +2483,12 @@ StmtResult Sema::ActOnCXXForRangeStmt(
 
   // Build the coroutine state immediately and not later during template
   // instantiation
-  if (!CoawaitLoc.isInvalid()) {
-    if (!ActOnCoroutineBodyStart(S, CoawaitLoc, "co_await")) {
+  if ((!CoawaitLoc.isInvalid()) && (!ActOnCoroutineBodyStart(S, CoawaitLoc, "co_await"))) 
+    {
       ActOnInitializerError(LoopVar);
       return StmtError();
     }
-  }
+  
 
   // Build  auto && __range = range-init
   // Divide by 2, since the variables are in the inner scope (loop body).
@@ -3063,9 +3058,8 @@ static void DiagnoseForRangeReferenceVariableCopies(Sema &SemaRef,
 
   QualType VariableType = VD->getType();
 
-  if (auto Cleanups = dyn_cast<ExprWithCleanups>(InitExpr))
-    if (!Cleanups->cleanupsHaveSideEffects())
-      InitExpr = Cleanups->getSubExpr();
+  if (auto Cleanups = dyn_cast<ExprWithCleanups>(InitExpr); Cleanups && (!Cleanups->cleanupsHaveSideEffects()))
+    InitExpr = Cleanups->getSubExpr();
 
   const MaterializeTemporaryExpr *MTE =
       dyn_cast<MaterializeTemporaryExpr>(InitExpr);
@@ -3808,9 +3802,8 @@ bool LocalTypedefNameReferencer::VisitRecordType(RecordType *RT) {
       R->isDependentType())
     return true;
   for (auto *TmpD : R->decls())
-    if (auto *T = dyn_cast<TypedefNameDecl>(TmpD))
-      if (T->getAccess() != AS_private || R->hasFriends())
-        S.MarkAnyDeclReferenced(T->getLocation(), T, /*OdrUse=*/false);
+    if (auto *T = dyn_cast<TypedefNameDecl>(TmpD); T && (T->getAccess() != AS_private || R->hasFriends()))
+      S.MarkAnyDeclReferenced(T->getLocation(), T, /*OdrUse=*/false);
   return true;
 }
 }
@@ -4040,15 +4033,13 @@ StmtResult Sema::BuildReturnStmt(SourceLocation ReturnLoc, Expr *RetValExp,
       Attrs = &FD->getAttrs();
     if (FD->isNoReturn() && !getCurFunction()->isCoroutine())
       Diag(ReturnLoc, diag::warn_noreturn_function_has_return_expr) << FD;
-    if (FD->isMain() && RetValExp)
-      if (isa<CXXBoolLiteralExpr>(RetValExp))
-        Diag(ReturnLoc, diag::warn_main_returns_bool_literal)
+    if ((FD->isMain() && RetValExp) && (isa<CXXBoolLiteralExpr>(RetValExp)))
+      Diag(ReturnLoc, diag::warn_main_returns_bool_literal)
             << RetValExp->getSourceRange();
     if (FD->hasAttr<CmseNSEntryAttr>() && RetValExp) {
-      if (const auto *RT = dyn_cast<RecordType>(FnRetType.getCanonicalType())) {
-        if (RT->getDecl()->isOrContainsUnion())
-          Diag(RetValExp->getBeginLoc(), diag::warn_cmse_nonsecure_union) << 1;
-      }
+      if (const auto *RT = dyn_cast<RecordType>(FnRetType.getCanonicalType()); RT && (RT->getDecl()->isOrContainsUnion())) 
+        Diag(RetValExp->getBeginLoc(), diag::warn_cmse_nonsecure_union) << 1;
+      
     }
   } else if (ObjCMethodDecl *MD = getCurMethodDecl()) {
     FnRetType = MD->getReturnType();
@@ -4393,7 +4384,8 @@ public:
       QualType Check = S->getType().getCanonicalType();
       const auto &M = TypesToCheck;
       auto I = M.find(Check);
-      if (I != M.end()) {
+      if ((I != M.end()) && (I->second->getCaughtType()->isPointerType() ==
+                TestAgainstType->isPointerType())) 
         // We're pretty sure we found what we need to find. However, we still
         // need to make sure that we properly compare for pointers and
         // references, to handle cases like:
@@ -4404,13 +4396,12 @@ public:
         //
         // where there is a qualification mismatch that disqualifies this
         // handler as a potential problem.
-        if (I->second->getCaughtType()->isPointerType() ==
-                TestAgainstType->isPointerType()) {
+        {
           FoundHandler = I->second;
           FoundHandlerType = Check;
           return true;
         }
-      }
+      
     }
     return false;
   }
@@ -4550,15 +4541,15 @@ StmtResult Sema::ActOnSEHTryBlock(bool IsCXXTry, SourceLocation TryLoc,
 
   // SEH __try is incompatible with C++ try. Borland appears to support this,
   // however.
-  if (!getLangOpts().Borland) {
-    if (FSI->FirstCXXOrObjCTryLoc.isValid()) {
+  if ((!getLangOpts().Borland) && (FSI->FirstCXXOrObjCTryLoc.isValid())) 
+    {
       Diag(TryLoc, diag::err_mixing_cxx_try_seh_try) << FSI->FirstTryType;
       Diag(FSI->FirstCXXOrObjCTryLoc, diag::note_conflicting_try_here)
           << (FSI->FirstTryType == sema::FunctionScopeInfo::TryLocIsCXX
                   ? "'try'"
                   : "'@try'");
     }
-  }
+  
 
   FSI->setHasSEHTry(TryLoc);
 

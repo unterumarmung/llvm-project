@@ -53,7 +53,7 @@ bool Parser::isCXXDeclarationStatement(
                   /*Unqualified=*/SS.isEmpty(), isDeductionGuide,
                   /*IsFriend=*/DeclSpec::FriendSpecified::No))
             return true;
-        } else if (SS.isNotEmpty()) {
+        } else if ((SS.isNotEmpty()) && (NextToken().is(tok::identifier))) 
           // If the scope is not empty, it could alternatively be something like
           // a typedef or using declaration. That declaration might be private
           // in the global context, which would be diagnosed by calling into
@@ -62,9 +62,8 @@ bool Parser::isCXXDeclarationStatement(
           // token is also an identifier and assume a declaration.
           // We cannot check if the scopes match because the declarations could
           // involve namespaces and friend declarations.
-          if (NextToken().is(tok::identifier))
-            return true;
-        }
+          return true;
+        
         break;
       }
       case tok::kw_operator:
@@ -1380,13 +1379,12 @@ Parser::isCXXDeclarationSpecifier(ImplicitTypenameContext AllowImplicitTypename,
             // In MS mode, if InvalidAsDeclSpec is not provided, and the tokens
             // are or the form *) or &) *> or &> &&>, this can't be an expression.
             // The typename must be missing.
-            if (getLangOpts().MSVCCompat) {
-              if (((Tok.is(tok::amp) || Tok.is(tok::star)) &&
+            if ((getLangOpts().MSVCCompat) && (((Tok.is(tok::amp) || Tok.is(tok::star)) &&
                    (NextToken().is(tok::r_paren) ||
                     NextToken().is(tok::greater))) ||
-                  (Tok.is(tok::ampamp) && NextToken().is(tok::greater)))
-                return TPResult::True;
-            }
+                  (Tok.is(tok::ampamp) && NextToken().is(tok::greater)))) 
+              return TPResult::True;
+            
           }
         } else {
           // Try to resolve the name. If it doesn't exist, assume it was
@@ -1820,12 +1818,11 @@ Parser::TPResult Parser::TryParseParameterDeclarationClause(
     if (VersusTemplateArgument)
       return Tok.is(tok::equal) ? TPResult::True : TPResult::False;
 
-    if (Tok.is(tok::equal)) {
+    if ((Tok.is(tok::equal)) && (!SkipUntil(tok::comma, tok::r_paren, StopAtSemi | StopBeforeMatch))) 
       // '=' assignment-expression
       // Parse through assignment-expression.
-      if (!SkipUntil(tok::comma, tok::r_paren, StopAtSemi | StopBeforeMatch))
-        return TPResult::Error;
-    }
+      return TPResult::Error;
+    
 
     if (Tok.is(tok::ellipsis)) {
       ConsumeToken();

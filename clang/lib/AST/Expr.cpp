@@ -47,12 +47,12 @@ const Expr *Expr::getBestDynamicClassTypeExpr() const {
     E = E->IgnoreParenBaseCasts();
 
     // Follow the RHS of a comma operator.
-    if (auto *BO = dyn_cast<BinaryOperator>(E)) {
-      if (BO->getOpcode() == BO_Comma) {
+    if (auto *BO = dyn_cast<BinaryOperator>(E); BO && (BO->getOpcode() == BO_Comma)) 
+      {
         E = BO->getRHS();
         continue;
       }
-    }
+    
 
     // Step into initializer for materialized temporaries.
     if (auto *MTE = dyn_cast<MaterializeTemporaryExpr>(E)) {
@@ -105,13 +105,13 @@ const Expr *Expr::skipRValueSubobjectAdjustments(
     } else if (const auto *ME = dyn_cast<MemberExpr>(E)) {
       if (!ME->isArrow()) {
         assert(ME->getBase()->getType()->getAsRecordDecl());
-        if (const auto *Field = dyn_cast<FieldDecl>(ME->getMemberDecl())) {
-          if (!Field->isBitField() && !Field->getType()->isReferenceType()) {
+        if (const auto *Field = dyn_cast<FieldDecl>(ME->getMemberDecl()); Field && (!Field->isBitField() && !Field->getType()->isReferenceType())) 
+          {
             E = ME->getBase();
             Adjustments.push_back(SubobjectAdjustment(Field));
             continue;
           }
-        }
+        
       }
     } else if (const auto *BO = dyn_cast<BinaryOperator>(E)) {
       if (BO->getOpcode() == BO_PtrMemD) {
@@ -200,10 +200,9 @@ bool Expr::isKnownToHaveBooleanValue(bool Semantic) const {
   if (const auto *OVE = dyn_cast<OpaqueValueExpr>(E))
     return OVE->getSourceExpr()->isKnownToHaveBooleanValue(Semantic);
 
-  if (const FieldDecl *FD = E->getSourceBitField())
-    if (!Semantic && FD->getType()->isUnsignedIntegerType() &&
-        !FD->getBitWidth()->isValueDependent() && FD->getBitWidthValue() == 1)
-      return true;
+  if (const FieldDecl *FD = E->getSourceBitField(); FD && (!Semantic && FD->getType()->isUnsignedIntegerType() &&
+        !FD->getBitWidth()->isValueDependent() && FD->getBitWidthValue() == 1))
+    return true;
 
   return false;
 }
@@ -1573,13 +1572,13 @@ Decl *Expr::getReferencedDeclOfCallee() {
         CEE = BO->getRHS()->IgnoreParenImpCasts();
         continue;
       }
-    } else if (auto *UO = dyn_cast<UnaryOperator>(CEE)) {
-      if (UO->getOpcode() == UO_Deref || UO->getOpcode() == UO_AddrOf ||
-          UO->getOpcode() == UO_Plus) {
+    } else if (auto *UO = dyn_cast<UnaryOperator>(CEE); UO && (UO->getOpcode() == UO_Deref || UO->getOpcode() == UO_AddrOf ||
+          UO->getOpcode() == UO_Plus)) 
+      {
         CEE = UO->getSubExpr()->IgnoreParenImpCasts();
         continue;
       }
-    }
+    
     break;
   }
 
@@ -2591,9 +2590,8 @@ bool Expr::isReadIfDiscardedInCPlusPlus11() const {
     return true;
 
   //   - indirection (5.3.1),
-  if (auto *UO = dyn_cast<UnaryOperator>(E))
-    if (UO->getOpcode() == UO_Deref)
-      return true;
+  if (auto *UO = dyn_cast<UnaryOperator>(E); UO && (UO->getOpcode() == UO_Deref))
+    return true;
 
   if (auto *BO = dyn_cast<BinaryOperator>(E)) {
     //   - pointer-to-member operation (5.5),
@@ -2621,10 +2619,9 @@ bool Expr::isReadIfDiscardedInCPlusPlus11() const {
   // Objective-C++ extensions to the rule.
   if (isa<ObjCIvarRefExpr>(E))
     return true;
-  if (const auto *POE = dyn_cast<PseudoObjectExpr>(E)) {
-    if (isa<ObjCPropertyRefExpr, ObjCSubscriptRefExpr>(POE->getSyntacticForm()))
-      return true;
-  }
+  if (const auto *POE = dyn_cast<PseudoObjectExpr>(E); POE && (isa<ObjCPropertyRefExpr, ObjCSubscriptRefExpr>(POE->getSyntacticForm()))) 
+    return true;
+  
 
   return false;
 }
@@ -2707,9 +2704,8 @@ bool Expr::isUnusedResultAWarning(const Expr *&WarnE, SourceLocation &Loc,
         // ((foo = <blah>), 0) is an idiom for hiding the result (and
         // lvalue-ness) of an assignment written in a macro.
         if (IntegerLiteral *IE =
-              dyn_cast<IntegerLiteral>(BO->getRHS()->IgnoreParens()))
-          if (IE->getValue() == 0)
-            return false;
+              dyn_cast<IntegerLiteral>(BO->getRHS()->IgnoreParens()); IE && (IE->getValue() == 0))
+          return false;
         return BO->getRHS()->isUnusedResultAWarning(WarnE, Loc, R1, R2, Ctx);
       // Consider '||', '&&' to have side effects if the LHS or RHS does.
       case BO_LAnd:
@@ -2879,12 +2875,10 @@ bool Expr::isUnusedResultAWarning(const Expr *&WarnE, SourceLocation &Loc,
     }
 
     // For others, we should never warn.
-    if (auto *BO = dyn_cast<BinaryOperator>(POE->getSyntacticForm()))
-      if (BO->isAssignmentOp())
-        return false;
-    if (auto *UO = dyn_cast<UnaryOperator>(POE->getSyntacticForm()))
-      if (UO->isIncrementDecrementOp())
-        return false;
+    if (auto *BO = dyn_cast<BinaryOperator>(POE->getSyntacticForm()); BO && (BO->isAssignmentOp()))
+      return false;
+    if (auto *UO = dyn_cast<UnaryOperator>(POE->getSyntacticForm()); UO && (UO->isIncrementDecrementOp()))
+      return false;
 
     // Otherwise, warn if the result expression would warn.
     const Expr *Result = POE->getResultExpr();
@@ -2929,9 +2923,8 @@ bool Expr::isUnusedResultAWarning(const Expr *&WarnE, SourceLocation &Loc,
         // Suppress the "unused value" warning for idiomatic usage of
         // '(void)var;' used to suppress "unused variable" warnings.
         if (auto *DRE = dyn_cast<DeclRefExpr>(SubE))
-          if (auto *VD = dyn_cast<VarDecl>(DRE->getDecl()))
-            if (!VD->isExternallyVisible())
-              return false;
+          if (auto *VD = dyn_cast<VarDecl>(DRE->getDecl()); VD && (!VD->isExternallyVisible()))
+            return false;
 
         // The lvalue-to-rvalue conversion would have no effect for an array.
         // It's implausible that the programmer expected this to result in a
@@ -3102,10 +3095,9 @@ Expr *Expr::IgnoreParenCasts() {
 }
 
 Expr *Expr::IgnoreConversionOperatorSingleStep() {
-  if (auto *MCE = dyn_cast<CXXMemberCallExpr>(this)) {
-    if (isa_and_nonnull<CXXConversionDecl>(MCE->getMethodDecl()))
-      return MCE->getImplicitObjectArgument();
-  }
+  if (auto *MCE = dyn_cast<CXXMemberCallExpr>(this); MCE && (isa_and_nonnull<CXXConversionDecl>(MCE->getMethodDecl()))) 
+    return MCE->getImplicitObjectArgument();
+  
   return this;
 }
 
@@ -3170,11 +3162,11 @@ Expr *Expr::IgnoreUnlessSpelledInSource() {
       if (ExprNode->getSourceRange() == E->getSourceRange()) {
         return ExprNode;
       }
-      if (auto *PE = dyn_cast<ParenExpr>(ExprNode)) {
-        if (PE->getSourceRange() == C->getSourceRange()) {
+      if (auto *PE = dyn_cast<ParenExpr>(ExprNode); PE && (PE->getSourceRange() == C->getSourceRange())) 
+        {
           return cast<Expr>(PE);
         }
-      }
+      
       ExprNode = ExprNode->IgnoreParenImpCasts();
       if (ExprNode->getSourceRange() == E->getSourceRange())
         return ExprNode;
@@ -3262,11 +3254,10 @@ bool Expr::isTemporaryObject(ASTContext &C, const CXXRecordDecl *TempTy) const {
   const Expr *E = skipTemporaryBindingsNoOpCastsAndParens(this);
 
   // Temporaries are by definition pr-values of class type.
-  if (!E->Classify(C).isPRValue()) {
+  if ((!E->Classify(C).isPRValue()) && (!isa<ObjCPropertyRefExpr>(E))) 
     // In this context, property reference is a message call and is pr-value.
-    if (!isa<ObjCPropertyRefExpr>(E))
-      return false;
-  }
+    return false;
+  
 
   // Black-list a few cases which yield pr-values of class type that don't
   // refer to temporaries of that type:
@@ -3286,9 +3277,8 @@ bool Expr::isTemporaryObject(ASTContext &C, const CXXRecordDecl *TempTy) const {
   if (isa<MemberExpr>(E))
     return false;
 
-  if (const auto *BO = dyn_cast<BinaryOperator>(E))
-    if (BO->isPtrMemOp())
-      return false;
+  if (const auto *BO = dyn_cast<BinaryOperator>(E); BO && (BO->isPtrMemOp()))
+    return false;
 
   // - opaque values (all)
   if (isa<OpaqueValueExpr>(E))
@@ -3307,22 +3297,22 @@ bool Expr::isImplicitCXXThis() const {
       continue;
     }
 
-    if (const ImplicitCastExpr *ICE = dyn_cast<ImplicitCastExpr>(E)) {
-      if (ICE->getCastKind() == CK_NoOp ||
+    if (const ImplicitCastExpr *ICE = dyn_cast<ImplicitCastExpr>(E); ICE && (ICE->getCastKind() == CK_NoOp ||
           ICE->getCastKind() == CK_LValueToRValue ||
           ICE->getCastKind() == CK_DerivedToBase ||
-          ICE->getCastKind() == CK_UncheckedDerivedToBase) {
+          ICE->getCastKind() == CK_UncheckedDerivedToBase)) 
+      {
         E = ICE->getSubExpr();
         continue;
       }
-    }
+    
 
-    if (const UnaryOperator* UnOp = dyn_cast<UnaryOperator>(E)) {
-      if (UnOp->getOpcode() == UO_Extension) {
+    if (const UnaryOperator* UnOp = dyn_cast<UnaryOperator>(E); UnOp && (UnOp->getOpcode() == UO_Extension)) 
+      {
         E = UnOp->getSubExpr();
         continue;
       }
-    }
+    
 
     if (const MaterializeTemporaryExpr *M
                                       = dyn_cast<MaterializeTemporaryExpr>(E)) {
@@ -3668,12 +3658,11 @@ namespace {
 
       // We assume the caller checks subexpressions (eg, the initializer, VLA
       // bounds) for side-effects on our behalf.
-      if (auto *VD = dyn_cast<VarDecl>(D)) {
+      if (auto *VD = dyn_cast<VarDecl>(D); VD && (IncludePossibleEffects && VD->isThisDeclarationADefinition() &&
+            VD->needsDestruction(Context))) 
         // Registering a destructor is a side-effect.
-        if (IncludePossibleEffects && VD->isThisDeclarationADefinition() &&
-            VD->needsDestruction(Context))
-          HasSideEffects = true;
-      }
+        HasSideEffects = true;
+      
     }
 
     void VisitDeclStmt(const DeclStmt *DS) {
@@ -3810,9 +3799,8 @@ bool Expr::HasSideEffects(const ASTContext &Ctx,
   }
 
   case ExprWithCleanupsClass:
-    if (IncludePossibleEffects)
-      if (cast<ExprWithCleanups>(this)->cleanupsHaveSideEffects())
-        return true;
+    if ((IncludePossibleEffects) && (cast<ExprWithCleanups>(this)->cleanupsHaveSideEffects()))
+      return true;
     break;
 
   case ParenExprClass:
@@ -3856,9 +3844,8 @@ bool Expr::HasSideEffects(const ASTContext &Ctx,
 
   case InitListExprClass:
     // FIXME: The children for an InitListExpr doesn't include the array filler.
-    if (const Expr *E = cast<InitListExpr>(this)->getArrayFiller())
-      if (E->HasSideEffects(Ctx, IncludePossibleEffects))
-        return true;
+    if (const Expr *E = cast<InitListExpr>(this)->getArrayFiller(); E && (E->HasSideEffects(Ctx, IncludePossibleEffects)))
+      return true;
     break;
 
   case GenericSelectionExprClass:
@@ -4021,13 +4008,13 @@ namespace {
 
     void VisitCallExpr(const CallExpr *E) {
       if (const CXXMethodDecl *Method
-          = dyn_cast_or_null<const CXXMethodDecl>(E->getCalleeDecl())) {
-        if (Method->isTrivial()) {
+          = dyn_cast_or_null<const CXXMethodDecl>(E->getCalleeDecl()); Method && (Method->isTrivial())) 
+        {
           // Recurse to children of the call.
           Inherited::VisitStmt(E);
           return;
         }
-      }
+      
 
       NonTrivial = true;
     }
@@ -4046,12 +4033,12 @@ namespace {
       // Destructor of the temporary might be null if destructor declaration
       // is not valid.
       if (const CXXDestructorDecl *DtorDecl =
-              E->getTemporary()->getDestructor()) {
-        if (DtorDecl->isTrivial()) {
+              E->getTemporary()->getDestructor(); DtorDecl && (DtorDecl->isTrivial())) 
+        {
           Inherited::VisitStmt(E);
           return;
         }
-      }
+      
 
       NonTrivial = true;
     }
@@ -4155,10 +4142,9 @@ Expr::isNullPointerConstant(ASTContext &Ctx,
   if (getType()->isNullPtrType())
     return NPCK_CXX11_nullptr;
 
-  if (const RecordType *UT = getType()->getAsUnionType())
-    if (!Ctx.getLangOpts().CPlusPlus11 && UT &&
-        UT->getDecl()->getMostRecentDecl()->hasAttr<TransparentUnionAttr>())
-      if (const CompoundLiteralExpr *CLE = dyn_cast<CompoundLiteralExpr>(this)){
+  if (const RecordType *UT = getType()->getAsUnionType(); UT && (!Ctx.getLangOpts().CPlusPlus11 && UT &&
+        UT->getDecl()->getMostRecentDecl()->hasAttr<TransparentUnionAttr>()))
+    if (const CompoundLiteralExpr *CLE = dyn_cast<CompoundLiteralExpr>(this)){
         const Expr *InitExpr = CLE->getInitializer();
         if (const InitListExpr *ILE = dyn_cast<InitListExpr>(InitExpr))
           return ILE->getInit(0)->isNullPointerConstant(Ctx, NPC);
@@ -4200,12 +4186,12 @@ const ObjCPropertyRefExpr *Expr::getObjCProperty() const {
     assert((E->isLValue() && E->getObjectKind() == OK_ObjCProperty) &&
            "expression is not a property reference");
     E = E->IgnoreParenCasts();
-    if (const BinaryOperator *BO = dyn_cast<BinaryOperator>(E)) {
-      if (BO->getOpcode() == BO_Comma) {
+    if (const BinaryOperator *BO = dyn_cast<BinaryOperator>(E); BO && (BO->getOpcode() == BO_Comma)) 
+      {
         E = BO->getRHS();
         continue;
       }
-    }
+    
 
     break;
   }
@@ -4243,9 +4229,8 @@ FieldDecl *Expr::getSourceBitField() {
   }
 
   if (MemberExpr *MemRef = dyn_cast<MemberExpr>(E))
-    if (FieldDecl *Field = dyn_cast<FieldDecl>(MemRef->getMemberDecl()))
-      if (Field->isBitField())
-        return Field;
+    if (FieldDecl *Field = dyn_cast<FieldDecl>(MemRef->getMemberDecl()); Field && (Field->isBitField()))
+      return Field;
 
   if (ObjCIvarRefExpr *IvarRef = dyn_cast<ObjCIvarRefExpr>(E)) {
     FieldDecl *Ivar = IvarRef->getDecl();
@@ -4254,9 +4239,8 @@ FieldDecl *Expr::getSourceBitField() {
   }
 
   if (DeclRefExpr *DeclRef = dyn_cast<DeclRefExpr>(E)) {
-    if (FieldDecl *Field = dyn_cast<FieldDecl>(DeclRef->getDecl()))
-      if (Field->isBitField())
-        return Field;
+    if (FieldDecl *Field = dyn_cast<FieldDecl>(DeclRef->getDecl()); Field && (Field->isBitField()))
+      return Field;
 
     if (BindingDecl *BD = dyn_cast<BindingDecl>(DeclRef->getDecl()))
       if (Expr *E = BD->getBinding())
@@ -4271,9 +4255,8 @@ FieldDecl *Expr::getSourceBitField() {
       return BinOp->getRHS()->getSourceBitField();
   }
 
-  if (UnaryOperator *UnOp = dyn_cast<UnaryOperator>(E))
-    if (UnOp->isPrefix() && UnOp->isIncrementDecrementOp())
-      return UnOp->getSubExpr()->getSourceBitField();
+  if (UnaryOperator *UnOp = dyn_cast<UnaryOperator>(E); UnOp && (UnOp->isPrefix() && UnOp->isIncrementDecrementOp()))
+    return UnOp->getSubExpr()->getSourceBitField();
 
   return nullptr;
 }
@@ -4314,10 +4297,9 @@ bool Expr::refersToGlobalRegisterVar() const {
   const Expr *E = this->IgnoreParenImpCasts();
 
   if (const DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(E))
-    if (const auto *VD = dyn_cast<VarDecl>(DRE->getDecl()))
-      if (VD->getStorageClass() == SC_Register &&
-          VD->hasAttr<AsmLabelAttr>() && !VD->isLocalVarDecl())
-        return true;
+    if (const auto *VD = dyn_cast<VarDecl>(DRE->getDecl()); VD && (VD->getStorageClass() == SC_Register &&
+          VD->hasAttr<AsmLabelAttr>() && !VD->isLocalVarDecl()))
+      return true;
 
   return false;
 }
@@ -4409,9 +4391,8 @@ bool Expr::isSameComparisonOperand(const Expr* E1, const Expr* E2) {
         const auto *ME2 = cast<MemberExpr>(E2);
         if (!declaresSameEntity(ME1->getMemberDecl(), ME2->getMemberDecl()))
           return false;
-        if (const auto *D = dyn_cast<VarDecl>(ME1->getMemberDecl()))
-          if (D->isStaticDataMember())
-            return true;
+        if (const auto *D = dyn_cast<VarDecl>(ME1->getMemberDecl()); D && (D->isStaticDataMember()))
+          return true;
         E1 = ME1->getBase()->IgnoreParenImpCasts();
         E2 = ME2->getBase()->IgnoreParenImpCasts();
       }

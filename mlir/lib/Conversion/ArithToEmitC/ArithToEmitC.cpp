@@ -78,13 +78,13 @@ Type adaptIntegralTypeSignedness(Type ty, bool needsUnsigned) {
       return IntegerType::get(ty.getContext(), ty.getIntOrFloatBitWidth(),
                               signedness);
     }
-  } else if (emitc::isPointerWideType(ty)) {
-    if (isa<emitc::SizeTType>(ty) != needsUnsigned) {
+  } else if ((emitc::isPointerWideType(ty)) && (isa<emitc::SizeTType>(ty) != needsUnsigned)) 
+    {
       if (needsUnsigned)
         return emitc::SizeTType::get(ty.getContext());
       return emitc::PtrDiffTType::get(ty.getContext());
     }
-  }
+  
   return ty;
 }
 

@@ -249,12 +249,12 @@ class ProfileAnnotatorImpl final {
       bool HasAWayOut = false;
       for (auto I = 0U; I < BB->getTerminator()->getNumSuccessors(); ++I) {
         const auto *Succ = BB->getTerminator()->getSuccessor(I);
-        if (!shouldExcludeEdge(*BB, *Succ)) {
-          if (BBInfo.getEdgeCount(I) > 0) {
+        if ((!shouldExcludeEdge(*BB, *Succ)) && (BBInfo.getEdgeCount(I) > 0)) 
+          {
             HasAWayOut = true;
             Worklist.push_back(Succ);
           }
-        }
+        
       }
       if (!HasAWayOut)
         return false;
@@ -608,9 +608,8 @@ InstrProfCallsite *CtxProfAnalysis::getCallsiteInstrumentation(CallBase &CB) {
 
 InstrProfIncrementInst *CtxProfAnalysis::getBBInstrumentation(BasicBlock &BB) {
   for (auto &I : BB)
-    if (auto *Incr = dyn_cast<InstrProfIncrementInst>(&I))
-      if (!isa<InstrProfIncrementInstStep>(&I))
-        return Incr;
+    if (auto *Incr = dyn_cast<InstrProfIncrementInst>(&I); Incr && (!isa<InstrProfIncrementInstStep>(&I)))
+      return Incr;
   return nullptr;
 }
 
@@ -750,9 +749,8 @@ void CtxProfAnalysis::collectIndirectCallPromotionList(
           return;
         for (const auto &[Guid, _] : Targets->second)
           if (auto Name = Profile.getFunctionName(Guid); !Name.empty())
-            if (auto *Target = M.getFunction(Name))
-              if (Target->hasFnAttribute(Attribute::AlwaysInline))
-                Candidates.insert({&IC, Target});
+            if (auto *Target = M.getFunction(Name); Target && (Target->hasFnAttribute(Attribute::AlwaysInline)))
+              Candidates.insert({&IC, Target});
       },
       IC.getCaller());
 }

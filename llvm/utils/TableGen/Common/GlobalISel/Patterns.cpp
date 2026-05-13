@@ -656,10 +656,9 @@ bool PatFrag::checkSemantics() {
   for (auto &Alt : Alts) {
     OperandTypeChecker OTC(Def.getLoc());
     for (auto &Pat : Alt.Pats) {
-      if (auto *IP = dyn_cast<InstructionPattern>(Pat.get())) {
-        if (!OTC.check(*IP, CheckTypeOf))
-          return false;
-      }
+      if (auto *IP = dyn_cast<InstructionPattern>(Pat.get()); IP && (!OTC.check(*IP, CheckTypeOf))) 
+        return false;
+      
     }
     OTC.propagateTypes();
   }

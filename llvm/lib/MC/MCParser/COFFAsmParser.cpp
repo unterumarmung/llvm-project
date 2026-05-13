@@ -634,9 +634,8 @@ bool COFFAsmParser::parseCOMDATType(COFF::COMDATType &Type) {
 ///  ::= .linkonce [ identifier ]
 bool COFFAsmParser::parseDirectiveLinkOnce(StringRef, SMLoc Loc) {
   COFF::COMDATType Type = COFF::IMAGE_COMDAT_SELECT_ANY;
-  if (getLexer().is(AsmToken::Identifier))
-    if (parseCOMDATType(Type))
-      return true;
+  if ((getLexer().is(AsmToken::Identifier)) && (parseCOMDATType(Type)))
+    return true;
 
   const MCSectionCOFF *Current =
       static_cast<const MCSectionCOFF *>(getStreamer().getCurrentSectionOnly());

@@ -284,9 +284,8 @@ bool SpeculativeExecutionPass::considerHoistingFromTo(
   SmallPtrSet<const Instruction *, 8> NotHoisted;
   auto HasNoUnhoistedInstr = [&NotHoisted](auto Values) {
     for (const Value *V : Values) {
-      if (const auto *I = dyn_cast_or_null<Instruction>(V))
-        if (NotHoisted.contains(I))
-          return false;
+      if (const auto *I = dyn_cast_or_null<Instruction>(V); I && (NotHoisted.contains(I)))
+        return false;
     }
     return true;
   };

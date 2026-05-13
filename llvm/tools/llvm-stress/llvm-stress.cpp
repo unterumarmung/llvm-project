@@ -616,9 +616,8 @@ struct SelectModifier: public Modifier {
 
     // If the value type is a vector, and we allow vector select, then in 50%
     // of the cases generate a vector select.
-    if (auto *VTy = dyn_cast<VectorType>(Val0->getType()))
-      if (getRandom() & 1)
-        CondTy = VectorType::get(CondTy, VTy->getElementCount());
+    if (auto *VTy = dyn_cast<VectorType>(Val0->getType()); VTy && (getRandom() & 1))
+      CondTy = VectorType::get(CondTy, VTy->getElementCount());
 
     Value *Cond = getRandomValue(CondTy);
     Value *V = SelectInst::Create(Cond, Val0, Val1, "Sl",

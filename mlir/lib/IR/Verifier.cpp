@@ -220,9 +220,8 @@ LogicalResult OperationVerifier::verifyOnEntrance(Operation &op) {
              << "discardable attribute '" << attr.getName()
              << "' value from a different MLIRContext than this operation";
     // Check for any optional dialect specific attributes.
-    if (auto *dialect = attr.getNameDialect())
-      if (failed(dialect->verifyOperationAttribute(&op, attr)))
-        return failure();
+    if (auto *dialect = attr.getNameDialect(); dialect && (failed(dialect->verifyOperationAttribute(&op, attr))))
+      return failure();
   }
 
   // If we can get operation info for this, check the custom hook.
@@ -247,12 +246,11 @@ LogicalResult OperationVerifier::verifyOnEntrance(Operation &op) {
     // require the trait to be specified. This arbitrary limitation is
     // designed to limit the number of cases that have to be handled by
     // transforms and conversions.
-    if (op.isRegistered() && kind == RegionKind::Graph) {
+    if ((op.isRegistered() && kind == RegionKind::Graph) && (!region.empty() && !region.hasOneBlock())) 
       // Non-empty regions must contain a single basic block.
-      if (!region.empty() && !region.hasOneBlock())
-        return op.emitOpError("expects graph region #")
+      return op.emitOpError("expects graph region #")
                << i << " to have 0 or 1 blocks";
-    }
+    
 
     if (region.empty())
       continue;

@@ -1153,9 +1153,8 @@ bool EarlyCSE::isSameMemGeneration(unsigned EarlierGeneration,
 bool EarlyCSE::isOperatingOnInvariantMemAt(Instruction *I, unsigned GenAt) {
   // A location loaded from with an invariant_load is assumed to *never* change
   // within the visible scope of the compilation.
-  if (auto *LI = dyn_cast<LoadInst>(I))
-    if (LI->hasMetadata(LLVMContext::MD_invariant_load))
-      return true;
+  if (auto *LI = dyn_cast<LoadInst>(I); LI && (LI->hasMetadata(LLVMContext::MD_invariant_load)))
+    return true;
 
   auto MemLocOpt = MemoryLocation::getOrNone(I);
   if (!MemLocOpt)
@@ -1220,9 +1219,8 @@ bool EarlyCSE::handleBranchCondition(Instruction *CondInst,
     Value *LHS, *RHS;
     if (MatchBinOp(Curr, PropagateOpcode, LHS, RHS))
       for (auto *Op : { LHS, RHS })
-        if (Instruction *OPI = dyn_cast<Instruction>(Op))
-          if (SimpleValue::canHandle(OPI) && Visited.insert(OPI).second)
-            WorkList.push_back(OPI);
+        if (Instruction *OPI = dyn_cast<Instruction>(Op); OPI && (SimpleValue::canHandle(OPI) && Visited.insert(OPI).second))
+          WorkList.push_back(OPI);
   }
 
   return MadeChanges;
@@ -1285,11 +1283,10 @@ Value *EarlyCSE::getMatchingValue(LoadValue &InVal, ParseMemoryInst &MemInst,
   bool OtherNTI = isHandledNonTargetIntrinsic(Other);
   if (OtherNTI != MatchingNTI)
     return nullptr;
-  if (OtherNTI && MatchingNTI) {
-    if (!isNonTargetIntrinsicMatch(cast<IntrinsicInst>(InVal.DefInst),
-                                   cast<IntrinsicInst>(MemInst.get())))
-      return nullptr;
-  }
+  if ((OtherNTI && MatchingNTI) && (!isNonTargetIntrinsicMatch(cast<IntrinsicInst>(InVal.DefInst),
+                                   cast<IntrinsicInst>(MemInst.get())))) 
+    return nullptr;
+  
 
   if (!isOperatingOnInvariantMemAt(MemInst.get(), InVal.Generation) &&
       !isSameMemGeneration(InVal.Generation, CurrentGeneration, InVal.DefInst,
@@ -1302,17 +1299,16 @@ Value *EarlyCSE::getMatchingValue(LoadValue &InVal, ParseMemoryInst &MemInst,
 }
 
 static void combineIRFlags(Instruction &From, Value *To) {
-  if (auto *I = dyn_cast<Instruction>(To)) {
+  if (auto *I = dyn_cast<Instruction>(To); I && (isa<FPMathOperator>(I) ||
+        (I->hasPoisonGeneratingFlags() && !programUndefinedIfPoison(I)))) 
     // If I being poison triggers UB, there is no need to drop those
     // flags. Otherwise, only retain flags present on both I and Inst.
     // TODO: Currently some fast-math flags are not treated as
     // poison-generating even though they should. Until this is fixed,
     // always retain flags present on both I and Inst for floating point
     // instructions.
-    if (isa<FPMathOperator>(I) ||
-        (I->hasPoisonGeneratingFlags() && !programUndefinedIfPoison(I)))
-      I->andIRFlags(&From);
-  }
+    I->andIRFlags(&From);
+  
   if (isa<CallBase>(&From) && isa<CallBase>(To)) {
     // NB: Intersection of attrs between InVal.first and Inst is overly
     // conservative. Since we only CSE readonly functions that have the same
@@ -1481,8 +1477,8 @@ bool EarlyCSE::processNode(DomTreeNode *Node) {
 
     if (isGuard(&Inst)) {
       if (auto *CondI =
-              dyn_cast<Instruction>(cast<CallInst>(Inst).getArgOperand(0))) {
-        if (SimpleValue::canHandle(CondI)) {
+              dyn_cast<Instruction>(cast<CallInst>(Inst).getArgOperand(0)); CondI && (SimpleValue::canHandle(CondI))) 
+        {
           // Do we already know the actual value of this condition?
           if (auto *KnownCond = AvailableValues.lookup(CondI)) {
             // Is the condition known to be true?
@@ -1503,7 +1499,7 @@ bool EarlyCSE::processNode(DomTreeNode *Node) {
           // locations.
           AvailableValues.insert(CondI, ConstantInt::getTrue(BB->getContext()));
         }
-      }
+      
 
       // Guard intrinsics read all memory, but don't write any memory.
       // Accordingly, don't update the generation but consume the last store (to
@@ -1714,8 +1710,8 @@ bool EarlyCSE::processNode(DomTreeNode *Node) {
     // result, we don't need to consider it as writing to memory and don't need
     // to advance the generation.  We do need to prevent DSE across the fence,
     // but that's handled above.
-    if (auto *FI = dyn_cast<FenceInst>(&Inst))
-      if (FI->getOrdering() == AtomicOrdering::Release) {
+    if (auto *FI = dyn_cast<FenceInst>(&Inst); FI && (FI->getOrdering() == AtomicOrdering::Release))
+      {
         assert(Inst.mayReadFromMemory() && "relied on to prevent DSE above");
         continue;
       }
@@ -1755,8 +1751,8 @@ bool EarlyCSE::processNode(DomTreeNode *Node) {
       if (MemInst.isValid() && MemInst.isStore()) {
         // We do a trivial form of DSE if there are two stores to the same
         // location with no intervening loads.  Delete the earlier store.
-        if (LastStore) {
-          if (overridingStores(ParseMemoryInst(LastStore, TTI), MemInst)) {
+        if ((LastStore) && (overridingStores(ParseMemoryInst(LastStore, TTI), MemInst))) 
+          {
             LLVM_DEBUG(dbgs() << "EarlyCSE DEAD STORE: " << *LastStore
                               << "  due to: " << Inst << '\n');
             if (!DebugCounter::shouldExecute(CSECounter)) {
@@ -1771,7 +1767,7 @@ bool EarlyCSE::processNode(DomTreeNode *Node) {
             }
           }
           // fallthrough - we can exploit information about this store
-        }
+        
 
         // Okay, we just invalidated anything we knew about loaded values.  Try
         // to salvage *something* by remembering that the stored value is a live

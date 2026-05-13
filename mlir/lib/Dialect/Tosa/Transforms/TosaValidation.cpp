@@ -944,11 +944,11 @@ LogicalResult TosaValidation::applyLevelCheck(Operation *op) {
     return failure();
   }
 
-  if (isa<tosa::IfOp>(op) || isa<tosa::WhileOp>(op)) {
-    if (failed(levelCheckMaxNesting(op))) {
+  if ((isa<tosa::IfOp>(op) || isa<tosa::WhileOp>(op)) && (failed(levelCheckMaxNesting(op)))) 
+    {
       return failure();
     }
-  }
+  
 
   return success();
 }

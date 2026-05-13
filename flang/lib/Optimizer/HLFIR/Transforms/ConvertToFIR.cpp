@@ -405,7 +405,7 @@ public:
         }
       };
       hlfirBase = genHlfirBox();
-      if (!isOptional) {
+      if ((!isOptional) && (hlfirBase.getType() == declareOp.getOriginalBase().getType())) 
         // If the original base is a box too, we could as well
         // use the HLFIR box as the FIR base: otherwise, the two
         // boxes are "alive" at the same time, and the FIR box
@@ -413,9 +413,8 @@ public:
         // is used for accessing the bounds etc. Using the HLFIR box,
         // that holds the same base_addr at this point, makes
         // the representation a little bit more clear.
-        if (hlfirBase.getType() == declareOp.getOriginalBase().getType())
-          firBase = hlfirBase;
-      }
+        firBase = hlfirBase;
+      
     } else if (mlir::isa<fir::BoxCharType>(hlfirBaseType)) {
       assert(declareOp.getTypeparams().size() == 1 &&
              "must contain character length");

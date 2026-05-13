@@ -84,9 +84,8 @@ bool llvm::convertUsersOfConstantsToInstructions(ArrayRef<Constant *> Consts,
   SetVector<Instruction *> InstructionWorklist;
   for (Constant *C : ExpandableUsers)
     for (User *U : C->users())
-      if (auto *I = dyn_cast<Instruction>(U))
-        if (!RestrictToFunc || I->getFunction() == RestrictToFunc)
-          InstructionWorklist.insert(I);
+      if (auto *I = dyn_cast<Instruction>(U); I && (!RestrictToFunc || I->getFunction() == RestrictToFunc))
+        InstructionWorklist.insert(I);
 
   // Replace those expandable operands with instructions
   bool Changed = false;
@@ -106,8 +105,8 @@ bool llvm::convertUsersOfConstantsToInstructions(ArrayRef<Constant *> Consts,
         assert(BI != BB->end() && "Unexpected empty basic block");
       }
 
-      if (auto *C = dyn_cast<Constant>(U.get())) {
-        if (ExpandableUsers.contains(C)) {
+      if (auto *C = dyn_cast<Constant>(U.get()); C && (ExpandableUsers.contains(C))) 
+        {
           Changed = true;
           SmallVector<Instruction *, 4> &NewInsts =
               ConstantToInstructionMap[std::make_pair(C, BI->getParent())];
@@ -122,7 +121,7 @@ bool llvm::convertUsersOfConstantsToInstructions(ArrayRef<Constant *> Consts,
           InstructionWorklist.insert_range(NewInsts);
           U.set(NewInsts.back());
         }
-      }
+      
     }
   }
 

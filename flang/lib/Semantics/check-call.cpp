@@ -44,12 +44,12 @@ static void CheckImplicitInterfaceArg(evaluate::ActualArgument &arg,
     } else if (type->IsUnlimitedPolymorphic()) {
       messages.Say(
           "Unlimited polymorphic actual argument requires an explicit interface"_err_en_US);
-    } else if (const DerivedTypeSpec * derived{GetDerivedTypeSpec(type)}) {
-      if (!derived->parameters().empty()) {
+    } else if (const DerivedTypeSpec * derived{GetDerivedTypeSpec(type)}; derived && (!derived->parameters().empty())) 
+      {
         messages.Say(
             "Parameterized derived type actual argument requires an explicit interface"_err_en_US);
       }
-    }
+    
   }
   if (arg.isPercentVal() &&
       (!type || !type->IsLengthlessIntrinsicType() || arg.Rank() != 0)) {
@@ -835,16 +835,16 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
             dummyName);
         volatileOrAsyncNeedsTempDiagnosticIssued = true;
       }
-      if ((actualRank > 0 || actualIsAssumedRank) && !actualIsContiguous) {
-        if (dummyIsContiguous ||
+      if (((actualRank > 0 || actualIsAssumedRank) && !actualIsContiguous) && (dummyIsContiguous ||
             !(dummyIsAssumedShape || dummyIsAssumedRank ||
-                (actualIsPointer && dummyIsPointer))) { // F'2023 C1548 & C1549
+                (actualIsPointer && dummyIsPointer)))) 
+        { // F'2023 C1548 & C1549
           messages.Say(
               "ASYNCHRONOUS or VOLATILE actual argument that is not simply contiguous may not be associated with a contiguous ASYNCHRONOUS or VOLATILE %s"_err_en_US,
               dummyName);
           volatileOrAsyncNeedsTempDiagnosticIssued = true;
         }
-      }
+      
     } else if (!(dummyIsAssumedShape || dummyIsAssumedRank ||
                    (actualIsPointer && dummyIsPointer)) &&
         evaluate::IsArraySection(actual) && !actualIsContiguous &&
@@ -863,15 +863,15 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
   // more specific error message has already been issued. We might be able to
   // clean this up by switching the coding style of ActualArgNeedsCopy to be
   // more like WhyNotDefinable.
-  if (copyOutNeeded && !volatileOrAsyncNeedsTempDiagnosticIssued) {
-    if ((actualIsVolatile || actualIsAsynchronous) &&
-        (dummyIsVolatile || dummyIsAsynchronous)) {
+  if ((copyOutNeeded && !volatileOrAsyncNeedsTempDiagnosticIssued) && ((actualIsVolatile || actualIsAsynchronous) &&
+        (dummyIsVolatile || dummyIsAsynchronous))) 
+    {
       foldingContext.Warn(common::UsageWarning::VolatileOrAsynchronousTemporary,
           "The actual argument '%s' with %s attribute should not be associated with %s with %s attribute, because a temporary copy is required during the call"_warn_en_US,
           actual.AsFortran(), actualIsVolatile ? "VOLATILE" : "ASYNCHRONOUS",
           dummyName, dummyIsVolatile ? "VOLATILE" : "ASYNCHRONOUS");
     }
-  }
+  
   // If there are any cases where we don't need a copy and some other compiler
   // does, we issue a portability warning here.
   if (context.ShouldWarn(common::UsageWarning::Portability)) {
@@ -890,15 +890,15 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
           dummyIsAsynchronous ? "ASYNCHRONOUS" : "VOLATILE");
     }
     // Possibly an over-restriction of F'23 15.5.2.5 note 5
-    if (copyOutNeeded && !volatileOrAsyncNeedsTempDiagnosticIssued) {
-      if ((dummyIsVolatile && !actualIsVolatile && !actualIsAsynchronous) ||
-          (dummyIsAsynchronous && !actualIsVolatile && !actualIsAsynchronous)) {
+    if ((copyOutNeeded && !volatileOrAsyncNeedsTempDiagnosticIssued) && ((dummyIsVolatile && !actualIsVolatile && !actualIsAsynchronous) ||
+          (dummyIsAsynchronous && !actualIsVolatile && !actualIsAsynchronous))) 
+      {
         foldingContext.Warn(common::UsageWarning::Portability,
             "The actual argument '%s' should not be associated with %s with %s attribute, because a temporary copy is required during the call"_port_en_US,
             actual.AsFortran(), dummyName,
             dummyIsVolatile ? "VOLATILE" : "ASYNCHRONOUS");
       }
-    }
+    
   }
 
   // 15.5.2.6 -- dummy is ALLOCATABLE
@@ -1186,10 +1186,10 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
 
   // Emit an error message if an actual argument passed to a host intrinsic is
   // on the device.
-  if (intrinsic && !FindCUDADeviceContext(scope) &&
+  if ((intrinsic && !FindCUDADeviceContext(scope) &&
       !FindOpenACCConstructContaining(scope) &&
-      !HasOpenACCRoutineDirective(scope)) {
-    if (!cudaSkippedIntrinsics.contains(intrinsic->name)) {
+      !HasOpenACCRoutineDirective(scope)) && (!cudaSkippedIntrinsics.contains(intrinsic->name))) 
+    {
       std::optional<common::CUDADataAttr> actualDataAttr;
       if (const auto *actualObject{actualLastSymbol
                   ? actualLastSymbol->detailsIf<ObjectEntityDetails>()
@@ -1202,7 +1202,7 @@ static void CheckExplicitDataArg(const characteristics::DummyDataObject &dummy,
             actualLastSymbol ? actualLastSymbol->name() : "", intrinsic->name);
       }
     }
-  }
+  
 
   // Warning for breaking F'2023 change with character allocatables
   if (intrinsic && dummy.intent != common::Intent::In) {
@@ -1396,13 +1396,13 @@ static void CheckProcedureArg(evaluate::ActualArgument &arg,
 // dummy argument type
 static void ConvertBOZLiteralArg(
     evaluate::ActualArgument &arg, const evaluate::DynamicType &type) {
-  if (auto *expr{arg.UnwrapExpr()}) {
-    if (IsBOZLiteral(*expr)) {
+  if (auto *expr{arg.UnwrapExpr()}; expr && (IsBOZLiteral(*expr))) 
+    {
       if (auto converted{evaluate::ConvertToType(type, SomeExpr{*expr})}) {
         arg = std::move(*converted);
       }
     }
-  }
+  
 }
 
 static void CheckExplicitInterfaceArg(evaluate::ActualArgument &arg,
@@ -2208,8 +2208,7 @@ static void CheckReduce(
   if (const auto &mask{arguments[3]}; mask && !arguments[/*identity*/ 4]) {
     if (const auto *expr{mask->UnwrapExpr()}) {
       if (const auto *logical{
-              std::get_if<evaluate::Expr<evaluate::SomeLogical>>(&expr->u)}) {
-        if (common::visit(
+              std::get_if<evaluate::Expr<evaluate::SomeLogical>>(&expr->u)}; logical && (common::visit(
                 [](const auto &kindExpr) {
                   using KindExprType = std::decay_t<decltype(kindExpr)>;
                   using KindLogical = typename KindExprType::Result;
@@ -2224,11 +2223,12 @@ static void CheckReduce(
                   }
                   return false;
                 },
-                logical->u)) {
+                logical->u))) 
+        {
           messages.Say(
               "MASK= has no .TRUE. element, so IDENTITY= must be present"_err_en_US);
         }
-      }
+      
     }
   }
 }

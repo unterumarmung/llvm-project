@@ -229,7 +229,8 @@ static const Expr *getTerminatorCondition(const Stmt *TerminatorStmt) {
 static TypeErasedDataflowAnalysisState
 computeBlockInputState(const CFGBlock &Block, AnalysisContext &AC) {
   std::vector<const CFGBlock *> Preds(Block.pred_begin(), Block.pred_end());
-  if (Block.getTerminator().isTemporaryDtorsBranch()) {
+  if ((Block.getTerminator().isTemporaryDtorsBranch()) && (Block.succ_begin()->getReachableBlock() != nullptr &&
+        Block.succ_begin()->getReachableBlock()->hasNoReturnElement())) 
     // This handles a special case where the code that produced the CFG includes
     // a conditional operator with a branch that constructs a temporary and
     // calls a destructor annotated as noreturn. The CFG models this as follows:
@@ -252,15 +253,14 @@ computeBlockInputState(const CFGBlock &Block, AnalysisContext &AC) {
     // operator includes a branch that contains a noreturn destructor call.
     //
     // See `NoreturnDestructorTest` for concrete examples.
-    if (Block.succ_begin()->getReachableBlock() != nullptr &&
-        Block.succ_begin()->getReachableBlock()->hasNoReturnElement()) {
+    {
       const CFGBlock *StmtBlock = nullptr;
       if (const Stmt *Terminator = Block.getTerminatorStmt())
         StmtBlock = AC.ACFG.blockForStmt(*Terminator);
       assert(StmtBlock != nullptr);
       llvm::erase(Preds, StmtBlock);
     }
-  }
+  
 
   // If any of the predecessor blocks contains an expression consumed in a
   // different block, we need to keep expression state.

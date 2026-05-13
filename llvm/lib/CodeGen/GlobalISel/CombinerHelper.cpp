@@ -1272,9 +1272,8 @@ bool CombinerHelper::findPostIndexCandidate(GLoadStore &LdSt, Register &Addr,
           if (BaseUseUse.getParent() != LdSt.getParent())
             return false;
 
-          if (auto *UseUseLdSt = dyn_cast<GLoadStore>(&BaseUseUse))
-            if (canFoldInAddressingMode(UseUseLdSt, TLI, MRI))
-              return false;
+          if (auto *UseUseLdSt = dyn_cast<GLoadStore>(&BaseUseUse); UseUseLdSt && (canFoldInAddressingMode(UseUseLdSt, TLI, MRI)))
+            return false;
         }
         if (!dominates(LdSt, BasePtrUse))
           return false; // All use must be dominated by the load/store.
@@ -6377,11 +6376,10 @@ bool CombinerHelper::matchCombineFAddFMulToFMadOrFMA(
 
   // If we have two choices trying to fold (fadd (fmul u, v), (fmul x, y)),
   // prefer to fold the multiply with fewer uses.
-  if (Aggressive && isContractableFMul(*LHS.MI, AllowFusionGlobally) &&
-      isContractableFMul(*RHS.MI, AllowFusionGlobally)) {
-    if (hasMoreUses(*LHS.MI, *RHS.MI, MRI))
-      std::swap(LHS, RHS);
-  }
+  if ((Aggressive && isContractableFMul(*LHS.MI, AllowFusionGlobally) &&
+      isContractableFMul(*RHS.MI, AllowFusionGlobally)) && (hasMoreUses(*LHS.MI, *RHS.MI, MRI))) 
+    std::swap(LHS, RHS);
+  
 
   // fold (fadd (fmul x, y), z) -> (fma x, y, z)
   if (isContractableFMul(*LHS.MI, AllowFusionGlobally) &&
@@ -6429,11 +6427,10 @@ bool CombinerHelper::matchCombineFAddFpExtFMulToFMadOrFMA(
 
   // If we have two choices trying to fold (fadd (fmul u, v), (fmul x, y)),
   // prefer to fold the multiply with fewer uses.
-  if (Aggressive && isContractableFMul(*LHS.MI, AllowFusionGlobally) &&
-      isContractableFMul(*RHS.MI, AllowFusionGlobally)) {
-    if (hasMoreUses(*LHS.MI, *RHS.MI, MRI))
-      std::swap(LHS, RHS);
-  }
+  if ((Aggressive && isContractableFMul(*LHS.MI, AllowFusionGlobally) &&
+      isContractableFMul(*RHS.MI, AllowFusionGlobally)) && (hasMoreUses(*LHS.MI, *RHS.MI, MRI))) 
+    std::swap(LHS, RHS);
+  
 
   // fold (fadd (fpext (fmul x, y)), z) -> (fma (fpext x), (fpext y), z)
   MachineInstr *FpExtSrc;
@@ -6488,11 +6485,10 @@ bool CombinerHelper::matchCombineFAddFMAFMulToFMadOrFMA(
 
   // If we have two choices trying to fold (fadd (fmul u, v), (fmul x, y)),
   // prefer to fold the multiply with fewer uses.
-  if (Aggressive && isContractableFMul(*LHS.MI, AllowFusionGlobally) &&
-      isContractableFMul(*RHS.MI, AllowFusionGlobally)) {
-    if (hasMoreUses(*LHS.MI, *RHS.MI, MRI))
-      std::swap(LHS, RHS);
-  }
+  if ((Aggressive && isContractableFMul(*LHS.MI, AllowFusionGlobally) &&
+      isContractableFMul(*RHS.MI, AllowFusionGlobally)) && (hasMoreUses(*LHS.MI, *RHS.MI, MRI))) 
+    std::swap(LHS, RHS);
+  
 
   MachineInstr *FMA = nullptr;
   Register Z;
@@ -6558,11 +6554,10 @@ bool CombinerHelper::matchCombineFAddFpExtFMulToFMadOrFMAAggressive(
 
   // If we have two choices trying to fold (fadd (fmul u, v), (fmul x, y)),
   // prefer to fold the multiply with fewer uses.
-  if (Aggressive && isContractableFMul(*LHS.MI, AllowFusionGlobally) &&
-      isContractableFMul(*RHS.MI, AllowFusionGlobally)) {
-    if (hasMoreUses(*LHS.MI, *RHS.MI, MRI))
-      std::swap(LHS, RHS);
-  }
+  if ((Aggressive && isContractableFMul(*LHS.MI, AllowFusionGlobally) &&
+      isContractableFMul(*RHS.MI, AllowFusionGlobally)) && (hasMoreUses(*LHS.MI, *RHS.MI, MRI))) 
+    std::swap(LHS, RHS);
+  
 
   // Builds: (fma x, y, (fma (fpext u), (fpext v), z))
   auto buildMatchInfo = [=, &MI](Register U, Register V, Register Z, Register X,
@@ -6937,17 +6932,17 @@ bool CombinerHelper::matchRepeatedFPDivisor(
   for (auto &U : MRI.use_nodbg_instructions(Y)) {
     if (&U == &MI || U.getParent() != MI.getParent())
       continue;
-    if (U.getOpcode() == TargetOpcode::G_FDIV &&
+    if ((U.getOpcode() == TargetOpcode::G_FDIV &&
         U.getOperand(2).getReg() == Y && U.getOperand(1).getReg() != Y &&
-        !IsOne(U.getOperand(1).getReg())) {
+        !IsOne(U.getOperand(1).getReg())) && (U.getFlag(MachineInstr::MIFlag::FmArcp))) 
       // This division is eligible for optimization only if global unsafe math
       // is enabled or if this division allows reciprocal formation.
-      if (U.getFlag(MachineInstr::MIFlag::FmArcp)) {
+      {
         MatchInfo.push_back(&U);
         if (dominates(U, *MatchInfo[0]))
           std::swap(MatchInfo[0], MatchInfo.back());
       }
-    }
+    
   }
 
   // Now that we have the actual number of divisor uses, make sure it meets

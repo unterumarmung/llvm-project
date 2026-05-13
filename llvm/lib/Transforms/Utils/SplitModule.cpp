@@ -142,9 +142,8 @@ static void findPartitions(Module &M, ClusterIDMapType &ClusterIDMap,
 
     // Aliases should not be separated from their aliasees and ifuncs should
     // not be separated from their resolvers regardless of linkage.
-    if (const GlobalObject *Root = getGVPartitioningRoot(&GV))
-      if (&GV != Root)
-        GVtoClusterMap.unionSets(&GV, Root);
+    if (const GlobalObject *Root = getGVPartitioningRoot(&GV); Root && (&GV != Root))
+      GVtoClusterMap.unionSets(&GV, Root);
 
     if (const Function *F = dyn_cast<Function>(&GV)) {
       for (const BasicBlock &BB : *F) {

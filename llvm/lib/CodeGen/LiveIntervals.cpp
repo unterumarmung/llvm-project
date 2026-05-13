@@ -554,12 +554,12 @@ bool LiveIntervals::computeDeadValues(LiveInterval &LI,
     // Is the register live before? Otherwise we may have to add a read-undef
     // flag for subregister defs.
     Register VReg = LI.reg();
-    if (MRI->shouldTrackSubRegLiveness(VReg)) {
-      if ((I == LI.begin() || std::prev(I)->end < Def) && !VNI->isPHIDef()) {
+    if ((MRI->shouldTrackSubRegLiveness(VReg)) && ((I == LI.begin() || std::prev(I)->end < Def) && !VNI->isPHIDef())) 
+      {
         MachineInstr *MI = getInstructionFromIndex(Def);
         MI->setRegisterDefReadUndef(VReg);
       }
-    }
+    
 
     if (I->end != Def.getDeadSlot())
       continue;
@@ -1004,9 +1004,8 @@ bool LiveIntervals::checkRegMaskInterference(const LiveInterval &LI,
     }
     // If segment ends with live-through use we need to collect its regmask.
     if (*SlotI == LiveI->end)
-      if (MachineInstr *MI = getInstructionFromIndex(*SlotI))
-        if (hasLiveThroughUse(MI, LI.reg()))
-          unionBitMask(SlotI++ - Slots.begin());
+      if (MachineInstr *MI = getInstructionFromIndex(*SlotI); MI && (hasLiveThroughUse(MI, LI.reg())))
+        unionBitMask(SlotI++ - Slots.begin());
     // *SlotI is beyond the current LI segment.
     // Special advance implementation to not miss next LiveI->end.
     if (++LiveI == LiveE || SlotI == SlotE || *SlotI > LI.endIndex())
@@ -1534,9 +1533,8 @@ private:
     // point to the next instruction after OldIdx, or MBB->end().
     MachineBasicBlock::iterator MII = MBB->end();
     if (MachineInstr *MI = Indexes->getInstructionFromIndex(
-                           Indexes->getNextNonNullIndex(OldIdx)))
-      if (MI->getParent() == MBB)
-        MII = MI;
+                           Indexes->getNextNonNullIndex(OldIdx)); MI && (MI->getParent() == MBB))
+      MII = MI;
 
     MachineBasicBlock::iterator Begin = MBB->begin();
     while (MII != Begin) {
@@ -1795,9 +1793,8 @@ void LiveIntervals::removeVRegDefAt(LiveInterval &LI, SlotIndex Pos) {
 
   // Also remove the value defined in subranges.
   for (LiveInterval::SubRange &S : LI.subranges()) {
-    if (VNInfo *SVNI = S.getVNInfoAt(Pos))
-      if (SVNI->def.getBaseIndex() == Pos.getBaseIndex())
-        S.removeValNo(SVNI);
+    if (VNInfo *SVNI = S.getVNInfoAt(Pos); SVNI && (SVNI->def.getBaseIndex() == Pos.getBaseIndex()))
+      S.removeValNo(SVNI);
   }
   LI.removeEmptySubRanges();
 }

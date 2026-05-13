@@ -283,9 +283,8 @@ void ReductionTreePass::runOnOperation() {
     Operation *op = workList.pop_back_val();
 
     for (Region &region : op->getRegions())
-      if (!region.empty())
-        if (failed(reduceOp(module, region)))
-          return signalPassFailure();
+      if ((!region.empty()) && (failed(reduceOp(module, region))))
+        return signalPassFailure();
 
     for (Region &region : op->getRegions())
       for (Operation &op : region.getOps())

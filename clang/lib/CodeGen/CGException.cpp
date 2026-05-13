@@ -284,22 +284,20 @@ static bool LandingPadHasOnlyCXXUses(llvm::LandingPadInst *LPI) {
     llvm::Value *Val = LPI->getClause(I)->stripPointerCasts();
     if (LPI->isCatch(I)) {
       // Check if the catch value has the ObjC prefix.
-      if (llvm::GlobalVariable *GV = dyn_cast<llvm::GlobalVariable>(Val))
+      if (llvm::GlobalVariable *GV = dyn_cast<llvm::GlobalVariable>(Val); GV && (GV->getName().starts_with("OBJC_EHTYPE")))
         // ObjC EH selector entries are always global variables with
         // names starting like this.
-        if (GV->getName().starts_with("OBJC_EHTYPE"))
-          return false;
+        return false;
     } else {
       // Check if any of the filter values have the ObjC prefix.
       llvm::Constant *CVal = cast<llvm::Constant>(Val);
       for (llvm::User::op_iterator
               II = CVal->op_begin(), IE = CVal->op_end(); II != IE; ++II) {
         if (llvm::GlobalVariable *GV =
-            cast<llvm::GlobalVariable>((*II)->stripPointerCasts()))
+            cast<llvm::GlobalVariable>((*II)->stripPointerCasts()); GV && (GV->getName().starts_with("OBJC_EHTYPE")))
           // ObjC EH selector entries are always global variables with
           // names starting like this.
-          if (GV->getName().starts_with("OBJC_EHTYPE"))
-            return false;
+          return false;
       }
     }
   }
@@ -323,9 +321,8 @@ static bool PersonalityHasOnlyCXXUses(llvm::Constant *Fn) {
     if (!F) return false;
 
     for (llvm::BasicBlock &BB : *F) {
-      if (BB.isLandingPad())
-        if (!LandingPadHasOnlyCXXUses(BB.getLandingPadInst()))
-          return false;
+      if ((BB.isLandingPad()) && (!LandingPadHasOnlyCXXUses(BB.getLandingPadInst())))
+        return false;
     }
   }
 
@@ -480,10 +477,9 @@ void CodeGenFunction::EmitStartEHSpec(const Decl *D) {
   const FunctionDecl* FD = dyn_cast_or_null<FunctionDecl>(D);
   if (!FD) {
     // Check if CapturedDecl is nothrow and create terminate scope for it.
-    if (const CapturedDecl* CD = dyn_cast_or_null<CapturedDecl>(D)) {
-      if (CD->isNothrow())
-        EHStack.pushTerminate();
-    }
+    if (const CapturedDecl* CD = dyn_cast_or_null<CapturedDecl>(D); CD && (CD->isNothrow())) 
+      EHStack.pushTerminate();
+    
     return;
   }
   const FunctionProtoType *Proto = FD->getType()->getAs<FunctionProtoType>();
@@ -587,10 +583,9 @@ void CodeGenFunction::EmitEndEHSpec(const Decl *D) {
   const FunctionDecl* FD = dyn_cast_or_null<FunctionDecl>(D);
   if (!FD) {
     // Check if CapturedDecl is nothrow and pop terminate scope for it.
-    if (const CapturedDecl* CD = dyn_cast_or_null<CapturedDecl>(D)) {
-      if (CD->isNothrow() && !EHStack.empty())
-        EHStack.popTerminate();
-    }
+    if (const CapturedDecl* CD = dyn_cast_or_null<CapturedDecl>(D); CD && (CD->isNothrow() && !EHStack.empty())) 
+      EHStack.popTerminate();
+    
     return;
   }
   const FunctionProtoType *Proto = FD->getType()->getAs<FunctionProtoType>();
@@ -1840,15 +1835,15 @@ Address CodeGenFunction::recoverAddrOfEscapedLocal(CodeGenFunction &ParentCGF,
       dyn_cast_or_null<llvm::AllocaInst>(ParentVar.getBasePointer());
   auto *ParentArg =
       dyn_cast_or_null<llvm::Argument>(ParentVar.getBasePointer());
-  if (!ParentAlloca) {
-    if (ParentArg) {
+  if ((!ParentAlloca) && (ParentArg)) 
+    {
       llvm::BasicBlock &EntryBB = ParentCGF.CurFn->getEntryBlock();
       llvm::IRBuilder<> ParentEntryBuilder(&EntryBB, EntryBB.begin());
       ParentAlloca = ParentEntryBuilder.CreateAlloca(
           ParentArg->getType(), nullptr, ParentArg->getName() + ".spill");
       ParentEntryBuilder.CreateStore(ParentArg, ParentAlloca);
     }
-  }
+  
 
   if (ParentAlloca) {
     // Mark the variable escaped if nobody else referenced it and compute the
@@ -2254,9 +2249,8 @@ void CodeGenFunction::ExitSEHTryStmt(const SEHTryStmt &S) {
       for (const Stmt *S : Except->getBlock()->body())
         if (const auto *DS = dyn_cast<DeclStmt>(S))
           for (const Decl *D : DS->decls())
-            if (const auto *VD = dyn_cast<VarDecl>(D))
-              if (VD->needsDestruction(getContext()))
-                getContext().getDiagnostics().Report(
+            if (const auto *VD = dyn_cast<VarDecl>(D); VD && (VD->needsDestruction(getContext())))
+              getContext().getDiagnostics().Report(
                     VD->getLocation(), diag::err_seh_object_unwinding);
     CatchScope.clearHandlerBlocks();
     EHStack.popCatch();

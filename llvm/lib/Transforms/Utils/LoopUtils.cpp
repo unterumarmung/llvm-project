@@ -635,9 +635,8 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT, ScalarEvolution *SE,
     for (Instruction &I : *Block) {
       auto *Poison = PoisonValue::get(I.getType());
       for (Use &U : llvm::make_early_inc_range(I.uses())) {
-        if (auto *Usr = dyn_cast<Instruction>(U.getUser()))
-          if (L->contains(Usr->getParent()))
-            continue;
+        if (auto *Usr = dyn_cast<Instruction>(U.getUser()); Usr && (L->contains(Usr->getParent())))
+          continue;
         // If we have a DT then we can check that uses outside a loop only in
         // unreachable block.
         if (DT)
@@ -744,10 +743,10 @@ void llvm::breakLoopBackedge(Loop *L, DominatorTree &DT, ScalarEvolution &SE,
       (void)changeToUnreachable(BI, /*PreserveLCSSA*/ true, &DTU, MSSAU.get());
       return;
     }
-    if (auto *BI = dyn_cast<CondBrInst>(Latch->getTerminator())) {
+    if (auto *BI = dyn_cast<CondBrInst>(Latch->getTerminator()); BI && (L->isLoopExiting(Latch))) 
       // Conditional latch/exit - note that latch can be shared by inner
       // and outer loop so the other target doesn't need to an exit
-      if (L->isLoopExiting(Latch)) {
+      {
         // TODO: Generalize ConstantFoldTerminator so that it can be used
         // here without invalidating LCSSA or MemorySSA.  (Tricky case for
         // LCSSA: header is an exit block of a preceeding sibling loop w/o
@@ -771,7 +770,7 @@ void llvm::breakLoopBackedge(Loop *L, DominatorTree &DT, ScalarEvolution &SE,
           MSSAU->applyUpdates({{DominatorTree::Delete, Latch, Header}}, DT);
         return;
       }
-    }
+    
 
     // General case.  By splitting the backedge, and then explicitly making it
     // unreachable we gracefully handle corner cases such as switch and invoke
@@ -1769,9 +1768,8 @@ static bool canLoopBeDeleted(Loop *L, SmallVector<RewritePhi, 8> &RewritePhiSet)
     }
 
     Instruction *I;
-    if (!found && (I = dyn_cast<Instruction>(Incoming)))
-      if (!L->hasLoopInvariantOperands(I))
-        return false;
+    if ((!found && (I = dyn_cast<Instruction>(Incoming))) && (!L->hasLoopInvariantOperands(I)))
+      return false;
 
     ++BI;
   }
@@ -1907,9 +1905,8 @@ int llvm::rewriteLoopExitValues(Loop *L, LoopInfo *LI, TargetLibraryInfo *TLI,
           const SCEV *ExitCount = SE->getExitCount(L, PN->getIncomingBlock(i));
           if (isa<SCEVCouldNotCompute>(ExitCount))
             continue;
-          if (auto *AddRec = dyn_cast<SCEVAddRecExpr>(SE->getSCEV(Inst)))
-            if (AddRec->getLoop() == L)
-              ExitValue = AddRec->evaluateAtIteration(ExitCount, *SE);
+          if (auto *AddRec = dyn_cast<SCEVAddRecExpr>(SE->getSCEV(Inst)); AddRec && (AddRec->getLoop() == L))
+            ExitValue = AddRec->evaluateAtIteration(ExitCount, *SE);
           if (isa<SCEVCouldNotCompute>(ExitValue) ||
               !SE->isLoopInvariant(ExitValue, L) ||
               !Rewriter.isSafeToExpand(ExitValue))
@@ -2339,9 +2336,8 @@ llvm::hasPartialIVCondition(const Loop &L, unsigned MSSAThreshold,
       return {};
 
     // Do not duplicate volatile and atomic loads.
-    if (auto *LI = dyn_cast<LoadInst>(I))
-      if (LI->isVolatile() || LI->isAtomic())
-        return {};
+    if (auto *LI = dyn_cast<LoadInst>(I); LI && (LI->isVolatile() || LI->isAtomic()))
+      return {};
 
     InstToDuplicate.push_back(I);
     if (MemoryAccess *MA = MSSA.getMemoryAccess(I)) {
@@ -2418,13 +2414,12 @@ llvm::hasPartialIVCondition(const Loop &L, unsigned MSSAThreshold,
 
       // For a MemoryDef, check if is aliases any of the location feeding
       // the original condition.
-      if (auto *CurrentDef = dyn_cast<MemoryDef>(Current)) {
-        if (any_of(AccessedLocs, [&AA, CurrentDef](MemoryLocation &Loc) {
+      if (auto *CurrentDef = dyn_cast<MemoryDef>(Current); CurrentDef && (any_of(AccessedLocs, [&AA, CurrentDef](MemoryLocation &Loc) {
               return isModSet(
                   AA.getModRefInfo(CurrentDef->getMemoryInst(), Loc));
-            }))
-          return {};
-      }
+            }))) 
+        return {};
+      
 
       for (Use &U : Current->uses())
         AccessesToCheck.push_back(cast<MemoryAccess>(U.getUser()));

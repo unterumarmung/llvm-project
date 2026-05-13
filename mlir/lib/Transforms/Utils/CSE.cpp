@@ -269,16 +269,16 @@ LogicalResult CSEDriver::simplifyOperation(ScopedMapTy &knownValues,
       return failure();
 
     // Look for an existing definition for the operation.
-    if (auto *existing = knownValues.lookup(op)) {
-      if (existing->getBlock() == op->getBlock() &&
-          !hasOtherSideEffectingOpInBetween(existing, op)) {
+    if (auto *existing = knownValues.lookup(op); existing && (existing->getBlock() == op->getBlock() &&
+          !hasOtherSideEffectingOpInBetween(existing, op))) 
+      {
         // The operation that can be deleted has been reach with no
         // side-effecting operations in between the existing operation and
         // this one so we can remove the duplicate.
         replaceUsesAndDelete(knownValues, op, existing, hasSSADominance);
         return success();
       }
-    }
+    
     knownValues.insert(op, op);
     return failure();
   }

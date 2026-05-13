@@ -281,11 +281,10 @@ static bool optimizeDivRem(Function &F, const TargetTransformInfo &TTI,
         // issue sooner. Without a DivRem op, this transformation is
         // unprofitable because we would end up performing an extra Mul+Sub on
         // the Rem path.
-      } else if (BasicBlock *RemPredBB = RemBB->getUniquePredecessor()) {
+      } else if (BasicBlock *RemPredBB = RemBB->getUniquePredecessor(); RemPredBB && (HasDivRemOp && RemPredBB == DivBB->getUniquePredecessor())) 
         // This hoist is only profitable when the target has a DivRem op.
-        if (HasDivRemOp && RemPredBB == DivBB->getUniquePredecessor())
-          PredBB = RemPredBB;
-      }
+        PredBB = RemPredBB;
+      
       // FIXME: We could handle more hoisting cases.
 
       if (PredBB && !isa<CatchSwitchInst>(PredBB->getTerminator()) &&

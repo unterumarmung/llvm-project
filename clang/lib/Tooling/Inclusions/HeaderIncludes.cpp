@@ -226,10 +226,9 @@ bool isFirstDeclModuleDecl(StringRef FileName, StringRef Code,
         // is following the "module" keyword.
 
         // Lex the optional "export" keyword.
-        if (tok.is(tok::raw_identifier) && tok.getRawIdentifier() == "export") {
-          if (Lex.LexFromRawLexer(tok))
-            return false;
-        }
+        if ((tok.is(tok::raw_identifier) && tok.getRawIdentifier() == "export") && (Lex.LexFromRawLexer(tok))) 
+          return false;
+        
 
         // Lex the "module" keyword.
         if (!tok.is(tok::raw_identifier) ||

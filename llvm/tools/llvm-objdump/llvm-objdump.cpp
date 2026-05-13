@@ -570,17 +570,17 @@ static bool getHidden(RelocationRef RelRef) {
   if (Arch == Triple::x86 || Arch == Triple::arm || Arch == Triple::ppc)
     return Type == MachO::GENERIC_RELOC_PAIR;
 
-  if (Arch == Triple::x86_64) {
+  if ((Arch == Triple::x86_64) && (Type == MachO::X86_64_RELOC_UNSIGNED && Rel.d.a > 0)) 
     // On x86_64, X86_64_RELOC_UNSIGNED is hidden only when it follows
     // an X86_64_RELOC_SUBTRACTOR.
-    if (Type == MachO::X86_64_RELOC_UNSIGNED && Rel.d.a > 0) {
+    {
       DataRefImpl RelPrev = Rel;
       RelPrev.d.a--;
       uint64_t PrevType = MachO->getRelocationType(RelPrev);
       if (PrevType == MachO::X86_64_RELOC_SUBTRACTOR)
         return true;
     }
-  }
+  
 
   return false;
 }
@@ -1634,15 +1634,14 @@ collectLocalBranchTargets(ArrayRef<uint8_t> Bytes, MCInstrAnalysis *MIA,
       if (Disassembled) {
         uint64_t Target;
         bool TargetKnown = MIA->evaluateBranch(Inst, Index, Size, Target);
-        if (TargetKnown && (Target >= Start && Target < End) &&
-            !Targets.count(Target)) {
+        if ((TargetKnown && (Target >= Start && Target < End) &&
+            !Targets.count(Target)) && (!(isPPC &&
+                ((Target == 0 && isXCOFF) || (Target == Index && !isXCOFF))))) 
           // On PowerPC and AIX, a function call is encoded as a branch to 0.
           // On other PowerPC platforms (ELF), a function call is encoded as
           // a branch to self. Do not add a label for these cases.
-          if (!(isPPC &&
-                ((Target == 0 && isXCOFF) || (Target == Index && !isXCOFF))))
-            Targets.insert(Target);
-        }
+          Targets.insert(Target);
+        
         MIA->updateState(Inst, STI, Index);
       } else
         MIA->resetState();
@@ -2662,13 +2661,13 @@ static void disassembleObject(ObjectFile *Obj, bool InlineRelocs,
   if (Obj->symbols().empty()) {
     if (std::optional<OwningBinary<Binary>> FetchedBinaryOpt =
             fetchBinaryByBuildID(*Obj)) {
-      if (auto *O = dyn_cast<ObjectFile>(FetchedBinaryOpt->getBinary())) {
-        if (!O->symbols().empty() ||
-            (!O->sections().empty() && Obj->sections().empty())) {
+      if (auto *O = dyn_cast<ObjectFile>(FetchedBinaryOpt->getBinary()); O && (!O->symbols().empty() ||
+            (!O->sections().empty() && Obj->sections().empty()))) 
+        {
           FetchedBinary = std::move(*FetchedBinaryOpt);
           Obj = O;
         }
-      }
+      
     }
   }
 
@@ -2773,12 +2772,12 @@ static void disassembleObject(ObjectFile *Obj, bool InlineRelocs,
     if (std::optional<OwningBinary<Binary>> DebugBinaryOpt =
             fetchBinaryByBuildID(*Obj)) {
       if (auto *FetchedObj =
-              dyn_cast<const ObjectFile>(DebugBinaryOpt->getBinary())) {
-        if (FetchedObj->hasDebugInfo()) {
+              dyn_cast<const ObjectFile>(DebugBinaryOpt->getBinary()); FetchedObj && (FetchedObj->hasDebugInfo())) 
+        {
           FetchedBinary = std::move(*DebugBinaryOpt);
           DbgObj = FetchedObj;
         }
-      }
+      
     }
   }
 
@@ -3376,10 +3375,9 @@ static void printArchiveChild(StringRef Filename, const Archive::Child &C) {
 
 // For ELF only now.
 static bool shouldWarnForInvalidStartStopAddress(ObjectFile *Obj) {
-  if (const auto *Elf = dyn_cast<ELFObjectFileBase>(Obj)) {
-    if (Elf->getEType() != ELF::ET_REL)
-      return true;
-  }
+  if (const auto *Elf = dyn_cast<ELFObjectFileBase>(Obj); Elf && (Elf->getEType() != ELF::ET_REL)) 
+    return true;
+  
   return false;
 }
 

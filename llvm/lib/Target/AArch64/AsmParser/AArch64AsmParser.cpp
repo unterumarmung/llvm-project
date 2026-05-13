@@ -3713,12 +3713,11 @@ ParseStatus AArch64AsmParser::tryParseMatrixRegister(OperandVector &Operands) {
     Operands.push_back(AArch64Operand::CreateMatrixRegister(
         AArch64::ZA, ElementWidth, MatrixKind::Array, S, getLoc(),
         getContext()));
-    if (getLexer().is(AsmToken::LBrac)) {
+    if ((getLexer().is(AsmToken::LBrac)) && (parseOperand(Operands, false, false))) 
       // There's no comma after matrix operand, so we can parse the next operand
       // immediately.
-      if (parseOperand(Operands, false, false))
-        return ParseStatus::NoMatch;
-    }
+      return ParseStatus::NoMatch;
+    
     return ParseStatus::Success;
   }
 
@@ -3751,12 +3750,11 @@ ParseStatus AArch64AsmParser::tryParseMatrixRegister(OperandVector &Operands) {
   Operands.push_back(AArch64Operand::CreateMatrixRegister(
       Reg, ElementWidth, Kind, S, getLoc(), getContext()));
 
-  if (getLexer().is(AsmToken::LBrac)) {
+  if ((getLexer().is(AsmToken::LBrac)) && (parseOperand(Operands, false, false))) 
     // There's no comma after matrix operand, so we can parse the next operand
     // immediately.
-    if (parseOperand(Operands, false, false))
-      return ParseStatus::NoMatch;
-  }
+    return ParseStatus::NoMatch;
+  
   return ParseStatus::Success;
 }
 
@@ -5014,9 +5012,8 @@ ParseStatus AArch64AsmParser::tryParseZTOperand(OperandVector &Operands) {
     Operands.push_back(AArch64Operand::CreateImm(
         MCConstantExpr::create(MCE->getValue(), getContext()), StartLoc,
         getLoc(), getContext()));
-    if (parseOptionalToken(AsmToken::Comma))
-      if (parseOptionalMulOperand(Operands))
-        return ParseStatus::Failure;
+    if ((parseOptionalToken(AsmToken::Comma)) && (parseOptionalMulOperand(Operands)))
+      return ParseStatus::Failure;
     if (parseToken(AsmToken::RBrac, "']' expected"))
       return ParseStatus::Failure;
     Operands.push_back(
@@ -8240,20 +8237,20 @@ bool AArch64AsmParser::parseDirectiveAeabiSubSectionHeader(SMLoc L) {
     return true;
   }
   // Check for possible IsOptional unaccepted values for known subsections
-  if (AArch64BuildAttributes::AEABI_FEATURE_AND_BITS == SubsectionNameID) {
-    if (AArch64BuildAttributes::REQUIRED == IsOptional) {
+  if ((AArch64BuildAttributes::AEABI_FEATURE_AND_BITS == SubsectionNameID) && (AArch64BuildAttributes::REQUIRED == IsOptional)) 
+    {
       Error(Parser.getTok().getLoc(),
             "aeabi_feature_and_bits must be marked as optional");
       return true;
     }
-  }
-  if (AArch64BuildAttributes::AEABI_PAUTHABI == SubsectionNameID) {
-    if (AArch64BuildAttributes::OPTIONAL == IsOptional) {
+  
+  if ((AArch64BuildAttributes::AEABI_PAUTHABI == SubsectionNameID) && (AArch64BuildAttributes::OPTIONAL == IsOptional)) 
+    {
       Error(Parser.getTok().getLoc(),
             "aeabi_pauthabi must be marked as required");
       return true;
     }
-  }
+  
   Parser.Lex();
   // consume a comma
   if (Parser.parseComma()) {
@@ -8288,14 +8285,14 @@ bool AArch64AsmParser::parseDirectiveAeabiSubSectionHeader(SMLoc L) {
     return true;
   }
   // Check for possible unaccepted 'type' values for known subsections
-  if (AArch64BuildAttributes::AEABI_FEATURE_AND_BITS == SubsectionNameID ||
-      AArch64BuildAttributes::AEABI_PAUTHABI == SubsectionNameID) {
-    if (AArch64BuildAttributes::NTBS == Type) {
+  if ((AArch64BuildAttributes::AEABI_FEATURE_AND_BITS == SubsectionNameID ||
+      AArch64BuildAttributes::AEABI_PAUTHABI == SubsectionNameID) && (AArch64BuildAttributes::NTBS == Type)) 
+    {
       Error(Parser.getTok().getLoc(),
             SubsectionName + " must be marked as ULEB128");
       return true;
     }
-  }
+  
   Parser.Lex();
 
   // Parsing finished, check for trailing tokens.
@@ -8414,14 +8411,14 @@ bool AArch64AsmParser::parseDirectiveAeabiAArch64Attr(SMLoc L) {
   }
   // Check for possible unaccepted values for known tags
   // (AEABI_FEATURE_AND_BITS)
-  if (ActiveSubsectionID == AArch64BuildAttributes::AEABI_FEATURE_AND_BITS) {
-    if (0 != ValueInt && 1 != ValueInt) {
+  if ((ActiveSubsectionID == AArch64BuildAttributes::AEABI_FEATURE_AND_BITS) && (0 != ValueInt && 1 != ValueInt)) 
+    {
       Error(Parser.getTok().getLoc(),
             "unknown AArch64 build attributes Value for Tag '" + TagStr +
                 "' options are 0|1");
       return true;
     }
-  }
+  
   Parser.Lex();
 
   // Parsing finished. Check for trailing tokens.
@@ -8483,10 +8480,9 @@ bool AArch64AsmParser::parseDataExpr(const MCExpr *&Res) {
     return parseAuthExpr(Res, EndLoc);
 
   auto Spec = AArch64::S_None;
-  if (STI->getTargetTriple().isOSBinFormatMachO()) {
-    if (Identifier == "got")
-      Spec = AArch64::S_MACHO_GOT;
-  }
+  if ((STI->getTargetTriple().isOSBinFormatMachO()) && (Identifier == "got")) 
+    Spec = AArch64::S_MACHO_GOT;
+  
   if (Spec == AArch64::S_None)
     return Error(Loc, "invalid relocation specifier");
   if (auto *SRE = dyn_cast<MCSymbolRefExpr>(Res))

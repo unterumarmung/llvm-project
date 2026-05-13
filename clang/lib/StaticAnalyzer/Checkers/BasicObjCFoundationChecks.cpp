@@ -1207,12 +1207,12 @@ void ObjCNonNilReturnValueChecker::checkPostObjCMessage(const ObjCMethodCall &M,
     }
 
     // Objects returned from [NSNull null] are not nil.
-    if (Cl == FC_NSNull) {
-      if (M.getSelector() == NullSelector) {
+    if ((Cl == FC_NSNull) && (M.getSelector() == NullSelector)) 
+      {
         // Go ahead and assume the value is non-nil.
         State = assumeExprIsNonNull(M.getOriginExpr(), State, C);
       }
-    }
+    
   }
   C.addTransition(State);
 }

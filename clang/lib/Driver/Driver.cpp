@@ -745,11 +745,11 @@ static llvm::Triple computeTargetTriple(const Driver &D,
     }
   }
 
-  if (Target.isOSzOS()) {
-    if ((A = Args.getLastArg(options::OPT_mzos_target_EQ))) {
+  if ((Target.isOSzOS()) && ((A = Args.getLastArg(options::OPT_mzos_target_EQ)))) 
+    {
       setZosTargetVersion(D, Target, A->getValue());
     }
-  }
+  
 
   // Handle -miamcu flag.
   if (Args.hasFlag(options::OPT_miamcu, options::OPT_mno_iamcu, false)) {
@@ -772,8 +772,8 @@ static llvm::Triple computeTargetTriple(const Driver &D,
 
   // If target is MIPS adjust the target triple
   // accordingly to provided ABI name.
-  if (Target.isMIPS()) {
-    if ((A = Args.getLastArg(options::OPT_mabi_EQ))) {
+  if ((Target.isMIPS()) && ((A = Args.getLastArg(options::OPT_mabi_EQ)))) 
+    {
       StringRef ABIName = A->getValue();
       if (ABIName == "32") {
         Target = Target.get32BitArchVariant();
@@ -800,13 +800,13 @@ static llvm::Triple computeTargetTriple(const Driver &D,
           Target.setEnvironment(llvm::Triple::MuslABI64);
       }
     }
-  }
+  
 
   // If target is RISC-V adjust the target triple according to
   // provided architecture name
-  if (Target.isRISCV()) {
-    if (Args.hasArg(options::OPT_march_EQ) ||
-        Args.hasArg(options::OPT_mcpu_EQ)) {
+  if ((Target.isRISCV()) && (Args.hasArg(options::OPT_march_EQ) ||
+        Args.hasArg(options::OPT_mcpu_EQ))) 
+    {
       std::string ArchName = tools::riscv::getRISCVArch(Args, Target);
       auto ISAInfo = llvm::RISCVISAInfo::parseArchString(
           ArchName, /*EnableExperimentalExtensions=*/true);
@@ -825,7 +825,7 @@ static llvm::Triple computeTargetTriple(const Driver &D,
         }
       }
     }
-  }
+  
 
   if (Target.getArch() == llvm::Triple::riscv32be ||
       Target.getArch() == llvm::Triple::riscv64be) {
@@ -875,9 +875,8 @@ void Driver::setLTOMode(const llvm::opt::ArgList &Args) {
   if (Args.hasFlag(options::OPT_fopenmp_target_jit,
                    options::OPT_fno_openmp_target_jit, false)) {
     if (Arg *A = Args.getLastArg(options::OPT_foffload_lto_EQ,
-                                 options::OPT_fno_offload_lto))
-      if (OffloadLTOMode != LTOK_Full)
-        Diag(diag::err_drv_incompatible_options)
+                                 options::OPT_fno_offload_lto); A && (OffloadLTOMode != LTOK_Full))
+      Diag(diag::err_drv_incompatible_options)
             << A->getSpelling() << "-fopenmp-target-jit";
     OffloadLTOMode = LTOK_Full;
   }
@@ -1397,10 +1396,9 @@ static bool findTripleConfigFile(llvm::cl::ExpansionContext &ExpCtx,
 bool Driver::loadDefaultConfigFiles(llvm::cl::ExpansionContext &ExpCtx) {
   // Disable default config if CLANG_NO_DEFAULT_CONFIG is set to a non-empty
   // value.
-  if (const char *NoConfigEnv = ::getenv("CLANG_NO_DEFAULT_CONFIG")) {
-    if (*NoConfigEnv)
-      return false;
-  }
+  if (const char *NoConfigEnv = ::getenv("CLANG_NO_DEFAULT_CONFIG"); NoConfigEnv && (*NoConfigEnv)) 
+    return false;
+  
   if (CLOptions && CLOptions->hasArg(options::OPT_no_default_config))
     return false;
 
@@ -1450,11 +1448,10 @@ bool Driver::loadDefaultConfigFiles(llvm::cl::ExpansionContext &ExpCtx) {
 
   bool TryModeSuffix = !ClangNameParts.ModeSuffix.empty() &&
                        ClangNameParts.ModeSuffix != RealMode;
-  if (TryModeSuffix) {
-    if (findTripleConfigFile(ExpCtx, CfgFilePath, Triple,
-                             "-" + ClangNameParts.ModeSuffix + ".cfg"))
-      return readConfigFile(CfgFilePath, ExpCtx);
-  }
+  if ((TryModeSuffix) && (findTripleConfigFile(ExpCtx, CfgFilePath, Triple,
+                             "-" + ClangNameParts.ModeSuffix + ".cfg"))) 
+    return readConfigFile(CfgFilePath, ExpCtx);
+  
 
   // Try loading <mode>.cfg, and return if loading failed.  If a matching file
   // was not found, still proceed on to try <triple>.cfg.
@@ -4305,13 +4302,13 @@ void Driver::handleArguments(Compilation &C, DerivedArgList &Args,
   }
 
   // Diagnose misuse of /o.
-  if (Arg *A = Args.getLastArg(options::OPT__SLASH_o)) {
-    if (A->getValue()[0] == '\0') {
+  if (Arg *A = Args.getLastArg(options::OPT__SLASH_o); A && (A->getValue()[0] == '\0')) 
+    {
       // It has to have a value.
       Diag(clang::diag::err_drv_missing_argument) << A->getSpelling() << 1;
       Args.eraseArg(options::OPT__SLASH_o);
     }
-  }
+  
 
   // Ignore /Yc/Yu if both /Yc and /Yu passed but with different filenames.
   Arg *YcArg = Args.getLastArg(options::OPT__SLASH_Yc);
@@ -4431,9 +4428,9 @@ void Driver::handleArguments(Compilation &C, DerivedArgList &Args,
       continue;
     }
 
-    if (YcArg) {
+    if ((YcArg) && (FinalPhase >= phases::Compile)) 
       // Add a separate precompile phase for the compile phase.
-      if (FinalPhase >= phases::Compile) {
+      {
         const types::ID HeaderType = lookupHeaderTypeForSourceType(InputType);
         // Build the pipeline for the pch file.
         Action *ClangClPch = C.MakeAction<InputAction>(*InputArg, HeaderType);
@@ -4447,7 +4444,7 @@ void Driver::handleArguments(Compilation &C, DerivedArgList &Args,
         // FIXME: If the main compilation fails, the PCH generation should
         // probably not be considered successful either.
       }
-    }
+    
   }
 
   // Claim any options which are obviously only used for compilation.
@@ -4531,9 +4528,8 @@ void Driver::BuildActions(Compilation &C, DerivedArgList &Args,
 
     // Use the current host action in any of the offloading actions, if
     // required.
-    if (!UseNewOffloadingDriver)
-      if (OffloadBuilder->addHostDependenceToDeviceActions(Current, InputArg))
-        break;
+    if ((!UseNewOffloadingDriver) && (OffloadBuilder->addHostDependenceToDeviceActions(Current, InputArg)))
+      break;
 
     for (phases::ID Phase : PL) {
 
@@ -4630,9 +4626,8 @@ void Driver::BuildActions(Compilation &C, DerivedArgList &Args,
 
   if (LinkerInputs.empty()) {
     Arg *FinalPhaseArg;
-    if (getFinalPhase(Args, &FinalPhaseArg) == phases::Link)
-      if (!UseNewOffloadingDriver)
-        OffloadBuilder->appendDeviceLinkActions(Actions);
+    if ((getFinalPhase(Args, &FinalPhaseArg) == phases::Link) && (!UseNewOffloadingDriver))
+      OffloadBuilder->appendDeviceLinkActions(Actions);
   }
 
   if (!LinkerInputs.empty()) {
@@ -7469,13 +7464,13 @@ llvm::Error driver::expandResponseFiles(SmallVectorImpl<const char *> &Args,
   // If -cc1 came from a response file, remove the EOL sentinels.
   auto FirstArg = llvm::find_if(llvm::drop_begin(Args),
                                 [](const char *A) { return A != nullptr; });
-  if (FirstArg != Args.end() && StringRef(*FirstArg).starts_with("-cc1")) {
+  if ((FirstArg != Args.end() && StringRef(*FirstArg).starts_with("-cc1")) && (MarkEOLs)) 
     // If -cc1 came from a response file, remove the EOL sentinels.
-    if (MarkEOLs) {
+    {
       auto newEnd = std::remove(Args.begin(), Args.end(), nullptr);
       Args.resize(newEnd - Args.begin());
     }
-  }
+  
 
   return llvm::Error::success();
 }

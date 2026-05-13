@@ -1756,10 +1756,9 @@ static inline bool isOrdered(const Instruction *I) {
   if (auto *SI = dyn_cast<StoreInst>(I)) {
     if (!SI->isUnordered())
       return true;
-  } else if (auto *LI = dyn_cast<LoadInst>(I)) {
-    if (!LI->isUnordered())
-      return true;
-  }
+  } else if (auto *LI = dyn_cast<LoadInst>(I); LI && (!LI->isUnordered())) 
+    return true;
+  
   return false;
 }
 
@@ -2655,10 +2654,9 @@ bool upward_defs_iterator::IsGuaranteedLoopInvariant(const Value *Ptr) const {
   };
 
   Ptr = Ptr->stripPointerCasts();
-  if (auto *I = dyn_cast<Instruction>(Ptr)) {
-    if (I->getParent()->isEntryBlock())
-      return true;
-  }
+  if (auto *I = dyn_cast<Instruction>(Ptr); I && (I->getParent()->isEntryBlock())) 
+    return true;
+  
   if (auto *GEP = dyn_cast<GEPOperator>(Ptr)) {
     return IsGuaranteedLoopInvariantBase(GEP->getPointerOperand()) &&
            GEP->hasAllConstantIndices();

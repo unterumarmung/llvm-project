@@ -879,8 +879,8 @@ public:
   ExtValue genval(Fortran::semantics::SymbolRef sym) {
     mlir::Location loc = getLoc();
     ExtValue var = gen(sym);
-    if (const fir::UnboxedValue *s = var.getUnboxed()) {
-      if (fir::isa_ref_type(s->getType())) {
+    if (const fir::UnboxedValue *s = var.getUnboxed(); s && (fir::isa_ref_type(s->getType()))) 
+      {
         // A function with multiple entry points returning different types
         // tags all result variables with one of the largest types to allow
         // them to share the same storage.  A reference to a result variable
@@ -908,7 +908,7 @@ public:
         }
         return genLoad(addr);
       }
-    }
+    
     return var;
   }
 
@@ -1581,10 +1581,9 @@ public:
     // The same is needed with dynamic length character arrays of all ranks.
     mlir::Type baseType =
         fir::dyn_cast_ptrOrBoxEleTy(fir::getBase(array).getType());
-    if ((array.rank() > 1 && fir::hasDynamicSize(baseType)) ||
-        fir::characterWithDynamicLen(fir::unwrapSequenceType(baseType)))
-      if (!array.getBoxOf<fir::BoxValue>())
-        return genOffsetAndCoordinateOp(array, aref);
+    if (((array.rank() > 1 && fir::hasDynamicSize(baseType)) ||
+        fir::characterWithDynamicLen(fir::unwrapSequenceType(baseType))) && (!array.getBoxOf<fir::BoxValue>()))
+      return genOffsetAndCoordinateOp(array, aref);
     // Generate a fir.coordinate_of with zero based array indexes.
     llvm::SmallVector<mlir::Value> args;
     for (const auto &subsc : llvm::enumerate(aref.subscript())) {
@@ -2026,9 +2025,8 @@ public:
       // scalars, so just pass the box with the address. The only care is to
       // to use the dummy character explicit length if any instead of the
       // actual argument length (that can be bigger).
-      if (const Fortran::semantics::DeclTypeSpec *type = arg->GetType())
-        if (type->category() == Fortran::semantics::DeclTypeSpec::Character)
-          if (const Fortran::semantics::MaybeIntExpr &lenExpr =
+      if (const Fortran::semantics::DeclTypeSpec *type = arg->GetType(); type && (type->category() == Fortran::semantics::DeclTypeSpec::Character))
+        if (const Fortran::semantics::MaybeIntExpr &lenExpr =
                   type->characterTypeSpec().length().GetExplicit()) {
             mlir::Value len = fir::getBase(genval(*lenExpr));
             // F2018 7.4.4.2 point 5.
@@ -3729,9 +3727,8 @@ public:
     for (const auto &arg : caller.characterize().dummyArguments) {
       if (const auto *dummy =
               std::get_if<Fortran::evaluate::characteristics::DummyDataObject>(
-                  &arg.u))
-        if (dummy->type.type().IsPolymorphic())
-          return procRef.arguments()[idx];
+                  &arg.u); dummy && (dummy->type.type().IsPolymorphic()))
+        return procRef.arguments()[idx];
       ++idx;
     }
     return std::nullopt;
@@ -3879,9 +3876,8 @@ private:
   bool genShapeFromDataRef(const Fortran::evaluate::ArrayRef &x) {
     if (x.Rank() == 0)
       return false;
-    if (x.base().Rank() > 0)
-      if (genShapeFromDataRef(x.base()))
-        return true;
+    if ((x.base().Rank() > 0) && (genShapeFromDataRef(x.base())))
+      return true;
     // x has rank and x.base did not produce a shape.
     ExtValue exv = x.base().IsSymbol() ? asScalarRef(getFirstSym(x.base()))
                                        : asScalarRef(x.base().GetComponent());
@@ -4783,9 +4779,8 @@ private:
     using PassBy = Fortran::lower::CallerInterface::PassEntityBy;
 
     // 10.1.4 p5. Impure elemental procedures must be called in element order.
-    if (const Fortran::semantics::Symbol *procSym = procRef.proc().GetSymbol())
-      if (!Fortran::semantics::IsPureProcedure(*procSym))
-        setUnordered(false);
+    if (const Fortran::semantics::Symbol *procSym = procRef.proc().GetSymbol(); procSym && (!Fortran::semantics::IsPureProcedure(*procSym)))
+      setUnordered(false);
 
     Fortran::lower::CallerInterface caller(procRef, converter);
     llvm::SmallVector<CC> operands;
@@ -7528,10 +7523,9 @@ fir::MutableBoxValue Fortran::lower::createMutableBox(
 }
 
 bool Fortran::lower::isParentComponent(const Fortran::lower::SomeExpr &expr) {
-  if (const Fortran::semantics::Symbol * symbol{GetLastSymbol(expr)}) {
-    if (symbol->test(Fortran::semantics::Symbol::Flag::ParentComp))
-      return true;
-  }
+  if (const Fortran::semantics::Symbol * symbol{GetLastSymbol(expr)}; symbol && (symbol->test(Fortran::semantics::Symbol::Flag::ParentComp))) 
+    return true;
+  
   return false;
 }
 

@@ -29,11 +29,11 @@ void llvm::reduceSpecialGlobalsDeltaPass(Oracle &O, ReducerWorkItem &WorkItem) {
   Module &Program = WorkItem.getModule();
 
   for (StringRef Name : SpecialGlobalNames) {
-    if (auto *Used = Program.getNamedGlobal(Name)) {
-      if (!O.shouldKeep()) {
+    if (auto *Used = Program.getNamedGlobal(Name); Used && (!O.shouldKeep())) 
+      {
         Used->replaceAllUsesWith(getDefaultValue(Used->getType()));
         Used->eraseFromParent();
       }
-    }
+    
   }
 }

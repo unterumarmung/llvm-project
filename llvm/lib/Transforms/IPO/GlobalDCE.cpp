@@ -306,9 +306,8 @@ PreservedAnalyses GlobalDCEPass::run(Module &M, ModuleAnalysisManager &MAM) {
     // Functions with external linkage are needed if they have a body.
     // Externally visible & appending globals are needed, if they have an
     // initializer.
-    if (!GO.isDeclaration())
-      if (!GO.isDiscardableIfUnused())
-        MarkLive(GO);
+    if ((!GO.isDeclaration()) && (!GO.isDiscardableIfUnused()))
+      MarkLive(GO);
 
     UpdateGVDependencies(GO);
   }

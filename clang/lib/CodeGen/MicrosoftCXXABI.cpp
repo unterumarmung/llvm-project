@@ -1174,10 +1174,9 @@ static bool isTrivialForMSVC(const CXXRecordDecl *RD, QualType Ty,
     } else if (auto *Template = dyn_cast<FunctionTemplateDecl>(D)) {
       if (isa<CXXConstructorDecl>(Template->getTemplatedDecl()))
         return false;
-    } else if (auto *MethodDecl = dyn_cast<CXXMethodDecl>(D)) {
-      if (MethodDecl->isCopyAssignmentOperator() && MethodDecl->isDeleted())
-        return false;
-    }
+    } else if (auto *MethodDecl = dyn_cast<CXXMethodDecl>(D); MethodDecl && (MethodDecl->isCopyAssignmentOperator() && MethodDecl->isDeleted())) 
+      return false;
+    
   }
   if (RD->hasNonTrivialDestructor())
     return false;
@@ -1328,14 +1327,14 @@ void MicrosoftCXXABI::EmitCXXConstructors(const CXXConstructorDecl *D) {
   // the typical calling convention and have a single 'this' pointer for an
   // argument -or- they get a wrapper function which appropriately thunks to the
   // real default constructor.  This thunk is the default constructor closure.
-  if (D->hasAttr<DLLExportAttr>() && D->isDefaultConstructor() &&
-      D->isDefined()) {
-    if (!hasDefaultCXXMethodCC(getContext(), D) || D->getNumParams() != 0) {
+  if ((D->hasAttr<DLLExportAttr>() && D->isDefaultConstructor() &&
+      D->isDefined()) && (!hasDefaultCXXMethodCC(getContext(), D) || D->getNumParams() != 0)) 
+    {
       llvm::Function *Fn = getAddrOfCXXCtorClosure(D, Ctor_DefaultClosure);
       Fn->setLinkage(llvm::GlobalValue::WeakODRLinkage);
       CGM.setGVProperties(Fn, D);
     }
-  }
+  
 }
 
 void MicrosoftCXXABI::EmitVBPtrStores(CodeGenFunction &CGF,
@@ -3941,12 +3940,11 @@ MSRTTIBuilder::getCompleteObjectLocator(const VPtrInfo &Info) {
   int OffsetToTop = Info.FullOffsetInMDC.getQuantity();
   int VFPtrOffset = 0;
   // The offset includes the vtordisp if one exists.
-  if (const CXXRecordDecl *VBase = Info.getVBaseWithVPtr())
-    if (Context.getASTRecordLayout(RD)
+  if (const CXXRecordDecl *VBase = Info.getVBaseWithVPtr(); VBase && (Context.getASTRecordLayout(RD)
       .getVBaseOffsetsMap()
       .find(VBase)
-      ->second.hasVtorDisp())
-      VFPtrOffset = Info.NonVirtualOffset.getQuantity() + 4;
+      ->second.hasVtorDisp()))
+    VFPtrOffset = Info.NonVirtualOffset.getQuantity() + 4;
 
   // Forward-declare the complete object locator.
   llvm::StructType *Type = ABI.getCompleteObjectLocatorType();
@@ -4251,9 +4249,8 @@ llvm::Constant *MicrosoftCXXABI::getCatchableType(QualType T,
   const CXXConstructorDecl *CD =
       RD ? CGM.getContext().getCopyConstructorForExceptionObject(RD) : nullptr;
   CXXCtorType CT = Ctor_Complete;
-  if (CD)
-    if (!hasDefaultCXXMethodCC(getContext(), CD) || CD->getNumParams() != 1)
-      CT = Ctor_CopyingClosure;
+  if ((CD) && (!hasDefaultCXXMethodCC(getContext(), CD) || CD->getNumParams() != 1))
+    CT = Ctor_CopyingClosure;
 
   uint32_t Size = getContext().getTypeSizeInChars(T).getQuantity();
   SmallString<256> MangledName;
@@ -4483,9 +4480,8 @@ llvm::GlobalVariable *MicrosoftCXXABI::getThrowInfo(QualType T) {
   // object's lifetime ends.
   llvm::Constant *CleanupFn = llvm::Constant::getNullValue(CGM.Int8PtrTy);
   if (const CXXRecordDecl *RD = T->getAsCXXRecordDecl())
-    if (CXXDestructorDecl *DtorD = RD->getDestructor())
-      if (!DtorD->isTrivial())
-        CleanupFn = CGM.getAddrOfCXXStructor(GlobalDecl(DtorD, Dtor_Complete));
+    if (CXXDestructorDecl *DtorD = RD->getDestructor(); DtorD && (!DtorD->isTrivial()))
+      CleanupFn = CGM.getAddrOfCXXStructor(GlobalDecl(DtorD, Dtor_Complete));
   // This is unused as far as we can tell, initialize it to null.
   llvm::Constant *ForwardCompat =
       getImageRelativeConstant(llvm::Constant::getNullValue(CGM.Int8PtrTy));
@@ -4566,10 +4562,9 @@ bool MicrosoftCXXABI::isPermittedToBeHomogeneousAggregate(
   // base/field that has an non-trivial copy assignment/dtor/default ctor, then
   // the outer struct's corresponding operation must be non-trivial.
   for (const CXXBaseSpecifier &B : RD->bases()) {
-    if (const CXXRecordDecl *FRD = B.getType()->getAsCXXRecordDecl()) {
-      if (!isPermittedToBeHomogeneousAggregate(FRD))
-        return false;
-    }
+    if (const CXXRecordDecl *FRD = B.getType()->getAsCXXRecordDecl(); FRD && (!isPermittedToBeHomogeneousAggregate(FRD))) 
+      return false;
+    
   }
   // empty fields seem to be caught by the ABIInfo::isHomogeneousAggregate
   // checking for padding - but maybe there are ways to end up with an empty

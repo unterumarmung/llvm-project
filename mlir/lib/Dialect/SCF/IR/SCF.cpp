@@ -2413,8 +2413,8 @@ struct ReplaceIfYieldWithConditionOrValue : public OpRewritePattern<IfOp> {
 
       bool trueVal = trueYield.getValue();
       bool falseVal = falseYield.getValue();
-      if (!trueVal && falseVal) {
-        if (!opResult.use_empty()) {
+      if ((!trueVal && falseVal) && (!opResult.use_empty())) 
+        {
           Dialect *constDialect = trueResult.getDefiningOp()->getDialect();
           Value notCond = arith::XOrIOp::create(
               rewriter, op.getLoc(), op.getCondition(),
@@ -2426,13 +2426,13 @@ struct ReplaceIfYieldWithConditionOrValue : public OpRewritePattern<IfOp> {
           opResult.replaceAllUsesWith(notCond);
           changed = true;
         }
-      }
-      if (trueVal && !falseVal) {
-        if (!opResult.use_empty()) {
+      
+      if ((trueVal && !falseVal) && (!opResult.use_empty())) 
+        {
           opResult.replaceAllUsesWith(op.getCondition());
           changed = true;
         }
-      }
+      
     }
     return success(changed);
   }
@@ -3559,8 +3559,8 @@ struct WhileConditionTruth : public OpRewritePattern<WhileOp> {
     bool replaced = false;
     for (auto yieldedAndBlockArgs :
          llvm::zip(term.getArgs(), op.getAfterArguments())) {
-      if (std::get<0>(yieldedAndBlockArgs) == term.getCondition()) {
-        if (!std::get<1>(yieldedAndBlockArgs).use_empty()) {
+      if ((std::get<0>(yieldedAndBlockArgs) == term.getCondition()) && (!std::get<1>(yieldedAndBlockArgs).use_empty())) 
+        {
           if (!constantTrue)
             constantTrue = arith::ConstantOp::create(
                 rewriter, op.getLoc(), term.getCondition().getType(),
@@ -3570,7 +3570,7 @@ struct WhileConditionTruth : public OpRewritePattern<WhileOp> {
                                       constantTrue);
           replaced = true;
         }
-      }
+      
     }
     return success(replaced);
   }

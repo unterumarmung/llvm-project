@@ -781,13 +781,13 @@ bool DwarfLinkerForBinary::linkImpl(
                    "object file will rebuild the module cache.\n";
             ModuleCacheHintDisplayed = true;
           }
-        } else if (IsArchive) {
+        } else if ((IsArchive) && (!ArchiveHintDisplayed)) 
           // If the module cache directory doesn't exist at all and the
           // object file is inside a static library, we assume that the
           // static library was built on a different machine. We don't want
           // to discourage module debugging for convenience libraries within
           // a project though.
-          if (!ArchiveHintDisplayed) {
+          {
             WithColor::note()
                 << "Linking a static library that was built with "
                    "-gmodules, but the module cache was not found.  "
@@ -797,7 +797,7 @@ bool DwarfLinkerForBinary::linkImpl(
                    "debug information.\n";
             ArchiveHintDisplayed = true;
           }
-        }
+        
       }
 
       return ErrorOrObj.getError();

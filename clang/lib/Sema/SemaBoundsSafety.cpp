@@ -361,16 +361,16 @@ bool Sema::BoundsSafetyCheckInitialization(const InitializedEntity &Entity,
   // same problem twice (once when the variable is defined, once when Sema
   // checks the initializer) we skip checking the initializer if it's a
   // variable.
-  if (Action == AssignmentAction::Initializing &&
-      Entity.getKind() != InitializedEntity::EK_Variable) {
-
-    if (!CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
+  if ((Action == AssignmentAction::Initializing &&
+      Entity.getKind() != InitializedEntity::EK_Variable) && (!CheckAssignmentToCountAttrPtrWithIncompletePointeeTy(
             *this, LHSType, RHSExpr, Action, SL,
             dyn_cast_or_null<ValueDecl>(Entity.getDecl()),
-            /*ShowFullQualifiedAssigneeName=*/true)) {
+            /*ShowFullQualifiedAssigneeName=*/true))) 
+
+    {
       return false;
     }
-  }
+  
 
   return true;
 }

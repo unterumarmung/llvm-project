@@ -227,8 +227,8 @@ CodeGenFunction::EmitOrigPointerRValue(const Expr *E) {
   assert(E->getType()->isSignableType(getContext()));
 
   E = E->IgnoreParens();
-  if (const auto *Load = dyn_cast<ImplicitCastExpr>(E)) {
-    if (Load->getCastKind() == CK_LValueToRValue) {
+  if (const auto *Load = dyn_cast<ImplicitCastExpr>(E); Load && (Load->getCastKind() == CK_LValueToRValue)) 
+    {
       E = Load->getSubExpr()->IgnoreParens();
 
       // We're semantically required to not emit loads of certain DREs naively.
@@ -249,7 +249,7 @@ CodeGenFunction::EmitOrigPointerRValue(const Expr *E) {
       LValue LV = EmitCheckedLValue(E, CodeGenFunction::TCK_Load);
       return emitLoadOfOrigPointerRValue(*this, LV, E->getExprLoc());
     }
-  }
+  
 
   // Fallback: just use the normal rules for the type.
   llvm::Value *Value = EmitScalarExpr(E);
@@ -544,10 +544,9 @@ llvm::Constant *CodeGenModule::getMemberFunctionPointer(llvm::Constant *Pointer,
         Pointer, PointerAuth.getKey(), nullptr,
         cast_or_null<llvm::ConstantInt>(PointerAuth.getDiscriminator()));
 
-  if (const auto *MFT = dyn_cast<MemberPointerType>(FT.getTypePtr())) {
-    if (MFT->hasPointeeToCFIUncheckedCalleeFunctionType())
-      Pointer = llvm::NoCFIValue::get(cast<llvm::GlobalValue>(Pointer));
-  }
+  if (const auto *MFT = dyn_cast<MemberPointerType>(FT.getTypePtr()); MFT && (MFT->hasPointeeToCFIUncheckedCalleeFunctionType())) 
+    Pointer = llvm::NoCFIValue::get(cast<llvm::GlobalValue>(Pointer));
+  
 
   return Pointer;
 }

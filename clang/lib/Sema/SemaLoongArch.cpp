@@ -32,11 +32,10 @@ bool SemaLoongArch::CheckLoongArchBuiltinFunctionCall(const TargetInfo &TI,
 
   llvm::StringRef Features = Context.BuiltinInfo.getRequiredFeatures(BuiltinID);
   // Only check it when the builtin is not used in a function.
-  if (!Features.empty() && !FD) {
-    if (!Builtin::evaluateRequiredTargetFeatures(Features, FeatureMap))
-      return Diag(TheCall->getBeginLoc(), diag::err_builtin_needs_feature)
+  if ((!Features.empty() && !FD) && (!Builtin::evaluateRequiredTargetFeatures(Features, FeatureMap))) 
+    return Diag(TheCall->getBeginLoc(), diag::err_builtin_needs_feature)
              << "builtin" << Features;
-  }
+  
 
   switch (BuiltinID) {
   default:

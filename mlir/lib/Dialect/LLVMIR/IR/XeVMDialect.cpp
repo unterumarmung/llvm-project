@@ -231,10 +231,9 @@ LogicalResult BlockLoad2dOp::verify() {
   if (!resTy.getElementType().isIntOrFloat())
     return emitOpError() << "expecting result element type to be int of float";
   unsigned resElemTySize = resTy.getElementType().getIntOrFloatBitWidth();
-  if (getElemSizeInBits() == 32 || getPackRegister()) {
-    if (resElemTySize != 32)
-      return emitOpError() << "expecting result element type to be 32 bits";
-  }
+  if ((getElemSizeInBits() == 32 || getPackRegister()) && (resElemTySize != 32)) 
+    return emitOpError() << "expecting result element type to be 32 bits";
+  
 
   uint32_t tileWidth = getTileWidth();
   if (getPackRegister()) {

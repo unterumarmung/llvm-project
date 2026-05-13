@@ -362,9 +362,8 @@ Error MappedFileRegionArena::initializeHeader(uint64_t HeaderOffset) {
   H = reinterpret_cast<decltype(H)>(data() + HeaderOffset);
 
   uint64_t ExistingValue = 0;
-  if (!H->BumpPtr.compare_exchange_strong(ExistingValue, HeaderEndOffset))
-    if (ExistingValue < HeaderEndOffset)
-      return createStringError(
+  if ((!H->BumpPtr.compare_exchange_strong(ExistingValue, HeaderEndOffset)) && (ExistingValue < HeaderEndOffset))
+    return createStringError(
           make_error_code(std::errc::protocol_error),
           "arena bump pointer is corrupt: 0x" +
               utohexstr(ExistingValue, /*LowerCase=*/true));

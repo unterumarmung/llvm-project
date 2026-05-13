@@ -111,11 +111,10 @@ void SampleProfileMatcher::findIRAnchors(const Function &F,
           } else {
             // Use empty StringRef for basic block probe.
             StringRef CalleeName;
-            if (const auto *CB = dyn_cast<CallBase>(&I)) {
+            if (const auto *CB = dyn_cast<CallBase>(&I); CB && (!isa<IntrinsicInst>(&I))) 
               // Skip the probe inst whose callee name is "llvm.pseudoprobe".
-              if (!isa<IntrinsicInst>(&I))
-                CalleeName = GetCanonicalCalleeName(CB);
-            }
+              CalleeName = GetCanonicalCalleeName(CB);
+            
             LineLocation Loc = LineLocation(Probe->Id, 0);
             IRAnchors.emplace(Loc, FunctionId(CalleeName));
           }

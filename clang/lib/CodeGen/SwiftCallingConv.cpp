@@ -233,10 +233,9 @@ void SwiftAggLowering::addTypedData(llvm::Type *type,
   }
 
   // Legalize integer types.
-  if (auto intTy = dyn_cast<llvm::IntegerType>(type)) {
-    if (!isLegalIntegerType(CGM, intTy))
-      return addOpaqueData(begin, end);
-  }
+  if (auto intTy = dyn_cast<llvm::IntegerType>(type); intTy && (!isLegalIntegerType(CGM, intTy))) 
+    return addOpaqueData(begin, end);
+  
 
   // All other types should be legal.
   return addLegalTypedData(type, begin, end);
@@ -704,10 +703,9 @@ swiftcall::splitLegalVectorType(CodeGenModule &CGM, CharUnits vectorSize,
   auto eltTy = vectorTy->getElementType();
 
   // Try to split the vector type in half.
-  if (numElts >= 4 && isPowerOf2(numElts)) {
-    if (isLegalVectorType(CGM, vectorSize / 2, eltTy, numElts / 2))
-      return {llvm::FixedVectorType::get(eltTy, numElts / 2), 2};
-  }
+  if ((numElts >= 4 && isPowerOf2(numElts)) && (isLegalVectorType(CGM, vectorSize / 2, eltTy, numElts / 2))) 
+    return {llvm::FixedVectorType::get(eltTy, numElts / 2), 2};
+  
 
   return {eltTy, numElts};
 }

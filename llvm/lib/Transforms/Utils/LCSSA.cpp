@@ -198,9 +198,8 @@ formLCSSAForInstructionsImpl(SmallVectorImpl<Instruction *> &Worklist,
       // can also have uses outside of L2. Remember all PHIs in such situation
       // as to revisit than later on. FIXME: Remove this if indirectbr support
       // into LoopSimplify gets improved.
-      if (auto *OtherLoop = LI.getLoopFor(ExitBB))
-        if (!L->contains(OtherLoop))
-          PostProcessPHIs.push_back(PN);
+      if (auto *OtherLoop = LI.getLoopFor(ExitBB); OtherLoop && (!L->contains(OtherLoop)))
+        PostProcessPHIs.push_back(PN);
 
       // If we have a cached SCEV for the original instruction, make sure the
       // new LCSSA phi node is also cached. This makes sures that BECounts
@@ -262,9 +261,8 @@ formLCSSAForInstructionsImpl(SmallVectorImpl<Instruction *> &Worklist,
     // SSAUpdater might have inserted phi-nodes inside other loops. We'll need
     // to post-process them to keep LCSSA form.
     for (PHINode *InsertedPN : LocalInsertedPHIs) {
-      if (auto *OtherLoop = LI.getLoopFor(InsertedPN->getParent()))
-        if (!L->contains(OtherLoop))
-          PostProcessPHIs.push_back(InsertedPN);
+      if (auto *OtherLoop = LI.getLoopFor(InsertedPN->getParent()); OtherLoop && (!L->contains(OtherLoop)))
+        PostProcessPHIs.push_back(InsertedPN);
       if (InsertedPHIs)
         InsertedPHIs->push_back(InsertedPN);
     }

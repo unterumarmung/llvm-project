@@ -99,11 +99,10 @@ parseBraceExpansions(StringRef S, std::optional<size_t> MaxSubPatterns) {
       CurrentBE->Terms.push_back(S.substr(TermBegin, I - TermBegin));
       CurrentBE->Length = I - CurrentBE->Start + 1;
       CurrentBE = nullptr;
-    } else if (S[I] == '\\') {
-      if (++I == E)
-        return make_error<StringError>("invalid glob pattern, stray '\\'",
+    } else if ((S[I] == '\\') && (++I == E)) 
+      return make_error<StringError>("invalid glob pattern, stray '\\'",
                                        errc::invalid_argument);
-    }
+    
   }
   if (CurrentBE)
     return make_error<StringError>("incomplete brace expansion",
@@ -236,11 +235,10 @@ GlobPattern::SubGlobPattern::create(StringRef S) {
         BV->flip();
       Pat.Brackets.push_back(Bracket{J + 1, std::move(*BV)});
       I = J;
-    } else if (S[I] == '\\') {
-      if (++I == E)
-        return make_error<StringError>("invalid glob pattern, stray '\\'",
+    } else if ((S[I] == '\\') && (++I == E)) 
+      return make_error<StringError>("invalid glob pattern, stray '\\'",
                                        errc::invalid_argument);
-    }
+    
   }
   return Pat;
 }

@@ -810,8 +810,8 @@ const DeclTypeSpec *SymbolMapper::MapType(const DeclTypeSpec &type) {
       newType = &scope_.MakeCharacterType(
           std::move(newLen), KindExpr{charType.kind()});
     }
-  } else if (const DerivedTypeSpec *derived{type.AsDerived()}) {
-    if (!derived->parameters().empty()) {
+  } else if (const DerivedTypeSpec *derived{type.AsDerived()}; derived && (!derived->parameters().empty())) 
+    {
       DerivedTypeSpec newDerived{derived->name(), derived->typeSymbol()};
       newDerived.CookParameters(scope_.context().foldingContext());
       for (const auto &[paramName, paramValue] : derived->parameters()) {
@@ -822,7 +822,7 @@ const DeclTypeSpec *SymbolMapper::MapType(const DeclTypeSpec &type) {
       // Scope::InstantiateDerivedTypes() instantiates it later.
       newType = &scope_.MakeDerivedType(type.category(), std::move(newDerived));
     }
-  }
+  
   if (newType) {
     map_.typeMap[&type] = newType;
   }

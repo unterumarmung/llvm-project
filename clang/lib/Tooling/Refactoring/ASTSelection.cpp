@@ -115,10 +115,9 @@ public:
     if (auto *Opaque = dyn_cast<OpaqueValueExpr>(S))
       return TraverseOpaqueValueExpr(Opaque);
     // Avoid selecting implicit 'this' expressions.
-    if (auto *TE = dyn_cast<CXXThisExpr>(S)) {
-      if (TE->isImplicit())
-        return true;
-    }
+    if (auto *TE = dyn_cast<CXXThisExpr>(S); TE && (TE->isImplicit())) 
+      return true;
+    
     // FIXME (Alex Lorenz): Improve handling for macro locations.
     SourceSelectionKind SelectionKind =
         selectionKindFor(CharSourceRange::getTokenRange(S->getSourceRange()));
@@ -276,11 +275,10 @@ getSelectionCanonizalizationAction(const Stmt *S, const Stmt *Parent) {
   //      ~~~~                 ~~~~~~~~~~~~
   //    func(args)  becomes  func(args)
   //    ~~~~                 ~~~~~~~~~~
-  else if (const auto *CE = dyn_cast<CallExpr>(Parent)) {
-    if ((isa<MemberExpr>(S) || isa<DeclRefExpr>(S)) &&
-        CE->getCallee()->IgnoreImpCasts() == S)
-      return SelectParent;
-  }
+  else if (const auto *CE = dyn_cast<CallExpr>(Parent); CE && ((isa<MemberExpr>(S) || isa<DeclRefExpr>(S)) &&
+        CE->getCallee()->IgnoreImpCasts() == S)) 
+    return SelectParent;
+  
   // FIXME: Syntactic form -> Entire pseudo-object expr.
   return KeepSelection;
 }
@@ -441,10 +439,9 @@ bool CodeRangeASTSelection::isInFunctionLikeBodyOfCode() const {
 const Decl *CodeRangeASTSelection::getFunctionLikeNearestParent() const {
   for (const auto &Parent : llvm::reverse(Parents)) {
     const DynTypedNode &Node = Parent.get().Node;
-    if (const auto *D = Node.get<Decl>()) {
-      if (isFunctionLikeDeclaration(D))
-        return D;
-    }
+    if (const auto *D = Node.get<Decl>(); D && (isFunctionLikeDeclaration(D))) 
+      return D;
+    
   }
   return nullptr;
 }

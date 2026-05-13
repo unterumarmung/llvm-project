@@ -485,12 +485,11 @@ RcOptions parseWindresOptions(ArrayRef<const char *> ArgsArr,
     Opts.Preprocessor = InputArgs.getLastArgValue(WINDRES_preprocessor);
 
   Opts.Params.CodePage = CpWin1252; // Different default
-  if (InputArgs.hasArg(WINDRES_codepage)) {
-    if (InputArgs.getLastArgValue(WINDRES_codepage)
-            .getAsInteger(0, Opts.Params.CodePage))
-      fatalError("Invalid code page: " +
+  if ((InputArgs.hasArg(WINDRES_codepage)) && (InputArgs.getLastArgValue(WINDRES_codepage)
+            .getAsInteger(0, Opts.Params.CodePage))) 
+    fatalError("Invalid code page: " +
                  InputArgs.getLastArgValue(WINDRES_codepage));
-  }
+  
   if (InputArgs.hasArg(WINDRES_language)) {
     StringRef Val = InputArgs.getLastArgValue(WINDRES_language);
     Val.consume_front_insensitive("0x");
@@ -555,12 +554,11 @@ RcOptions parseRcOptions(ArrayRef<const char *> ArgsArr,
     ::unsetenv("INCLUDE");
 #endif
   }
-  if (InputArgs.hasArg(OPT_codepage)) {
-    if (InputArgs.getLastArgValue(OPT_codepage)
-            .getAsInteger(10, Opts.Params.CodePage))
-      fatalError("Invalid code page: " +
+  if ((InputArgs.hasArg(OPT_codepage)) && (InputArgs.getLastArgValue(OPT_codepage)
+            .getAsInteger(10, Opts.Params.CodePage))) 
+    fatalError("Invalid code page: " +
                  InputArgs.getLastArgValue(OPT_codepage));
-  }
+  
   Opts.IsDryRun = InputArgs.hasArg(OPT_dry_run);
   auto OutArgsInfo = InputArgs.getAllArgValues(OPT_fileout);
   if (OutArgsInfo.empty()) {

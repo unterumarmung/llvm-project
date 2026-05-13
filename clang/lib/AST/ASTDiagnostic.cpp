@@ -110,8 +110,8 @@ QualType clang::desugarForDiagnostic(ASTContext &Context, QualType QT,
     // Desugar template specializations if any template argument should be
     // desugared.
     if (const TemplateSpecializationType *TST =
-            dyn_cast<TemplateSpecializationType>(Ty)) {
-      if (!TST->isTypeAlias()) {
+            dyn_cast<TemplateSpecializationType>(Ty); TST && (!TST->isTypeAlias())) 
+      {
         bool DesugarArgument = false;
         SmallVector<TemplateArgument, 4> Args;
         for (const TemplateArgument &Arg : TST->template_arguments()) {
@@ -130,7 +130,7 @@ QualType clang::desugarForDiagnostic(ASTContext &Context, QualType QT,
         }
         break;
       }
-    }
+    
 
     if (const auto *AT = dyn_cast<ArrayType>(Ty)) {
       QualType ElementTy =
@@ -195,9 +195,8 @@ break; \
 
     // Don't desugar through the primary typedef of an anonymous type.
     if (const TagType *UTT = Underlying->getAs<TagType>())
-      if (const TypedefType *QTT = dyn_cast<TypedefType>(QT))
-        if (UTT->getDecl()->getTypedefNameForAnonDecl() == QTT->getDecl())
-          break;
+      if (const TypedefType *QTT = dyn_cast<TypedefType>(QT); QTT && (UTT->getDecl()->getTypedefNameForAnonDecl() == QTT->getDecl()))
+        break;
 
     // Record that we actually looked through an opaque type here.
     ShouldAKA = true;
@@ -218,8 +217,8 @@ break; \
   } else if (const RValueReferenceType *Ty = QT->getAs<RValueReferenceType>()) {
     QT = Context.getRValueReferenceType(
         desugarForDiagnostic(Context, Ty->getPointeeType(), ShouldAKA));
-  } else if (const auto *Ty = QT->getAs<ObjCObjectType>()) {
-    if (Ty->getBaseType().getTypePtr() != Ty && !ShouldAKA) {
+  } else if (const auto *Ty = QT->getAs<ObjCObjectType>(); Ty && (Ty->getBaseType().getTypePtr() != Ty && !ShouldAKA)) 
+    {
       QualType BaseType =
           desugarForDiagnostic(Context, Ty->getBaseType(), ShouldAKA);
       QT = Context.getObjCObjectType(
@@ -227,7 +226,7 @@ break; \
           ArrayRef(Ty->qual_begin(), Ty->getNumProtocols()),
           Ty->isKindOfTypeAsWritten());
     }
-  }
+  
 
   return QC.apply(Context, QT);
 }
@@ -1915,10 +1914,8 @@ class TemplateDiff {
 
     if (CheckIntegerLiteral(E)) return false;
 
-    if (UnaryOperator *UO = dyn_cast<UnaryOperator>(E))
-      if (UO->getOpcode() == UO_Minus)
-        if (CheckIntegerLiteral(UO->getSubExpr()))
-          return false;
+    if (UnaryOperator *UO = dyn_cast<UnaryOperator>(E); UO && (UO->getOpcode() == UO_Minus) && (CheckIntegerLiteral(UO->getSubExpr())))
+      return false;
 
     if (isa<CXXBoolLiteralExpr>(E))
       return false;

@@ -5302,10 +5302,9 @@ void Verifier::verifyDominatesUse(Instruction &I, unsigned i) {
   // If the we have an invalid invoke, don't try to compute the dominance.
   // We already reject it in the invoke specific checks and the dominance
   // computation doesn't handle multiple edges.
-  if (InvokeInst *II = dyn_cast<InvokeInst>(Op)) {
-    if (II->getNormalDest() == II->getUnwindDest())
-      return;
-  }
+  if (InvokeInst *II = dyn_cast<InvokeInst>(Op); II && (II->getNormalDest() == II->getUnwindDest())) 
+    return;
+  
 
   // Quick check whether the def has already been encountered in the same block.
   // PHI nodes are not checked to prevent accepting preceding PHIs, because PHI
@@ -5923,14 +5922,14 @@ void Verifier::visitInstruction(Instruction &I) {
     CheckDI(isa<DILocation>(N), "invalid !dbg metadata attachment", &I, N);
     visitMDNode(*N, AreDebugLocsAllowed::Yes);
 
-    if (auto *DL = dyn_cast<DILocation>(N)) {
-      if (DL->getAtomGroup()) {
+    if (auto *DL = dyn_cast<DILocation>(N); DL && (DL->getAtomGroup())) 
+      {
         CheckDI(DL->getScope()->getSubprogram()->getKeyInstructionsEnabled(),
                 "DbgLoc uses atomGroup but DISubprogram doesn't have Key "
                 "Instructions enabled",
                 DL, DL->getScope()->getSubprogram());
       }
-    }
+    
   }
 
   SmallVector<std::pair<unsigned, MDNode *>, 4> MDs;
@@ -7359,9 +7358,8 @@ void Verifier::visitIntrinsicCall(Intrinsic::ID ID, CallBase &Call) {
       assert(CV.size() > 0 && "Uncolored block");
       for (BasicBlock *ColorFirstBB : CV)
         if (auto It = ColorFirstBB->getFirstNonPHIIt();
-            It != ColorFirstBB->end())
-          if (isa_and_nonnull<FuncletPadInst>(&*It))
-            InEHFunclet = true;
+            (It != ColorFirstBB->end()) && (isa_and_nonnull<FuncletPadInst>(&*It)))
+          InEHFunclet = true;
 
       // Check for funclet operand bundle
       bool HasToken = false;
@@ -7400,9 +7398,8 @@ void Verifier::visit(DbgLabelRecord &DLR) {
           "invalid #dbg_label intrinsic variable", &DLR, DLR.getRawLabel());
 
   // Ignore broken !dbg attachments; they're checked elsewhere.
-  if (MDNode *N = DLR.getDebugLoc().getAsMDNode())
-    if (!isa<DILocation>(N))
-      return;
+  if (MDNode *N = DLR.getDebugLoc().getAsMDNode(); N && (!isa<DILocation>(N)))
+    return;
 
   BasicBlock *BB = DLR.getParent();
   Function *F = BB ? BB->getParent() : nullptr;

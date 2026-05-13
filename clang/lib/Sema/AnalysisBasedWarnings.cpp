@@ -158,9 +158,8 @@ public:
 
     // Recurse to children.
     for (const Stmt *SubStmt : E->children())
-      if (const Expr *SubExpr = dyn_cast_or_null<Expr>(SubStmt))
-        if (HasMacroID(SubExpr))
-          return true;
+      if (const Expr *SubExpr = dyn_cast_or_null<Expr>(SubStmt); SubExpr && (HasMacroID(SubExpr)))
+        return true;
 
     return false;
   }
@@ -235,9 +234,8 @@ static bool hasRecursiveCallInPath(const FunctionDecl *FD, CFGBlock &Block) {
     if (const DeclRefExpr *DRE =
             dyn_cast<DeclRefExpr>(CE->getCallee()->IgnoreParenImpCasts()))
       if (NestedNameSpecifier NNS = DRE->getQualifier();
-          NNS.getKind() == NestedNameSpecifier::Kind::Type)
-        if (isa_and_nonnull<TemplateSpecializationType>(NNS.getAsType()))
-          continue;
+          (NNS.getKind() == NestedNameSpecifier::Kind::Type) && (isa_and_nonnull<TemplateSpecializationType>(NNS.getAsType())))
+        continue;
 
     const CXXMemberCallExpr *MCE = dyn_cast<CXXMemberCallExpr>(CE);
     if (!MCE || isa<CXXThisExpr>(MCE->getImplicitObjectArgument()) ||
@@ -441,25 +439,22 @@ struct TransferFunctions : public StmtVisitor<TransferFunctions> {
   void VisitDeclStmt(DeclStmt *DS) {
     for (auto *DI : DS->decls())
       if (auto *VD = dyn_cast<VarDecl>(DI))
-        if (VarDecl *Def = VD->getDefinition())
-          if (Def == Var)
-            AllValuesAreNoReturn = isInitializedWithNoReturn(Def);
+        if (VarDecl *Def = VD->getDefinition(); Def && (Def == Var))
+          AllValuesAreNoReturn = isInitializedWithNoReturn(Def);
   }
 
   void VisitUnaryOperator(UnaryOperator *UO) {
     if (UO->getOpcode() == UO_AddrOf) {
       if (auto *DRef =
-              dyn_cast<DeclRefExpr>(UO->getSubExpr()->IgnoreParenCasts()))
-        if (DRef->getDecl() == Var)
-          AllValuesAreNoReturn = false;
+              dyn_cast<DeclRefExpr>(UO->getSubExpr()->IgnoreParenCasts()); DRef && (DRef->getDecl() == Var))
+        AllValuesAreNoReturn = false;
     }
   }
 
   void VisitBinaryOperator(BinaryOperator *BO) {
     if (BO->getOpcode() == BO_Assign)
-      if (auto *DRef = dyn_cast<DeclRefExpr>(BO->getLHS()->IgnoreParenCasts()))
-        if (DRef->getDecl() == Var)
-          AllValuesAreNoReturn = isReferenceToNoReturn(BO->getRHS());
+      if (auto *DRef = dyn_cast<DeclRefExpr>(BO->getLHS()->IgnoreParenCasts()); DRef && (DRef->getDecl() == Var))
+        AllValuesAreNoReturn = isReferenceToNoReturn(BO->getRHS());
   }
 
   void VisitCallExpr(CallExpr *CE) {
@@ -468,9 +463,8 @@ struct TransferFunctions : public StmtVisitor<TransferFunctions> {
       const Expr *Arg = *I;
       if (Arg->isGLValue() && !Arg->getType().isConstQualified())
         if (auto *DRef = dyn_cast<DeclRefExpr>(Arg->IgnoreParenCasts()))
-          if (auto VD = dyn_cast<VarDecl>(DRef->getDecl()))
-            if (VD->getDefinition() == Var)
-              AllValuesAreNoReturn = false;
+          if (auto VD = dyn_cast<VarDecl>(DRef->getDecl()); VD && (VD->getDefinition() == Var))
+            AllValuesAreNoReturn = false;
     }
   }
 };
@@ -677,8 +671,8 @@ static ControlFlowKind CheckFallThrough(AnalysisDeclContext &AC) {
       if (Callee->getType()->isPointerType())
         if (auto *DeclRef =
                 dyn_cast<DeclRefExpr>(Callee->IgnoreParenImpCasts()))
-          if (auto *VD = dyn_cast<VarDecl>(DeclRef->getDecl()))
-            if (areAllValuesNoReturn(VD, B, AC)) {
+          if (auto *VD = dyn_cast<VarDecl>(DeclRef->getDecl()); VD && (areAllValuesNoReturn(VD, B, AC)))
+            {
               HasAbnormalEdge = true;
               continue;
             }
@@ -1356,10 +1350,9 @@ public:
   private:
 
     static const AttributedStmt *asFallThroughAttr(const Stmt *S) {
-      if (const AttributedStmt *AS = dyn_cast_or_null<AttributedStmt>(S)) {
-        if (hasSpecificAttr<FallThroughAttr>(AS->getAttrs()))
-          return AS;
-      }
+      if (const AttributedStmt *AS = dyn_cast_or_null<AttributedStmt>(S); AS && (hasSpecificAttr<FallThroughAttr>(AS->getAttrs()))) 
+        return AS;
+      
       return nullptr;
     }
 
@@ -1372,9 +1365,8 @@ public:
       // Workaround to detect a statement thrown out by CFGBuilder:
       //   case X: {} case Y:
       //   case X: ; case Y:
-      if (const SwitchCase *SW = dyn_cast_or_null<SwitchCase>(B.getLabel()))
-        if (!isa<SwitchCase>(SW->getSubStmt()))
-          return SW->getSubStmt();
+      if (const SwitchCase *SW = dyn_cast_or_null<SwitchCase>(B.getLabel()); SW && (!isa<SwitchCase>(SW->getSubStmt())))
+        return SW->getSubStmt();
 
       return nullptr;
     }
@@ -1565,9 +1557,8 @@ static void diagnoseRepeatedUseOfWeak(Sema &S,
           Base = Profile.getProperty();
         assert(Base && "A profile always has a base or property.");
 
-        if (const VarDecl *BaseVar = dyn_cast<VarDecl>(Base))
-          if (BaseVar->hasLocalStorage() && !isa<ParmVarDecl>(Base))
-            continue;
+        if (const VarDecl *BaseVar = dyn_cast<VarDecl>(Base); BaseVar && (BaseVar->hasLocalStorage() && !isa<ParmVarDecl>(Base)))
+          continue;
       }
     }
 
@@ -1647,9 +1638,8 @@ static void diagnoseRepeatedUseOfWeak(Sema &S,
 
     // Do not warn about IBOutlet weak property receivers being set to null
     // since they are typically only used from the main thread.
-    if (const ObjCPropertyDecl *Prop = dyn_cast<ObjCPropertyDecl>(KeyProp))
-      if (Prop->hasAttr<IBOutletAttr>())
-        continue;
+    if (const ObjCPropertyDecl *Prop = dyn_cast<ObjCPropertyDecl>(KeyProp); Prop && (Prop->hasAttr<IBOutletAttr>()))
+      continue;
 
     // Show the first time the object was read.
     S.Diag(FirstRead->getBeginLoc(), DiagKind)
@@ -1749,13 +1739,12 @@ private:
     // Specially handle the case where we have uses of an uninitialized
     // variable, but the root cause is an idiomatic self-init.  We want
     // to report the diagnostic at the self-init since that is the root cause.
-    if (hasSelfInit && hasAlwaysUninitializedUse(vec)) {
-      if (DiagnoseUninitializedUse(S, vd,
+    if ((hasSelfInit && hasAlwaysUninitializedUse(vec)) && (DiagnoseUninitializedUse(S, vd,
                                    UninitUse(vd->getInit()->IgnoreParenCasts(),
                                              /*isAlwaysUninit=*/true),
-                                   /*alwaysReportSelfInit=*/true))
-        return;
-    }
+                                   /*alwaysReportSelfInit=*/true))) 
+      return;
+    
 
     // Sort the uses by their SourceLocations.  While not strictly
     // guaranteed to produce them in line/column order, this will provide
@@ -2810,9 +2799,8 @@ static void emitPossiblyUnreachableDiags(Sema &S, AnalysisDeclContext &AC,
             // FIXME: We should be able to assert that block is non-null, but
             // the CFG analysis can skip potentially-evaluated expressions in
             // edge cases; see test/Sema/vla-2.c.
-            if (Block && Analysis)
-              if (!Analysis->isReachable(&AC.getCFG()->getEntry(), Block))
-                return false;
+            if ((Block && Analysis) && (!Analysis->isReachable(&AC.getCFG()->getEntry(), Block)))
+              return false;
             return true;
           })) {
         S.Diag(D.Loc, D.PD);
@@ -3154,23 +3142,23 @@ void clang::sema::AnalysisBasedWarnings::IssueWarnings(
 
   // TODO: Enable lifetime safety analysis for other languages once it is
   // stable.
-  if (EnableLifetimeSafetyAnalysis && S.getLangOpts().CPlusPlus) {
-    if (AC.getCFG()) {
+  if ((EnableLifetimeSafetyAnalysis && S.getLangOpts().CPlusPlus) && (AC.getCFG())) 
+    {
       lifetimes::LifetimeSafetySemaHelperImpl LifetimeSafetySemaHelper(S);
       lifetimes::runLifetimeSafetyAnalysis(AC, &LifetimeSafetySemaHelper,
                                            LSStats, S.CollectStats);
     }
-  }
+  
   // Check for violations of "called once" parameter properties.
-  if (S.getLangOpts().ObjC && !S.getLangOpts().CPlusPlus &&
-      shouldAnalyzeCalledOnceParameters(Diags, D->getBeginLoc())) {
-    if (AC.getCFG()) {
+  if ((S.getLangOpts().ObjC && !S.getLangOpts().CPlusPlus &&
+      shouldAnalyzeCalledOnceParameters(Diags, D->getBeginLoc())) && (AC.getCFG())) 
+    {
       CalledOnceCheckReporter Reporter(S, IPData->CalledOnceData);
       checkCalledOnceParameters(
           AC, Reporter,
           shouldAnalyzeCalledOnceConventions(Diags, D->getBeginLoc()));
     }
-  }
+  
 
   bool FallThroughDiagFull =
       !Diags.isIgnored(diag::warn_unannotated_fallthrough, D->getBeginLoc());
@@ -3196,9 +3184,8 @@ void clang::sema::AnalysisBasedWarnings::IssueWarnings(
 
   // Check for throw out of non-throwing function.
   if (!Diags.isIgnored(diag::warn_throw_in_noexcept_func, D->getBeginLoc()))
-    if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
-      if (S.getLangOpts().CPlusPlus && !fscope->isCoroutine() && isNoexcept(FD))
-        checkThrowInNonThrowingFunc(S, FD, AC);
+    if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D); FD && (S.getLangOpts().CPlusPlus && !fscope->isCoroutine() && isNoexcept(FD)))
+      checkThrowInNonThrowingFunc(S, FD, AC);
 
   // If none of the previous checks caused a CFG build, trigger one here
   // for the logical error handler.

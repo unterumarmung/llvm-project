@@ -267,9 +267,8 @@ static Value *EmitX86Select(CodeGenFunction &CGF,
                             Value *Mask, Value *Op0, Value *Op1) {
 
   // If the mask is all ones just return first argument.
-  if (const auto *C = dyn_cast<Constant>(Mask))
-    if (C->isAllOnesValue())
-      return Op0;
+  if (const auto *C = dyn_cast<Constant>(Mask); C && (C->isAllOnesValue()))
+    return Op0;
 
   Mask = getMaskVecValue(
       CGF, Mask, cast<llvm::FixedVectorType>(Op0->getType())->getNumElements());
@@ -280,9 +279,8 @@ static Value *EmitX86Select(CodeGenFunction &CGF,
 static Value *EmitX86ScalarSelect(CodeGenFunction &CGF,
                                   Value *Mask, Value *Op0, Value *Op1) {
   // If the mask is all ones just return first argument.
-  if (const auto *C = dyn_cast<Constant>(Mask))
-    if (C->isAllOnesValue())
-      return Op0;
+  if (const auto *C = dyn_cast<Constant>(Mask); C && (C->isAllOnesValue()))
+    return Op0;
 
   auto *MaskTy = llvm::FixedVectorType::get(
       CGF.Builder.getInt1Ty(), Mask->getType()->getIntegerBitWidth());
@@ -1643,9 +1641,8 @@ Value *CodeGenFunction::EmitX86BuiltinExpr(unsigned BuiltinID,
   case X86::BI__builtin_ia32_pmovdb512_mask:
   case X86::BI__builtin_ia32_pmovdw512_mask:
   case X86::BI__builtin_ia32_pmovqw512_mask: {
-    if (const auto *C = dyn_cast<Constant>(Ops[2]))
-      if (C->isAllOnesValue())
-        return Builder.CreateTrunc(Ops[0], Ops[1]->getType());
+    if (const auto *C = dyn_cast<Constant>(Ops[2]); C && (C->isAllOnesValue()))
+      return Builder.CreateTrunc(Ops[0], Ops[1]->getType());
 
     Intrinsic::ID IID;
     switch (BuiltinID) {

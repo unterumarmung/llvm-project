@@ -43,8 +43,8 @@ bool FrontendAction::beginSourceFile(CompilerInstance &ci,
 
   // Return immediately if the input file does not exist or is not a file. Note
   // that we cannot check this for input from stdin.
-  if (input.getFile() != "-") {
-    if (!llvm::sys::fs::is_regular_file(input.getFile())) {
+  if ((input.getFile() != "-") && (!llvm::sys::fs::is_regular_file(input.getFile()))) 
+    {
       // Create an diagnostic ID to report
       unsigned diagID;
       if (llvm::vfs::getRealFileSystem()->exists(input.getFile())) {
@@ -62,7 +62,7 @@ bool FrontendAction::beginSourceFile(CompilerInstance &ci,
       beginSourceFileCleanUp(*this, ci);
       return false;
     }
-  }
+  
 
   assert(!instance && "Already processing a source file!");
   assert(!realInput.isEmpty() && "Unexpected empty filename!");

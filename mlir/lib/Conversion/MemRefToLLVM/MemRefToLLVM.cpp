@@ -1060,10 +1060,9 @@ struct MemRefCastOpLowering : public ConvertOpToLLVMPattern<memref::CastOp> {
     // and require source and result type to have the same rank. Therefore,
     // perform a sanity check that the underlying structs are the same. Once op
     // semantics are relaxed we can revisit.
-    if (isa<MemRefType>(srcType) && isa<MemRefType>(dstType))
-      if (typeConverter->convertType(srcType) !=
-          typeConverter->convertType(dstType))
-        return failure();
+    if ((isa<MemRefType>(srcType) && isa<MemRefType>(dstType)) && (typeConverter->convertType(srcType) !=
+          typeConverter->convertType(dstType)))
+      return failure();
 
     // Unranked to unranked cast is disallowed
     if (isa<UnrankedMemRefType>(srcType) && isa<UnrankedMemRefType>(dstType))

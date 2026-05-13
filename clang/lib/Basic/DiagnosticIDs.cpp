@@ -598,17 +598,15 @@ DiagnosticIDs::getDiagnosticSeverity(unsigned DiagID, SourceLocation Loc,
   }
 
   // If -Werror is enabled, map warnings to errors unless explicitly disabled.
-  if (Result == diag::Severity::Warning) {
-    if (State->WarningsAsErrors && !Mapping.hasNoWarningAsError())
-      Result = diag::Severity::Error;
-  }
+  if ((Result == diag::Severity::Warning) && (State->WarningsAsErrors && !Mapping.hasNoWarningAsError())) 
+    Result = diag::Severity::Error;
+  
 
   // If -Wfatal-errors is enabled, map errors to fatal unless explicitly
   // disabled.
-  if (Result == diag::Severity::Error) {
-    if (State->ErrorsAsFatal && !Mapping.hasNoErrorAsFatal())
-      Result = diag::Severity::Fatal;
-  }
+  if ((Result == diag::Severity::Error) && (State->ErrorsAsFatal && !Mapping.hasNoErrorAsFatal())) 
+    Result = diag::Severity::Fatal;
+  
 
   // If explicitly requested, map fatal errors to errors.
   if (Result == diag::Severity::Fatal &&

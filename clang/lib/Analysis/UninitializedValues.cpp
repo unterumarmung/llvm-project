@@ -247,12 +247,12 @@ public:
 static const Expr *stripCasts(ASTContext &C, const Expr *Ex) {
   while (Ex) {
     Ex = Ex->IgnoreParenNoopCasts(C);
-    if (const auto *CE = dyn_cast<CastExpr>(Ex)) {
-      if (CE->getCastKind() == CK_LValueBitCast) {
+    if (const auto *CE = dyn_cast<CastExpr>(Ex); CE && (CE->getCastKind() == CK_LValueBitCast)) 
+      {
         Ex = CE->getSubExpr();
         continue;
       }
-    }
+    
     break;
   }
   return Ex;
@@ -263,9 +263,8 @@ static const Expr *stripCasts(ASTContext &C, const Expr *Ex) {
 static FindVarResult findVar(const Expr *E, const DeclContext *DC) {
   if (const auto *DRE =
           dyn_cast<DeclRefExpr>(stripCasts(DC->getParentASTContext(), E)))
-    if (const auto *VD = dyn_cast<VarDecl>(DRE->getDecl()))
-      if (isTrackedVar(VD, DC))
-        return FindVarResult(VD, DRE);
+    if (const auto *VD = dyn_cast<VarDecl>(DRE->getDecl()); VD && (isTrackedVar(VD, DC)))
+      return FindVarResult(VD, DRE);
   return FindVarResult(nullptr, nullptr);
 }
 
@@ -348,10 +347,9 @@ void ClassifyRefs::classify(const Expr *E, Class C) {
   }
 
   if (const auto *ME = dyn_cast<MemberExpr>(E)) {
-    if (const auto *VD = dyn_cast<VarDecl>(ME->getMemberDecl())) {
-      if (!VD->isStaticDataMember())
-        classify(ME->getBase(), C);
-    }
+    if (const auto *VD = dyn_cast<VarDecl>(ME->getMemberDecl()); VD && (!VD->isStaticDataMember())) 
+      classify(ME->getBase(), C);
+    
     return;
   }
 
@@ -453,14 +451,14 @@ void ClassifyRefs::VisitCallExpr(const CallExpr *CE) {
 void ClassifyRefs::VisitCastExpr(const CastExpr *CE) {
   if (CE->getCastKind() == CK_LValueToRValue)
     classify(CE->getSubExpr(), Use);
-  else if (const auto *CSE = dyn_cast<CStyleCastExpr>(CE)) {
-    if (CSE->getType()->isVoidType()) {
+  else if (const auto *CSE = dyn_cast<CStyleCastExpr>(CE); CSE && (CSE->getType()->isVoidType())) 
+    {
       // Squelch any detected load of an uninitialized value if
       // we cast it to void.
       // e.g. (void) x;
       classify(CSE->getSubExpr(), Ignore);
     }
-  }
+  
 }
 
 //------------------------------------------------------------------------====//
@@ -870,9 +868,8 @@ static bool runOnBlock(const CFGBlock *block, const CFG &cfg,
       tf.Visit(const_cast<Stmt *>(cs->getStmt()));
   }
   CFGTerminator terminator = block->getTerminator();
-  if (auto *as = dyn_cast_or_null<GCCAsmStmt>(terminator.getStmt()))
-    if (as->isAsmGoto())
-      tf.Visit(as);
+  if (auto *as = dyn_cast_or_null<GCCAsmStmt>(terminator.getStmt()); as && (as->isAsmGoto()))
+    tf.Visit(as);
   return vals.updateValueVectorWithScratch(block);
 }
 

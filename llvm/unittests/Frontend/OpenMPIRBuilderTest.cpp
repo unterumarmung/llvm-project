@@ -3554,12 +3554,12 @@ TEST_F(OpenMPIRBuilderTest, SingleDirective) {
   bool FoundBarrier = false;
   for (auto &FI : *ExitBB) {
     Instruction *cur = &FI;
-    if (auto CI = dyn_cast<CallInst>(cur)) {
-      if (CI->getCalledFunction()->getName() == "__kmpc_barrier") {
+    if (auto CI = dyn_cast<CallInst>(cur); CI && (CI->getCalledFunction()->getName() == "__kmpc_barrier")) 
+      {
         FoundBarrier = true;
         break;
       }
-    }
+    
   }
   EXPECT_TRUE(FoundBarrier);
 }
@@ -3648,12 +3648,12 @@ TEST_F(OpenMPIRBuilderTest, SingleDirectiveNowait) {
   CallInst *ExitBarrier = nullptr;
   for (auto &FI : *ExitBB) {
     Instruction *cur = &FI;
-    if (auto CI = dyn_cast<CallInst>(cur)) {
-      if (CI->getCalledFunction()->getName() == "__kmpc_barrier") {
+    if (auto CI = dyn_cast<CallInst>(cur); CI && (CI->getCalledFunction()->getName() == "__kmpc_barrier")) 
+      {
         ExitBarrier = CI;
         break;
       }
-    }
+    
   }
   EXPECT_EQ(ExitBarrier, nullptr);
 }
@@ -5905,12 +5905,12 @@ TEST_F(OpenMPIRBuilderTest, CreateSections) {
   // iterator/counter
   bool FoundForInit = false;
   for (Instruction &Inst : *LoopPreheaderBB) {
-    if (isa<CallInst>(Inst)) {
-      if (cast<CallInst>(&Inst)->getCalledFunction()->getName() ==
-          "__kmpc_for_static_init_4u") {
+    if ((isa<CallInst>(Inst)) && (cast<CallInst>(&Inst)->getCalledFunction()->getName() ==
+          "__kmpc_for_static_init_4u")) 
+      {
         FoundForInit = true;
       }
-    }
+    
   }
   EXPECT_EQ(FoundForInit, true);
 

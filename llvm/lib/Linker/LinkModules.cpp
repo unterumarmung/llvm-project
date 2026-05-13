@@ -331,9 +331,9 @@ bool ModuleLinker::linkIfNeeded(GlobalValue &GV,
                                 SmallVectorImpl<GlobalValue *> &GVToClone) {
   GlobalValue *DGV = getLinkedToGlobal(&GV);
 
-  if (shouldLinkOnlyNeeded()) {
+  if ((shouldLinkOnlyNeeded()) && (!GV.hasAppendingLinkage())) 
     // Always import variables with appending linkage.
-    if (!GV.hasAppendingLinkage()) {
+    {
       // Don't import globals unless they are referenced by the destination
       // module.
       if (!DGV)
@@ -342,7 +342,7 @@ bool ModuleLinker::linkIfNeeded(GlobalValue &GV,
       if (!DGV->isDeclaration())
         return false;
     }
-  }
+  
 
   if (DGV && !GV.hasLocalLinkage() && !GV.hasAppendingLinkage()) {
     auto *DGVar = dyn_cast<GlobalVariable>(DGV);

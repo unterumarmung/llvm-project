@@ -1253,14 +1253,14 @@ lltok::Kind LLLexer::LexDigitOrNegative() {
   // Skip over [0-9]*([eE][-+]?[0-9]+)?
   while (isdigit(static_cast<unsigned char>(CurPtr[0]))) ++CurPtr;
 
-  if (CurPtr[0] == 'e' || CurPtr[0] == 'E') {
-    if (isdigit(static_cast<unsigned char>(CurPtr[1])) ||
+  if ((CurPtr[0] == 'e' || CurPtr[0] == 'E') && (isdigit(static_cast<unsigned char>(CurPtr[1])) ||
         ((CurPtr[1] == '-' || CurPtr[1] == '+') &&
-          isdigit(static_cast<unsigned char>(CurPtr[2])))) {
+          isdigit(static_cast<unsigned char>(CurPtr[2]))))) 
+    {
       CurPtr += 2;
       while (isdigit(static_cast<unsigned char>(CurPtr[0]))) ++CurPtr;
     }
-  }
+  
 
   StrVal.assign(TokStart, CurPtr - TokStart);
   return lltok::FloatLiteral;
@@ -1295,14 +1295,14 @@ lltok::Kind LLLexer::LexPositive() {
   // Skip over [0-9]*([eE][-+]?[0-9]+)?
   while (isdigit(static_cast<unsigned char>(CurPtr[0]))) ++CurPtr;
 
-  if (CurPtr[0] == 'e' || CurPtr[0] == 'E') {
-    if (isdigit(static_cast<unsigned char>(CurPtr[1])) ||
+  if ((CurPtr[0] == 'e' || CurPtr[0] == 'E') && (isdigit(static_cast<unsigned char>(CurPtr[1])) ||
         ((CurPtr[1] == '-' || CurPtr[1] == '+') &&
-        isdigit(static_cast<unsigned char>(CurPtr[2])))) {
+        isdigit(static_cast<unsigned char>(CurPtr[2]))))) 
+    {
       CurPtr += 2;
       while (isdigit(static_cast<unsigned char>(CurPtr[0]))) ++CurPtr;
     }
-  }
+  
 
   StrVal.assign(TokStart, CurPtr - TokStart);
   return lltok::FloatLiteral;

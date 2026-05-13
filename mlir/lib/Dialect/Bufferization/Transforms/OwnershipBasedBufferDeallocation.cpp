@@ -62,9 +62,8 @@ static bool hasBufferSemantics(Operation *op) {
       llvm::any_of(op->getResults(), isMemref))
     return true;
   for (Region &region : op->getRegions())
-    if (!region.empty())
-      if (llvm::any_of(region.front().getArguments(), isMemref))
-        return true;
+    if ((!region.empty()) && (llvm::any_of(region.front().getArguments(), isMemref)))
+      return true;
   return false;
 }
 

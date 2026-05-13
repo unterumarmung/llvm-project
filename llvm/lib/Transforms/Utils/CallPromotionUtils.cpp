@@ -404,8 +404,8 @@ bool llvm::isLegalToPromote(const CallBase &CB, Function *Callee,
   // compatible with the call site's type.
   Type *CallRetTy = CB.getType();
   Type *FuncRetTy = Callee->getReturnType();
-  if (CallRetTy != FuncRetTy)
-    if (!CastInst::isBitOrNoopPointerCastable(FuncRetTy, CallRetTy, DL)) {
+  if ((CallRetTy != FuncRetTy) && (!CastInst::isBitOrNoopPointerCastable(FuncRetTy, CallRetTy, DL)))
+    {
       if (FailureReason)
         *FailureReason = "Return type mismatch";
       return false;
@@ -489,13 +489,13 @@ bool llvm::isLegalToPromote(const CallBase &CB, Function *Callee,
   SmallVector<StringRef, 8> CalleeFeats;
   CalleeFeatures.split(CalleeFeats, ',');
   for (auto Feat : CalleeFeats) {
-    if (Feat.starts_with("+")) {
-      if (!CallerFeatures.contains(Feat)) {
+    if ((Feat.starts_with("+")) && (!CallerFeatures.contains(Feat))) 
+      {
         if (FailureReason)
           *FailureReason = "Incompatible target features";
         return false;
       }
-    }
+    
   }
 
   return true;

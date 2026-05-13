@@ -308,18 +308,17 @@ Operation *ACCImplicitData::getOriginalDataClauseOpForAlias(
     const SmallVector<Value> &dominatingDataClauses) {
   auto &aliasAnalysis = this->getAnalysis<AliasAnalysis>();
   for (auto dataClause : dominatingDataClauses) {
-    if (auto *dataClauseOp = dataClause.getDefiningOp()) {
+    if (auto *dataClauseOp = dataClause.getDefiningOp(); dataClauseOp && (isa<acc::CopyinOp, acc::CreateOp, acc::PresentOp, acc::NoCreateOp,
+              acc::DevicePtrOp>(dataClauseOp)) && (aliasAnalysis.alias(acc::getVar(dataClauseOp), var).isMust())) 
       // Only accept clauses that guarantee that the alias is present.
-      if (isa<acc::CopyinOp, acc::CreateOp, acc::PresentOp, acc::NoCreateOp,
-              acc::DevicePtrOp>(dataClauseOp))
-        if (aliasAnalysis.alias(acc::getVar(dataClauseOp), var).isMust()) {
+      {
           LLVM_DEBUG(llvm::dbgs()
                          << "Using existing data clause:\n\t" << *dataClauseOp
                          << "\n\tas reference when processing var:\n\t" << var
                          << "\n";);
           return dataClauseOp;
         }
-    }
+    
   }
   return nullptr;
 }

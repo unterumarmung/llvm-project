@@ -503,10 +503,9 @@ void StackSafetyLocalAnalysis::analyzeAllUses(Value *Ptr,
         }
 
         const auto &CB = cast<CallBase>(*I);
-        if (CB.getReturnedArgOperand() == V) {
-          if (Visited.insert(I).second)
-            WorkList.push_back(cast<const Instruction>(I));
-        }
+        if ((CB.getReturnedArgOperand() == V) && (Visited.insert(I).second)) 
+          WorkList.push_back(cast<const Instruction>(I));
+        
 
         if (!CB.isArgOperand(&UI)) {
           US.addRange(I, UnknownRange, /*IsSafe=*/false);
@@ -727,9 +726,8 @@ FunctionSummary *findCalleeFunctionSummary(ValueInfo VI, StringRef ModuleId) {
   for (const auto& GVS : SummaryList) {
     if (!GVS->isLive())
       continue;
-    if (const AliasSummary *AS = dyn_cast<AliasSummary>(GVS.get()))
-      if (!AS->hasAliasee())
-        continue;
+    if (const AliasSummary *AS = dyn_cast<AliasSummary>(GVS.get()); AS && (!AS->hasAliasee()))
+      continue;
     if (!isa<FunctionSummary>(GVS->getBaseObject()))
       continue;
     if (GlobalValue::isLocalLinkage(GVS->linkage())) {

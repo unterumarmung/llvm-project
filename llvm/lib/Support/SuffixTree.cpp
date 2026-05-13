@@ -20,9 +20,8 @@ using namespace llvm;
 /// \returns the number of elements in the substring associated with \p N.
 static size_t numElementsInSubstring(const SuffixTreeNode *N) {
   assert(N && "Got a null node?");
-  if (auto *Internal = dyn_cast<SuffixTreeInternalNode>(N))
-    if (Internal->isRoot())
-      return 0;
+  if (auto *Internal = dyn_cast<SuffixTreeInternalNode>(N); Internal && (Internal->isRoot()))
+    return 0;
   return N->getEndIdx() - N->getStartIdx() + 1;
 }
 

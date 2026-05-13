@@ -277,8 +277,8 @@ Type *TruncInstCombine::getBestTruncatedType() {
       continue;
     bool IsExtInst = (isa<ZExtInst>(I) || isa<SExtInst>(I));
     for (auto *U : I->users())
-      if (auto *UI = dyn_cast<Instruction>(U))
-        if (UI != CurrentTruncInst && !InstInfoMap.count(UI)) {
+      if (auto *UI = dyn_cast<Instruction>(U); UI && (UI != CurrentTruncInst && !InstInfoMap.count(UI)))
+        {
           if (!IsExtInst)
             return nullptr;
           // If this is an extension from the dest type, we can eliminate it,

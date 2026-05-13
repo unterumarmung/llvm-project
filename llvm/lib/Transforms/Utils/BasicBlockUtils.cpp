@@ -317,9 +317,8 @@ bool llvm::MergeBlockIntoPredecessor(BasicBlock *BB, DomTreeUpdater *DTU,
     // times. We add inserts before deletes here to reduce compile time.
     for (BasicBlock *SuccOfBB : successors(BB))
       // This successor of BB may already be a PredBB's successor.
-      if (!SuccsOfPredBB.contains(SuccOfBB))
-        if (SeenSuccs.insert(SuccOfBB).second)
-          Updates.push_back({DominatorTree::Insert, PredBB, SuccOfBB});
+      if ((!SuccsOfPredBB.contains(SuccOfBB)) && (SeenSuccs.insert(SuccOfBB).second))
+        Updates.push_back({DominatorTree::Insert, PredBB, SuccOfBB});
     SeenSuccs.clear();
     for (BasicBlock *SuccOfBB : successors(BB))
       if (SeenSuccs.insert(SuccOfBB).second)
@@ -452,12 +451,11 @@ static bool removeRedundantDbgInstrsUsingBackwardScan(BasicBlock *BB) {
       if (R.second)
         continue;
 
-      if (DVR.isDbgAssign()) {
+      if ((DVR.isDbgAssign()) && (!at::getAssignmentInsts(&DVR).empty())) 
         // Don't delete dbg.assign intrinsics that are linked to instructions.
-        if (!at::getAssignmentInsts(&DVR).empty())
-          continue;
+        continue;
         // Unlinked dbg.assign intrinsics can be treated like dbg.values.
-      }
+      
 
       ToBeRemoved.push_back(&DVR);
     }
@@ -964,9 +962,8 @@ void llvm::createPHIsForSplitLoopExit(ArrayRef<BasicBlock *> Preds,
 
     // If the input is a PHI which already satisfies LCSSA, don't create
     // a new one.
-    if (const PHINode *VP = dyn_cast<PHINode>(V))
-      if (VP->getParent() == SplitBB)
-        continue;
+    if (const PHINode *VP = dyn_cast<PHINode>(V); VP && (VP->getParent() == SplitBB))
+      continue;
 
     // Otherwise a new PHI is needed. Create one and populate it.
     PHINode *NewPN = PHINode::Create(PN.getType(), Preds.size(), "split");
@@ -1132,9 +1129,8 @@ static void UpdateAnalysisInformation(BasicBlock *OldBB, BasicBlock *NewBB,
     // If we need to preserve LCSSA, determine if any of the preds is a loop
     // exit.
     if (PreserveLCSSA)
-      if (Loop *PL = LI->getLoopFor(Pred))
-        if (!PL->contains(OldBB))
-          HasLoopExit = true;
+      if (Loop *PL = LI->getLoopFor(Pred); PL && (!PL->contains(OldBB)))
+        HasLoopExit = true;
 
     // If we need to preserve LoopInfo, note whether any of the preds crosses
     // an interesting loop boundary.
@@ -1534,8 +1530,8 @@ ReturnInst *llvm::FoldReturnIntoUncondBranch(ReturnInst *RI, BasicBlock *BB,
       }
     }
 
-    if (PHINode *PN = dyn_cast<PHINode>(V)) {
-      if (PN->getParent() == BB) {
+    if (PHINode *PN = dyn_cast<PHINode>(V); PN && (PN->getParent() == BB)) 
+      {
         if (NewEV) {
           NewEV->setOperand(0, PN->getIncomingValueForBlock(Pred));
         } else if (NewBC)
@@ -1543,7 +1539,7 @@ ReturnInst *llvm::FoldReturnIntoUncondBranch(ReturnInst *RI, BasicBlock *BB,
         else
           Op = PN->getIncomingValueForBlock(Pred);
       }
-    }
+    
   }
 
   // Update any PHI nodes in the returning block to realize that we no

@@ -206,13 +206,12 @@ SVal SimpleSValBuilder::MakeSymIntVal(const SymExpr *LHS,
     if (ValWidth < TypeWidth) {
       // If the value is too small, extend it.
       ConvertedRHS = BasicVals.Convert(SymbolType, RHS);
-    } else if (ValWidth == TypeWidth) {
+    } else if ((ValWidth == TypeWidth) && (RHS.isSigned() && !SymbolType->isSignedIntegerOrEnumerationType())) 
       // If the value is signed but the symbol is unsigned, do the comparison
       // in unsigned space. [C99 6.3.1.8]
       // (For the opposite case, the value is already unsigned.)
-      if (RHS.isSigned() && !SymbolType->isSignedIntegerOrEnumerationType())
-        ConvertedRHS = BasicVals.Convert(SymbolType, RHS);
-    }
+      ConvertedRHS = BasicVals.Convert(SymbolType, RHS);
+    
   } else if (BinaryOperator::isAdditiveOp(op) && RHS.isNegative()) {
     // Change a+(-N) into a-N, and a-(-N) into a+N
     // Adjust addition/subtraction of negative value, to
@@ -276,9 +275,8 @@ static bool isWithinConstantOverflowBounds(llvm::APSInt I) {
 
 static std::pair<SymbolRef, APSIntPtr> decomposeSymbol(SymbolRef Sym,
                                                        BasicValueFactory &BV) {
-  if (const auto *SymInt = dyn_cast<SymIntExpr>(Sym))
-    if (BinaryOperator::isAdditiveOp(SymInt->getOpcode()))
-      return std::make_pair(SymInt->getLHS(),
+  if (const auto *SymInt = dyn_cast<SymIntExpr>(Sym); SymInt && (BinaryOperator::isAdditiveOp(SymInt->getOpcode())))
+    return std::make_pair(SymInt->getLHS(),
                             (SymInt->getOpcode() == BO_Add)
                                 ? BV.getValue(SymInt->getRHS())
                                 : BV.getValue(-SymInt->getRHS()));
@@ -990,13 +988,13 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
     // Handle special cases for when both regions are element regions.
     const ElementRegion *RightER = dyn_cast<ElementRegion>(RightMR);
     const ElementRegion *LeftER = dyn_cast<ElementRegion>(LeftMR);
-    if (RightER && LeftER) {
+    if ((RightER && LeftER) && (LeftER->getSuperRegion() == RightER->getSuperRegion() &&
+          LeftER->getElementType() == RightER->getElementType())) 
       // Next, see if the two ERs have the same super-region and matching types.
       // FIXME: This should do something useful even if the types don't match,
       // though if both indexes are constant the RegionRawOffset path will
       // give the correct answer.
-      if (LeftER->getSuperRegion() == RightER->getSuperRegion() &&
-          LeftER->getElementType() == RightER->getElementType()) {
+      {
         // Get the left index and cast it to the correct type.
         // If the index is unknown or undefined, bail out here.
         SVal LeftIndexVal = LeftER->getIndex();
@@ -1022,7 +1020,7 @@ SVal SimpleSValBuilder::evalBinOpLL(ProgramStateRef state,
         // evalBinOpNN expects the two indexes to already be the right type.
         return evalBinOpNN(state, op, *LeftIndex, *RightIndex, resultTy);
       }
-    }
+    
 
     // Special handling of the FieldRegions, even with symbolic offsets.
     const FieldRegion *RightFR = dyn_cast<FieldRegion>(RightMR);

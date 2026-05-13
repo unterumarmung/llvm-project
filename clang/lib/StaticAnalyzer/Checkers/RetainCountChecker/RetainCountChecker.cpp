@@ -365,14 +365,14 @@ void RetainCountChecker::checkPostCall(const CallEvent &Call,
 
   // Leave null if no receiver.
   QualType ReceiverType;
-  if (const auto *MC = dyn_cast<ObjCMethodCall>(&Call)) {
-    if (MC->isInstanceMessage()) {
+  if (const auto *MC = dyn_cast<ObjCMethodCall>(&Call); MC && (MC->isInstanceMessage())) 
+    {
       SVal ReceiverV = MC->getReceiverSVal();
       if (SymbolRef Sym = ReceiverV.getAsLocSymbol())
         if (const RefVal *T = getRefBinding(C.getState(), Sym))
           ReceiverType = T->getType();
     }
-  }
+  
 
   const RetainSummary *Summ = getSummary(Summaries, Call, ReceiverType);
 
@@ -396,9 +396,9 @@ static QualType GetReturnType(const Expr *RetE, ASTContext &Ctx) {
   // If RetE is a message expression, return its types if it is something
   /// more specific than id.
   if (const ObjCMessageExpr *ME = dyn_cast<ObjCMessageExpr>(RetE))
-    if (const ObjCObjectPointerType *PT = RetTy->getAs<ObjCObjectPointerType>())
-      if (PT->isObjCQualifiedIdType() || PT->isObjCIdType() ||
-          PT->isObjCClassType()) {
+    if (const ObjCObjectPointerType *PT = RetTy->getAs<ObjCObjectPointerType>(); PT && (PT->isObjCQualifiedIdType() || PT->isObjCIdType() ||
+          PT->isObjCClassType()))
+      {
         // At this point we know the return type of the message expression is
         // id, id<...>, or Class. If we have an ObjCInterfaceDecl, we know this
         // is a call to a class method whose type we can resolve.  In such
@@ -424,9 +424,8 @@ static std::optional<RefVal> refValFromRetEffect(RetEffect RE,
 
 static bool isPointerToObject(QualType QT) {
   QualType PT = QT->getPointeeType();
-  if (!PT.isNull())
-    if (PT->getAsCXXRecordDecl())
-      return true;
+  if ((!PT.isNull()) && (PT->getAsCXXRecordDecl()))
+    return true;
   return false;
 }
 
@@ -455,9 +454,8 @@ void RetainCountChecker::processSummaryOfInlined(const RetainSummary &Summ,
 
     if (SymbolRef Sym = V.getAsLocSymbol()) {
       bool ShouldRemoveBinding = Summ.getArg(idx).getKind() == StopTrackingHard;
-      if (const RefVal *T = getRefBinding(state, Sym))
-        if (shouldEscapeOSArgumentOnCall(CallOrMsg, idx, T))
-          ShouldRemoveBinding = true;
+      if (const RefVal *T = getRefBinding(state, Sym); T && (shouldEscapeOSArgumentOnCall(CallOrMsg, idx, T)))
+        ShouldRemoveBinding = true;
 
       if (ShouldRemoveBinding)
         state = removeRefBinding(state, Sym);
@@ -466,20 +464,19 @@ void RetainCountChecker::processSummaryOfInlined(const RetainSummary &Summ,
 
   // Evaluate the effect on the message receiver.
   if (const auto *MsgInvocation = dyn_cast<ObjCMethodCall>(&CallOrMsg)) {
-    if (SymbolRef Sym = MsgInvocation->getReceiverSVal().getAsLocSymbol()) {
-      if (Summ.getReceiverEffect().getKind() == StopTrackingHard) {
+    if (SymbolRef Sym = MsgInvocation->getReceiverSVal().getAsLocSymbol(); Sym && (Summ.getReceiverEffect().getKind() == StopTrackingHard)) 
+      {
         state = removeRefBinding(state, Sym);
       }
-    }
+    
   }
 
   // Consult the summary for the return value.
   RetEffect RE = Summ.getRetEffect();
 
-  if (SymbolRef Sym = CallOrMsg.getReturnValue().getAsSymbol()) {
-    if (RE.getKind() == RetEffect::NoRetHard)
-      state = removeRefBinding(state, Sym);
-  }
+  if (SymbolRef Sym = CallOrMsg.getReturnValue().getAsSymbol(); Sym && (RE.getKind() == RetEffect::NoRetHard)) 
+    state = removeRefBinding(state, Sym);
+  
 
   C.addTransition(state);
 }
@@ -873,9 +870,8 @@ void RetainCountChecker::processNonLeakError(ProgramStateRef St,
   //   [_contentView removeFromSuperview];
   //   [self addSubview:_contentView]; // invalidates 'self'
   //   [_contentView release];
-  if (const RefVal *RV = getRefBinding(St, Sym))
-    if (RV->getIvarAccessHistory() != RefVal::IvarAccessHistory::None)
-      return;
+  if (const RefVal *RV = getRefBinding(St, Sym); RV && (RV->getIvarAccessHistory() != RefVal::IvarAccessHistory::None))
+    return;
 
   ExplodedNode *N = C.generateErrorNode(St);
   if (!N)
@@ -1058,12 +1054,12 @@ ExplodedNode * RetainCountChecker::processReturn(const ReturnStmt *S,
   if (const ObjCMethodDecl *MD = dyn_cast<ObjCMethodDecl>(CD)) {
     const RetainSummary *Summ = Summaries.getSummary(AnyCall(MD));
     RE = Summ->getRetEffect();
-  } else if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(CD)) {
-    if (!isa<CXXMethodDecl>(FD)) {
+  } else if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(CD); FD && (!isa<CXXMethodDecl>(FD))) 
+    {
       const RetainSummary *Summ = Summaries.getSummary(AnyCall(FD));
       RE = Summ->getRetEffect();
     }
-  }
+  
 
   return checkReturnWithRetEffect(S, C, Pred, RE, X, Sym, state);
 }
@@ -1085,8 +1081,8 @@ ExplodedNode * RetainCountChecker::checkReturnWithRetEffect(const ReturnStmt *S,
 
   // Any leaks or other errors?
   if (X.isReturnedOwned() && X.getCount() == 0) {
-    if (RE.getKind() != RetEffect::NoRet) {
-      if (!RE.isOwned()) {
+    if ((RE.getKind() != RetEffect::NoRet) && (!RE.isOwned())) 
+      {
 
         // The returning type is a CF, we expect the enclosing method should
         // return ownership.
@@ -1104,9 +1100,9 @@ ExplodedNode * RetainCountChecker::checkReturnWithRetEffect(const ReturnStmt *S,
         }
         return N;
       }
-    }
-  } else if (X.isReturnedNotOwned()) {
-    if (RE.isOwned()) {
+    
+  } else if ((X.isReturnedNotOwned()) && (RE.isOwned())) 
+    {
       if (X.getIvarAccessHistory() ==
             RefVal::IvarAccessHistory::AccessedDirectly) {
         // Assume the method was trying to transfer a +1 reference from a
@@ -1128,7 +1124,7 @@ ExplodedNode * RetainCountChecker::checkReturnWithRetEffect(const ReturnStmt *S,
         return N;
       }
     }
-  }
+  
   return Pred;
 }
 

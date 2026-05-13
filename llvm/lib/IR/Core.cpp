@@ -1178,24 +1178,21 @@ LLVMValueRef LLVMIsABranchInst(LLVMValueRef Val) {
 }
 
 LLVMValueRef LLVMIsAMDNode(LLVMValueRef Val) {
-  if (auto *MD = dyn_cast_or_null<MetadataAsValue>(unwrap(Val)))
-    if (isa<MDNode>(MD->getMetadata()) ||
-        isa<ValueAsMetadata>(MD->getMetadata()))
-      return Val;
+  if (auto *MD = dyn_cast_or_null<MetadataAsValue>(unwrap(Val)); MD && (isa<MDNode>(MD->getMetadata()) ||
+        isa<ValueAsMetadata>(MD->getMetadata())))
+    return Val;
   return nullptr;
 }
 
 LLVMValueRef LLVMIsAValueAsMetadata(LLVMValueRef Val) {
-  if (auto *MD = dyn_cast_or_null<MetadataAsValue>(unwrap(Val)))
-    if (isa<ValueAsMetadata>(MD->getMetadata()))
-      return Val;
+  if (auto *MD = dyn_cast_or_null<MetadataAsValue>(unwrap(Val)); MD && (isa<ValueAsMetadata>(MD->getMetadata())))
+    return Val;
   return nullptr;
 }
 
 LLVMValueRef LLVMIsAMDString(LLVMValueRef Val) {
-  if (auto *MD = dyn_cast_or_null<MetadataAsValue>(unwrap(Val)))
-    if (isa<MDString>(MD->getMetadata()))
-      return Val;
+  if (auto *MD = dyn_cast_or_null<MetadataAsValue>(unwrap(Val)); MD && (isa<MDString>(MD->getMetadata())))
+    return Val;
   return nullptr;
 }
 

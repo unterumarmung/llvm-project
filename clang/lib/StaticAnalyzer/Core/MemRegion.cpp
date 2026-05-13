@@ -1008,10 +1008,9 @@ getStackOrCaptureRegionForDeclContext(const LocationContext *LC,
         for (auto Var : static_cast<const BlockDataRegion *>(SF->getData())
                             ->referenced_vars()) {
           const TypedValueRegion *OrigR = Var.getOriginalRegion();
-          if (const auto *VR = dyn_cast<VarRegion>(OrigR)) {
-            if (VR->getDecl() == VD)
-              return cast<VarRegion>(Var.getCapturedRegion());
-          }
+          if (const auto *VR = dyn_cast<VarRegion>(OrigR); VR && (VR->getDecl() == VD)) 
+            return cast<VarRegion>(Var.getCapturedRegion());
+          
         }
       }
     }

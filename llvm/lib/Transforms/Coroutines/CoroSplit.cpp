@@ -661,9 +661,8 @@ void coro::BaseCloner::salvageDebugInfo() {
       // Count all non-debuginfo uses in reachable blocks.
       unsigned Uses = 0;
       for (auto *User : DVI->getVariableLocationOp(0)->users())
-        if (auto *I = dyn_cast<Instruction>(User))
-          if (!isa<AllocaInst>(I) && !IsUnreachableBlock(I->getParent()))
-            ++Uses;
+        if (auto *I = dyn_cast<Instruction>(User); I && (!isa<AllocaInst>(I) && !IsUnreachableBlock(I->getParent())))
+          ++Uses;
       if (!Uses)
         DVI->eraseFromParent();
     }

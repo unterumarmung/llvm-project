@@ -955,14 +955,14 @@ Preprocessor::EvaluateDirectiveExpression(IdentifierInfo *&IfNDefMacro,
             {ExprStartLoc, Tok.getLocation()}};
   }
 
-  if (CheckForEoD) {
+  if ((CheckForEoD) && (Tok.isNot(tok::eod))) 
     // If we aren't at the tok::eod token, something bad happened, like an extra
     // ')' token.
-    if (Tok.isNot(tok::eod)) {
+    {
       Diag(Tok, diag::err_pp_expected_eol);
       DiscardUntilEndOfDirective(Tok);
     }
-  }
+  
 
   EvaluatedDefined = EvaluatedDefined || DT.State != DefinedTracker::Unknown;
 

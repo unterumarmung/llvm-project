@@ -365,9 +365,8 @@ containsUndefinedElement(const Constant *C,
 
     for (unsigned i = 0, e = cast<FixedVectorType>(VTy)->getNumElements();
          i != e; ++i) {
-      if (Constant *Elem = C->getAggregateElement(i))
-        if (HasFn(Elem))
-          return true;
+      if (Constant *Elem = C->getAggregateElement(i); Elem && (HasFn(Elem)))
+        return true;
     }
   }
 
@@ -671,9 +670,8 @@ ConstHasGlobalValuePredicate(const Constant *C,
 
   while (!WorkList.empty()) {
     const Constant *WorkItem = WorkList.pop_back_val();
-    if (const auto *GV = dyn_cast<GlobalValue>(WorkItem))
-      if (Predicate(GV))
-        return true;
+    if (const auto *GV = dyn_cast<GlobalValue>(WorkItem); GV && (Predicate(GV)))
+      return true;
     for (const Value *Op : WorkItem->operands()) {
       const Constant *ConstOp = dyn_cast<Constant>(Op);
       if (!ConstOp)
@@ -726,8 +724,8 @@ Constant::PossibleRelocationsTy Constant::getRelocationInfo() const {
   if (const BlockAddress *BA = dyn_cast<BlockAddress>(this))
     return BA->getFunction()->getRelocationInfo();
 
-  if (const ConstantExpr *CE = dyn_cast<ConstantExpr>(this)) {
-    if (CE->getOpcode() == Instruction::Sub) {
+  if (const ConstantExpr *CE = dyn_cast<ConstantExpr>(this); CE && (CE->getOpcode() == Instruction::Sub)) 
+    {
       ConstantExpr *LHS = dyn_cast<ConstantExpr>(CE->getOperand(0));
       ConstantExpr *RHS = dyn_cast<ConstantExpr>(CE->getOperand(1));
       if (LHS && RHS &&
@@ -754,14 +752,13 @@ Constant::PossibleRelocationsTy Constant::getRelocationInfo() const {
           if (auto *LHSGV = dyn_cast<GlobalValue>(LHS)) {
             if (LHSGV->isDSOLocal() && RHSGV->isDSOLocal())
               return LocalRelocation;
-          } else if (isa<DSOLocalEquivalent>(LHS)) {
-            if (RHSGV->isDSOLocal())
-              return LocalRelocation;
-          }
+          } else if ((isa<DSOLocalEquivalent>(LHS)) && (RHSGV->isDSOLocal())) 
+            return LocalRelocation;
+          
         }
       }
     }
-  }
+  
 
   PossibleRelocationsTy Result = NoRelocation;
   for (const Value *Op : operands())

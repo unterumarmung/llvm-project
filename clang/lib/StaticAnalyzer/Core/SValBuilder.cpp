@@ -275,15 +275,14 @@ SValBuilder::getDerivedRegionValueSymbolVal(SymbolRef parentSymbol,
 DefinedSVal SValBuilder::getMemberPointer(const NamedDecl *ND) {
   assert(!ND || (isa<CXXMethodDecl, FieldDecl, IndirectFieldDecl>(ND)));
 
-  if (const auto *MD = dyn_cast_or_null<CXXMethodDecl>(ND)) {
+  if (const auto *MD = dyn_cast_or_null<CXXMethodDecl>(ND); MD && (!MD->isImplicitObjectMemberFunction())) 
     // Sema treats pointers to static member functions as have function pointer
     // type, so return a function pointer for the method.
     // We don't need to play a similar trick for static member fields
     // because these are represented as plain VarDecls and not FieldDecls
     // in the AST.
-    if (!MD->isImplicitObjectMemberFunction())
-      return getFunctionPointer(MD);
-  }
+    return getFunctionPointer(MD);
+  
 
   return nonloc::PointerToMember(ND);
 }
@@ -418,9 +417,8 @@ std::optional<SVal> SValBuilder::getConstantVal(const Expr *E) {
     if (E->EvaluateAsInt(Result, Ctx))
       return makeIntVal(Result.Val.getInt());
 
-    if (Loc::isLocType(E->getType()))
-      if (E->isNullPointerConstant(Ctx, Expr::NPC_ValueDependentIsNotNull))
-        return makeNullWithType(E->getType());
+    if ((Loc::isLocType(E->getType())) && (E->isNullPointerConstant(Ctx, Expr::NPC_ValueDependentIsNotNull)))
+      return makeNullWithType(E->getType());
 
     return std::nullopt;
   }
@@ -658,10 +656,9 @@ public:
       // FIXME: Move this check to the most appropriate
       // evalCastKind/evalCastSubKind function. For const casts, casts to void,
       // just propagate the value.
-      if (!CastTy->isVariableArrayType() && !OriginalTy->isVariableArrayType())
-        if (shouldBeModeledWithNoOp(Context, Context.getPointerType(CastTy),
-                                    Context.getPointerType(OriginalTy)))
-          return V;
+      if ((!CastTy->isVariableArrayType() && !OriginalTy->isVariableArrayType()) && (shouldBeModeledWithNoOp(Context, Context.getPointerType(CastTy),
+                                    Context.getPointerType(OriginalTy))))
+        return V;
     }
     return SValVisitor::Visit(V);
   }
@@ -702,12 +699,10 @@ public:
     }
 
     const bool IsUnknownOriginalType = OriginalTy.isNull();
-    if (!IsUnknownOriginalType) {
+    if ((!IsUnknownOriginalType) && (isa<ArrayType>(OriginalTy)) && (CastTy->isPointerType() || CastTy->isReferenceType())) 
       // Array to pointer.
-      if (isa<ArrayType>(OriginalTy))
-        if (CastTy->isPointerType() || CastTy->isReferenceType())
-          return UnknownVal();
-    }
+      return UnknownVal();
+    
 
     // Pointer to any pointer.
     if (Loc::isLocType(CastTy))
@@ -983,10 +978,9 @@ public:
           return V;
         return simplifySymbolCast(V, CastTy);
       }
-      if (!Loc::isLocType(CastTy))
-        if (!IsUnknownOriginalType || !CastTy->isFloatingType() ||
-            T->isFloatingType())
-          return VB.makeNonLoc(SE, T, CastTy);
+      if ((!Loc::isLocType(CastTy)) && (!IsUnknownOriginalType || !CastTy->isFloatingType() ||
+            T->isFloatingType()))
+        return VB.makeNonLoc(SE, T, CastTy);
     }
 
     // FIXME: We should be able to cast NonLoc -> Loc

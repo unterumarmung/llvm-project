@@ -187,9 +187,8 @@ static void EmitInlineAsmStr(const char *AsmStr, const MachineInstr *MI,
       switch (*LastEmitted) {
       default: Done = false; break;
       case '$':     // $$ -> $
-        if (!InputIsIntelDialect)
-          if (CurVariant == -1 || CurVariant == AsmPrinterVariant)
-            OS << '$';
+        if ((!InputIsIntelDialect) && (CurVariant == -1 || CurVariant == AsmPrinterVariant))
+          OS << '$';
         ++LastEmitted;  // Consume second '$' character.
         break;
       case '(':        // $( -> same as GCC's { character.

@@ -205,14 +205,12 @@ PreservedAnalyses ProfileInjectorPass::run(Function &F,
 PreservedAnalyses ProfileVerifierPass::run(Module &M,
                                            ModuleAnalysisManager &MAM) {
   auto PopulateIgnoreList = [&](StringRef GVName) {
-    if (const auto *CT = M.getGlobalVariable(GVName))
-      if (CT->hasInitializer())
-        if (const auto *CA =
+    if (const auto *CT = M.getGlobalVariable(GVName); CT && (CT->hasInitializer()))
+      if (const auto *CA =
                 dyn_cast_if_present<ConstantArray>(CT->getInitializer()))
           for (const auto &Elt : CA->operands())
-            if (const auto *CS = dyn_cast<ConstantStruct>(Elt))
-              if (CS->getNumOperands() >= 2 && CS->getOperand(1))
-                if (const auto *F = dyn_cast<Function>(
+            if (const auto *CS = dyn_cast<ConstantStruct>(Elt); CS && (CS->getNumOperands() >= 2 && CS->getOperand(1)))
+              if (const auto *F = dyn_cast<Function>(
                         CS->getOperand(1)->stripPointerCasts()))
                   IgnoreList.insert(F);
   };
@@ -263,9 +261,8 @@ PreservedAnalyses ProfileVerifierPass::run(Function &F,
         }
     }
     if (const auto *Term =
-            ProfileInjector::getTerminatorBenefitingFromMDProf(BB))
-      if (!Term->getMetadata(LLVMContext::MD_prof))
-        emitProfileError("branch annotation missing", F);
+            ProfileInjector::getTerminatorBenefitingFromMDProf(BB); Term && (!Term->getMetadata(LLVMContext::MD_prof)))
+      emitProfileError("branch annotation missing", F);
   }
   return PreservedAnalyses::all();
 }

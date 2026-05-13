@@ -533,10 +533,9 @@ void VirtRegRewriter::expandCopyBundle(MachineInstr &MI) const {
                            ArrayRef<MachineInstr *> Srcs,
                            const TargetRegisterInfo *TRI) {
       for (const MachineInstr *Src : Srcs)
-        if (Src != Dst)
-          if (TRI->regsOverlap(Dst->getOperand(0).getReg(),
-                               Src->getOperand(1).getReg()))
-            return true;
+        if ((Src != Dst) && (TRI->regsOverlap(Dst->getOperand(0).getReg(),
+                               Src->getOperand(1).getReg())))
+          return true;
       return false;
     };
 

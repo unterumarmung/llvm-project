@@ -538,10 +538,9 @@ MemDepResult MemoryDependenceResults::getSimplePointerDependencyFrom(
       // Atomic stores have complications involved.
       // A Monotonic store is OK if the query inst is itself not atomic.
       // FIXME: This is overly conservative.
-      if (!SI->isUnordered() && SI->isAtomic()) {
-        if (!QueryInst ||
-            isComplexForReordering(QueryInst, AtomicOrdering::Unordered))
-          return MemDepResult::getClobber(SI);
+      if ((!SI->isUnordered() && SI->isAtomic()) && (!QueryInst ||
+            isComplexForReordering(QueryInst, AtomicOrdering::Unordered))) 
+        return MemDepResult::getClobber(SI);
         // Ok, if we are here the guard above guarantee us that
         // QueryInst is a non-atomic or unordered load/store.
         // SI is atomic with monotonic or release semantic (seq_cst for store
@@ -551,14 +550,13 @@ MemDepResult MemoryDependenceResults::getSimplePointerDependencyFrom(
         // Monotonic and Release semantic allows re-ordering before store
         // so we are safe to go further and check the aliasing. It will prohibit
         // re-ordering in case locations are may or must alias.
-      }
+      
 
       // While volatile access cannot be eliminated, they do not have to clobber
       // non-aliasing locations, as normal accesses can for example be reordered
       // with volatile accesses.
-      if (SI->isVolatile())
-        if (!QueryInst || QueryInst->isVolatile())
-          return MemDepResult::getClobber(SI);
+      if ((SI->isVolatile()) && (!QueryInst || QueryInst->isVolatile()))
+        return MemDepResult::getClobber(SI);
 
       // If alias analysis can tell that this store is guaranteed to not modify
       // the query pointer, ignore it.  Use getModRefInfo to handle cases where
@@ -610,9 +608,8 @@ MemDepResult MemoryDependenceResults::getSimplePointerDependencyFrom(
     // fence.  As a result, we look past it when finding a dependency for
     // loads.  DSE uses this to find preceding stores to delete and thus we
     // can't bypass the fence if the query instruction is a store.
-    if (FenceInst *FI = dyn_cast<FenceInst>(Inst))
-      if (isLoad && FI->getOrdering() == AtomicOrdering::Release)
-        continue;
+    if (FenceInst *FI = dyn_cast<FenceInst>(Inst); FI && (isLoad && FI->getOrdering() == AtomicOrdering::Release))
+      continue;
 
     // See if this instruction (e.g. a call or vaarg) mod/ref's the pointer.
     switch (BatchAA.getModRefInfo(Inst, MemLoc)) {
@@ -1234,12 +1231,12 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
           QueryInst, Loc, isLoad, BB, Cache, NumSortedEntries, BatchAA);
 
       // If we got a Def or Clobber, add this to the list of results.
-      if (!Dep.isNonLocal()) {
-        if (DT.isReachableFromEntry(BB)) {
+      if ((!Dep.isNonLocal()) && (DT.isReachableFromEntry(BB))) 
+        {
           Result.push_back(NonLocalDepResult(BB, Dep, Pointer.getAddr()));
           continue;
         }
-      }
+      
     }
 
     // If 'Pointer' is an instruction defined in this block, then we need to do

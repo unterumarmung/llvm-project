@@ -81,10 +81,9 @@ static bool checkBitsConcrete(Record &R, const RecordVal &RV) {
     const Init *Bit = BV->getBit(i);
     bool IsReference = false;
     if (const auto *VBI = dyn_cast<VarBitInit>(Bit)) {
-      if (const auto *VI = dyn_cast<VarInit>(VBI->getBitVar())) {
-        if (R.getValue(VI->getName()))
-          IsReference = true;
-      }
+      if (const auto *VI = dyn_cast<VarInit>(VBI->getBitVar()); VI && (R.getValue(VI->getName()))) 
+        IsReference = true;
+      
     } else if (isa<VarInit>(Bit)) {
       IsReference = true;
     }
@@ -290,9 +289,8 @@ bool TGParser::SetValue(Record *CurRec, SMLoc Loc, const Init *ValName,
   // Do not allow assignments like 'X = X'. This will just cause infinite loops
   // in the resolution machinery.
   if (BitList.empty())
-    if (const auto *VI = dyn_cast<VarInit>(V))
-      if (VI->getNameInit() == ValName && !AllowSelfAssignment)
-        return Error(Loc, "Recursion / self-assignment forbidden");
+    if (const auto *VI = dyn_cast<VarInit>(V); VI && (VI->getNameInit() == ValName && !AllowSelfAssignment))
+      return Error(Loc, "Recursion / self-assignment forbidden");
 
   // If we are assigning to a subset of the bits in the value we must be
   // assigning to a field of BitsRecTy, which must have a BitsInit initializer.
@@ -353,9 +351,8 @@ bool TGParser::AddSubClass(Record *CurRec, SubClassReference &SubClass) {
   // Loop over all the subclass record's fields. Add regular fields to the new
   // record.
   for (const RecordVal &Field : SC->getValues())
-    if (!Field.isTemplateArg())
-      if (AddValue(CurRec, SubClass.RefRange.Start, Field))
-        return true;
+    if ((!Field.isTemplateArg()) && (AddValue(CurRec, SubClass.RefRange.Start, Field)))
+      return true;
 
   if (resolveArgumentsOfClass(R, SC, SubClass.TemplateArgs,
                               SubClass.RefRange.Start))
@@ -1359,13 +1356,13 @@ const Init *TGParser::ParseOperation(Record *CurRec, const RecTy *ItemType) {
             "expected string, list, or dag type argument in unary operator");
         return nullptr;
       }
-      if (LHSt) {
-        if (!isa<ListRecTy, StringRecTy, DagRecTy>(LHSt->getType())) {
+      if ((LHSt) && (!isa<ListRecTy, StringRecTy, DagRecTy>(LHSt->getType()))) 
+        {
           TokError(
               "expected string, list, or dag type argument in unary operator");
           return nullptr;
         }
-      }
+      
     }
 
     if (Code == UnOpInit::HEAD || Code == UnOpInit::TAIL ||
@@ -1376,12 +1373,12 @@ const Init *TGParser::ParseOperation(Record *CurRec, const RecTy *ItemType) {
         TokError("expected list type argument in unary operator");
         return nullptr;
       }
-      if (LHSt) {
-        if (!isa<ListRecTy>(LHSt->getType())) {
+      if ((LHSt) && (!isa<ListRecTy>(LHSt->getType()))) 
+        {
           TokError("expected list type argument in unary operator");
           return nullptr;
         }
-      }
+      
 
       if (LHSl && LHSl->empty()) {
         TokError("empty list argument in unary operator");
@@ -3008,13 +3005,13 @@ const Init *TGParser::ParseSimpleValue(Record *CurRec, const RecTy *ItemType,
     }
 
     if (GivenEltTy) {
-      if (EltTy) {
+      if ((EltTy) && (!EltTy->typeIsConvertibleTo(GivenEltTy))) 
         // Verify consistency
-        if (!EltTy->typeIsConvertibleTo(GivenEltTy)) {
+        {
           TokError("Incompatible types in list elements");
           return nullptr;
         }
-      }
+      
       EltTy = GivenEltTy;
     }
 
@@ -3026,14 +3023,14 @@ const Init *TGParser::ParseSimpleValue(Record *CurRec, const RecTy *ItemType,
       DeducedEltTy = GivenListTy->getElementType();
     } else {
       // Make sure the deduced type is compatible with the given type
-      if (GivenListTy) {
-        if (!EltTy->typeIsConvertibleTo(GivenListTy->getElementType())) {
+      if ((GivenListTy) && (!EltTy->typeIsConvertibleTo(GivenListTy->getElementType()))) 
+        {
           TokError(Twine("Element type mismatch for list: element type '") +
                    EltTy->getAsString() + "' not convertible to '" +
                    GivenListTy->getElementType()->getAsString());
           return nullptr;
         }
-      }
+      
       DeducedEltTy = EltTy;
     }
 
@@ -4232,9 +4229,8 @@ bool TGParser::ParseClass() {
   // A class definition introduces a new scope.
   TGVarScope *ClassScope = PushScope(CurRec);
   // If there are template args, parse them.
-  if (Lex.getCode() == tgtok::less)
-    if (ParseTemplateArgList(CurRec))
-      return true;
+  if ((Lex.getCode() == tgtok::less) && (ParseTemplateArgList(CurRec)))
+    return true;
 
   if (ParseObjectBody(CurRec))
     return true;
@@ -4372,9 +4368,8 @@ bool TGParser::ParseMultiClass() {
   TGVarScope *MulticlassScope = PushScope(CurMultiClass);
 
   // If there are template args, parse them.
-  if (Lex.getCode() == tgtok::less)
-    if (ParseTemplateArgList(nullptr))
-      return true;
+  if ((Lex.getCode() == tgtok::less) && (ParseTemplateArgList(nullptr)))
+    return true;
 
   bool inherits = false;
 

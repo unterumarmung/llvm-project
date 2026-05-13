@@ -476,9 +476,8 @@ bool ELFWriter::isInSymtab(const MCSymbolELF &Symbol) {
   if (Symbol.isVariable()) {
     const MCExpr *Expr = Symbol.getVariableValue();
     // Target Expressions that are always inlined do not appear in the symtab
-    if (const auto *T = dyn_cast<MCTargetExpr>(Expr))
-      if (T->inlineAssignedExpr())
-        return false;
+    if (const auto *T = dyn_cast<MCTargetExpr>(Expr); T && (T->inlineAssignedExpr()))
+      return false;
     // The .weakref alias does not appear in the symtab.
     if (Symbol.isWeakref())
       return false;

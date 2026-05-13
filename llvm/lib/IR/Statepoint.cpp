@@ -26,15 +26,13 @@ llvm::parseStatepointDirectivesFromAttrs(AttributeList AS) {
 
   Attribute AttrID = AS.getFnAttr("statepoint-id");
   uint64_t StatepointID;
-  if (AttrID.isStringAttribute())
-    if (!AttrID.getValueAsString().getAsInteger(10, StatepointID))
-      Result.StatepointID = StatepointID;
+  if ((AttrID.isStringAttribute()) && (!AttrID.getValueAsString().getAsInteger(10, StatepointID)))
+    Result.StatepointID = StatepointID;
 
   uint32_t NumPatchBytes;
   Attribute AttrNumPatchBytes = AS.getFnAttr("statepoint-num-patch-bytes");
-  if (AttrNumPatchBytes.isStringAttribute())
-    if (!AttrNumPatchBytes.getValueAsString().getAsInteger(10, NumPatchBytes))
-      Result.NumPatchBytes = NumPatchBytes;
+  if ((AttrNumPatchBytes.isStringAttribute()) && (!AttrNumPatchBytes.getValueAsString().getAsInteger(10, NumPatchBytes)))
+    Result.NumPatchBytes = NumPatchBytes;
 
   return Result;
 }

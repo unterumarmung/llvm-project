@@ -130,9 +130,8 @@ ABIArgInfo LanaiABIInfo::classifyArgumentType(QualType Ty,
   bool InReg = shouldUseInReg(Ty, State);
 
   // Don't pass >64 bit integers in registers.
-  if (const auto *EIT = Ty->getAs<BitIntType>())
-    if (EIT->getNumBits() > 64)
-      return getIndirectResult(Ty, /*ByVal=*/true, State);
+  if (const auto *EIT = Ty->getAs<BitIntType>(); EIT && (EIT->getNumBits() > 64))
+    return getIndirectResult(Ty, /*ByVal=*/true, State);
 
   if (isPromotableIntegerTypeForABI(Ty)) {
     if (InReg)

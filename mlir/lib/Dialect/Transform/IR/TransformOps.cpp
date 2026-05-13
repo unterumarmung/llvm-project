@@ -2437,9 +2437,9 @@ verifyYieldingSingleBlockOp(FunctionOpInterface op, bool allowExternal) {
 /// verifier runs, e.g., during trait verification.
 static DiagnosedSilenceableFailure
 verifyNamedSequenceOp(transform::NamedSequenceOp op, bool emitWarnings) {
-  if (Operation *parent = op->getParentWithTrait<OpTrait::SymbolTable>()) {
-    if (!parent->getAttr(
-            transform::TransformDialect::kWithNamedSequenceAttrName)) {
+  if (Operation *parent = op->getParentWithTrait<OpTrait::SymbolTable>(); parent && (!parent->getAttr(
+            transform::TransformDialect::kWithNamedSequenceAttrName))) 
+    {
       DiagnosedSilenceableFailure diag =
           emitSilenceableFailure(op)
           << "expects the parent symbol table to have the '"
@@ -2448,7 +2448,7 @@ verifyNamedSequenceOp(transform::NamedSequenceOp op, bool emitWarnings) {
       diag.attachNote(parent->getLoc()) << "symbol table operation";
       return diag;
     }
-  }
+  
 
   if (auto parent = op->getParentOfType<transform::TransformOpInterface>()) {
     DiagnosedSilenceableFailure diag =
@@ -2800,10 +2800,9 @@ static ParseResult parseSequenceOpOperands(
     return failure();
   root = rootOperand;
 
-  if (succeeded(parser.parseOptionalComma())) {
-    if (failed(parser.parseOperandList(extraBindings)))
-      return failure();
-  }
+  if ((succeeded(parser.parseOptionalComma())) && (failed(parser.parseOperandList(extraBindings)))) 
+    return failure();
+  
   if (failed(parser.parseColon()))
     return failure();
 

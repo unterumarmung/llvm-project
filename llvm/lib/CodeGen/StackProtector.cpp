@@ -236,14 +236,13 @@ static bool ContainsProtectableArray(Type *Ty, Module *M, unsigned SSPBufferSize
   if (!Ty)
     return false;
   if (ArrayType *AT = dyn_cast<ArrayType>(Ty)) {
-    if (!AT->getElementType()->isIntegerTy(8)) {
+    if ((!AT->getElementType()->isIntegerTy(8)) && (!Strong && (InStruct || !M->getTargetTriple().isOSDarwin()))) 
       // If we're on a non-Darwin platform or we're inside of a structure, don't
       // add stack protectors unless the array is a character array.
       // However, in strong mode any array, regardless of type and size,
       // triggers a protector.
-      if (!Strong && (InStruct || !M->getTargetTriple().isOSDarwin()))
-        return false;
-    }
+      return false;
+    
 
     // If an array has more than SSPBufferSize bytes of allocated space, then we
     // emit stack protectors.
@@ -395,9 +394,8 @@ static bool HasAddressTaken(const Instruction *AI, TypeSize AllocSize,
 static const CallInst *findStackProtectorIntrinsic(Function &F) {
   for (const BasicBlock &BB : F)
     for (const Instruction &I : BB)
-      if (const auto *II = dyn_cast<IntrinsicInst>(&I))
-        if (II->getIntrinsicID() == Intrinsic::stackprotector)
-          return II;
+      if (const auto *II = dyn_cast<IntrinsicInst>(&I); II && (II->getIntrinsicID() == Intrinsic::stackprotector))
+        return II;
   return nullptr;
 }
 
@@ -629,10 +627,10 @@ bool InsertStackProtectors(const TargetLowering &TLI,
           CheckLoc = IB;
           break;
         }
-        if (auto *CB = dyn_cast<CallBase>(&Inst))
+        if (auto *CB = dyn_cast<CallBase>(&Inst); CB && (CB->doesNotReturn() && !CB->doesNotThrow()))
           // Do stack check before noreturn calls that aren't nounwind (e.g:
           // __cxa_throw).
-          if (CB->doesNotReturn() && !CB->doesNotThrow()) {
+          {
             CheckLoc = CB;
             break;
           }
@@ -669,9 +667,8 @@ bool InsertStackProtectors(const TargetLowering &TLI,
     // If we're instrumenting a block with a tail call, the check has to be
     // inserted before the call rather than between it and the return.
     Instruction *Prev = CheckLoc->getPrevNode();
-    if (auto *CI = dyn_cast_if_present<CallInst>(Prev))
-      if (CI->isTailCall() && isInTailCallPosition(*CI, TLI.getTargetMachine()))
-        CheckLoc = Prev;
+    if (auto *CI = dyn_cast_if_present<CallInst>(Prev); CI && (CI->isTailCall() && isInTailCallPosition(*CI, TLI.getTargetMachine())))
+      CheckLoc = Prev;
 
     // Generate epilogue instrumentation. The epilogue intrumentation can be
     // function-based or inlined depending on which mechanism the target is

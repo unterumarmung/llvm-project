@@ -87,9 +87,8 @@ void UnreachableCodeChecker::checkEndAnalysis(ExplodedGraph &G,
   // Don't do anything for template instantiations.  Proving that code
   // in a template instantiation is unreachable means proving that it is
   // unreachable in all instantiations.
-  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
-    if (FD->isTemplateInstantiation())
-      return;
+  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D); FD && (FD->isTemplateInstantiation()))
+    return;
 
   // Find CFGBlocks that were not covered by any node
   for (const CFGBlock *CB : *C) {
@@ -117,9 +116,8 @@ void UnreachableCodeChecker::checkEndAnalysis(ExplodedGraph &G,
     // if we should never get there. It can be used to detect errors, for
     // instance. Unreachable code directly under a "default" label is therefore
     // likely to be a false positive.
-    if (const Stmt *label = CB->getLabel())
-      if (label->getStmtClass() == Stmt::DefaultStmtClass)
-        continue;
+    if (const Stmt *label = CB->getLabel(); label && (label->getStmtClass() == Stmt::DefaultStmtClass))
+      continue;
 
     // Special case for __builtin_unreachable.
     // FIXME: This should be extended to include other unreachable markers,
@@ -129,13 +127,13 @@ void UnreachableCodeChecker::checkEndAnalysis(ExplodedGraph &G,
       for (CFGBlock::const_iterator ci = CB->begin(), ce = CB->end();
            ci != ce; ++ci) {
         if (std::optional<CFGStmt> S = (*ci).getAs<CFGStmt>())
-          if (const CallExpr *CE = dyn_cast<CallExpr>(S->getStmt())) {
-            if (CE->getBuiltinCallee() == Builtin::BI__builtin_unreachable ||
-                CE->isBuiltinAssumeFalse(Eng.getContext())) {
+          if (const CallExpr *CE = dyn_cast<CallExpr>(S->getStmt()); CE && (CE->getBuiltinCallee() == Builtin::BI__builtin_unreachable ||
+                CE->isBuiltinAssumeFalse(Eng.getContext()))) 
+            {
               foundUnreachable = true;
               break;
             }
-          }
+          
       }
       if (foundUnreachable)
         continue;
@@ -149,9 +147,8 @@ void UnreachableCodeChecker::checkEndAnalysis(ExplodedGraph &G,
       // In macros, 'do {...} while (0)' is often used. Don't warn about the
       // condition 0 when it is unreachable.
       if (S->getBeginLoc().isMacroID())
-        if (const auto *I = dyn_cast<IntegerLiteral>(S))
-          if (I->getValue() == 0ULL)
-            if (const Stmt *Parent = PM->getParent(S))
+        if (const auto *I = dyn_cast<IntegerLiteral>(S); I && (I->getValue() == 0ULL))
+          if (const Stmt *Parent = PM->getParent(S))
               if (isa<DoStmt>(Parent))
                 continue;
       SR = S->getSourceRange();

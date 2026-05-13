@@ -104,13 +104,13 @@ static bool diagnoseUnknownDecl(InterpState &S, CodePtr OpPC,
     return false;
 
   if (isa<ParmVarDecl>(D)) {
-    if (D->getType()->isReferenceType()) {
-      if (S.inConstantContext() && S.getLangOpts().CPlusPlus &&
-          !S.getLangOpts().CPlusPlus11) {
+    if ((D->getType()->isReferenceType()) && (S.inConstantContext() && S.getLangOpts().CPlusPlus &&
+          !S.getLangOpts().CPlusPlus11)) 
+      {
         diagnoseNonConstVariable(S, OpPC, D);
         return false;
       }
-    }
+    
 
     const SourceInfo &Loc = S.Current->getSource(OpPC);
     if (S.getLangOpts().CPlusPlus23 && D->getType()->isReferenceType()) {
@@ -1733,12 +1733,11 @@ bool CallVar(InterpState &S, CodePtr OpPC, const Function *Func,
     // the function we're about to call is a lambda call operator,
     // skip the CheckInvoke, since the ThisPtr is a null pointer
     // anyway.
-    if (!(S.Current->getFunction() &&
+    if ((!(S.Current->getFunction() &&
           S.Current->getFunction()->isLambdaStaticInvoker() &&
-          Func->isLambdaCallOperator())) {
-      if (!CheckInvoke(S, OpPC, ThisPtr))
-        return false;
-    }
+          Func->isLambdaCallOperator())) && (!CheckInvoke(S, OpPC, ThisPtr))) 
+      return false;
+    
 
     if (S.checkingPotentialConstantExpression())
       return false;
@@ -2024,10 +2023,9 @@ bool CallPtr(InterpState &S, CodePtr OpPC, uint32_t ArgSize,
     return false;
 
   // Check argument nullability state.
-  if (F->hasNonNullAttr()) {
-    if (!CheckNonNullArgs(S, OpPC, F, CE, ArgSize))
-      return false;
-  }
+  if ((F->hasNonNullAttr()) && (!CheckNonNullArgs(S, OpPC, F, CE, ArgSize))) 
+    return false;
+  
 
   // Can happen when casting function pointers around.
   QualType CalleeType = CE->getCallee()->getType();
@@ -2340,11 +2338,10 @@ bool CheckPointerToIntegralCast(InterpState &S, CodePtr OpPC,
     return Ptr.getIndex() == 0;
   }
 
-  if (!Ptr.isZero()) {
+  if ((!Ptr.isZero()) && (!CheckIntegralAddressCast(S, OpPC, BitWidth))) 
     // Only allow based lvalue casts if they are lossless.
-    if (!CheckIntegralAddressCast(S, OpPC, BitWidth))
-      return Invalid(S, OpPC);
-  }
+    return Invalid(S, OpPC);
+  
   return true;
 }
 

@@ -465,10 +465,9 @@ void DeclPrinter::VisitDeclContext(DeclContext *DC, bool Indent) {
 
     // Don't print implicit specializations, as they are printed when visiting
     // corresponding templates.
-    if (auto FD = dyn_cast<FunctionDecl>(*D))
-      if (FD->getTemplateSpecializationKind() == TSK_ImplicitInstantiation &&
-          !isa<ClassTemplateSpecializationDecl>(DC))
-        continue;
+    if (auto FD = dyn_cast<FunctionDecl>(*D); FD && (FD->getTemplateSpecializationKind() == TSK_ImplicitInstantiation &&
+          !isa<ClassTemplateSpecializationDecl>(DC)))
+      continue;
 
     // The next bits of code handle stuff like "struct {int x;} a,b"; we're
     // forced to merge the declarations because there's no other way to
@@ -486,12 +485,12 @@ void DeclPrinter::VisitDeclContext(DeclContext *DC, bool Indent) {
     if (!Decls.empty() && !CurDeclType.isNull()) {
       QualType BaseType = GetBaseType(CurDeclType);
       if (const auto *TT = dyn_cast_or_null<TagType>(BaseType);
-          TT && TT->isTagOwned()) {
-        if (TT->getDecl() == Decls[0]) {
+          (TT && TT->isTagOwned()) && (TT->getDecl() == Decls[0])) 
+        {
           Decls.push_back(*D);
           continue;
         }
-      }
+      
     }
 
     // If we have a merged group waiting to be handled, handle it now.
@@ -1006,13 +1005,13 @@ void DeclPrinter::VisitVarDecl(VarDecl *D) {
       // FIXME: We should print the range expression instead.
       ImplicitInit = true;
     } else if (CXXConstructExpr *Construct =
-                   dyn_cast<CXXConstructExpr>(Init->IgnoreImplicit())) {
-      if (D->getInitStyle() == VarDecl::CallInit &&
-          !Construct->isListInitialization()) {
+                   dyn_cast<CXXConstructExpr>(Init->IgnoreImplicit()); Construct && (D->getInitStyle() == VarDecl::CallInit &&
+          !Construct->isListInitialization())) 
+      {
         ImplicitInit = Construct->getNumArgs() == 0 ||
                        Construct->getArg(0)->isDefaultArgument();
       }
-    }
+    
     if (!ImplicitInit) {
       if ((D->getInitStyle() == VarDecl::CallInit) && !isa<ParenListExpr>(Init))
         Out << "(";

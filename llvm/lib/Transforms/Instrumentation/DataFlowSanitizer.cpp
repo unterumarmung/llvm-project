@@ -270,10 +270,9 @@ static StringRef getGlobalTypeString(const GlobalValue &G) {
   // Types of GlobalVariables are always pointer types.
   Type *GType = G.getValueType();
   // For now we support excluding struct types only.
-  if (StructType *SGType = dyn_cast<StructType>(GType)) {
-    if (!SGType->isLiteral())
-      return SGType->getName();
-  }
+  if (StructType *SGType = dyn_cast<StructType>(GType); SGType && (!SGType->isLiteral())) 
+    return SGType->getName();
+  
   return "<unknown type>";
 }
 
@@ -1660,17 +1659,17 @@ bool DataFlowSanitizer::runImpl(
       // We will default to replacing with wrapper in cases we are unsure.
       auto IsNotCmpUse = [](Use &U) -> bool {
         User *Usr = U.getUser();
-        if (ConstantExpr *CE = dyn_cast<ConstantExpr>(Usr)) {
+        if (ConstantExpr *CE = dyn_cast<ConstantExpr>(Usr); CE && (CE->getOpcode() == Instruction::ICmp)) 
           // This is the most common case for icmp ne null
-          if (CE->getOpcode() == Instruction::ICmp) {
+          {
             return false;
           }
-        }
-        if (Instruction *I = dyn_cast<Instruction>(Usr)) {
-          if (I->getOpcode() == Instruction::ICmp) {
+        
+        if (Instruction *I = dyn_cast<Instruction>(Usr); I && (I->getOpcode() == Instruction::ICmp)) 
+          {
             return false;
           }
-        }
+        
         return true;
       };
       F.replaceUsesWithIf(NewF, IsNotCmpUse);
@@ -2005,10 +2004,9 @@ Value *DFSanFunction::combineShadows(Value *V1, Value *V2,
   } else if (V1Elems != ShadowElements.end()) {
     if (V1Elems->second.count(V2))
       return collapseToPrimitiveShadow(V1, Pos);
-  } else if (V2Elems != ShadowElements.end()) {
-    if (V2Elems->second.count(V1))
-      return collapseToPrimitiveShadow(V2, Pos);
-  }
+  } else if ((V2Elems != ShadowElements.end()) && (V2Elems->second.count(V1))) 
+    return collapseToPrimitiveShadow(V2, Pos);
+  
 
   auto Key = std::make_pair(V1, V2);
   if (V1 > V2)
@@ -2121,9 +2119,8 @@ Align DFSanFunction::getOriginAlign(Align InstAlignment) {
 }
 
 bool DFSanFunction::isLookupTableConstant(Value *P) {
-  if (GlobalVariable *GV = dyn_cast<GlobalVariable>(P->stripPointerCasts()))
-    if (GV->isConstant() && GV->hasName())
-      return DFS.CombineTaintLookupTableNames.count(GV->getName());
+  if (GlobalVariable *GV = dyn_cast<GlobalVariable>(P->stripPointerCasts()); GV && (GV->isConstant() && GV->hasName()))
+    return DFS.CombineTaintLookupTableNames.count(GV->getName());
 
   return false;
 }
@@ -2775,9 +2772,8 @@ void DFSanVisitor::visitBitCastInst(BitCastInst &BCI) {
   // Special case: if this is the bitcast (there is exactly 1 allowed) between
   // a musttail call and a ret, don't instrument. New instructions are not
   // allowed after a musttail call.
-  if (auto *CI = dyn_cast<CallInst>(BCI.getOperand(0)))
-    if (CI->isMustTailCall())
-      return;
+  if (auto *CI = dyn_cast<CallInst>(BCI.getOperand(0)); CI && (CI->isMustTailCall()))
+    return;
   visitInstOperands(BCI);
 }
 
@@ -2862,10 +2858,9 @@ void DFSanVisitor::visitAllocaInst(AllocaInst &I) {
     if (isa<LoadInst>(U))
       continue;
 
-    if (StoreInst *SI = dyn_cast<StoreInst>(U)) {
-      if (SI->getPointerOperand() == &I)
-        continue;
-    }
+    if (StoreInst *SI = dyn_cast<StoreInst>(U); SI && (SI->getPointerOperand() == &I)) 
+      continue;
+    
 
     AllLoadsStores = false;
     break;
@@ -3382,9 +3377,8 @@ void DFSanVisitor::visitCallBase(CallBase &CB) {
   }
 
   auto UnwrappedFnIt = DFSF.DFS.UnwrappedFnMap.find(CB.getCalledOperand());
-  if (UnwrappedFnIt != DFSF.DFS.UnwrappedFnMap.end())
-    if (visitWrappedCallBase(*UnwrappedFnIt->second, CB))
-      return;
+  if ((UnwrappedFnIt != DFSF.DFS.UnwrappedFnMap.end()) && (visitWrappedCallBase(*UnwrappedFnIt->second, CB)))
+    return;
 
   IRBuilder<> IRB(&CB);
 

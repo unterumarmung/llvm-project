@@ -288,13 +288,11 @@ static void getAArch64MultilibFlags(const Driver &D,
                                        UnifiedFeatures.end());
   std::vector<std::string> MArch;
   for (const auto &Ext : AArch64::Extensions)
-    if (!Ext.UserVisibleName.empty())
-      if (FeatureSet.contains(Ext.PosTargetFeature))
-        MArch.push_back(Ext.UserVisibleName.str());
+    if ((!Ext.UserVisibleName.empty()) && (FeatureSet.contains(Ext.PosTargetFeature)))
+      MArch.push_back(Ext.UserVisibleName.str());
   for (const auto &Ext : AArch64::Extensions)
-    if (!Ext.UserVisibleName.empty())
-      if (FeatureSet.contains(Ext.NegTargetFeature))
-        MArch.push_back(("no" + Ext.UserVisibleName).str());
+    if ((!Ext.UserVisibleName.empty()) && (FeatureSet.contains(Ext.NegTargetFeature)))
+      MArch.push_back(("no" + Ext.UserVisibleName).str());
   StringRef ArchName;
   for (const auto &ArchInfo : AArch64::ArchInfos)
     if (FeatureSet.contains(ArchInfo->ArchFeature))
@@ -316,10 +314,9 @@ static void getAArch64MultilibFlags(const Driver &D,
     Result.push_back("-munaligned-access");
 
   if (Arg *Endian = Args.getLastArg(options::OPT_mbig_endian,
-                                    options::OPT_mlittle_endian)) {
-    if (Endian->getOption().matches(options::OPT_mbig_endian))
-      Result.push_back(Endian->getAsString(Args));
-  }
+                                    options::OPT_mlittle_endian); Endian && (Endian->getOption().matches(options::OPT_mbig_endian))) 
+    Result.push_back(Endian->getAsString(Args));
+  
 
   const Arg *ABIArg = Args.getLastArgNoClaim(options::OPT_mabi_EQ);
   if (ABIArg) {
@@ -351,13 +348,11 @@ static void getARMMultilibFlags(const Driver &D, const llvm::Triple &Triple,
                                        UnifiedFeatures.end());
   std::vector<std::string> MArch;
   for (const auto &Ext : ARM::ARCHExtNames)
-    if (!Ext.Name.empty())
-      if (FeatureSet.contains(Ext.Feature))
-        MArch.push_back(Ext.Name.str());
+    if ((!Ext.Name.empty()) && (FeatureSet.contains(Ext.Feature)))
+      MArch.push_back(Ext.Name.str());
   for (const auto &Ext : ARM::ARCHExtNames)
-    if (!Ext.Name.empty())
-      if (FeatureSet.contains(Ext.NegFeature))
-        MArch.push_back(("no" + Ext.Name).str());
+    if ((!Ext.Name.empty()) && (FeatureSet.contains(Ext.NegFeature)))
+      MArch.push_back(("no" + Ext.Name).str());
   MArch.insert(MArch.begin(), ("-march=" + Triple.getArchName()).str());
   Result.push_back(llvm::join(MArch, "+"));
 
@@ -409,10 +404,9 @@ static void getARMMultilibFlags(const Driver &D, const llvm::Triple &Triple,
     Result.push_back("-munaligned-access");
 
   if (Arg *Endian = Args.getLastArg(options::OPT_mbig_endian,
-                                    options::OPT_mlittle_endian)) {
-    if (Endian->getOption().matches(options::OPT_mbig_endian))
-      Result.push_back(Endian->getAsString(Args));
-  }
+                                    options::OPT_mlittle_endian); Endian && (Endian->getOption().matches(options::OPT_mbig_endian))) 
+    Result.push_back(Endian->getAsString(Args));
+  
 
   if (const Arg *A = Args.getLastArg(options::OPT_O_Group);
       A && A->getOption().matches(options::OPT_O)) {
@@ -1625,13 +1619,13 @@ std::string ToolChain::detectLibcxxVersion(StringRef IncludePath) const {
        !EC && LI != LE; LI = LI.increment(EC)) {
     StringRef VersionText = llvm::sys::path::filename(LI->path());
     int Version;
-    if (VersionText[0] == 'v' &&
-        !VersionText.substr(1).getAsInteger(10, Version)) {
-      if (Version > MaxVersion) {
+    if ((VersionText[0] == 'v' &&
+        !VersionText.substr(1).getAsInteger(10, Version)) && (Version > MaxVersion)) 
+      {
         MaxVersion = Version;
         MaxVersionString = std::string(VersionText);
       }
-    }
+    
   }
   if (!MaxVersion)
     return "";

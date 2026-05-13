@@ -186,10 +186,9 @@ const MemRegion *VAListChecker::getVAListAsRegion(SVal SV, const Expr *E,
     VAListModelledAsArray =
         Ty->isPointerType() && Ty->getPointeeType()->isRecordType();
   }
-  if (const auto *DeclReg = Reg->getAs<DeclRegion>()) {
-    if (isa<ParmVarDecl>(DeclReg->getDecl()))
-      Reg = C.getState()->getSVal(SV.castAs<Loc>()).getAsRegion();
-  }
+  if (const auto *DeclReg = Reg->getAs<DeclRegion>(); DeclReg && (isa<ParmVarDecl>(DeclReg->getDecl()))) 
+    Reg = C.getState()->getSVal(SV.castAs<Loc>()).getAsRegion();
+  
   // Some VarRegion based VA lists reach here as ElementRegions.
   const auto *EReg = dyn_cast_or_null<ElementRegion>(Reg);
   return (EReg && VAListModelledAsArray) ? EReg->getSuperRegion() : Reg;

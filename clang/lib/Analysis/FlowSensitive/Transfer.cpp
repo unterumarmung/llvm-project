@@ -77,12 +77,11 @@ static BoolValue &evaluateBooleanEquality(const Expr &LHS, const Expr &RHS,
       return Env.makeIff(*LHSBool, *RHSBool);
 
   if (auto *LHSPtr = dyn_cast_or_null<PointerValue>(LHSValue))
-    if (auto *RHSPtr = dyn_cast_or_null<PointerValue>(RHSValue))
+    if (auto *RHSPtr = dyn_cast_or_null<PointerValue>(RHSValue); RHSPtr && (&LHSPtr->getPointeeLoc() == &RHSPtr->getPointeeLoc()))
       // If the storage locations are the same, the pointers definitely compare
       // the same. If the storage locations are different, they may still alias,
       // so we fall through to the case below that returns an atom.
-      if (&LHSPtr->getPointeeLoc() == &RHSPtr->getPointeeLoc())
-        return Env.getBoolLiteralValue(true);
+      return Env.getBoolLiteralValue(true);
 
   return Env.makeAtomicBoolValue();
 }
@@ -545,8 +544,8 @@ public:
     if (isa<EnumConstantDecl>(Member))
       return;
 
-    if (auto *D = dyn_cast<VarDecl>(Member)) {
-      if (D->hasGlobalStorage()) {
+    if (auto *D = dyn_cast<VarDecl>(Member); D && (D->hasGlobalStorage())) 
+      {
         auto *VarDeclLoc = Env.getStorageLocation(*D);
         if (VarDeclLoc == nullptr)
           return;
@@ -554,7 +553,7 @@ public:
         Env.setStorageLocation(*S, *VarDeclLoc);
         return;
       }
-    }
+    
 
     RecordStorageLocation *BaseLoc = getBaseObjectLocation(*S, Env);
     if (BaseLoc == nullptr)

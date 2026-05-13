@@ -823,8 +823,8 @@ const Symbol *DerivedTypeDetails::GetParentComponent(const Scope &scope) const {
 const Symbol *DerivedTypeDetails::GetFinalForRank(int rank) const {
   for (const auto &pair : finals_) {
     const Symbol &symbol{*pair.second};
-    if (const auto *details{symbol.detailsIf<SubprogramDetails>()}) {
-      if (details->dummyArgs().size() == 1) {
+    if (const auto *details{symbol.detailsIf<SubprogramDetails>()}; details && (details->dummyArgs().size() == 1)) 
+      {
         if (const Symbol * arg{details->dummyArgs().at(0)}) {
           if (const auto *object{arg->detailsIf<ObjectEntityDetails>()}) {
             if (rank == object->shape().Rank() || object->IsAssumedRank() ||
@@ -834,7 +834,7 @@ const Symbol *DerivedTypeDetails::GetFinalForRank(int rank) const {
           }
         }
       }
-    }
+    
   }
   return nullptr;
 }

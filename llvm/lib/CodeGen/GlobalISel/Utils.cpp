@@ -1794,9 +1794,8 @@ static bool canCreateUndefOrPoison(Register Reg, const MachineRegisterInfo &MRI,
   MachineInstr *RegDef = MRI.getVRegDef(Reg);
 
   if (ConsiderFlagsAndMetadata && includesPoison(Kind))
-    if (auto *GMI = dyn_cast<GenericMachineInstr>(RegDef))
-      if (GMI->hasPoisonGeneratingFlags())
-        return true;
+    if (auto *GMI = dyn_cast<GenericMachineInstr>(RegDef); GMI && (GMI->hasPoisonGeneratingFlags()))
+      return true;
 
   // Check whether opcode is a poison/undef-generating operation.
   switch (RegDef->getOpcode()) {

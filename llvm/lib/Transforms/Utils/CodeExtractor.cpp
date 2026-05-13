@@ -119,18 +119,16 @@ static bool isBlockValidForExtraction(const BasicBlock &BB,
     if (const auto *II = dyn_cast<InvokeInst>(I)) {
       // Unwind destination (either a landingpad, catchswitch, or cleanuppad)
       // must be a part of the subgraph which is being extracted.
-      if (auto *UBB = II->getUnwindDest())
-        if (!Result.count(UBB))
-          return false;
+      if (auto *UBB = II->getUnwindDest(); UBB && (!Result.count(UBB)))
+        return false;
       continue;
     }
 
     // All catch handlers of a catchswitch instruction as well as the unwind
     // destination must be in the subgraph.
     if (const auto *CSI = dyn_cast<CatchSwitchInst>(I)) {
-      if (auto *UBB = CSI->getUnwindDest())
-        if (!Result.count(UBB))
-          return false;
+      if (auto *UBB = CSI->getUnwindDest(); UBB && (!Result.count(UBB)))
+        return false;
       for (const auto *HBB : CSI->handlers())
         if (!Result.count(const_cast<BasicBlock*>(HBB)))
           return false;
@@ -141,9 +139,8 @@ static bool isBlockValidForExtraction(const BasicBlock &BB,
     // to check that catch return's block is in the list.
     if (const auto *CPI = dyn_cast<CatchPadInst>(I)) {
       for (const auto *U : CPI->users())
-        if (const auto *CRI = dyn_cast<CatchReturnInst>(U))
-          if (!Result.count(const_cast<BasicBlock*>(CRI->getParent())))
-            return false;
+        if (const auto *CRI = dyn_cast<CatchReturnInst>(U); CRI && (!Result.count(const_cast<BasicBlock*>(CRI->getParent()))))
+          return false;
       continue;
     }
 
@@ -152,15 +149,13 @@ static bool isBlockValidForExtraction(const BasicBlock &BB,
     // additionally check that the unwind destination is also in the subgraph.
     if (const auto *CPI = dyn_cast<CleanupPadInst>(I)) {
       for (const auto *U : CPI->users())
-        if (const auto *CRI = dyn_cast<CleanupReturnInst>(U))
-          if (!Result.count(const_cast<BasicBlock*>(CRI->getParent())))
-            return false;
+        if (const auto *CRI = dyn_cast<CleanupReturnInst>(U); CRI && (!Result.count(const_cast<BasicBlock*>(CRI->getParent()))))
+          return false;
       continue;
     }
     if (const auto *CRI = dyn_cast<CleanupReturnInst>(I)) {
-      if (auto *UBB = CRI->getUnwindDest())
-        if (!Result.count(UBB))
-          return false;
+      if (auto *UBB = CRI->getUnwindDest(); UBB && (!Result.count(UBB)))
+        return false;
       continue;
     }
 
@@ -276,9 +271,8 @@ CodeExtractor::CodeExtractor(ArrayRef<BasicBlock *> BBs, DominatorTree *DT,
 /// definedInRegion - Return true if the specified value is defined in the
 /// extracted region.
 static bool definedInRegion(const SetVector<BasicBlock *> &Blocks, Value *V) {
-  if (Instruction *I = dyn_cast<Instruction>(V))
-    if (Blocks.count(I->getParent()))
-      return true;
+  if (Instruction *I = dyn_cast<Instruction>(V); I && (Blocks.count(I->getParent())))
+    return true;
   return false;
 }
 
@@ -287,9 +281,8 @@ static bool definedInRegion(const SetVector<BasicBlock *> &Blocks, Value *V) {
 /// These values must be passed in as live-ins to the function.
 static bool definedInCaller(const SetVector<BasicBlock *> &Blocks, Value *V) {
   if (isa<Argument>(V)) return true;
-  if (Instruction *I = dyn_cast<Instruction>(V))
-    if (!Blocks.count(I->getParent()))
-      return true;
+  if (Instruction *I = dyn_cast<Instruction>(V); I && (!Blocks.count(I->getParent())))
+    return true;
   return false;
 }
 
@@ -1709,9 +1702,8 @@ void CodeExtractor::emitFunctionBody(
 
     std::vector<User *> Users(inputs[i]->user_begin(), inputs[i]->user_end());
     for (User *use : Users)
-      if (Instruction *inst = dyn_cast<Instruction>(use))
-        if (Blocks.count(inst->getParent()))
-          inst->replaceUsesOfWith(inputs[i], RewriteVal);
+      if (Instruction *inst = dyn_cast<Instruction>(use); inst && (Blocks.count(inst->getParent())))
+        inst->replaceUsesOfWith(inputs[i], RewriteVal);
   }
 
   // Since there may be multiple exits from the original region, make the new
@@ -1839,16 +1831,15 @@ void CodeExtractor::emitFunctionBody(
     }
   }
 
-  if (ExtractedFuncRetVals.empty()) {
+  if ((ExtractedFuncRetVals.empty()) && (none_of(Blocks, [](const BasicBlock *BB) {
+          const Instruction *Term = BB->getTerminator();
+          return isa<ReturnInst>(Term) || isa<ResumeInst>(Term);
+        }))) 
     // Mark the new function `noreturn` if applicable. Terminators which resume
     // exception propagation are treated as returning instructions. This is to
     // avoid inserting traps after calls to outlined functions which unwind.
-    if (none_of(Blocks, [](const BasicBlock *BB) {
-          const Instruction *Term = BB->getTerminator();
-          return isa<ReturnInst>(Term) || isa<ResumeInst>(Term);
-        }))
-      newFunction->setDoesNotReturn();
-  }
+    newFunction->setDoesNotReturn();
+  
 }
 
 CallInst *CodeExtractor::emitReplacerCall(
@@ -2087,10 +2078,9 @@ void CodeExtractor::insertReplacerCall(
   for (auto &U : Users)
     // The BasicBlock which contains the branch is not in the region
     // modify the branch target to a new block
-    if (Instruction *I = dyn_cast<Instruction>(U))
-      if (I->isTerminator() && I->getFunction() == oldFunction &&
-          !Blocks.count(I->getParent()))
-        I->replaceUsesOfWith(header, codeReplacer);
+    if (Instruction *I = dyn_cast<Instruction>(U); I && (I->isTerminator() && I->getFunction() == oldFunction &&
+          !Blocks.count(I->getParent())))
+      I->replaceUsesOfWith(header, codeReplacer);
 
   // When moving the code region it is sufficient to replace all uses to the
   // extracted function values. Since the original definition's block

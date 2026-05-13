@@ -117,9 +117,8 @@ llvm::getKnowledgeFromBundle(AssumeInst &Assume,
   Result.IRArgValue = bundleHasArgument(BOI, ABA_Argument)
                           ? getValueFromBundleOpInfo(Assume, BOI, ABA_Argument)
                           : nullptr;
-  if (Result.AttrKind == Attribute::Alignment)
-    if (BOI.End - BOI.Begin > ABA_Argument + 1)
-      Result.ArgValue = MinAlign(Result.ArgValue, GetArgOr1(1));
+  if ((Result.AttrKind == Attribute::Alignment) && (BOI.End - BOI.Begin > ABA_Argument + 1))
+    Result.ArgValue = MinAlign(Result.ArgValue, GetArgOr1(1));
   return Result;
 }
 

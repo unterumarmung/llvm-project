@@ -873,13 +873,12 @@ ModRefResult AliasAnalysis::getCallModRef(Operation *op, Value var) {
     return ModRefResult::getModAndRef();
   // At that stage, it has been ruled out that local (including the saved ones)
   // and dummy cannot be indirectly accessed in the call.
-  if (varSrc.kind != fir::AliasAnalysis::SourceKind::Allocate &&
+  if ((varSrc.kind != fir::AliasAnalysis::SourceKind::Allocate &&
       varSrc.kind != fir::AliasAnalysis::SourceKind::Argument &&
-      !varSrc.isDummyArgument()) {
-    if (varSrc.kind != fir::AliasAnalysis::SourceKind::Global ||
-        !isSavedLocal(varSrc))
-      return ModRefResult::getModAndRef();
-  }
+      !varSrc.isDummyArgument()) && (varSrc.kind != fir::AliasAnalysis::SourceKind::Global ||
+        !isSavedLocal(varSrc))) 
+    return ModRefResult::getModAndRef();
+  
   // 2. Check if the variable is passed via the arguments.
   for (auto arg : call.getArgs()) {
     if (fir::conformsWithPassByRef(arg.getType()) &&
@@ -1304,11 +1303,10 @@ AliasAnalysis::Source AliasAnalysis::getSource(mlir::Value v,
                             mlir::dyn_cast<fir::SequenceType>(currentTy))
                       dimension = seqTy.getDimension();
                   }
-                  if (dimension) {
-                    if (--dimension == 0)
-                      currentTy = mlir::cast<fir::SequenceType>(currentTy)
+                  if ((dimension) && (--dimension == 0)) 
+                    currentTy = mlir::cast<fir::SequenceType>(currentTy)
                                       .getElementType();
-                  }
+                  
                   continue;
                 }
                 auto recTy = mlir::dyn_cast<fir::RecordType>(currentTy);

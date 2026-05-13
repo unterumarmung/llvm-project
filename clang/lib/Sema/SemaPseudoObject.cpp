@@ -671,8 +671,8 @@ bool ObjCPropertyOpBuilder::findSetter(bool warn) {
         const IdentifierInfo *AltMember =
             &S.PP.getIdentifierTable().get(PropertyName);
         if (ObjCPropertyDecl *prop1 = IFace->FindPropertyDeclaration(
-                AltMember, prop->getQueryKind()))
-          if (prop != prop1 && (prop1->getSetterMethodDecl() == setter)) {
+                AltMember, prop->getQueryKind()); prop1 && (prop != prop1 && (prop1->getSetterMethodDecl() == setter)))
+          {
             S.Diag(RefExpr->getExprLoc(), diag::err_property_setter_ambiguous_use)
               << prop << prop1 << setter->getSelector();
             S.Diag(prop->getLocation(), diag::note_property_declare);
@@ -847,10 +847,9 @@ ExprResult ObjCPropertyOpBuilder::buildRValueOperation(Expr *op) {
                           ->getUsageType(receiverType);
     if (result.get()->getType()->isObjCIdType()) {
       if (const ObjCObjectPointerType *ptr
-            = propType->getAs<ObjCObjectPointerType>()) {
-        if (!ptr->isObjCIdType())
-          result = S.ImpCastExprToType(result.get(), propType, CK_BitCast);
-      }
+            = propType->getAs<ObjCObjectPointerType>(); ptr && (!ptr->isObjCIdType())) 
+        result = S.ImpCastExprToType(result.get(), propType, CK_BitCast);
+      
     }
     if (propType.getObjCLifetime() == Qualifiers::OCL_Weak &&
         !S.Diags.isIgnored(diag::warn_arc_repeated_use_of_weak,

@@ -559,11 +559,11 @@ void ASTDeclReader::Visit(Decl *D) {
       ReadFunctionDefinition(FD);
   } else if (auto *VD = dyn_cast<VarDecl>(D)) {
     ReadVarDeclInit(VD);
-  } else if (auto *FD = dyn_cast<FieldDecl>(D)) {
-    if (FD->hasInClassInitializer() && Record.readInt()) {
+  } else if (auto *FD = dyn_cast<FieldDecl>(D); FD && (FD->hasInClassInitializer() && Record.readInt())) 
+    {
       FD->setLazyInClassInitializer(LazyDeclStmtPtr(GetCurrentCursorOffset()));
     }
-  }
+  
 }
 
 void ASTDeclReader::VisitDecl(Decl *D) {
@@ -2353,23 +2353,20 @@ void ASTDeclReader::VisitCXXDestructorDecl(CXXDestructorDecl *D) {
       Canon->OperatorDeleteThisArg = ThisArg;
     }
   }
-  if (auto *OperatorGlobDelete = readDeclAs<FunctionDecl>()) {
-    if (!C.dtorHasOperatorDelete(D,
-                                 ASTContext::OperatorDeleteKind::GlobalRegular))
-      C.addOperatorDeleteForVDtor(
+  if (auto *OperatorGlobDelete = readDeclAs<FunctionDecl>(); OperatorGlobDelete && (!C.dtorHasOperatorDelete(D,
+                                 ASTContext::OperatorDeleteKind::GlobalRegular))) 
+    C.addOperatorDeleteForVDtor(
           D, OperatorGlobDelete, ASTContext::OperatorDeleteKind::GlobalRegular);
-  }
-  if (auto *OperatorArrayDelete = readDeclAs<FunctionDecl>()) {
-    if (!C.dtorHasOperatorDelete(D, ASTContext::OperatorDeleteKind::Array))
-      C.addOperatorDeleteForVDtor(D, OperatorArrayDelete,
+  
+  if (auto *OperatorArrayDelete = readDeclAs<FunctionDecl>(); OperatorArrayDelete && (!C.dtorHasOperatorDelete(D, ASTContext::OperatorDeleteKind::Array))) 
+    C.addOperatorDeleteForVDtor(D, OperatorArrayDelete,
                                   ASTContext::OperatorDeleteKind::Array);
-  }
-  if (auto *OperatorGlobArrayDelete = readDeclAs<FunctionDecl>()) {
-    if (!C.dtorHasOperatorDelete(D,
-                                 ASTContext::OperatorDeleteKind::ArrayGlobal))
-      C.addOperatorDeleteForVDtor(D, OperatorGlobArrayDelete,
+  
+  if (auto *OperatorGlobArrayDelete = readDeclAs<FunctionDecl>(); OperatorGlobArrayDelete && (!C.dtorHasOperatorDelete(D,
+                                 ASTContext::OperatorDeleteKind::ArrayGlobal))) 
+    C.addOperatorDeleteForVDtor(D, OperatorGlobArrayDelete,
                                   ASTContext::OperatorDeleteKind::ArrayGlobal);
-  }
+  
 }
 
 void ASTDeclReader::VisitCXXConversionDecl(CXXConversionDecl *D) {
@@ -3296,9 +3293,8 @@ bool ASTReader::isConsumerInterestedIn(Decl *D) {
   if (const auto *Func = dyn_cast<FunctionDecl>(D))
     return Func->doesThisDeclarationHaveABody() || PendingBodies.count(D);
 
-  if (auto *ES = D->getASTContext().getExternalSource())
-    if (ES->hasExternalDefinitions(D) == ExternalASTSource::EK_Never)
-      return true;
+  if (auto *ES = D->getASTContext().getExternalSource(); ES && (ES->hasExternalDefinitions(D) == ExternalASTSource::EK_Never))
+    return true;
 
   return false;
 }
@@ -3445,15 +3441,12 @@ ASTDeclReader::getPrimaryDCForAnonymousDecl(DeclContext *LexicalDC) {
   // Note that we can't just call getDefinition here because the redeclaration
   // chain isn't wired up.
   for (auto *D : merged_redecls(cast<Decl>(LexicalDC))) {
-    if (auto *FD = dyn_cast<FunctionDecl>(D))
-      if (FD->isThisDeclarationADefinition())
-        return FD;
-    if (auto *MD = dyn_cast<ObjCMethodDecl>(D))
-      if (MD->isThisDeclarationADefinition())
-        return MD;
-    if (auto *RD = dyn_cast<RecordDecl>(D))
-      if (RD->isThisDeclarationADefinition())
-        return RD;
+    if (auto *FD = dyn_cast<FunctionDecl>(D); FD && (FD->isThisDeclarationADefinition()))
+      return FD;
+    if (auto *MD = dyn_cast<ObjCMethodDecl>(D); MD && (MD->isThisDeclarationADefinition()))
+      return MD;
+    if (auto *RD = dyn_cast<RecordDecl>(D); RD && (RD->isThisDeclarationADefinition()))
+      return RD;
   }
 
   // No merged definition yet.
@@ -3529,9 +3522,8 @@ ASTDeclReader::FindExistingResult ASTDeclReader::findExisting(NamedDecl *D) {
   if (TypedefNameForLinkage) {
     auto It = Reader.ImportedTypedefNamesForLinkage.find(
         std::make_pair(DC, TypedefNameForLinkage));
-    if (It != Reader.ImportedTypedefNamesForLinkage.end())
-      if (C.isSameEntity(It->second, D))
-        return FindExistingResult(Reader, D, It->second, AnonymousDeclNumber,
+    if ((It != Reader.ImportedTypedefNamesForLinkage.end()) && (C.isSameEntity(It->second, D)))
+      return FindExistingResult(Reader, D, It->second, AnonymousDeclNumber,
                                   TypedefNameForLinkage);
     // Go on to check in other places in case an existing typedef name
     // was not imported.
@@ -3541,9 +3533,8 @@ ASTDeclReader::FindExistingResult ASTDeclReader::findExisting(NamedDecl *D) {
     // This is an anonymous declaration that we may need to merge. Look it up
     // in its context by number.
     if (auto *Existing = getAnonymousDeclForMerging(
-            Reader, D->getLexicalDeclContext(), AnonymousDeclNumber))
-      if (C.isSameEntity(Existing, D))
-        return FindExistingResult(Reader, D, Existing, AnonymousDeclNumber,
+            Reader, D->getLexicalDeclContext(), AnonymousDeclNumber); Existing && (C.isSameEntity(Existing, D)))
+      return FindExistingResult(Reader, D, Existing, AnonymousDeclNumber,
                                   TypedefNameForLinkage);
   } else if (DC->isTranslationUnit() &&
              !Reader.getContext().getLangOpts().CPlusPlus) {
@@ -3573,17 +3564,15 @@ ASTDeclReader::FindExistingResult ASTDeclReader::findExisting(NamedDecl *D) {
     for (IdentifierResolver::iterator I = IdResolver.begin(Name),
                                    IEnd = IdResolver.end();
          I != IEnd; ++I) {
-      if (NamedDecl *Existing = getDeclForMerging(*I, TypedefNameForLinkage))
-        if (C.isSameEntity(Existing, D))
-          return FindExistingResult(Reader, D, Existing, AnonymousDeclNumber,
+      if (NamedDecl *Existing = getDeclForMerging(*I, TypedefNameForLinkage); Existing && (C.isSameEntity(Existing, D)))
+        return FindExistingResult(Reader, D, Existing, AnonymousDeclNumber,
                                     TypedefNameForLinkage);
     }
   } else if (DeclContext *MergeDC = getPrimaryContextForMerging(Reader, DC)) {
     DeclContext::lookup_result R = MergeDC->noload_lookup(Name);
     for (DeclContext::lookup_iterator I = R.begin(), E = R.end(); I != E; ++I) {
-      if (NamedDecl *Existing = getDeclForMerging(*I, TypedefNameForLinkage))
-        if (C.isSameEntity(Existing, D))
-          return FindExistingResult(Reader, D, Existing, AnonymousDeclNumber,
+      if (NamedDecl *Existing = getDeclForMerging(*I, TypedefNameForLinkage); Existing && (C.isSameEntity(Existing, D)))
+        return FindExistingResult(Reader, D, Existing, AnonymousDeclNumber,
                                     TypedefNameForLinkage);
     }
   } else {
@@ -4347,12 +4336,11 @@ Decl *ASTReader::ReadDeclRecord(GlobalDeclID ID) {
       PendingUpdateRecord(ID, D, /*JustLoaded=*/true));
 
   // Load the categories after recursive loading is finished.
-  if (auto *Class = dyn_cast<ObjCInterfaceDecl>(D))
+  if (auto *Class = dyn_cast<ObjCInterfaceDecl>(D); Class && (Class->isThisDeclarationADefinition() ||
+        PendingDefinitions.count(Class)))
     // If we already have a definition when deserializing the ObjCInterfaceDecl,
     // we put the Decl in PendingDefinitions so we can pull the categories here.
-    if (Class->isThisDeclarationADefinition() ||
-        PendingDefinitions.count(Class))
-      loadObjCCategories(ID, Class);
+    loadObjCCategories(ID, Class);
 
   // If we have deserialized a declaration that has a definition the
   // AST consumer might need to know about, queue it.

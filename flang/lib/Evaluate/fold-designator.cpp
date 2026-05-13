@@ -344,8 +344,8 @@ std::optional<Expr<SomeType>> OffsetToDesignator(FoldingContext &context,
                   zExpr->u);
             }
           } else if (auto *cExpr{
-                         std::get_if<Expr<SomeCharacter>>(&result->u)}) {
-            if (offset > 0 || size != static_cast<std::size_t>(*elementBytes)) {
+                         std::get_if<Expr<SomeCharacter>>(&result->u)}; cExpr && (offset > 0 || size != static_cast<std::size_t>(*elementBytes))) 
+            {
               // Select a substring
               return common::visit(
                   [&](const auto &x) -> std::optional<Expr<SomeType>> {
@@ -359,7 +359,7 @@ std::optional<Expr<SomeType>> OffsetToDesignator(FoldingContext &context,
                   },
                   cExpr->u);
             }
-          }
+          
         }
       }
       if (offset == 0) {

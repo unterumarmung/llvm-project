@@ -64,10 +64,9 @@ static Expr *IgnoreImplicitConstructorSingleStep(Expr *E) {
 // Ignores the implicit `CXXFunctionalCastExpr` that wraps
 // `CXXConstructExpr X(1)`.
 static Expr *IgnoreCXXFunctionalCastExprWrappingConstructor(Expr *E) {
-  if (auto *F = dyn_cast<CXXFunctionalCastExpr>(E)) {
-    if (F->getCastKind() == CK_ConstructorConversion)
-      return F->getSubExpr();
-  }
+  if (auto *F = dyn_cast<CXXFunctionalCastExpr>(E); F && (F->getCastKind() == CK_ConstructorConversion)) 
+    return F->getSubExpr();
+  
   return E;
 }
 

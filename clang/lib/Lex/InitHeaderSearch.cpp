@@ -268,12 +268,12 @@ void InitHeaderSearch::AddDefaultIncludePaths(
   if (!ShouldAddDefaultIncludePaths(triple))
     return;
 
-  if (Lang.CPlusPlus && !Lang.AsmPreprocessor &&
-      HSOpts.UseStandardCXXIncludes && HSOpts.UseStandardSystemIncludes) {
-    if (HSOpts.UseLibcxx) {
+  if ((Lang.CPlusPlus && !Lang.AsmPreprocessor &&
+      HSOpts.UseStandardCXXIncludes && HSOpts.UseStandardSystemIncludes) && (HSOpts.UseLibcxx)) 
+    {
       AddPath("/usr/include/c++/v1", CXXSystem, false);
     }
-  }
+  
 
   AddDefaultCIncludePaths(triple, HSOpts);
 }

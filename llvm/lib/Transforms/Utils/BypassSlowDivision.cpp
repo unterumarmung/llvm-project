@@ -399,10 +399,9 @@ std::optional<QuotRemPair> FastDivInsertionTask::insertFastDivAndRem() {
   // bitcast instructions. As a result, some constants may look like an
   // instruction at first, and an additional check is necessary to find out if
   // an operand is actually a constant.
-  if (auto *BCI = dyn_cast<BitCastInst>(Divisor))
-    if (BCI->getParent() == SlowDivOrRem->getParent() &&
-        isa<ConstantInt>(BCI->getOperand(0)))
-      return std::nullopt;
+  if (auto *BCI = dyn_cast<BitCastInst>(Divisor); BCI && (BCI->getParent() == SlowDivOrRem->getParent() &&
+        isa<ConstantInt>(BCI->getOperand(0))))
+    return std::nullopt;
 
   IRBuilder<> Builder(MainBB, MainBB->end());
   Builder.SetCurrentDebugLocation(SlowDivOrRem->getDebugLoc());

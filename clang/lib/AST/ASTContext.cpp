@@ -126,21 +126,18 @@ getDeclLocsForCommentSearch(const Decl *D, SourceManager &SourceMgr) {
     return {};
 
   // User can not attach documentation to implicit instantiations.
-  if (const auto *FD = dyn_cast<FunctionDecl>(D)) {
-    if (FD->getTemplateSpecializationKind() == TSK_ImplicitInstantiation)
-      return {};
-  }
+  if (const auto *FD = dyn_cast<FunctionDecl>(D); FD && (FD->getTemplateSpecializationKind() == TSK_ImplicitInstantiation)) 
+    return {};
+  
 
-  if (const auto *VD = dyn_cast<VarDecl>(D)) {
-    if (VD->isStaticDataMember() &&
-        VD->getTemplateSpecializationKind() == TSK_ImplicitInstantiation)
-      return {};
-  }
+  if (const auto *VD = dyn_cast<VarDecl>(D); VD && (VD->isStaticDataMember() &&
+        VD->getTemplateSpecializationKind() == TSK_ImplicitInstantiation)) 
+    return {};
+  
 
-  if (const auto *CRD = dyn_cast<CXXRecordDecl>(D)) {
-    if (CRD->getTemplateSpecializationKind() == TSK_ImplicitInstantiation)
-      return {};
-  }
+  if (const auto *CRD = dyn_cast<CXXRecordDecl>(D); CRD && (CRD->getTemplateSpecializationKind() == TSK_ImplicitInstantiation)) 
+    return {};
+  
 
   if (const auto *CTSD = dyn_cast<ClassTemplateSpecializationDecl>(D)) {
     TemplateSpecializationKind TSK = CTSD->getSpecializationKind();
@@ -149,16 +146,14 @@ getDeclLocsForCommentSearch(const Decl *D, SourceManager &SourceMgr) {
       return {};
   }
 
-  if (const auto *ED = dyn_cast<EnumDecl>(D)) {
-    if (ED->getTemplateSpecializationKind() == TSK_ImplicitInstantiation)
-      return {};
-  }
-  if (const auto *TD = dyn_cast<TagDecl>(D)) {
+  if (const auto *ED = dyn_cast<EnumDecl>(D); ED && (ED->getTemplateSpecializationKind() == TSK_ImplicitInstantiation)) 
+    return {};
+  
+  if (const auto *TD = dyn_cast<TagDecl>(D); TD && (TD->isEmbeddedInDeclarator() && !TD->isCompleteDefinition())) 
     // When tag declaration (but not definition!) is part of the
     // decl-specifier-seq of some other declaration, it doesn't get comment
-    if (TD->isEmbeddedInDeclarator() && !TD->isCompleteDefinition())
-      return {};
-  }
+    return {};
+  
   // TODO: handle comments for function parameters properly.
   if (isa<ParmVarDecl>(D))
     return {};
@@ -239,20 +234,20 @@ RawComment *ASTContext::getRawCommentForDeclNoCacheImpl(
   // First check whether we have a trailing comment.
   if (OffsetCommentBehindDecl != CommentsInTheFile.end()) {
     RawComment *CommentBehindDecl = OffsetCommentBehindDecl->second;
-    if ((CommentBehindDecl->isDocumentation() ||
+    if (((CommentBehindDecl->isDocumentation() ||
          LangOpts.CommentOpts.ParseAllComments) &&
         CommentBehindDecl->isTrailingComment() &&
         (isa<FieldDecl>(D) || isa<EnumConstantDecl>(D) || isa<VarDecl>(D) ||
-         isa<ObjCMethodDecl>(D) || isa<ObjCPropertyDecl>(D))) {
+         isa<ObjCMethodDecl>(D) || isa<ObjCPropertyDecl>(D))) && (SourceMgr.getLineNumber(DeclLocDecomp.first, DeclLocDecomp.second) ==
+          Comments.getCommentBeginLine(CommentBehindDecl, DeclLocDecomp.first,
+                                       OffsetCommentBehindDecl->first))) 
 
       // Check that Doxygen trailing comment comes after the declaration, starts
       // on the same line and in the same file as the declaration.
-      if (SourceMgr.getLineNumber(DeclLocDecomp.first, DeclLocDecomp.second) ==
-          Comments.getCommentBeginLine(CommentBehindDecl, DeclLocDecomp.first,
-                                       OffsetCommentBehindDecl->first)) {
+      {
         return CommentBehindDecl;
       }
-    }
+    
   }
 
   // The comment just after the declaration was not a trailing comment.
@@ -1848,8 +1843,8 @@ CharUnits ASTContext::getDeclAlign(const Decl *D, bool ForAlignof) const {
     }
 
     // Ensure minimum alignment for global variables.
-    if (const auto *VD = dyn_cast<VarDecl>(D))
-      if (VD->hasGlobalStorage() && !ForAlignof) {
+    if (const auto *VD = dyn_cast<VarDecl>(D); VD && (VD->hasGlobalStorage() && !ForAlignof))
+      {
         uint64_t TypeSize =
             !BaseT->isIncompleteType() ? getTypeSize(T.getTypePtr()) : 0;
         Align = std::max(Align, getMinGlobalAlignOfVar(TypeSize, VD));
@@ -2699,15 +2694,14 @@ unsigned ASTContext::getPreferredTypeAlign(const Type *T) const {
     T = CT->getElementType().getTypePtr();
   if (const auto *ED = T->getAsEnumDecl())
     T = ED->getIntegerType().getTypePtr();
-  if (T->isSpecificBuiltinType(BuiltinType::Double) ||
+  if ((T->isSpecificBuiltinType(BuiltinType::Double) ||
       T->isSpecificBuiltinType(BuiltinType::LongLong) ||
       T->isSpecificBuiltinType(BuiltinType::ULongLong) ||
       (T->isSpecificBuiltinType(BuiltinType::LongDouble) &&
-       Target->defaultsToAIXPowerAlignment()))
+       Target->defaultsToAIXPowerAlignment())) && (!TI.isAlignRequired()))
     // Don't increase the alignment if an alignment attribute was specified on a
     // typedef declaration.
-    if (!TI.isAlignRequired())
-      return std::max(ABIAlign, (unsigned)getTypeSize(T));
+    return std::max(ABIAlign, (unsigned)getTypeSize(T));
 
   return ABIAlign;
 }
@@ -3620,8 +3614,8 @@ uint16_t ASTContext::getPointerAuthTypeDiscriminator(QualType T) {
     // to not become a visible ODR problem. This also leaves some
     // room for the committee to add laxness to function pointer
     // conversions in future standards.
-    if (auto *MPT = T->getAs<MemberPointerType>())
-      if (MPT->isMemberFunctionPointer()) {
+    if (auto *MPT = T->getAs<MemberPointerType>(); MPT && (MPT->isMemberFunctionPointer()))
+      {
         QualType PointeeType = MPT->getPointeeType();
         if (PointeeType->castAs<FunctionProtoType>()->getExceptionSpecType() !=
             EST_None) {
@@ -7473,12 +7467,11 @@ bool ASTContext::isSameTypeConstraint(const TypeConstraint *XTC,
   if (XTC->getConceptReference()->hasExplicitTemplateArgs() !=
       YTC->getConceptReference()->hasExplicitTemplateArgs())
     return false;
-  if (XTC->getConceptReference()->hasExplicitTemplateArgs())
-    if (XTC->getConceptReference()
+  if ((XTC->getConceptReference()->hasExplicitTemplateArgs()) && (XTC->getConceptReference()
             ->getTemplateArgsAsWritten()
             ->NumTemplateArgs !=
-        YTC->getConceptReference()->getTemplateArgsAsWritten()->NumTemplateArgs)
-      return false;
+        YTC->getConceptReference()->getTemplateArgsAsWritten()->NumTemplateArgs))
+    return false;
 
   // Compare slowly by profiling.
   //
@@ -7684,9 +7677,8 @@ bool ASTContext::isSameEntity(const NamedDecl *X, const NamedDecl *Y) const {
 
   // If either X or Y are local to the owning module, they are only possible to
   // be the same entity if they are in the same module.
-  if (X->isModuleLocal() || Y->isModuleLocal())
-    if (!isInSameModule(X->getOwningModule(), Y->getOwningModule()))
-      return false;
+  if ((X->isModuleLocal() || Y->isModuleLocal()) && (!isInSameModule(X->getOwningModule(), Y->getOwningModule())))
+    return false;
 
   // Two typedefs refer to the same entity if they have the same underlying
   // type.
@@ -8342,18 +8334,18 @@ QualType ASTContext::getPromotedIntegerType(QualType Promotable) const {
     return getOverflowBehaviorType(OBT->getBehaviorKind(), PromotedUnderlying);
   }
 
-  if (const auto *BT = Promotable->getAs<BuiltinType>()) {
+  if (const auto *BT = Promotable->getAs<BuiltinType>(); BT && (BT->getKind() == BuiltinType::WChar_S ||
+        BT->getKind() == BuiltinType::WChar_U ||
+        BT->getKind() == BuiltinType::Char8 ||
+        BT->getKind() == BuiltinType::Char16 ||
+        BT->getKind() == BuiltinType::Char32)) 
     // C++ [conv.prom]: A prvalue of type char16_t, char32_t, or wchar_t
     // (3.9.1) can be converted to a prvalue of the first of the following
     // types that can represent all the values of its underlying type:
     // int, unsigned int, long int, unsigned long int, long long int, or
     // unsigned long long int [...]
     // FIXME: Is there some better way to compute this?
-    if (BT->getKind() == BuiltinType::WChar_S ||
-        BT->getKind() == BuiltinType::WChar_U ||
-        BT->getKind() == BuiltinType::Char8 ||
-        BT->getKind() == BuiltinType::Char16 ||
-        BT->getKind() == BuiltinType::Char32) {
+    {
       bool FromIsSigned = BT->getKind() == BuiltinType::WChar_S;
       uint64_t FromSize = getTypeSize(BT);
       QualType PromoteTypes[] = { IntTy, UnsignedIntTy, LongTy, UnsignedLongTy,
@@ -8366,7 +8358,7 @@ QualType ASTContext::getPromotedIntegerType(QualType Promotable) const {
       }
       llvm_unreachable("char type should fit into long long");
     }
-  }
+  
 
   // At this point, we should have a signed or unsigned integer type.
   if (Promotable->isSignedIntegerType())
@@ -9425,13 +9417,12 @@ void ASTContext::getObjCEncodingForTypeImpl(QualType T, std::string &S,
         S += 'r';
       }
     }
-    if (isReadOnly) {
+    if ((isReadOnly) && (StringRef(S).ends_with("nr"))) 
       // Another legacy compatibility encoding. Some ObjC qualifier and type
       // combinations need to be rearranged.
       // Rewrite "in const" from "nr" to "rn"
-      if (StringRef(S).ends_with("nr"))
-        S.replace(S.end()-2, S.end(), "rn");
-    }
+      S.replace(S.end()-2, S.end(), "rn");
+    
 
     if (PointeeTy->isCharType()) {
       // char pointer types should be encoded as '*' unless it is a
@@ -10660,14 +10651,13 @@ bool ASTContext::areCompatibleVectorTypes(QualType FirstVec,
     QualType FirstElt = First->getElementType();
     QualType SecondElt = Second->getElementType();
 
-    if ((FirstElt->isFloat16Type() && SecondElt->isHalfType()) ||
-        (FirstElt->isHalfType() && SecondElt->isFloat16Type())) {
-      if (First->getVectorKind() != VectorKind::AltiVecPixel &&
+    if (((FirstElt->isFloat16Type() && SecondElt->isHalfType()) ||
+        (FirstElt->isHalfType() && SecondElt->isFloat16Type())) && (First->getVectorKind() != VectorKind::AltiVecPixel &&
           First->getVectorKind() != VectorKind::AltiVecBool &&
           Second->getVectorKind() != VectorKind::AltiVecPixel &&
-          Second->getVectorKind() != VectorKind::AltiVecBool)
-        return true;
-    }
+          Second->getVectorKind() != VectorKind::AltiVecBool)) 
+      return true;
+    
   }
   return false;
 }
@@ -10695,10 +10685,9 @@ ASTContext::checkOBTAssignmentCompatibility(QualType LHS, QualType RHS) {
   QualType LHSUnderlying = LHSOBT ? LHSOBT->desugar() : LHS;
   QualType RHSUnderlying = RHSOBT ? RHSOBT->desugar() : RHS;
 
-  if (RHSOBT && !LHSOBT) {
-    if (LHSUnderlying->isIntegerType() && RHSUnderlying->isIntegerType())
-      return OBTAssignResult::Discards;
-  }
+  if ((RHSOBT && !LHSOBT) && (LHSUnderlying->isIntegerType() && RHSUnderlying->isIntegerType())) 
+    return OBTAssignResult::Discards;
+  
 
   return OBTAssignResult::NotApplicable;
 }
@@ -11927,14 +11916,12 @@ QualType ASTContext::mergeTypes(QualType LHS, QualType RHS, bool OfBlockPointer,
     }
     // Allow __auto_type to match anything; it merges to the type with more
     // information.
-    if (const auto *AT = LHS->getAs<AutoType>()) {
-      if (!AT->isDeduced() && AT->isGNUAutoType())
-        return RHS;
-    }
-    if (const auto *AT = RHS->getAs<AutoType>()) {
-      if (!AT->isDeduced() && AT->isGNUAutoType())
-        return LHS;
-    }
+    if (const auto *AT = LHS->getAs<AutoType>(); AT && (!AT->isDeduced() && AT->isGNUAutoType())) 
+      return RHS;
+    
+    if (const auto *AT = RHS->getAs<AutoType>(); AT && (!AT->isDeduced() && AT->isGNUAutoType())) 
+      return LHS;
+    
     return {};
   }
 
@@ -13315,9 +13302,8 @@ bool ASTContext::DeclMustBeEmitted(const Decl *D) {
   // bindings have side-effects.
   if (const auto *DD = dyn_cast<DecompositionDecl>(VD)) {
     for (const auto *BD : DD->flat_bindings())
-      if (const auto *BindingVD = BD->getHoldingVar())
-        if (DeclMustBeEmitted(BindingVD))
-          return true;
+      if (const auto *BindingVD = BD->getHoldingVar(); BindingVD && (DeclMustBeEmitted(BindingVD)))
+        return true;
   }
 
   return false;
@@ -15315,9 +15301,8 @@ static SYCLKernelInfo BuildSYCLKernelInfo(ASTContext &Context,
   // host and device compilation.
   auto DeviceDiscriminatorOverrider =
       [](ASTContext &Ctx, const NamedDecl *ND) -> UnsignedOrNone {
-    if (const auto *RD = dyn_cast<CXXRecordDecl>(ND))
-      if (RD->isLambda())
-        return RD->getDeviceLambdaManglingNumber();
+    if (const auto *RD = dyn_cast<CXXRecordDecl>(ND); RD && (RD->isLambda()))
+      return RD->getDeviceLambdaManglingNumber();
     return std::nullopt;
   };
   std::unique_ptr<MangleContext> MC{ItaniumMangleContext::create(

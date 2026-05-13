@@ -786,13 +786,13 @@ private:
       return 0;
     }
     // Only inline simple if's (no nested if or else), unless specified
-    if (Style.AllowShortIfStatementsOnASingleLine ==
-        FormatStyle::SIS_WithoutElse) {
-      if (I + 2 != E && Line.startsWith(tok::kw_if) &&
-          I[2]->First->is(tok::kw_else)) {
+    if ((Style.AllowShortIfStatementsOnASingleLine ==
+        FormatStyle::SIS_WithoutElse) && (I + 2 != E && Line.startsWith(tok::kw_if) &&
+          I[2]->First->is(tok::kw_else))) 
+      {
         return 0;
       }
-    }
+    
     return 1;
   }
 
@@ -1711,11 +1711,11 @@ static auto computeNewlines(const AnnotatedLine &Line,
   }
 
   // Insert or remove empty line after access specifiers.
-  if (PreviousLine && PreviousLine->First->isAccessSpecifier() &&
-      (!PreviousLine->InPPDirective || !RootToken.HasUnescapedNewline)) {
+  if ((PreviousLine && PreviousLine->First->isAccessSpecifier() &&
+      (!PreviousLine->InPPDirective || !RootToken.HasUnescapedNewline)) && (!RootToken.isAccessSpecifier())) 
     // EmptyLineBeforeAccessModifier is handling the case when two access
     // modifiers follow each other.
-    if (!RootToken.isAccessSpecifier()) {
+    {
       switch (Style.EmptyLineAfterAccessModifier) {
       case FormatStyle::ELAAMS_Never:
         Newlines = 1;
@@ -1731,7 +1731,7 @@ static auto computeNewlines(const AnnotatedLine &Line,
         break;
       }
     }
-  }
+  
 
   return Newlines;
 }

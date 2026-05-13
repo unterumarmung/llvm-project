@@ -1764,9 +1764,8 @@ static std::optional<APInt> getConstantCoefficient(const SCEV *Expr) {
   if (const auto *Constant = dyn_cast<SCEVConstant>(Expr))
     return Constant->getAPInt();
   if (const auto *Product = dyn_cast<SCEVMulExpr>(Expr))
-    if (const auto *Constant = dyn_cast<SCEVConstant>(Product->getOperand(0)))
-      if (Product->hasNoSignedWrap())
-        return Constant->getAPInt();
+    if (const auto *Constant = dyn_cast<SCEVConstant>(Product->getOperand(0)); Constant && (Product->hasNoSignedWrap()))
+      return Constant->getAPInt();
   return std::nullopt;
 }
 
@@ -2165,12 +2164,10 @@ bool DependenceInfo::testBounds(unsigned char DirKind, unsigned Level,
                                 MutableArrayRef<BoundInfo> Bound,
                                 const SCEV *Delta) const {
   Bound[Level].Direction = DirKind;
-  if (const SCEV *LowerBound = getLowerBound(Bound))
-    if (SE->isKnownPredicate(CmpInst::ICMP_SGT, LowerBound, Delta))
-      return false;
-  if (const SCEV *UpperBound = getUpperBound(Bound))
-    if (SE->isKnownPredicate(CmpInst::ICMP_SGT, Delta, UpperBound))
-      return false;
+  if (const SCEV *LowerBound = getLowerBound(Bound); LowerBound && (SE->isKnownPredicate(CmpInst::ICMP_SGT, LowerBound, Delta)))
+    return false;
+  if (const SCEV *UpperBound = getUpperBound(Bound); UpperBound && (SE->isKnownPredicate(CmpInst::ICMP_SGT, Delta, UpperBound)))
+    return false;
   return true;
 }
 

@@ -2013,8 +2013,8 @@ bool CompilerInvocation::ParseCodeGenArgs(CodeGenOptions &Opts, ArgList &Args,
   } else if (Args.hasArg(OPT_fmemory_profile))
     Opts.MemoryProfileOutput = MemProfileBasename;
 
-  if (Opts.CoverageNotesFile.size() || Opts.CoverageDataFile.size()) {
-    if (Args.hasArg(OPT_coverage_version_EQ)) {
+  if ((Opts.CoverageNotesFile.size() || Opts.CoverageDataFile.size()) && (Args.hasArg(OPT_coverage_version_EQ))) 
+    {
       StringRef CoverageVersion = Args.getLastArgValue(OPT_coverage_version_EQ);
       if (CoverageVersion.size() != 4) {
         Diags.Report(diag::err_drv_invalid_value)
@@ -2024,7 +2024,7 @@ bool CompilerInvocation::ParseCodeGenArgs(CodeGenOptions &Opts, ArgList &Args,
         memcpy(Opts.CoverageVersion, CoverageVersion.data(), 4);
       }
     }
-  }
+  
   // FIXME: For backend options that are not yet recorded as function
   // attributes in the IR, keep track of them so we can embed them in a
   // separate data section and use them when building the bitcode.
@@ -2175,11 +2175,10 @@ bool CompilerInvocation::ParseCodeGenArgs(CodeGenOptions &Opts, ArgList &Args,
     Opts.XCOFFReadOnlyPointers = true;
   }
 
-  if (Arg *A = Args.getLastArg(OPT_mabi_EQ_quadword_atomics)) {
-    if (!T.isOSAIX() || T.isPPC32())
-      Diags.Report(diag::err_drv_unsupported_opt_for_target)
+  if (Arg *A = Args.getLastArg(OPT_mabi_EQ_quadword_atomics); A && (!T.isOSAIX() || T.isPPC32())) 
+    Diags.Report(diag::err_drv_unsupported_opt_for_target)
         << A->getSpelling() << T.str();
-  }
+  
 
   bool NeedLocTracking = false;
 
@@ -2731,8 +2730,8 @@ unsigned clang::getOptimizationLevel(const ArgList &Args, InputKind IK,
 }
 
 unsigned clang::getOptimizationLevelSize(const ArgList &Args) {
-  if (Arg *A = Args.getLastArg(options::OPT_O_Group)) {
-    if (A->getOption().matches(options::OPT_O)) {
+  if (Arg *A = Args.getLastArg(options::OPT_O_Group); A && (A->getOption().matches(options::OPT_O))) 
+    {
       switch (A->getValue()[0]) {
       default:
         return 0;
@@ -2742,7 +2741,7 @@ unsigned clang::getOptimizationLevelSize(const ArgList &Args) {
         return 2;
       }
     }
-  }
+  
   return 0;
 }
 
@@ -3545,11 +3544,10 @@ static void GenerateAPINotesArgs(const APINotesOptions &Opts,
 
 static void ParseAPINotesArgs(APINotesOptions &Opts, ArgList &Args,
                               DiagnosticsEngine &diags) {
-  if (const Arg *A = Args.getLastArg(OPT_fapinotes_swift_version)) {
-    if (Opts.SwiftVersion.tryParse(A->getValue()))
-      diags.Report(diag::err_drv_invalid_value)
+  if (const Arg *A = Args.getLastArg(OPT_fapinotes_swift_version); A && (Opts.SwiftVersion.tryParse(A->getValue()))) 
+    diags.Report(diag::err_drv_invalid_value)
           << A->getAsString(Args) << A->getValue();
-  }
+  
   for (const Arg *A : Args.filtered(OPT_iapinotes_modules))
     Opts.ModuleSearchPaths.push_back(A->getValue());
 }
@@ -5102,12 +5100,11 @@ bool CompilerInvocation::CreateFromArgsImpl(
     }
   }
 
-  if (LangOpts.CUDA) {
+  if ((LangOpts.CUDA) && (LangOpts.CUDAIsDevice)) 
     // During CUDA device-side compilation, the aux triple is the
     // triple used for host compilation.
-    if (LangOpts.CUDAIsDevice)
-      Res.getTargetOpts().HostTriple = Res.getFrontendOpts().AuxTriple;
-  }
+    Res.getTargetOpts().HostTriple = Res.getFrontendOpts().AuxTriple;
+  
 
   if (LangOpts.OpenACC && !Res.getFrontendOpts().UseClangIRPipeline &&
       isCodeGenAction(Res.getFrontendOpts().ProgramAction))

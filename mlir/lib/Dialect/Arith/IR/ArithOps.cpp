@@ -1333,12 +1333,11 @@ OpFoldResult arith::MulFOp::fold(FoldAdaptor adaptor) {
   if (matchPattern(adaptor.getRhs(), m_OneFloat()))
     return getLhs();
 
-  if (arith::bitEnumContainsAll(getFastmath(), arith::FastMathFlags::nnan |
-                                                   arith::FastMathFlags::nsz)) {
+  if ((arith::bitEnumContainsAll(getFastmath(), arith::FastMathFlags::nnan |
+                                                   arith::FastMathFlags::nsz)) && (matchPattern(adaptor.getRhs(), m_AnyZeroFloat()))) 
     // mulf(x, 0) -> 0
-    if (matchPattern(adaptor.getRhs(), m_AnyZeroFloat()))
-      return getRhs();
-  }
+    return getRhs();
+  
 
   auto rm = getRoundingmode();
   return constFoldBinaryOp<FloatAttr>(
@@ -1987,10 +1986,9 @@ OpFoldResult arith::IndexCastOp::fold(FoldAdaptor adaptor) {
   // cast sign-extends, so the round-trip is lossy.
   if (auto inner = getOperand().getDefiningOp<arith::IndexCastOp>()) {
     Value x = inner.getOperand();
-    if (x.getType() == getType()) {
-      if (getIndexCastWidth(inner.getType()) >= getIndexCastWidth(x.getType()))
-        return x;
-    }
+    if ((x.getType() == getType()) && (getIndexCastWidth(inner.getType()) >= getIndexCastWidth(x.getType()))) 
+      return x;
+    
   }
   return {};
 }
@@ -2027,10 +2025,9 @@ OpFoldResult arith::IndexCastUIOp::fold(FoldAdaptor adaptor) {
   // outer cast zero-extends, so the round-trip is lossy.
   if (auto inner = getOperand().getDefiningOp<arith::IndexCastUIOp>()) {
     Value x = inner.getOperand();
-    if (x.getType() == getType()) {
-      if (getIndexCastWidth(inner.getType()) >= getIndexCastWidth(x.getType()))
-        return x;
-    }
+    if ((x.getType() == getType()) && (getIndexCastWidth(inner.getType()) >= getIndexCastWidth(x.getType()))) 
+      return x;
+    
   }
   return {};
 }
@@ -2184,12 +2181,11 @@ OpFoldResult arith::CmpIOp::fold(FoldAdaptor adaptor) {
       return getLhs();
   }
 
-  if (matchPattern(adaptor.getRhs(), m_One())) {
+  if ((matchPattern(adaptor.getRhs(), m_One())) && (getElementTypeOrSelf(getLhs().getType()).isInteger(1) &&
+        getPredicate() == arith::CmpIPredicate::eq)) 
     // arith.cmpi eq, %val, %one : i1 -> %val
-    if (getElementTypeOrSelf(getLhs().getType()).isInteger(1) &&
-        getPredicate() == arith::CmpIPredicate::eq)
-      return getLhs();
-  }
+    return getLhs();
+  
 
   // Move constant to the right side.
   if (adaptor.getLhs() && !adaptor.getRhs()) {

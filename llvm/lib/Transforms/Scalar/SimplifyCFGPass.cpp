@@ -196,9 +196,8 @@ static bool tailMergeBlocksWithSimilarFunctionTerminators(Function &F,
     // I.e., we can not change `ret` to `br` for this block.
     if (auto *CI = dyn_cast_or_null<CallInst>(Term->getPrevNode())) {
       if (Function *F = CI->getCalledFunction())
-        if (Intrinsic::ID ID = F->getIntrinsicID())
-          if (ID == Intrinsic::experimental_deoptimize)
-            continue;
+        if (Intrinsic::ID ID = F->getIntrinsicID(); ID && (ID == Intrinsic::experimental_deoptimize))
+          continue;
     }
 
     // PHI nodes cannot have token type, so if the terminator has an operand

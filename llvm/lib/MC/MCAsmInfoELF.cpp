@@ -126,9 +126,8 @@ void MCAsmInfoELF::printSwitchToSection(const MCSection &Section,
     OS << 'R';
 
   // If there are os-specific flags, print them.
-  if (T.isOSSolaris())
-    if (Sec.Flags & ELF::SHF_SUNW_NODISCARD)
-      OS << 'R';
+  if ((T.isOSSolaris()) && (Sec.Flags & ELF::SHF_SUNW_NODISCARD))
+    OS << 'R';
 
   // If there are tarSec.get-specific flags, print them.
   Triple::ArchType Arch = T.getArch();
@@ -146,10 +145,9 @@ void MCAsmInfoELF::printSwitchToSection(const MCSection &Section,
   } else if (Arch == Triple::hexagon) {
     if (Sec.Flags & ELF::SHF_HEX_GPREL)
       OS << 's';
-  } else if (Arch == Triple::x86_64) {
-    if (Sec.Flags & ELF::SHF_X86_64_LARGE)
-      OS << 'l';
-  }
+  } else if ((Arch == Triple::x86_64) && (Sec.Flags & ELF::SHF_X86_64_LARGE)) 
+    OS << 'l';
+  
 
   OS << '"';
 

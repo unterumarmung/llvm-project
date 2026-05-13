@@ -112,10 +112,9 @@ bool llvm::GenericUniformityAnalysisImpl<SSAContext>::usesValueFromCycle(
     const Instruction &I, const Cycle &DefCycle) const {
   assert(!isAlwaysUniform(I));
   for (const Use &U : I.operands()) {
-    if (auto *I = dyn_cast<Instruction>(&U)) {
-      if (DefCycle.contains(I->getParent()))
-        return true;
-    }
+    if (auto *I = dyn_cast<Instruction>(&U); I && (DefCycle.contains(I->getParent()))) 
+      return true;
+    
   }
   return false;
 }

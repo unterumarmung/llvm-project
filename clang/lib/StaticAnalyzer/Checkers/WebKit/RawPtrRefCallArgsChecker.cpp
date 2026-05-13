@@ -258,10 +258,9 @@ public:
           OO_Equal) { // Ignore assignment to Ref/RefPtr.
         auto *callee = MemberOp->getDirectCallee();
         if (auto *calleeDecl = dyn_cast<CXXMethodDecl>(callee)) {
-          if (const CXXRecordDecl *classDecl = calleeDecl->getParent()) {
-            if (isSafePtr(classDecl))
-              return true;
-          }
+          if (const CXXRecordDecl *classDecl = calleeDecl->getParent(); classDecl && (isSafePtr(classDecl))) 
+            return true;
+          
         }
       }
       if (MemberOp->isAssignmentOp())

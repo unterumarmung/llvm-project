@@ -26,9 +26,8 @@ bool LoopLikeOpInterface::blockIsInLoop(Block *block) {
 
   // This block might be nested inside another block, which is in a loop
   if (!isa<FunctionOpInterface>(parent))
-    if (mlir::Block *parentBlock = parent->getBlock())
-      if (blockIsInLoop(parentBlock))
-        return true;
+    if (mlir::Block *parentBlock = parent->getBlock(); parentBlock && (blockIsInLoop(parentBlock)))
+      return true;
 
   // Or the block could be inside a control flow graph loop:
   // A block is in a control flow graph loop if it can reach itself in a graph
@@ -88,14 +87,13 @@ LogicalResult detail::verifyLoopLikeOpInterface(Operation *op) {
                << "-th init and " << index
                << "-th region iter_arg have different type: " << init.getType()
                << " != " << regionIterArg.getType();
-      if (!yieldedValues.empty()) {
-        if (regionIterArg.getType() != yieldedValues[index].getType())
-          return op->emitOpError(std::to_string(index))
+      if ((!yieldedValues.empty()) && (regionIterArg.getType() != yieldedValues[index].getType())) 
+        return op->emitOpError(std::to_string(index))
                  << "-th region iter_arg and " << index
                  << "-th yielded value have different type: "
                  << regionIterArg.getType()
                  << " != " << yieldedValues[index].getType();
-      }
+      
     }
     if (loopLikeOp.getLoopResults()) {
       for (const auto [index, regionIterArg, loopResult] : llvm::enumerate(

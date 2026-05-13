@@ -321,11 +321,10 @@ void MatchTable::emitDeclaration(raw_ostream &OS) const {
     bool LineBreakIsNext = false;
     const auto &NextI = std::next(I);
 
-    if (NextI != E) {
-      if (NextI->EmitStr == "" &&
-          NextI->Flags == MatchTableRecord::MTRF_LineBreakFollows)
-        LineBreakIsNext = true;
-    }
+    if ((NextI != E) && (NextI->EmitStr == "" &&
+          NextI->Flags == MatchTableRecord::MTRF_LineBreakFollows)) 
+      LineBreakIsNext = true;
+    
 
     if (I->Flags & MatchTableRecord::MTRF_Indent)
       Indentation += 2;
@@ -821,9 +820,8 @@ LLTCodeGen RuleMatcher::getFirstConditionAsRootType() {
   InstructionMatcher &InsnMatcher = *Matchers.front();
   if (!InsnMatcher.predicates_empty())
     if (const auto *TM =
-            dyn_cast<LLTOperandMatcher>(&**InsnMatcher.predicates_begin()))
-      if (TM->getInsnVarID() == 0 && TM->getOpIdx() == 0)
-        return TM->getTy();
+            dyn_cast<LLTOperandMatcher>(&**InsnMatcher.predicates_begin()); TM && (TM->getInsnVarID() == 0 && TM->getOpIdx() == 0))
+      return TM->getTy();
   return {};
 }
 
@@ -2015,9 +2013,8 @@ bool InstructionOperandMatcher::isHigherPriorityThan(
     return false;
 
   if (const InstructionOperandMatcher *BP =
-          dyn_cast<InstructionOperandMatcher>(&B))
-    if (InsnMatcher->isHigherPriorityThan(*BP->InsnMatcher))
-      return true;
+          dyn_cast<InstructionOperandMatcher>(&B); BP && (InsnMatcher->isHigherPriorityThan(*BP->InsnMatcher)))
+    return true;
   return false;
 }
 

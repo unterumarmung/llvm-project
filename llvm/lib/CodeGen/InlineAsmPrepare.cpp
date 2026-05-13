@@ -119,9 +119,8 @@ static void updateSSA(DominatorTree &DT, CallBrInst *CBR, CallInst *Intrinsic,
 #endif
 
     // Don't rewrite the use in the newly inserted intrinsic.
-    if (const auto *II = dyn_cast<IntrinsicInst>(U->getUser()))
-      if (II->getIntrinsicID() == Intrinsic::callbr_landingpad)
-        continue;
+    if (const auto *II = dyn_cast<IntrinsicInst>(U->getUser()); II && (II->getIntrinsicID() == Intrinsic::callbr_landingpad))
+      continue;
 
     // If the Use is in the same BasicBlock as the Intrinsic call, replace
     // the Use with the value of the Intrinsic call.
@@ -157,10 +156,9 @@ static bool splitCriticalEdges(CallBrInst *CBR, DominatorTree *DT) {
   // ...hence starting at 1 and checking against successor 0 (aka the default
   // destination).
   for (unsigned I = 1, E = CBR->getNumSuccessors(); I != E; ++I)
-    if (CBR->getSuccessor(I) == CBR->getSuccessor(0) ||
-        isCriticalEdge(CBR, I, /*AllowIdenticalEdges*/ true))
-      if (SplitKnownCriticalEdge(CBR, I, Options))
-        Changed = true;
+    if ((CBR->getSuccessor(I) == CBR->getSuccessor(0) ||
+        isCriticalEdge(CBR, I, /*AllowIdenticalEdges*/ true)) && (SplitKnownCriticalEdge(CBR, I, Options)))
+      Changed = true;
 
   return Changed;
 }
@@ -210,9 +208,8 @@ static bool processCallBrInst(Function &F, CallBrInst *CBR, DominatorTree *DT) {
 static SmallVector<CallBrInst *, 2> findCallBrs(Function &F) {
   SmallVector<CallBrInst *, 2> CBRs;
   for (BasicBlock &BB : F)
-    if (auto *CBR = dyn_cast<CallBrInst>(BB.getTerminator()))
-      if (!CBR->getType()->isVoidTy() && !CBR->use_empty())
-        CBRs.push_back(CBR);
+    if (auto *CBR = dyn_cast<CallBrInst>(BB.getTerminator()); CBR && (!CBR->getType()->isVoidTy() && !CBR->use_empty()))
+      CBRs.push_back(CBR);
   return CBRs;
 }
 

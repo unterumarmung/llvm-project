@@ -731,19 +731,19 @@ LogicalResult SparseWMMAOp::verify() {
     return emitOpError("expected dense source operand to have exactly the "
                        "same the number of elements");
 
-  if (destElem.isInteger()) {
-    if (!(sparseElem.isInteger() && denseElem.isInteger())) {
+  if ((destElem.isInteger()) && (!(sparseElem.isInteger() && denseElem.isInteger()))) 
+    {
       return emitOpError("source operand and destination operands must all be "
                          "either integer or float types");
     }
-  }
+  
 
-  if (destElem.isFloat()) {
-    if (!(sparseElem.isFloat() && denseElem.isFloat())) {
+  if ((destElem.isFloat()) && (!(sparseElem.isFloat() && denseElem.isFloat()))) 
+    {
       return emitOpError("source operand and destination operands must all be "
                          "either integer or float types");
     }
-  }
+  
 
   // Check that source element types are compatible.
   // For fp8/bf8 mixed operations, element types can differ (e.g., fp8 * bf8).
@@ -796,10 +796,9 @@ LogicalResult DotOp::verify() {
   } else if (aIsInteger) {
     if (!dest.isInteger(32))
       return emitOpError("expected i32 accumulator for integer sources");
-  } else if (aIsFloat8) {
-    if (!dest.isF32())
-      return emitOpError("expected f32 accumulator for fp8 sources");
-  }
+  } else if ((aIsFloat8) && (!dest.isF32())) 
+    return emitOpError("expected f32 accumulator for fp8 sources");
+  
 
   if ((getUnsignedA() || getUnsignedB()) && !aIsInteger)
     return emitOpError(

@@ -28,15 +28,14 @@ ValueLatticeElement::getCompare(CmpInst::Predicate Pred, Type *Ty,
     return ConstantFoldCompareInstOperands(Pred, getConstant(),
                                            Other.getConstant(), DL);
 
-  if (ICmpInst::isEquality(Pred)) {
-    // not(C) != C => true, not(C) == C => false.
-    if ((isNotConstant() && Other.isConstant() &&
+  if ((ICmpInst::isEquality(Pred)) && ((isNotConstant() && Other.isConstant() &&
          getNotConstant() == Other.getConstant()) ||
         (isConstant() && Other.isNotConstant() &&
-         getConstant() == Other.getNotConstant()))
-      return Pred == ICmpInst::ICMP_NE ? ConstantInt::getTrue(Ty)
+         getConstant() == Other.getNotConstant()))) 
+    // not(C) != C => true, not(C) == C => false.
+    return Pred == ICmpInst::ICMP_NE ? ConstantInt::getTrue(Ty)
                                        : ConstantInt::getFalse(Ty);
-  }
+  
 
   // Integer constants are represented as ConstantRanges with single
   // elements.

@@ -91,23 +91,23 @@ static void ContractNodes(MatcherList &ML, const CodeGenDAGPatterns &CGP) {
       if (auto *RM = dyn_cast<RecordMatcher>(*J)) {
         auto K = std::next(J);
         // Turn MoveSibling->Record->MoveParent into MoveParent->RecordChild.
-        if (isa<MoveParentMatcher>(*K)) {
-          if (MS->getSiblingNo() < 8) { // Only have RecordChild0...7
+        if ((isa<MoveParentMatcher>(*K)) && (MS->getSiblingNo() < 8)) 
+          { // Only have RecordChild0...7
             auto *NewRCM = new RecordChildMatcher(
                 MS->getSiblingNo(), RM->getWhatFor(), RM->getResultNo());
             I = ML.erase_after(P, K);
             ML.insert_after(I, NewRCM);
             continue;
           }
-        }
+        
 
         // Turn MoveSibling->Record->CheckType->MoveParent into
         // MoveParent->RecordChild->CheckChildType.
         if (auto *CT = dyn_cast<CheckTypeMatcher>(*K)) {
           auto L = std::next(K);
-          if (isa<MoveParentMatcher>(*L)) {
-            if (MS->getSiblingNo() < 8 && // Only have CheckChildType0...7
-                CT->getResNo() == 0) {    // CheckChildType checks res #0
+          if ((isa<MoveParentMatcher>(*L)) && (MS->getSiblingNo() < 8 && // Only have CheckChildType0...7
+                CT->getResNo() == 0)) 
+            {    // CheckChildType checks res #0
               auto *NewRCM = new RecordChildMatcher(
                   MS->getSiblingNo(), RM->getWhatFor(), RM->getResultNo());
               auto *NewCCT =
@@ -116,7 +116,7 @@ static void ContractNodes(MatcherList &ML, const CodeGenDAGPatterns &CGP) {
               ML.insert_after(I, {NewRCM, NewCCT});
               continue;
             }
-          }
+          
         }
       }
 
@@ -124,39 +124,39 @@ static void ContractNodes(MatcherList &ML, const CodeGenDAGPatterns &CGP) {
       // MoveParent->CheckChildType.
       if (auto *CT = dyn_cast<CheckTypeMatcher>(*J)) {
         auto K = std::next(J);
-        if (isa<MoveParentMatcher>(*K)) {
-          if (MS->getSiblingNo() < 8 && // Only have CheckChildType0...7
-              CT->getResNo() == 0) {    // CheckChildType checks res #0
+        if ((isa<MoveParentMatcher>(*K)) && (MS->getSiblingNo() < 8 && // Only have CheckChildType0...7
+              CT->getResNo() == 0)) 
+          {    // CheckChildType checks res #0
             auto *NewCCT =
                 new CheckChildTypeMatcher(MS->getSiblingNo(), CT->getType());
             I = ML.erase_after(P, K);
             ML.insert_after(I, NewCCT);
             continue;
           }
-        }
+        
       }
 
       // Turn MoveSibling->CheckInteger->MoveParent into
       // MoveParent->CheckChildInteger.
       if (auto *CI = dyn_cast<CheckIntegerMatcher>(*J)) {
         auto K = std::next(J);
-        if (isa<MoveParentMatcher>(*K)) {
-          if (MS->getSiblingNo() < 5) { // Only have CheckChildInteger0...4
+        if ((isa<MoveParentMatcher>(*K)) && (MS->getSiblingNo() < 5)) 
+          { // Only have CheckChildInteger0...4
             auto *NewCCI = new CheckChildIntegerMatcher(MS->getSiblingNo(),
                                                         CI->getValue());
             I = ML.erase_after(P, K);
             ML.insert_after(I, NewCCI);
             continue;
           }
-        }
+        
 
         // Turn MoveSibling->CheckInteger->CheckType->MoveParent into
         // MoveParent->CheckChildInteger->CheckType.
         if (auto *CT = dyn_cast<CheckTypeMatcher>(*K)) {
           auto L = std::next(K);
-          if (isa<MoveParentMatcher>(*L)) {
-            if (MS->getSiblingNo() < 5 && // Only have CheckChildInteger0...4
-                CT->getResNo() == 0) {    // CheckChildType checks res #0
+          if ((isa<MoveParentMatcher>(*L)) && (MS->getSiblingNo() < 5 && // Only have CheckChildInteger0...4
+                CT->getResNo() == 0)) 
+            {    // CheckChildType checks res #0
               auto *NewCCI = new CheckChildIntegerMatcher(MS->getSiblingNo(),
                                                           CI->getValue());
               auto *NewCCT =
@@ -165,7 +165,7 @@ static void ContractNodes(MatcherList &ML, const CodeGenDAGPatterns &CGP) {
               ML.insert_after(I, {NewCCI, NewCCT});
               continue;
             }
-          }
+          
         }
       }
 
@@ -173,38 +173,38 @@ static void ContractNodes(MatcherList &ML, const CodeGenDAGPatterns &CGP) {
       // MoveParent->CheckChild2CondCode.
       if (auto *CCC = dyn_cast<CheckCondCodeMatcher>(*J)) {
         auto K = std::next(J);
-        if (isa<MoveParentMatcher>(*K)) {
-          if (MS->getSiblingNo() == 2) { // Only have CheckChild2CondCode
+        if ((isa<MoveParentMatcher>(*K)) && (MS->getSiblingNo() == 2)) 
+          { // Only have CheckChild2CondCode
             auto *NewCCCC =
                 new CheckChild2CondCodeMatcher(CCC->getCondCodeName());
             I = ML.erase_after(P, K);
             ML.insert_after(I, NewCCCC);
             continue;
           }
-        }
+        
       }
 
       // Turn MoveSibling->CheckSame->MoveParent into
       // MoveParent->CheckChildSame.
       if (auto *CS = dyn_cast<CheckSameMatcher>(*J)) {
         auto K = std::next(J);
-        if (isa<MoveParentMatcher>(*K)) {
-          if (MS->getSiblingNo() < 4) { // Only have CheckChildSame0...3
+        if ((isa<MoveParentMatcher>(*K)) && (MS->getSiblingNo() < 4)) 
+          { // Only have CheckChildSame0...3
             auto *NewCCS = new CheckChildSameMatcher(MS->getSiblingNo(),
                                                      CS->getMatchNumber());
             I = ML.erase_after(P, K);
             ML.insert_after(I, NewCCS);
             continue;
           }
-        }
+        
 
         // Turn MoveSibling->CheckSame->CheckType->MoveParent into
         // MoveParent->CheckChildSame->CheckChildType.
         if (auto *CT = dyn_cast<CheckTypeMatcher>(*K)) {
           auto L = std::next(K);
-          if (isa<MoveParentMatcher>(*L)) {
-            if (MS->getSiblingNo() < 4 && // Only have CheckChildSame0...3
-                CT->getResNo() == 0) {    // CheckChildType checks res #0
+          if ((isa<MoveParentMatcher>(*L)) && (MS->getSiblingNo() < 4 && // Only have CheckChildSame0...3
+                CT->getResNo() == 0)) 
+            {    // CheckChildType checks res #0
               auto *NewCCS = new CheckChildSameMatcher(MS->getSiblingNo(),
                                                        CS->getMatchNumber());
               auto *NewCCT =
@@ -213,7 +213,7 @@ static void ContractNodes(MatcherList &ML, const CodeGenDAGPatterns &CGP) {
               ML.insert_after(I, {NewCCS, NewCCT});
               continue;
             }
-          }
+          
         }
       }
 

@@ -1776,12 +1776,12 @@ bool PeepholeOptimizer::run(MachineFunction &MF) {
       if (MI->isPosition())
         continue;
 
-      if (IsLoopHeader && MI->isPHI()) {
-        if (optimizeRecurrence(*MI)) {
+      if ((IsLoopHeader && MI->isPHI()) && (optimizeRecurrence(*MI))) 
+        {
           Changed = true;
           continue;
         }
-      }
+      
 
       if (!MI->isCopy()) {
         for (const MachineOperand &MO : MI->operands()) {

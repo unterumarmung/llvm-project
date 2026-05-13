@@ -741,9 +741,8 @@ bool CodeGenFunction::hasInAllocaArg(const CXXMethodDecl *MD) {
 /// Return the UBSan prologue signature for \p FD if one is available.
 static llvm::Constant *getPrologueSignature(CodeGenModule &CGM,
                                             const FunctionDecl *FD) {
-  if (const auto *MD = dyn_cast<CXXMethodDecl>(FD))
-    if (!MD->isStatic())
-      return nullptr;
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(FD); MD && (!MD->isStatic()))
+    return nullptr;
   return CGM.getTargetCodeGenInfo().getUBSanFunctionSignature(CGM);
 }
 
@@ -846,9 +845,8 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
   if (SanOpts.has(SanitizerKind::ShadowCallStack))
     Fn->addFnAttr(llvm::Attribute::ShadowCallStack);
 
-  if (SanOpts.has(SanitizerKind::Realtime))
-    if (FD && FD->getASTContext().hasAnyFunctionEffects())
-      for (const FunctionEffectWithCondition &Fe : FD->getFunctionEffects()) {
+  if ((SanOpts.has(SanitizerKind::Realtime)) && (FD && FD->getASTContext().hasAnyFunctionEffects()))
+    for (const FunctionEffectWithCondition &Fe : FD->getFunctionEffects()) {
         if (Fe.Effect.kind() == FunctionEffect::Kind::NonBlocking)
           Fn->addFnAttr(llvm::Attribute::SanitizeRealtime);
         else if (Fe.Effect.kind() == FunctionEffect::Kind::Blocking)
@@ -875,18 +873,16 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
   // Ignore unrelated casts in STL allocate() since the allocator must cast
   // from void* to T* before object initialization completes. Don't match on the
   // namespace because not all allocators are in std::
-  if (D && SanOpts.has(SanitizerKind::CFIUnrelatedCast)) {
-    if (matchesStlAllocatorFn(D, getContext()))
-      SanOpts.Mask &= ~SanitizerKind::CFIUnrelatedCast;
-  }
+  if ((D && SanOpts.has(SanitizerKind::CFIUnrelatedCast)) && (matchesStlAllocatorFn(D, getContext()))) 
+    SanOpts.Mask &= ~SanitizerKind::CFIUnrelatedCast;
+  
 
   // Ignore null checks in coroutine functions since the coroutines passes
   // are not aware of how to move the extra UBSan instructions across the split
   // coroutine boundaries.
-  if (D && SanOpts.has(SanitizerKind::Null))
-    if (FD && FD->getBody() &&
-        FD->getBody()->getStmtClass() == Stmt::CoroutineBodyStmtClass)
-      SanOpts.Mask &= ~SanitizerKind::Null;
+  if ((D && SanOpts.has(SanitizerKind::Null)) && (FD && FD->getBody() &&
+        FD->getBody()->getStmtClass() == Stmt::CoroutineBodyStmtClass))
+    SanOpts.Mask &= ~SanitizerKind::Null;
 
   // Apply xray attributes to the function (as a string, for now)
   bool AlwaysXRayAttr = false;
@@ -901,9 +897,8 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
       }
       if (XRayAttr->neverXRayInstrument())
         Fn->addFnAttr("function-instrument", "xray-never");
-      if (const auto *LogArgs = D->getAttr<XRayLogArgsAttr>())
-        if (ShouldXRayInstrumentFunction())
-          Fn->addFnAttr("xray-log-args",
+      if (const auto *LogArgs = D->getAttr<XRayLogArgsAttr>(); LogArgs && (ShouldXRayInstrumentFunction()))
+        Fn->addFnAttr("xray-log-args",
                         llvm::utostr(LogArgs->getArgumentCount()));
     }
   } else {
@@ -1108,10 +1103,9 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
   auto IsArmStreaming = TargetInfo::ArmStreamingKind::NotStreaming;
   if (FD) {
     getContext().getFunctionFeatureMap(FeatureMap, FD);
-    if (const auto *T = FD->getType()->getAs<FunctionProtoType>())
-      if (T->getAArch64SMEAttributes() &
-          FunctionType::SME_PStateSMCompatibleMask)
-        IsArmStreaming = TargetInfo::ArmStreamingKind::StreamingCompatible;
+    if (const auto *T = FD->getType()->getAs<FunctionProtoType>(); T && (T->getAArch64SMEAttributes() &
+          FunctionType::SME_PStateSMCompatibleMask))
+      IsArmStreaming = TargetInfo::ArmStreamingKind::StreamingCompatible;
 
     if (IsArmStreamingFunction(FD, true))
       IsArmStreaming = TargetInfo::ArmStreamingKind::Streaming;
@@ -1169,10 +1163,10 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
   // inlining, we just add an attribute to insert a mcount call in backend.
   // The attribute "counting-function" is set to mcount function name which is
   // architecture dependent.
-  if (CGM.getCodeGenOpts().InstrumentForProfiling) {
+  if ((CGM.getCodeGenOpts().InstrumentForProfiling) && (!CurFuncDecl || !CurFuncDecl->hasAttr<NoInstrumentFunctionAttr>())) 
     // Calls to fentry/mcount should not be generated if function has
     // the no_instrument_function attribute.
-    if (!CurFuncDecl || !CurFuncDecl->hasAttr<NoInstrumentFunctionAttr>()) {
+    {
       if (CGM.getCodeGenOpts().CallFEntry)
         Fn->addFnAttr("fentry-call", "true");
       else {
@@ -1193,7 +1187,7 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
         Fn->addFnAttr("mrecord-mcount");
       }
     }
-  }
+  
 
   if (CGM.getCodeGenOpts().PackedStack) {
     if (getContext().getTargetInfo().getTriple().getArch() !=
@@ -1264,12 +1258,12 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
   if (getLangOpts().OpenMP && CurCodeDecl)
     CGM.getOpenMPRuntime().emitFunctionProlog(*this, CurCodeDecl);
 
-  if (FD && getLangOpts().HLSL) {
+  if ((FD && getLangOpts().HLSL) && (FD->hasAttr<HLSLShaderAttr>())) 
     // Handle emitting HLSL entry functions.
-    if (FD->hasAttr<HLSLShaderAttr>()) {
+    {
       CGM.getHLSLRuntime().emitEntryFunction(FD, Fn);
     }
-  }
+  
 
   EmitFunctionProlog(*CurFnInfo, CurFn, Args);
 
@@ -1534,9 +1528,8 @@ void CodeGenFunction::GenerateCode(GlobalDecl GD, llvm::Function *Fn,
 
   // If this is a function specialization then use the pattern body
   // as the location for the function.
-  if (const FunctionDecl *SpecDecl = FD->getTemplateInstantiationPattern())
-    if (SpecDecl->hasBody(SpecDecl))
-      Loc = SpecDecl->getLocation();
+  if (const FunctionDecl *SpecDecl = FD->getTemplateInstantiationPattern(); SpecDecl && (SpecDecl->hasBody(SpecDecl)))
+    Loc = SpecDecl->getLocation();
 
   Stmt *Body = FD->getBody();
 
@@ -1641,10 +1634,9 @@ void CodeGenFunction::GenerateCode(GlobalDecl GD, llvm::Function *Fn,
       llvm::Value *IsFalse = Builder.getFalse();
       EmitCheck(std::make_pair(IsFalse, CheckOrdinal), CheckHandler,
                 EmitCheckSourceLocation(FD->getLocation()), {});
-    } else if (ShouldEmitUnreachable) {
-      if (CGM.getCodeGenOpts().OptimizationLevel == 0)
-        EmitTrapCall(llvm::Intrinsic::trap);
-    }
+    } else if ((ShouldEmitUnreachable) && (CGM.getCodeGenOpts().OptimizationLevel == 0)) 
+      EmitTrapCall(llvm::Intrinsic::trap);
+    
     if (SanOpts.has(SanitizerKind::Return) || ShouldEmitUnreachable) {
       Builder.CreateUnreachable();
       Builder.ClearInsertionPoint();
@@ -2703,9 +2695,8 @@ Address CodeGenFunction::EmitMSVAListRef(const Expr *E) {
 void CodeGenFunction::EmitDeclRefExprDbgValue(const DeclRefExpr *E,
                                               const APValue &Init) {
   assert(Init.hasValue() && "Invalid DeclRefExpr initializer!");
-  if (CGDebugInfo *Dbg = getDebugInfo())
-    if (CGM.getCodeGenOpts().hasReducedDebugInfo())
-      Dbg->EmitGlobalVariable(E->getDecl(), Init);
+  if (CGDebugInfo *Dbg = getDebugInfo(); Dbg && (CGM.getCodeGenOpts().hasReducedDebugInfo()))
+    Dbg->EmitGlobalVariable(E->getDecl(), Init);
 }
 
 CodeGenFunction::PeepholeProtection

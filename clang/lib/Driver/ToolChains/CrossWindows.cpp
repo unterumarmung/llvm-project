@@ -178,13 +178,13 @@ void tools::CrossWindows::Linker::ConstructJob(
       CmdArgs.push_back("-Bdynamic");
   }
 
-  if (!Args.hasArg(options::OPT_nostdlib)) {
-    if (!Args.hasArg(options::OPT_nodefaultlibs)) {
+  if ((!Args.hasArg(options::OPT_nostdlib)) && (!Args.hasArg(options::OPT_nodefaultlibs))) 
+    {
       // TODO handle /MT[d] /MD[d]
       CmdArgs.push_back("-lmsvcrt");
       AddRunTimeLibs(TC, D, CmdArgs, Args);
     }
-  }
+  
 
   if (TC.getSanitizerArgs(Args).needsAsanRt()) {
     // TODO handle /MT[d] /MD[d]

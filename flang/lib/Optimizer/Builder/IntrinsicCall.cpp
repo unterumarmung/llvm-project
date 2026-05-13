@@ -3252,11 +3252,10 @@ void IntrinsicLibrary::genCFPointer(llvm::ArrayRef<fir::ExtendedValue> args) {
   // to be synced.
   if (auto declare = mlir::dyn_cast_or_null<hlfir::DeclareOp>(
           fPtr->getAddr().getDefiningOp()))
-    if (declare.getMemref().getDefiningOp() &&
-        mlir::isa<fir::AddrOfOp>(declare.getMemref().getDefiningOp()))
-      if (cuf::isRegisteredDeviceAttr(declare.getDataAttr()) &&
-          !cuf::isCUDADeviceContext(builder.getRegion()))
-        fir::runtime::cuda::genSyncGlobalDescriptor(builder, loc,
+    if ((declare.getMemref().getDefiningOp() &&
+        mlir::isa<fir::AddrOfOp>(declare.getMemref().getDefiningOp())) && (cuf::isRegisteredDeviceAttr(declare.getDataAttr()) &&
+          !cuf::isCUDADeviceContext(builder.getRegion())))
+      fir::runtime::cuda::genSyncGlobalDescriptor(builder, loc,
                                                     declare.getMemref());
 }
 
@@ -3361,11 +3360,10 @@ void IntrinsicLibrary::genCFStrPointer(
   // CUDA synchronization if needed
   if (auto declare = mlir::dyn_cast_or_null<hlfir::DeclareOp>(
           fStrPtr->getAddr().getDefiningOp()))
-    if (declare.getMemref().getDefiningOp() &&
-        mlir::isa<fir::AddrOfOp>(declare.getMemref().getDefiningOp()))
-      if (cuf::isRegisteredDeviceAttr(declare.getDataAttr()) &&
-          !cuf::isCUDADeviceContext(builder.getRegion()))
-        fir::runtime::cuda::genSyncGlobalDescriptor(builder, loc,
+    if ((declare.getMemref().getDefiningOp() &&
+        mlir::isa<fir::AddrOfOp>(declare.getMemref().getDefiningOp())) && (cuf::isRegisteredDeviceAttr(declare.getDataAttr()) &&
+          !cuf::isCUDADeviceContext(builder.getRegion())))
+      fir::runtime::cuda::genSyncGlobalDescriptor(builder, loc,
                                                     declare.getMemref());
 }
 
@@ -9210,15 +9208,12 @@ mlir::Value IntrinsicLibrary::genExtremum(mlir::Type,
 const IntrinsicArgumentLoweringRules *
 getIntrinsicArgumentLowering(llvm::StringRef specificName) {
   llvm::StringRef name = genericName(specificName);
-  if (const IntrinsicHandler *handler = findIntrinsicHandler(name))
-    if (!handler->argLoweringRules.hasDefaultRules())
-      return &handler->argLoweringRules;
-  if (const IntrinsicHandler *ppcHandler = findPPCIntrinsicHandler(name))
-    if (!ppcHandler->argLoweringRules.hasDefaultRules())
-      return &ppcHandler->argLoweringRules;
-  if (const IntrinsicHandler *cudaHandler = findCUDAIntrinsicHandler(name))
-    if (!cudaHandler->argLoweringRules.hasDefaultRules())
-      return &cudaHandler->argLoweringRules;
+  if (const IntrinsicHandler *handler = findIntrinsicHandler(name); handler && (!handler->argLoweringRules.hasDefaultRules()))
+    return &handler->argLoweringRules;
+  if (const IntrinsicHandler *ppcHandler = findPPCIntrinsicHandler(name); ppcHandler && (!ppcHandler->argLoweringRules.hasDefaultRules()))
+    return &ppcHandler->argLoweringRules;
+  if (const IntrinsicHandler *cudaHandler = findCUDAIntrinsicHandler(name); cudaHandler && (!cudaHandler->argLoweringRules.hasDefaultRules()))
+    return &cudaHandler->argLoweringRules;
   return nullptr;
 }
 

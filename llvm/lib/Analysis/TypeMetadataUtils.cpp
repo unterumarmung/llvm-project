@@ -72,15 +72,15 @@ static void findLoadCallsAtConstantOffset(
         findLoadCallsAtConstantOffset(M, DevirtCalls, User, Offset + GEPOffset,
                                       CI, DT);
       }
-    } else if (auto *Call = dyn_cast<CallInst>(User)) {
-      if (Call->getIntrinsicID() == llvm::Intrinsic::load_relative) {
+    } else if (auto *Call = dyn_cast<CallInst>(User); Call && (Call->getIntrinsicID() == llvm::Intrinsic::load_relative)) 
+      {
         if (auto *LoadOffset = dyn_cast<ConstantInt>(Call->getOperand(1))) {
           findCallsAtConstantOffset(DevirtCalls, nullptr, User,
                                     Offset + LoadOffset->getSExtValue(), CI,
                                     DT);
         }
       }
-    }
+    
   }
 }
 
@@ -181,11 +181,11 @@ Constant *llvm::getPointerAtOffset(Constant *I, uint64_t Offset, Module &M,
   }
 
   // Relative-pointer support starts here.
-  if (auto *CI = dyn_cast<ConstantInt>(I)) {
-    if (Offset == 0 && CI->isZero()) {
+  if (auto *CI = dyn_cast<ConstantInt>(I); CI && (Offset == 0 && CI->isZero())) 
+    {
       return I;
     }
-  }
+  
   if (auto *C = dyn_cast<ConstantExpr>(I)) {
     switch (C->getOpcode()) {
     case Instruction::Trunc:

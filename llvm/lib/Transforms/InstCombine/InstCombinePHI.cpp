@@ -177,12 +177,12 @@ bool InstCombinerImpl::foldIntegerTypedPHI(PHINode &PN) {
       return false;
 
     // First look backward:
-    if (auto *PI = dyn_cast<PtrToIntInst>(Arg)) {
-      if (PI->getOperand(0)->getType() == IntToPtr->getType()) {
+    if (auto *PI = dyn_cast<PtrToIntInst>(Arg); PI && (PI->getOperand(0)->getType() == IntToPtr->getType())) 
+      {
         AvailablePtrVals.emplace_back(PI->getOperand(0));
         continue;
       }
-    }
+    
 
     // Next look forward:
     Value *ArgIntToPtr = nullptr;
@@ -460,9 +460,8 @@ Instruction *InstCombinerImpl::foldPHIArgBinOpIntoPHI(PHINode &PN) {
       return nullptr;
 
     // If they are CmpInst instructions, check their predicates
-    if (CmpInst *CI = dyn_cast<CmpInst>(I))
-      if (CI->getPredicate() != cast<CmpInst>(FirstInst)->getPredicate())
-        return nullptr;
+    if (CmpInst *CI = dyn_cast<CmpInst>(I); CI && (CI->getPredicate() != cast<CmpInst>(FirstInst)->getPredicate()))
+      return nullptr;
 
     // Keep track of which operand needs a phi node.
     if (I->getOperand(0) != LHSVal) LHSVal = nullptr;
@@ -660,9 +659,8 @@ static bool isSafeAndProfitableToSinkLoad(LoadInst *L) {
     if (BBI->mayWriteToMemory()) {
       // Calls that only access inaccessible memory do not block sinking the
       // load.
-      if (auto *CB = dyn_cast<CallBase>(BBI))
-        if (CB->onlyAccessesInaccessibleMemory())
-          continue;
+      if (auto *CB = dyn_cast<CallBase>(BBI); CB && (CB->onlyAccessesInaccessibleMemory()))
+        continue;
       return false;
     }
 
@@ -672,10 +670,10 @@ static bool isSafeAndProfitableToSinkLoad(LoadInst *L) {
     bool IsAddressTaken = false;
     for (User *U : AI->users()) {
       if (isa<LoadInst>(U)) continue;
-      if (StoreInst *SI = dyn_cast<StoreInst>(U)) {
+      if (StoreInst *SI = dyn_cast<StoreInst>(U); SI && (SI->getOperand(1) == AI)) 
         // If storing TO the alloca, then the address isn't taken.
-        if (SI->getOperand(1) == AI) continue;
-      }
+        continue;
+      
       IsAddressTaken = true;
       break;
     }
@@ -690,9 +688,8 @@ static bool isSafeAndProfitableToSinkLoad(LoadInst *L) {
   // materialize the stack addresses in each predecessor in a register only to
   // do a shared load from register in the successor.
   if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(L->getOperand(0)))
-    if (AllocaInst *AI = dyn_cast<AllocaInst>(GEP->getOperand(0)))
-      if (AI->isStaticAlloca() && GEP->hasAllConstantIndices())
-        return false;
+    if (AllocaInst *AI = dyn_cast<AllocaInst>(GEP->getOperand(0)); AI && (AI->isStaticAlloca() && GEP->hasAllConstantIndices()))
+      return false;
 
   return true;
 }
@@ -784,9 +781,8 @@ Instruction *InstCombinerImpl::foldPHIArgLoadIntoPHI(PHINode &PN) {
 Instruction *InstCombinerImpl::foldPHIArgZextsIntoPHI(PHINode &Phi) {
   // We cannot create a new instruction after the PHI if the terminator is an
   // EHPad because there is no valid insertion point.
-  if (Instruction *TI = Phi.getParent()->getTerminator())
-    if (TI->isEHPad())
-      return nullptr;
+  if (Instruction *TI = Phi.getParent()->getTerminator(); TI && (TI->isEHPad()))
+    return nullptr;
 
   // Early exit for the common case of a phi with two operands. These are
   // handled elsewhere. See the comment below where we check the count of zexts
@@ -865,9 +861,8 @@ Instruction *InstCombinerImpl::foldPHIArgZextsIntoPHI(PHINode &Phi) {
 Instruction *InstCombinerImpl::foldPHIArgOpIntoPHI(PHINode &PN) {
   // We cannot create a new instruction after the PHI if the terminator is an
   // EHPad because there is no valid insertion point.
-  if (Instruction *TI = PN.getParent()->getTerminator())
-    if (TI->isEHPad())
-      return nullptr;
+  if (Instruction *TI = PN.getParent()->getTerminator(); TI && (TI->isEHPad()))
+    return nullptr;
 
   Instruction *FirstInst = cast<Instruction>(PN.getIncomingValue(0));
 
@@ -892,10 +887,9 @@ Instruction *InstCombinerImpl::foldPHIArgOpIntoPHI(PHINode &PN) {
 
     // Be careful about transforming integer PHIs.  We don't want to pessimize
     // the code by turning an i32 into an i1293.
-    if (PN.getType()->isIntegerTy() && CastSrcTy->isIntegerTy()) {
-      if (!shouldChangeType(PN.getType(), CastSrcTy))
-        return nullptr;
-    }
+    if ((PN.getType()->isIntegerTy() && CastSrcTy->isIntegerTy()) && (!shouldChangeType(PN.getType(), CastSrcTy))) 
+      return nullptr;
+    
   } else if (isa<BinaryOperator>(FirstInst) || isa<CmpInst>(FirstInst)) {
     // Can fold binop, compare or shift here if the RHS is a constant,
     // otherwise call FoldPHIArgBinOpIntoPHI.
@@ -1009,9 +1003,8 @@ static bool PHIsEqualValue(PHINode *PN, Value *&NonPhiInVal,
 static ConstantInt *getAnyNonZeroConstInt(PHINode &PN) {
   assert(isa<IntegerType>(PN.getType()) && "Expect only integer type phi");
   for (Value *V : PN.operands())
-    if (auto *ConstVA = dyn_cast<ConstantInt>(V))
-      if (!ConstVA->isZero())
-        return ConstVA;
+    if (auto *ConstVA = dyn_cast<ConstantInt>(V); ConstVA && (!ConstVA->isZero()))
+      return ConstVA;
   return ConstantInt::get(cast<IntegerType>(PN.getType()), 1);
 }
 
@@ -1229,8 +1222,8 @@ Instruction *InstCombinerImpl::SliceUpIllegalIntegerPHI(PHINode &FirstPhi) {
         // rewriting, we will ultimately delete the code we inserted.  This
         // means we need to revisit that PHI to make sure we extract out the
         // needed piece.
-        if (PHINode *OldInVal = dyn_cast<PHINode>(InVal))
-          if (PHIsInspected.count(OldInVal)) {
+        if (PHINode *OldInVal = dyn_cast<PHINode>(InVal); OldInVal && (PHIsInspected.count(OldInVal)))
+          {
             unsigned RefPHIId =
                 find(PHIsToSlice, OldInVal) - PHIsToSlice.begin();
             PHIUsers.push_back(
@@ -1483,14 +1476,14 @@ Instruction *InstCombinerImpl::visitPHINode(PHINode &PN) {
     SmallVector<Instruction *> DropPoisonFlags;
     bool AllUsesOfPhiEndsInCmp = all_of(PN.users(), [&](User *U) {
       auto *CmpInst = dyn_cast<ICmpInst>(U);
-      if (!CmpInst) {
+      if ((!CmpInst) && (U->hasOneUse() && match(U, m_c_Or(m_Specific(&PN), m_Value())))) 
         // This is always correct as OR only add bits and we are checking
         // against 0.
-        if (U->hasOneUse() && match(U, m_c_Or(m_Specific(&PN), m_Value()))) {
+        {
           DropPoisonFlags.push_back(cast<Instruction>(U));
           CmpInst = dyn_cast<ICmpInst>(U->user_back());
         }
-      }
+      
       if (!CmpInst || !isa<IntegerType>(PN.getType()) ||
           !CmpInst->isEquality() || !match(CmpInst->getOperand(1), m_Zero())) {
         return false;

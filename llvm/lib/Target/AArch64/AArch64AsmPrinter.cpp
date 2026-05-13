@@ -416,28 +416,28 @@ void AArch64AsmPrinter::emitStartOfAsmFile(Module &M) {
   unsigned BAFlags = 0;
   unsigned GNUFlags = 0;
   if (const auto *BTE = mdconst::extract_or_null<ConstantInt>(
-          M.getModuleFlag("branch-target-enforcement"))) {
-    if (!BTE->isZero()) {
+          M.getModuleFlag("branch-target-enforcement")); BTE && (!BTE->isZero())) 
+    {
       BAFlags |= AArch64BuildAttributes::FeatureAndBitsFlag::Feature_BTI_Flag;
       GNUFlags |= ELF::GNU_PROPERTY_AARCH64_FEATURE_1_BTI;
     }
-  }
+  
 
   if (const auto *GCS = mdconst::extract_or_null<ConstantInt>(
-          M.getModuleFlag("guarded-control-stack"))) {
-    if (!GCS->isZero()) {
+          M.getModuleFlag("guarded-control-stack")); GCS && (!GCS->isZero())) 
+    {
       BAFlags |= AArch64BuildAttributes::FeatureAndBitsFlag::Feature_GCS_Flag;
       GNUFlags |= ELF::GNU_PROPERTY_AARCH64_FEATURE_1_GCS;
     }
-  }
+  
 
   if (const auto *Sign = mdconst::extract_or_null<ConstantInt>(
-          M.getModuleFlag("sign-return-address"))) {
-    if (!Sign->isZero()) {
+          M.getModuleFlag("sign-return-address")); Sign && (!Sign->isZero())) 
+    {
       BAFlags |= AArch64BuildAttributes::FeatureAndBitsFlag::Feature_PAC_Flag;
       GNUFlags |= ELF::GNU_PROPERTY_AARCH64_FEATURE_1_PAC;
     }
-  }
+  
 
   uint64_t PAuthABIPlatform = -1;
   if (const auto *PAP = mdconst::extract_or_null<ConstantInt>(
@@ -1461,11 +1461,10 @@ void AArch64AsmPrinter::emitFunctionEntryLabel() {
 
 void AArch64AsmPrinter::emitXXStructor(const DataLayout &DL,
                                        const Constant *CV) {
-  if (const auto *CPA = dyn_cast<ConstantPtrAuth>(CV))
-    if (CPA->hasAddressDiscriminator() &&
+  if (const auto *CPA = dyn_cast<ConstantPtrAuth>(CV); CPA && (CPA->hasAddressDiscriminator() &&
         !CPA->hasSpecialAddressDiscriminator(
-            ConstantPtrAuth::AddrDiscriminator_CtorsDtors))
-      report_fatal_error(
+            ConstantPtrAuth::AddrDiscriminator_CtorsDtors)))
+    report_fatal_error(
           "unexpected address discrimination value for ctors/dtors entry, only "
           "'ptr inttoptr (i64 1 to ptr)' is allowed");
   // If we have signed pointers in xxstructors list, they'll be lowered to @AUTH

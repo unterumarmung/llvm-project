@@ -516,8 +516,8 @@ bool ObjCARCContract::tryToPeepholeInstruction(
     Inst->eraseFromParent();
     return true;
   default:
-    if (auto *CI = dyn_cast<CallInst>(Inst))
-      if (CI->getIntrinsicID() == Intrinsic::objc_clang_arc_noop_use) {
+    if (auto *CI = dyn_cast<CallInst>(Inst); CI && (CI->getIntrinsicID() == Intrinsic::objc_clang_arc_noop_use))
+      {
         // Remove calls to @llvm.objc.clang.arc.noop.use(...).
         Changed = true;
         CI->eraseFromParent();
@@ -619,8 +619,8 @@ bool ObjCARCContract::run(Function &F, AAResults *A, DominatorTree *D) {
 
     LLVM_DEBUG(dbgs() << "Visiting: " << *Inst << "\n");
 
-    if (auto *CI = dyn_cast<CallInst>(Inst))
-      if (objcarc::hasAttachedCallOpBundle(CI)) {
+    if (auto *CI = dyn_cast<CallInst>(Inst); CI && (objcarc::hasAttachedCallOpBundle(CI)))
+      {
         BundledInsts->insertRVCallWithColors(I->getIterator(), CI, BlockColors);
         --I;
         Changed = true;

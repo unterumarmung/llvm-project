@@ -616,10 +616,9 @@ void Parser::ParseLexedMethodDef(LexedMethod &LM) {
     if (Tok.is(tok::eof) && Tok.getEofData() == LM.D)
       ConsumeAnyToken();
 
-    if (auto *FD = dyn_cast_or_null<FunctionDecl>(LM.D))
-      if (isa<CXXMethodDecl>(FD) ||
-          FD->isInIdentifierNamespace(Decl::IDNS_OrdinaryFriend))
-        Actions.ActOnFinishInlineFunctionDef(FD);
+    if (auto *FD = dyn_cast_or_null<FunctionDecl>(LM.D); FD && (isa<CXXMethodDecl>(FD) ||
+          FD->isInIdentifierNamespace(Decl::IDNS_OrdinaryFriend)))
+      Actions.ActOnFinishInlineFunctionDef(FD);
   });
 
   if (Tok.is(tok::kw_try)) {

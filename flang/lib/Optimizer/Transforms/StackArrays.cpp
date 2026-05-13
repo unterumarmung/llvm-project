@@ -545,9 +545,8 @@ StackArraysAnalysisWrapper::analyseFunction(mlir::Operation *func) {
 
 const StackArraysAnalysisWrapper::AllocMemMap *
 StackArraysAnalysisWrapper::getCandidateOps(mlir::Operation *func) {
-  if (!funcMaps.contains(func))
-    if (mlir::failed(analyseFunction(func)))
-      return nullptr;
+  if ((!funcMaps.contains(func)) && (mlir::failed(analyseFunction(func))))
+    return nullptr;
   return &funcMaps[func];
 }
 

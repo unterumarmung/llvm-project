@@ -411,11 +411,10 @@ bool llvm::wouldInstructionBeTriviallyDeadOnUnusedPaths(
     Instruction *I, const TargetLibraryInfo *TLI) {
   // Instructions that are "markers" and have implied meaning on code around
   // them (without explicit uses), are not dead on unused paths.
-  if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(I))
-    if (II->getIntrinsicID() == Intrinsic::stacksave ||
+  if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(I); II && (II->getIntrinsicID() == Intrinsic::stacksave ||
         II->getIntrinsicID() == Intrinsic::launder_invariant_group ||
-        II->isLifetimeStartOrEnd())
-      return false;
+        II->isLifetimeStartOrEnd()))
+    return false;
   return wouldInstructionBeTriviallyDead(I, TLI);
 }
 
@@ -435,9 +434,8 @@ bool llvm::wouldInstructionBeTriviallyDead(const Instruction *I,
     return true;
   }
 
-  if (auto *CB = dyn_cast<CallBase>(I))
-    if (isRemovableAlloc(CB, TLI))
-      return true;
+  if (auto *CB = dyn_cast<CallBase>(I); CB && (isRemovableAlloc(CB, TLI)))
+    return true;
 
   if (!I->willReturn()) {
     auto *II = dyn_cast<IntrinsicInst>(I);
@@ -521,9 +519,8 @@ bool llvm::wouldInstructionBeTriviallyDead(const Instruction *I,
   // Non-volatile atomic loads from constants can be removed.
   if (auto *LI = dyn_cast<LoadInst>(I))
     if (auto *GV = dyn_cast<GlobalVariable>(
-            LI->getPointerOperand()->stripPointerCasts()))
-      if (!LI->isVolatile() && GV->isConstant())
-        return true;
+            LI->getPointerOperand()->stripPointerCasts()); GV && (!LI->isVolatile() && GV->isConstant()))
+      return true;
 
   return false;
 }
@@ -598,9 +595,8 @@ void llvm::RecursivelyDeleteTriviallyDeadInstructions(
       // If the operand is an instruction that became dead as we nulled out the
       // operand, and if it is 'trivially' dead, delete it in a future loop
       // iteration.
-      if (Instruction *OpI = dyn_cast<Instruction>(OpV))
-        if (isInstructionTriviallyDead(OpI, TLI))
-          DeadInsts.push_back(OpI);
+      if (Instruction *OpI = dyn_cast<Instruction>(OpV); OpI && (isInstructionTriviallyDead(OpI, TLI)))
+        DeadInsts.push_back(OpI);
     }
     if (MSSAU)
       MSSAU->removeMemoryAccess(I);
@@ -681,9 +677,8 @@ simplifyAndDCEInstruction(Instruction *I,
       // If the operand is an instruction that became dead as we nulled out the
       // operand, and if it is 'trivially' dead, delete it in a future loop
       // iteration.
-      if (Instruction *OpI = dyn_cast<Instruction>(OpV))
-        if (isInstructionTriviallyDead(OpI, TLI))
-          WorkList.insert(OpI);
+      if (Instruction *OpI = dyn_cast<Instruction>(OpV); OpI && (isInstructionTriviallyDead(OpI, TLI)))
+        WorkList.insert(OpI);
     }
 
     I->eraseFromParent();
@@ -787,9 +782,8 @@ void llvm::MergeBasicBlockIntoOnlyPred(BasicBlock *DestBB,
     Updates.reserve(Updates.size() + 2 * pred_size(PredBB) + 1);
     for (BasicBlock *PredOfPredBB : predecessors(PredBB))
       // This predecessor of PredBB may already have DestBB as a successor.
-      if (PredOfPredBB != PredBB)
-        if (SeenPreds.insert(PredOfPredBB).second)
-          Updates.push_back({DominatorTree::Insert, PredOfPredBB, DestBB});
+      if ((PredOfPredBB != PredBB) && (SeenPreds.insert(PredOfPredBB).second))
+        Updates.push_back({DominatorTree::Insert, PredOfPredBB, DestBB});
     SeenPreds.clear();
     for (BasicBlock *PredOfPredBB : predecessors(PredBB))
       if (SeenPreds.insert(PredOfPredBB).second)
@@ -1062,9 +1056,8 @@ static bool introduceTooManyPhiEntries(BasicBlock *BB, BasicBlock *Succ) {
   for (auto &Phi : Succ->phis()) {
     // If the incoming value is a phi and the phi is defined in BB,
     // then removing BB will not increase the total phi entries of the ir.
-    if (auto *IncomingPhi = dyn_cast<PHINode>(Phi.getIncomingValueForBlock(BB)))
-      if (IncomingPhi->getParent() == BB)
-        continue;
+    if (auto *IncomingPhi = dyn_cast<PHINode>(Phi.getIncomingValueForBlock(BB)); IncomingPhi && (IncomingPhi->getParent() == BB))
+      continue;
     // Otherwise, we need to add entries to the phi
     NumChangedPhi++;
   }
@@ -1277,12 +1270,10 @@ bool llvm::TryToSimplifyUncondBranchFromEmptyBlock(BasicBlock *BB,
   // |       v
   // |    for.body <---- (md2)
   // |_______|  |______|
-  if (Instruction *TI = BB->getTerminatorOrNull())
-    if (TI->hasNonDebugLocLoopMetadata())
-      for (BasicBlock *Pred : predecessors(BB))
-        if (Instruction *PredTI = Pred->getTerminatorOrNull())
-          if (PredTI->hasNonDebugLocLoopMetadata())
-            return false;
+  if (Instruction *TI = BB->getTerminatorOrNull(); TI && (TI->hasNonDebugLocLoopMetadata()))
+    for (BasicBlock *Pred : predecessors(BB))
+        if (Instruction *PredTI = Pred->getTerminatorOrNull(); PredTI && (PredTI->hasNonDebugLocLoopMetadata()))
+          return false;
 
   if (BBKillable)
     LLVM_DEBUG(dbgs() << "Killing Trivial BB: \n" << *BB);
@@ -1301,9 +1292,8 @@ bool llvm::TryToSimplifyUncondBranchFromEmptyBlock(BasicBlock *BB,
                                             predecessors(Succ));
     for (auto *PredOfBB : predecessors(BB)) {
       // Do not modify those common predecessors of BB and Succ
-      if (!SuccPreds.contains(PredOfBB))
-        if (SeenPreds.insert(PredOfBB).second)
-          Updates.push_back({DominatorTree::Insert, PredOfBB, Succ});
+      if ((!SuccPreds.contains(PredOfBB)) && (SeenPreds.insert(PredOfBB).second))
+        Updates.push_back({DominatorTree::Insert, PredOfBB, Succ});
     }
 
     SeenPreds.clear();
@@ -1348,8 +1338,8 @@ bool llvm::TryToSimplifyUncondBranchFromEmptyBlock(BasicBlock *BB,
   // If the unconditional branch we replaced contains non-debug llvm.loop
   // metadata, we add the metadata to the branch instructions in the
   // predecessors.
-  if (Instruction *TI = BB->getTerminatorOrNull())
-    if (TI->hasNonDebugLocLoopMetadata()) {
+  if (Instruction *TI = BB->getTerminatorOrNull(); TI && (TI->hasNonDebugLocLoopMetadata()))
+    {
       MDNode *LoopMD = TI->getMetadata(LLVMContext::MD_loop);
       for (BasicBlock *Pred : predecessors(BB))
         Pred->getTerminator()->setMetadata(LLVMContext::MD_loop, LoopMD);
@@ -1871,10 +1861,9 @@ bool llvm::LowerDbgDeclare(Function &F) {
                                               DerefExpr, NewLoc,
                                               CI->getIterator());
           }
-        } else if (BitCastInst *BI = dyn_cast<BitCastInst>(U)) {
-          if (BI->getType()->isPointerTy())
-            WorkList.push_back(BI);
-        }
+        } else if (BitCastInst *BI = dyn_cast<BitCastInst>(U); BI && (BI->getType()->isPointerTy())) 
+          WorkList.push_back(BI);
+        
       }
     }
     DDI->eraseFromParent();
@@ -2688,7 +2677,7 @@ static bool markAliveBlocks(Function &F, SmallVectorImpl<bool> &Reachable,
               Changed = true;
               break;
             }
-          } else if (IntrinsicID == Intrinsic::experimental_guard) {
+          } else if ((IntrinsicID == Intrinsic::experimental_guard) && (match(CI->getArgOperand(0), m_Zero())) && (!isa<UnreachableInst>(CI->getNextNode()))) 
             // A call to the guard intrinsic bails out of the current
             // compilation unit if the predicate passed to it is false. If the
             // predicate is a constant false, then we know the guard will bail
@@ -2698,13 +2687,12 @@ static bool markAliveBlocks(Function &F, SmallVectorImpl<bool> &Reachable,
             // Note: unlike in llvm.assume, it is not "obviously profitable" for
             // guards to treat `undef` as `false` since a guard on `undef` can
             // still be useful for widening.
-            if (match(CI->getArgOperand(0), m_Zero()))
-              if (!isa<UnreachableInst>(CI->getNextNode())) {
+            {
                 changeToUnreachable(CI->getNextNode(), false, DTU);
                 Changed = true;
                 break;
               }
-          }
+          
         } else if ((isa<ConstantPointerNull>(Callee) &&
                     !NullPointerIsDefined(CI->getFunction(),
                                           cast<PointerType>(Callee->getType())
@@ -3062,9 +3050,8 @@ static void combineMetadata(Instruction *K, const Instruction *J,
   // could produce bitcast with invariant.group metadata, which is invalid.
   // FIXME: we should try to preserve both invariant.group md if they are
   // different, but right now instruction can only have one invariant.group.
-  if (auto *JMD = J->getMetadata(LLVMContext::MD_invariant_group))
-    if (isa<LoadInst>(K) || isa<StoreInst>(K))
-      K->setMetadata(LLVMContext::MD_invariant_group, JMD);
+  if (auto *JMD = J->getMetadata(LLVMContext::MD_invariant_group); JMD && (isa<LoadInst>(K) || isa<StoreInst>(K)))
+    K->setMetadata(LLVMContext::MD_invariant_group, JMD);
 
   // Merge MMRAs.
   // This is handled separately because we also want to handle cases where K
@@ -3468,8 +3455,8 @@ DIExpression *llvm::getExpressionForConstant(DIBuilder &DIB, const Constant &C,
   if (isa<ConstantPointerNull>(C))
     return DIB.createConstantValueExpression(0);
 
-  if (const ConstantExpr *CE = dyn_cast<ConstantExpr>(&C))
-    if (CE->getOpcode() == Instruction::IntToPtr) {
+  if (const ConstantExpr *CE = dyn_cast<ConstantExpr>(&C); CE && (CE->getOpcode() == Instruction::IntToPtr))
+    {
       const Value *V = CE->getOperand(0);
       if (auto CI = dyn_cast_or_null<ConstantInt>(V))
         return createIntegerExpression(*CI);
@@ -4000,9 +3987,8 @@ Value *llvm::invertCondition(Value *Condition) {
 
   // Third: Check all the users for an invert
   for (User *U : Condition->users())
-    if (Instruction *I = dyn_cast<Instruction>(U))
-      if (I->getParent() == Parent && match(I, m_Not(m_Specific(Condition))))
-        return I;
+    if (Instruction *I = dyn_cast<Instruction>(U); I && (I->getParent() == Parent && match(I, m_Not(m_Specific(Condition)))))
+      return I;
 
   // Last option: Create a new instruction
   auto *Inverted =

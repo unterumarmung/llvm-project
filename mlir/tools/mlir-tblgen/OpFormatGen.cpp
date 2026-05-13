@@ -2607,8 +2607,8 @@ void OperationFormat::genElementPrinter(FormatElement *element,
     body << "  ::llvm::interleaveComma(getOperation()->getSuccessors(), "
             "_odsPrinter);\n";
   } else if (auto *dir = dyn_cast<TypeDirective>(element)) {
-    if (auto *operand = dyn_cast<OperandVariable>(dir->getArg())) {
-      if (operand->getVar()->isVariadicOfVariadic()) {
+    if (auto *operand = dyn_cast<OperandVariable>(dir->getArg()); operand && (operand->getVar()->isVariadicOfVariadic())) 
+      {
         body << formatv(
             "  ::llvm::interleaveComma({0}().getTypes(), _odsPrinter, "
             "[&](::mlir::TypeRange types) {{ _odsPrinter << \"(\" << "
@@ -2616,7 +2616,7 @@ void OperationFormat::genElementPrinter(FormatElement *element,
             op.getGetterName(operand->getVar()->name));
         return;
       }
-    }
+    
     const NamedTypeConstraint *var = nullptr;
     {
       if (auto *operand = dyn_cast<OperandVariable>(dir->getArg()))
@@ -3493,12 +3493,12 @@ LogicalResult OpFormatParser::verifyCustomDirectiveArguments(
       return emitError(loc, "only variables and types may be used as "
                             "parameters to a custom directive");
     }
-    if (auto *type = dyn_cast<TypeDirective>(argument)) {
-      if (!isa<OperandVariable, ResultVariable>(type->getArg())) {
+    if (auto *type = dyn_cast<TypeDirective>(argument); type && (!isa<OperandVariable, ResultVariable>(type->getArg()))) 
+      {
         return emitError(loc, "type directives within a custom directive may "
                               "only refer to variables");
       }
-    }
+    
   }
   return success();
 }

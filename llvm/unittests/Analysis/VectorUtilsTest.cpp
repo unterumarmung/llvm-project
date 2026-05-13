@@ -43,10 +43,9 @@ protected:
 
     A = nullptr;
     for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
-      if (I->hasName()) {
-        if (I->getName() == "A")
-          A = &*I;
-      }
+      if ((I->hasName()) && (I->getName() == "A")) 
+        A = &*I;
+      
     }
     if (A == nullptr)
       report_fatal_error("@test must have an instruction %A");

@@ -866,14 +866,13 @@ static MCSection *selectExplicitSectionGlobal(const GlobalObject *GO,
   assert(Section->getLinkedToSymbol() == LinkedToSym &&
          "Associated symbol mismatch between sections");
 
-  if (!(Ctx.getAsmInfo().useIntegratedAssembler() ||
-        Ctx.getAsmInfo().binutilsIsAtLeast(2, 35))) {
+  if ((!(Ctx.getAsmInfo().useIntegratedAssembler() ||
+        Ctx.getAsmInfo().binutilsIsAtLeast(2, 35))) && ((Section->getFlags() & ELF::SHF_MERGE) &&
+        (Section->getEntrySize() != getEntrySizeForKind(Kind)))) 
     // If we are using GNU as before 2.35, then this symbol might have
     // been placed in an incompatible mergeable section. Emit an error if this
     // is the case to avoid creating broken output.
-    if ((Section->getFlags() & ELF::SHF_MERGE) &&
-        (Section->getEntrySize() != getEntrySizeForKind(Kind)))
-      GO->getContext().diagnose(LoweringDiagnosticInfo(
+    GO->getContext().diagnose(LoweringDiagnosticInfo(
           "Symbol '" + GO->getName() + "' from module '" +
           (GO->getParent() ? GO->getParent()->getSourceFileName() : "unknown") +
           "' required a section with entry-size=" +
@@ -881,7 +880,7 @@ static MCSection *selectExplicitSectionGlobal(const GlobalObject *GO,
           SectionName + "' with entry-size=" + Twine(Section->getEntrySize()) +
           ": Explicit assignment by pragma or attribute of an incompatible "
           "symbol to this section?"));
-  }
+  
 
   return Section;
 }
@@ -1940,8 +1939,8 @@ void TargetLoweringObjectFileCOFF::emitModuleMetadata(MCStreamer &Streamer,
   emitPseudoProbeDescMetadata(Streamer, M, [](MCStreamer &Streamer) {
     if (MCSymbol *Sym =
             static_cast<MCSectionCOFF *>(Streamer.getCurrentSectionOnly())
-                ->getCOMDATSymbol())
-      if (Sym->isUndefined()) {
+                ->getCOMDATSymbol(); Sym && (Sym->isUndefined()))
+      {
         // COMDAT symbol must be external to perform deduplication.
         Streamer.emitSymbolAttribute(Sym, MCSA_Global);
         Streamer.emitLabel(Sym);
@@ -2204,12 +2203,12 @@ MCSection *TargetLoweringObjectFileCOFF::getSectionForConstant(
         COMDATSymName = "__xmm@" + scalarConstantToHexString(C);
         Alignment = Align(16);
       }
-    } else if (Kind.isMergeableConst32()) {
-      if (Alignment <= 32) {
+    } else if ((Kind.isMergeableConst32()) && (Alignment <= 32)) 
+      {
         COMDATSymName = "__ymm@" + scalarConstantToHexString(C);
         Alignment = Align(32);
       }
-    }
+    
 
     if (!COMDATSymName.empty())
       return getContext().getCOFFSection(".rdata", Characteristics,
@@ -2440,9 +2439,8 @@ TargetLoweringObjectFileXCOFF::getTargetSymbol(const GlobalValue *GV,
                  getSectionForExternalReference(GO, TM))
           ->getQualNameSymbol();
 
-    if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GV))
-      if (GVar->hasAttribute("toc-data"))
-        return static_cast<const MCSectionXCOFF *>(
+    if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GV); GVar && (GVar->hasAttribute("toc-data")))
+      return static_cast<const MCSectionXCOFF *>(
                    SectionForGlobal(GVar, SectionKind::getData(), TM))
             ->getQualNameSymbol();
 
@@ -2475,9 +2473,8 @@ MCSection *TargetLoweringObjectFileXCOFF::getExplicitSectionGlobal(
   StringRef SectionName = GO->getSection();
 
   // Handle the XCOFF::TD case first, then deal with the rest.
-  if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GO))
-    if (GVar->hasAttribute("toc-data"))
-      return getContext().getXCOFFSection(
+  if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GO); GVar && (GVar->hasAttribute("toc-data")))
+    return getContext().getXCOFFSection(
           SectionName, Kind,
           XCOFF::CsectProperties(/*MappingClass*/ XCOFF::XMC_TD, XCOFF::XTY_SD),
           /* MultiSymbolsAllowed*/ true);
@@ -2522,9 +2519,8 @@ MCSection *TargetLoweringObjectFileXCOFF::getSectionForExternalReference(
   if (GO->isThreadLocal())
     SMC = XCOFF::XMC_UL;
 
-  if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GO))
-    if (GVar->hasAttribute("toc-data"))
-      SMC = XCOFF::XMC_TD;
+  if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GO); GVar && (GVar->hasAttribute("toc-data")))
+    SMC = XCOFF::XMC_TD;
 
   // Externals go into a csect of type ER.
   return getContext().getXCOFFSection(
@@ -2535,8 +2531,8 @@ MCSection *TargetLoweringObjectFileXCOFF::getSectionForExternalReference(
 MCSection *TargetLoweringObjectFileXCOFF::SelectSectionForGlobal(
     const GlobalObject *GO, SectionKind Kind, const TargetMachine &TM) const {
   // Handle the XCOFF::TD case first, then deal with the rest.
-  if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GO))
-    if (GVar->hasAttribute("toc-data")) {
+  if (const GlobalVariable *GVar = dyn_cast<GlobalVariable>(GO); GVar && (GVar->hasAttribute("toc-data")))
+    {
       SmallString<128> Name;
       getNameWithPrefix(Name, GO, TM);
       XCOFF::SymbolType symType =

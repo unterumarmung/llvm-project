@@ -324,12 +324,12 @@ void ModuleSummaryIndex::propagateAttributes(
       // preserved means it could have external to DSO writes or reads, and
       // notEligibleToImport means it could have writes or reads via inline
       // assembly leading it to be in the @llvm.*used).
-      if (auto *GVS = dyn_cast<GlobalVarSummary>(S->getBaseObject()))
+      if (auto *GVS = dyn_cast<GlobalVarSummary>(S->getBaseObject()); GVS && (!canImportGlobalVar(S.get(), /* AnalyzeRefs */ false) ||
+            GUIDPreservedSymbols.count(P.first)))
         // Here we intentionally pass S.get() not GVS, because S could be
         // an alias. We don't analyze references here, because we have to
         // know exactly if GV is readonly to do so.
-        if (!canImportGlobalVar(S.get(), /* AnalyzeRefs */ false) ||
-            GUIDPreservedSymbols.count(P.first)) {
+        {
           GVS->setReadOnly(false);
           GVS->setWriteOnly(false);
         }
@@ -351,8 +351,8 @@ void ModuleSummaryIndex::propagateAttributes(
     for (auto &P : *this)
       if (P.second.getSummaryList().size())
         if (auto *GVS = dyn_cast<GlobalVarSummary>(
-                P.second.getSummaryList()[0]->getBaseObject()))
-          if (isGlobalValueLive(GVS)) {
+                P.second.getSummaryList()[0]->getBaseObject()); GVS && (isGlobalValueLive(GVS)))
+          {
             if (GVS->maybeReadOnly())
               ReadOnlyLiveGVars++;
             if (GVS->maybeWriteOnly())

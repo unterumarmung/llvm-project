@@ -40,9 +40,8 @@ void UndefinedAssignmentChecker::checkBind(SVal location, SVal val,
   // Do not report assignments of uninitialized values inside swap functions.
   // This should allow to swap partially uninitialized structs
   if (const FunctionDecl *EnclosingFunctionDecl =
-      dyn_cast<FunctionDecl>(C.getStackFrame()->getDecl()))
-    if (C.getCalleeName(EnclosingFunctionDecl) == "swap")
-      return;
+      dyn_cast<FunctionDecl>(C.getStackFrame()->getDecl()); EnclosingFunctionDecl && (C.getCalleeName(EnclosingFunctionDecl) == "swap"))
+    return;
 
   ExplodedNode *N = C.generateErrorNode();
 
@@ -64,14 +63,14 @@ void UndefinedAssignmentChecker::checkBind(SVal location, SVal val,
     }
 
     if (const BinaryOperator *B = dyn_cast<BinaryOperator>(StoreE)) {
-      if (B->isCompoundAssignmentOp()) {
-        if (C.getSVal(B->getLHS()).isUndef()) {
+      if ((B->isCompoundAssignmentOp()) && (C.getSVal(B->getLHS()).isUndef())) 
+        {
           OS << "The left expression of the compound assignment uses "
              << "uninitialized memory";
           ex = B->getLHS();
           break;
         }
-      }
+      
 
       ex = B->getRHS();
       break;
@@ -83,8 +82,8 @@ void UndefinedAssignmentChecker::checkBind(SVal location, SVal val,
     }
 
     if (const auto *CD =
-            dyn_cast<CXXConstructorDecl>(C.getStackFrame()->getDecl())) {
-      if (CD->isImplicit()) {
+            dyn_cast<CXXConstructorDecl>(C.getStackFrame()->getDecl()); CD && (CD->isImplicit())) 
+      {
         for (auto *I : CD->inits()) {
           if (I->getInit()->IgnoreImpCasts() == StoreE) {
             OS << "Value assigned to field '" << I->getMember()->getName()
@@ -93,7 +92,7 @@ void UndefinedAssignmentChecker::checkBind(SVal location, SVal val,
           }
         }
       }
-    }
+    
 
     break;
   }

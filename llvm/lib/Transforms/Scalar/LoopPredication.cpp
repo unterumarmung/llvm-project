@@ -529,11 +529,9 @@ bool LoopPredication::isLoopInvariantValue(const SCEV* S) {
   // shows up in range checks on arrays with immutable lengths.
   // TODO: This should be sunk inside SCEV.
   if (const SCEVUnknown *U = dyn_cast<SCEVUnknown>(S))
-    if (const auto *LI = dyn_cast<LoadInst>(U->getValue()))
-      if (LI->isUnordered() && L->hasLoopInvariantOperands(LI))
-        if (!isModSet(AA->getModRefInfoMask(LI->getOperand(0))) ||
-            LI->hasMetadata(LLVMContext::MD_invariant_load))
-          return true;
+    if (const auto *LI = dyn_cast<LoadInst>(U->getValue()); LI && (LI->isUnordered() && L->hasLoopInvariantOperands(LI)) && (!isModSet(AA->getModRefInfoMask(LI->getOperand(0))) ||
+            LI->hasMetadata(LLVMContext::MD_invariant_load)))
+      return true;
   return false;
 }
 
@@ -982,8 +980,8 @@ static CondBrInst *FindWidenableTerminatorAboveLoop(Loop *L, LoopInfo &LI) {
   if (!BB)
     return nullptr;
   do {
-    if (BasicBlock *Pred = BB->getSinglePredecessor())
-      if (BB == Pred->getSingleSuccessor()) {
+    if (BasicBlock *Pred = BB->getSinglePredecessor(); Pred && (BB == Pred->getSingleSuccessor()))
+      {
         BB = Pred;
         continue;
       }
@@ -991,9 +989,8 @@ static CondBrInst *FindWidenableTerminatorAboveLoop(Loop *L, LoopInfo &LI) {
   } while (true);
 
   if (BasicBlock *Pred = BB->getSinglePredecessor()) {
-    if (auto *BI = dyn_cast<CondBrInst>(Pred->getTerminator()))
-      if (BI->getSuccessor(0) == BB && isWidenableBranch(BI))
-        return BI;
+    if (auto *BI = dyn_cast<CondBrInst>(Pred->getTerminator()); BI && (BI->getSuccessor(0) == BB && isWidenableBranch(BI)))
+      return BI;
   }
   return nullptr;
 }
@@ -1081,8 +1078,8 @@ bool LoopPredication::predicateLoopExits(Loop *L, SCEVExpander &Rewriter) {
     if (!BI)
       continue;
 
-    if (auto WC = extractWidenableCondition(BI))
-      if (L->contains(BI->getSuccessor(0))) {
+    if (auto WC = extractWidenableCondition(BI); WC && (L->contains(BI->getSuccessor(0))))
+      {
         assert(WC->hasOneUse() && "Not appropriate widenable branch!");
         WC->user_back()->replaceUsesOfWith(
             WC, ConstantInt::getTrue(BI->getContext()));

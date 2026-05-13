@@ -70,10 +70,9 @@ InlineInfo::getInlineStack(uint64_t Addr) const {
 
 static bool skip(GsymDataExtractor &Data, uint64_t &Offset,
                  bool SkippedRanges) {
-  if (!SkippedRanges) {
-    if (skipRanges(Data, Offset) == 0)
-      return false;
-  }
+  if ((!SkippedRanges) && (skipRanges(Data, Offset) == 0)) 
+    return false;
+  
   bool HasChildren = Data.getU8(&Offset) != 0;
   Data.getStringOffset(&Offset); // Skip Inline.Name.
   Data.getULEB128(&Offset); // Skip Inline.CallFile.

@@ -694,10 +694,9 @@ void WalkAST::checkCall_strcpy(const CallExpr *CE, const FunctionDecl *FD) {
 
   if (const auto *Array = dyn_cast<ConstantArrayType>(Target->getType())) {
     uint64_t ArraySize = BR.getContext().getTypeSize(Array) / 8;
-    if (const auto *String = dyn_cast<StringLiteral>(Source)) {
-      if (ArraySize >= String->getLength() + 1)
-        return;
-    }
+    if (const auto *String = dyn_cast<StringLiteral>(Source); String && (ArraySize >= String->getLength() + 1)) 
+      return;
+    
   }
 
   // Issue a warning.

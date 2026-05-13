@@ -500,9 +500,8 @@ void PredicateInfoBuilder::buildPredicateInfo() {
     }
   }
   for (auto &Assume : AC.assumptions()) {
-    if (auto *II = cast_or_null<AssumeInst>(Assume))
-      if (DT.isReachableFromEntry(II->getParent()))
-        processAssume(II, II->getParent(), OpsToRename);
+    if (auto *II = cast_or_null<AssumeInst>(Assume); II && (DT.isReachableFromEntry(II->getParent())))
+      processAssume(II, II->getParent(), OpsToRename);
   }
   // Now rename all our operations.
   renameUses(OpsToRename);

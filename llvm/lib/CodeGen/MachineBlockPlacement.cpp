@@ -913,8 +913,8 @@ bool MachineBlockPlacement::isProfitableToTailDup(
     auto Prob = MBPI->getEdgeProbability(Succ, SuccSucc);
     if (Prob > BestSuccSucc)
       BestSuccSucc = Prob;
-    if (PDom == nullptr)
-      if (MPDT->dominates(SuccSucc, Succ)) {
+    if ((PDom == nullptr) && (MPDT->dominates(SuccSucc, Succ)))
+      {
         PDom = SuccSucc;
         break;
       }
@@ -2483,9 +2483,8 @@ void MachineBlockPlacement::rotateLoop(BlockChain &LoopChain,
     assert(std::next(ExitIt) != LoopChain.end() &&
            "Exit should not be last BB");
     MachineBasicBlock *NextBlockInChain = *std::next(ExitIt);
-    if (ExitingBB->isSuccessor(NextBlockInChain))
-      if (!Bottom->isSuccessor(Top))
-        return;
+    if ((ExitingBB->isSuccessor(NextBlockInChain)) && (!Bottom->isSuccessor(Top)))
+      return;
   }
 
   LLVM_DEBUG(dbgs() << "Rotating loop to put exit " << getBlockName(ExitingBB)
@@ -3476,12 +3475,12 @@ void MachineBlockPlacement::findDuplicateCandidates(
 
   // No predecessors can optimally fallthrough to BB.
   // So we can change one duplication into fallthrough.
-  if (!Fallthrough) {
-    if ((Candidates.size() < Preds.size()) && (Candidates.size() > 0)) {
+  if ((!Fallthrough) && ((Candidates.size() < Preds.size()) && (Candidates.size() > 0))) 
+    {
       Candidates[0] = Candidates.back();
       Candidates.pop_back();
     }
-  }
+  
 }
 
 void MachineBlockPlacement::initTailDupThreshold() {
@@ -3516,14 +3515,13 @@ void MachineBlockPlacement::initTailDupThreshold() {
 
   // For aggressive optimization, we can adjust some thresholds to be less
   // conservative.
-  if (OptLevel >= CodeGenOptLevel::Aggressive) {
+  if ((OptLevel >= CodeGenOptLevel::Aggressive) && (TailDupPlacementThreshold.getNumOccurrences() == 0 ||
+        TailDupPlacementAggressiveThreshold.getNumOccurrences() != 0)) 
     // At O3 we should be more willing to copy blocks for tail duplication. This
     // increases size pressure, so we only do it at O3
     // Do this unless only the regular threshold is explicitly set.
-    if (TailDupPlacementThreshold.getNumOccurrences() == 0 ||
-        TailDupPlacementAggressiveThreshold.getNumOccurrences() != 0)
-      TailDupSize = TailDupPlacementAggressiveThreshold;
-  }
+    TailDupSize = TailDupPlacementAggressiveThreshold;
+  
 
   // If there's no threshold provided through options, query the target
   // information for a threshold instead.

@@ -87,9 +87,8 @@ bool requiresImplicitDefaultDeclareMapper(
         return true;
 
       if (const semantics::DeclTypeSpec *declType = component.GetType())
-        if (const auto *nested = declType->AsDerived())
-          if (requiresMapper(*nested))
-            return true;
+        if (const auto *nested = declType->AsDerived(); nested && (requiresMapper(*nested)))
+          return true;
     }
     return false;
   };

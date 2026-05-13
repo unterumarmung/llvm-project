@@ -252,9 +252,8 @@ static bool markTails(Function &F, OptimizationRemarkEmitter *ORE) {
 
       // Bail out for intrinsic stackrestore call because it can modify
       // unescaped allocas.
-      if (auto *II = dyn_cast<IntrinsicInst>(CI))
-        if (II->getIntrinsicID() == Intrinsic::stackrestore)
-          continue;
+      if (auto *II = dyn_cast<IntrinsicInst>(CI); II && (II->getIntrinsicID() == Intrinsic::stackrestore))
+        continue;
 
       // Special-case operand bundles "clang.arc.attachedcall", "ptrauth", and
       // "kcfi".
@@ -275,9 +274,8 @@ static bool markTails(Function &F, OptimizationRemarkEmitter *ORE) {
         for (auto &Arg : CI->args()) {
           if (isa<Constant>(Arg.getUser()))
             continue;
-          if (Argument *A = dyn_cast<Argument>(Arg.getUser()))
-            if (!A->hasByValAttr())
-              continue;
+          if (Argument *A = dyn_cast<Argument>(Arg.getUser()); A && (!A->hasByValAttr()))
+            continue;
           SafeToTail = false;
           break;
         }
@@ -342,18 +340,17 @@ static bool markTails(Function &F, OptimizationRemarkEmitter *ORE) {
 /// instructions between the call and this instruction are movable.
 ///
 static bool canMoveAboveCall(Instruction *I, CallInst *CI, AliasAnalysis *AA) {
-  if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(I))
-    if (II->getIntrinsicID() == Intrinsic::lifetime_end)
-      return true;
+  if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(I); II && (II->getIntrinsicID() == Intrinsic::lifetime_end))
+    return true;
 
   // FIXME: We can move load/store/call/free instructions above the call if the
   // call does not mod/ref the memory location being processed.
   if (I->mayHaveSideEffects())  // This also handles volatile loads.
     return false;
 
-  if (LoadInst *L = dyn_cast<LoadInst>(I)) {
+  if (LoadInst *L = dyn_cast<LoadInst>(I); L && (CI->mayHaveSideEffects())) 
     // Loads may always be moved above calls without side effects.
-    if (CI->mayHaveSideEffects()) {
+    {
       // Non-volatile loads may be moved above a call with side effects if it
       // does not write to memory and the load provably won't trap.
       // Writes to memory only matter if they may alias the pointer
@@ -364,7 +361,7 @@ static bool canMoveAboveCall(Instruction *I, CallInst *CI, AliasAnalysis *AA) {
                                        L->getAlign(), DL, L))
         return false;
     }
-  }
+  
 
   // Otherwise, if this is a side-effect free instruction, check to make sure
   // that it does not use the return value of the call.  If it doesn't use the
@@ -381,11 +378,10 @@ static bool canTransformAccumulatorRecursion(Instruction *I, CallInst *CI) {
   assert(I->getNumOperands() >= 2 &&
          "Associative/commutative operations should have at least 2 args!");
 
-  if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(I)) {
+  if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(I); II && (!ConstantExpr::getIntrinsicIdentity(II->getIntrinsicID(), I->getType()))) 
     // Accumulators must have an identity.
-    if (!ConstantExpr::getIntrinsicIdentity(II->getIntrinsicID(), I->getType()))
-      return false;
-  }
+    return false;
+  
 
   // Exactly one operand should be the result of the call instruction.
   if ((I->getOperand(0) == CI && I->getOperand(1) == CI) ||
@@ -535,9 +531,8 @@ void TailRecursionEliminator::createTailRecurseLoopHeader(CallInst *CI) {
   for (BasicBlock::iterator OEBI = HeaderBB->begin(), E = HeaderBB->end(),
                             NEBI = NewEntry->begin();
        OEBI != E;)
-    if (AllocaInst *AI = dyn_cast<AllocaInst>(OEBI++))
-      if (isa<ConstantInt>(AI->getArraySize()))
-        AI->moveBefore(NEBI);
+    if (AllocaInst *AI = dyn_cast<AllocaInst>(OEBI++); AI && (isa<ConstantInt>(AI->getArraySize())))
+      AI->moveBefore(NEBI);
 
   // Now that we have created a new block, which jumps to the entry
   // block, insert a PHI node for each argument of the function.

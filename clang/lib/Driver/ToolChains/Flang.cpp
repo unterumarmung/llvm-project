@@ -345,12 +345,12 @@ void Flang::AddLoongArch64TargetArgs(const ArgList &Args,
   }
 
   if (const Arg *A = Args.getLastArg(options::OPT_mannotate_tablejump,
-                                     options::OPT_mno_annotate_tablejump)) {
-    if (A->getOption().matches(options::OPT_mannotate_tablejump)) {
+                                     options::OPT_mno_annotate_tablejump); A && (A->getOption().matches(options::OPT_mannotate_tablejump))) 
+    {
       CmdArgs.push_back("-mllvm");
       CmdArgs.push_back("-loongarch-annotate-tablejump");
     }
-  }
+  
 }
 
 void Flang::AddPPCTargetArgs(const ArgList &Args,
@@ -408,13 +408,12 @@ void Flang::AddRISCVTargetArgs(const ArgList &Args,
     unsigned Bits = 0;
     if (Val == "zvl" && MinVLen >= llvm::RISCV::RVVBitsPerBlock) {
       Bits = MinVLen;
-    } else if (!Val.getAsInteger(10, Bits)) {
+    } else if ((!Val.getAsInteger(10, Bits)) && (Bits < MinVLen || Bits < llvm::RISCV::RVVBitsPerBlock ||
+          Bits > 65536 || !llvm::isPowerOf2_32(Bits))) 
       // Only accept power of 2 values beteen RVVBitsPerBlock and 65536 that
       // at least MinVLen.
-      if (Bits < MinVLen || Bits < llvm::RISCV::RVVBitsPerBlock ||
-          Bits > 65536 || !llvm::isPowerOf2_32(Bits))
-        Bits = 0;
-    }
+      Bits = 0;
+    
 
     // If we got a valid value try to use it.
     if (Bits != 0) {
@@ -641,23 +640,22 @@ void Flang::addTargetOptions(const ArgList &Args,
           Triple.getArch() != llvm::Triple::aarch64_be)
         D.Diag(diag::err_drv_unsupported_opt_for_target)
             << Name << Triple.getArchName();
-    } else if (Name == "SLEEF" || Name == "ArmPL") {
-      if (Triple.getArch() != llvm::Triple::aarch64 &&
-          Triple.getArch() != llvm::Triple::aarch64_be)
-        D.Diag(diag::err_drv_unsupported_opt_for_target)
+    } else if ((Name == "SLEEF" || Name == "ArmPL") && (Triple.getArch() != llvm::Triple::aarch64 &&
+          Triple.getArch() != llvm::Triple::aarch64_be)) 
+      D.Diag(diag::err_drv_unsupported_opt_for_target)
             << Name << Triple.getArchName();
-    }
+    
 
-    if (Triple.isOSDarwin()) {
+    if ((Triple.isOSDarwin()) && (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) && (A->getValue() == StringRef{"Accelerate"})) 
       // flang doesn't currently suport nostdlib, nodefaultlibs. Adding these
       // here incase they are added someday
-      if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
-        if (A->getValue() == StringRef{"Accelerate"}) {
+      
+        {
           CmdArgs.push_back("-framework");
           CmdArgs.push_back("Accelerate");
         }
-      }
-    }
+      
+    
     A->render(Args, CmdArgs);
   }
 

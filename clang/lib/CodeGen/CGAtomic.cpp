@@ -2093,8 +2093,8 @@ void CodeGenFunction::EmitAtomicStore(RValue rvalue, LValue dest,
 
     // Do the atomic store.
     Address Addr = atomics.getAtomicAddress();
-    if (llvm::Value *Value = atomics.getScalarRValValueOrNull(rvalue))
-      if (shouldCastToInt(Value->getType(), /*CmpXchg=*/false)) {
+    if (llvm::Value *Value = atomics.getScalarRValValueOrNull(rvalue); Value && (shouldCastToInt(Value->getType(), /*CmpXchg=*/false)))
+      {
         Addr = atomics.castToAtomicIntPointer(Addr);
         ValToStore = Builder.CreateIntCast(ValToStore, Addr.getElementType(),
                                            /*isSigned=*/false);

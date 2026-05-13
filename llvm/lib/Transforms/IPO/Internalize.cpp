@@ -114,9 +114,8 @@ bool InternalizePass::shouldPreserveGV(const GlobalValue &GV) {
 
   // As the name suggests, externally initialized variables need preserving as
   // they would be initialized elsewhere externally.
-  if (const auto *G = dyn_cast<GlobalVariable>(&GV))
-    if (G->isExternallyInitialized())
-      return true;
+  if (const auto *G = dyn_cast<GlobalVariable>(&GV); G && (G->isExternallyInitialized()))
+    return true;
 
   // Already local, has nothing to do.
   if (GV.hasLocalLinkage())

@@ -838,9 +838,8 @@ void Sema::PragmaStack<Sema::AlignPackInfo>::Act(SourceLocation PragmaLocation,
 bool Sema::UnifySection(StringRef SectionName, int SectionFlags,
                         NamedDecl *Decl) {
   SourceLocation PragmaLocation;
-  if (auto A = Decl->getAttr<SectionAttr>())
-    if (A->isImplicit())
-      PragmaLocation = A->getLocation();
+  if (auto A = Decl->getAttr<SectionAttr>(); A && (A->isImplicit()))
+    PragmaLocation = A->getLocation();
   auto [SectionIt, Inserted] = Context.SectionInfos.try_emplace(
       SectionName, Decl, PragmaLocation, SectionFlags);
   if (Inserted)
@@ -1145,12 +1144,11 @@ void Sema::ActOnPragmaAttributeAttribute(
     // `SubjectList<[GlobalVar]>`.
     for (const auto &StrictRule : StrictSubjectMatchRuleSet) {
       // First, check for exact match.
-      if (Rules.erase(StrictRule.first)) {
+      if ((Rules.erase(StrictRule.first)) && (StrictRule.second)) 
         // Add the rule to the set of attribute receivers only if it's supported
         // in the current language mode.
-        if (StrictRule.second)
-          SubjectMatchRules.push_back(StrictRule.first);
-      }
+        SubjectMatchRules.push_back(StrictRule.first);
+      
     }
     // Check remaining rules for subset matches.
     auto RulesToCheck = Rules;
@@ -1237,9 +1235,8 @@ void Sema::AddPragmaAttributes(Scope *S, Decl *D) {
   if (PragmaAttributeStack.empty())
     return;
 
-  if (const auto *P = dyn_cast<ParmVarDecl>(D))
-    if (P->getType()->isVoidType())
-      return;
+  if (const auto *P = dyn_cast<ParmVarDecl>(D); P && (P->getType()->isVoidType()))
+    return;
 
   for (auto &Group : PragmaAttributeStack) {
     for (auto &Entry : Group.Entries) {
@@ -1378,9 +1375,8 @@ NamedDecl *Sema::lookupExternCFunctionOrVariable(IdentifierInfo *IdentId,
   if (!getLangOpts().CPlusPlus)
     return Result.getAsSingle<NamedDecl>();
   for (NamedDecl *D : Result) {
-    if (auto *FD = dyn_cast<FunctionDecl>(D))
-      if (FD->isExternC())
-        return D;
+    if (auto *FD = dyn_cast<FunctionDecl>(D); FD && (FD->isExternC()))
+      return D;
     if (isa<VarDecl>(D))
       return D;
   }
@@ -1553,14 +1549,13 @@ void Sema::setExceptionMode(SourceLocation Loc,
 
 void Sema::ActOnPragmaFEnvAccess(SourceLocation Loc, bool IsEnabled) {
   FPOptionsOverride NewFPFeatures = CurFPFeatureOverrides();
-  if (IsEnabled) {
+  if ((IsEnabled) && (!isPreciseFPEnabled())) 
     // Verify Microsoft restriction:
     // You can't enable fenv_access unless precise semantics are enabled.
     // Precise semantics can be enabled either by the float_control
     // pragma, or by using the /fp:precise or /fp:strict compiler options
-    if (!isPreciseFPEnabled())
-      Diag(Loc, diag::err_pragma_fenv_requires_precise);
-  }
+    Diag(Loc, diag::err_pragma_fenv_requires_precise);
+  
   NewFPFeatures.setAllowFEnvAccessOverride(IsEnabled);
   NewFPFeatures.setRoundingMathOverride(IsEnabled);
   FpPragmaStack.Act(Loc, PSK_Set, StringRef(), NewFPFeatures);

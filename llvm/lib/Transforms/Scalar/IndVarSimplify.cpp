@@ -370,10 +370,9 @@ tryConvertToIntegerIV(const FloatingPointIV &FPIV) {
     uint32_t Range = uint32_t(ExitValue - InitValue);
     // Check for infinite loop, either:
     // while (i <= Exit) or until (i > Exit)
-    if (NewPred == CmpInst::ICMP_SLE || NewPred == CmpInst::ICMP_SGT) {
-      if (++Range == 0)
-        return std::nullopt; // Range overflows.
-    }
+    if ((NewPred == CmpInst::ICMP_SLE || NewPred == CmpInst::ICMP_SGT) && (++Range == 0)) 
+      return std::nullopt; // Range overflows.
+    
 
     unsigned Leftover = Range % uint32_t(IncrValue);
 
@@ -397,10 +396,9 @@ tryConvertToIntegerIV(const FloatingPointIV &FPIV) {
     uint32_t Range = uint32_t(InitValue - ExitValue);
     // Check for infinite loop, either:
     // while (i >= Exit) or until (i < Exit)
-    if (NewPred == CmpInst::ICMP_SGE || NewPred == CmpInst::ICMP_SLT) {
-      if (++Range == 0)
-        return std::nullopt; // Range overflows.
-    }
+    if ((NewPred == CmpInst::ICMP_SGE || NewPred == CmpInst::ICMP_SLT) && (++Range == 0)) 
+      return std::nullopt; // Range overflows.
+    
 
     unsigned Leftover = Range % uint32_t(-IncrValue);
 
@@ -796,10 +794,9 @@ static PHINode *getLoopPhiForCounter(Value *IncV, Loop *L) {
 
   // Allow add/sub to be commuted.
   Phi = dyn_cast<PHINode>(IncI->getOperand(1));
-  if (Phi && Phi->getParent() == L->getHeader()) {
-    if (L->isLoopInvariant(IncI->getOperand(0)))
-      return Phi;
-  }
+  if ((Phi && Phi->getParent() == L->getHeader()) && (L->isLoopInvariant(IncI->getOperand(0)))) 
+    return Phi;
+  
   return nullptr;
 }
 
@@ -1455,9 +1452,8 @@ static bool optimizeLoopExitWithUnknownExitCount(
     Value *Curr = Worklist.pop_back_val();
     // Go through AND/OR conditions. Collect leaf ICMPs. We only care about
     // those with one use, to avoid instruction duplication.
-    if (Curr->hasOneUse())
-      if (!GoThrough(Curr))
-        if (auto *ICmp = dyn_cast<ICmpInst>(Curr))
+    if ((Curr->hasOneUse()) && (!GoThrough(Curr)))
+      if (auto *ICmp = dyn_cast<ICmpInst>(Curr))
           LeafConditions.push_back(ICmp);
   } while (!Worklist.empty());
 
@@ -1834,10 +1830,9 @@ static bool crashingBBWithoutEffect(const BasicBlock &BB) {
     // %b = load i32, ptr %a
     // Now if the loop stored a non-nullptr to %a, we could cause a nullptr
     // dereference by skipping over loop iterations.
-    if (const auto *CB = dyn_cast<CallBase>(&I)) {
-      if (CB->onlyAccessesInaccessibleMemory())
-        return true;
-    }
+    if (const auto *CB = dyn_cast<CallBase>(&I); CB && (CB->onlyAccessesInaccessibleMemory())) 
+      return true;
+    
     return isa<UnreachableInst>(I);
   });
 }

@@ -609,12 +609,12 @@ BasicAAResult::DecomposeGEPExpression(const Value *V, const DataLayout &DL,
     const Operator *Op = dyn_cast<Operator>(V);
     if (!Op) {
       // The only non-operator case we can handle are GlobalAliases.
-      if (const GlobalAlias *GA = dyn_cast<GlobalAlias>(V)) {
-        if (!GA->isInterposable()) {
+      if (const GlobalAlias *GA = dyn_cast<GlobalAlias>(V); GA && (!GA->isInterposable())) 
+        {
           V = GA->getAliasee();
           continue;
         }
-      }
+      
       Decomposed.Base = V;
       return Decomposed;
     }
@@ -788,12 +788,12 @@ ModRefInfo BasicAAResult::getModRefInfoMask(const MemoryLocation &Loc,
     //
     // An argument that is marked readonly and noalias is known to be
     // invariant while that function is executing.
-    if (const Argument *Arg = dyn_cast<Argument>(V)) {
-      if (Arg->hasNoAliasAttr() && Arg->onlyReadsMemory()) {
+    if (const Argument *Arg = dyn_cast<Argument>(V); Arg && (Arg->hasNoAliasAttr() && Arg->onlyReadsMemory())) 
+      {
         Result |= ModRefInfo::Ref;
         continue;
       }
-    }
+    
 
     // A global constant can't be mutated.
     if (const GlobalVariable *GV = dyn_cast<GlobalVariable>(V)) {
@@ -941,16 +941,14 @@ ModRefInfo BasicAAResult::getModRefInfo(const CallBase *Call,
   // contents of the alloca into argument registers or stack slots, so there is
   // no lifetime issue.
   if (isa<AllocaInst>(Object))
-    if (const CallInst *CI = dyn_cast<CallInst>(Call))
-      if (CI->isTailCall() &&
-          !CI->getAttributes().hasAttrSomewhere(Attribute::ByVal))
-        return ModRefInfo::NoModRef;
+    if (const CallInst *CI = dyn_cast<CallInst>(Call); CI && (CI->isTailCall() &&
+          !CI->getAttributes().hasAttrSomewhere(Attribute::ByVal)))
+      return ModRefInfo::NoModRef;
 
   // Stack restore is able to modify unescaped dynamic allocas. Assume it may
   // modify them even though the alloca is not escaped.
-  if (auto *AI = dyn_cast<AllocaInst>(Object))
-    if (!AI->isStaticAlloca() && isIntrinsicCall(Call, Intrinsic::stackrestore))
-      return ModRefInfo::Mod;
+  if (auto *AI = dyn_cast<AllocaInst>(Object); AI && (!AI->isStaticAlloca() && isIntrinsicCall(Call, Intrinsic::stackrestore)))
+    return ModRefInfo::Mod;
 
   // We can completely ignore inaccessible memory here, because MemoryLocations
   // can only reference accessible memory.
@@ -1023,12 +1021,12 @@ ModRefInfo BasicAAResult::getModRefInfo(const CallBase *Call,
   ModRefInfo Result = ArgMR | OtherMR | SyncMR;
 
   // Refine accesses to errno memory.
-  if ((ErrnoMR | Result) != Result) {
-    if (AAQI.AAR.aliasErrno(Loc, Call->getModule()) != AliasResult::NoAlias) {
+  if (((ErrnoMR | Result) != Result) && (AAQI.AAR.aliasErrno(Loc, Call->getModule()) != AliasResult::NoAlias)) 
+    {
       // Exclusion conditions do not hold, this memory location may alias errno.
       Result |= ErrnoMR;
     }
-  }
+  
 
   if (!isModAndRefSet(Result))
     return Result;
@@ -1039,13 +1037,12 @@ ModRefInfo BasicAAResult::getModRefInfo(const CallBase *Call,
   // casing realloc and strdup routines which access only their arguments as
   // well.  Or alternatively, replace all of this with inaccessiblememonly once
   // that's implemented fully.
-  if (isMallocOrCallocLikeFn(Call, &TLI)) {
+  if ((isMallocOrCallocLikeFn(Call, &TLI)) && (AAQI.AAR.alias(MemoryLocation::getBeforeOrAfter(Call), Loc, AAQI) ==
+        AliasResult::NoAlias)) 
     // Be conservative if the accessed pointer may alias the allocation -
     // fallback to the generic handling below.
-    if (AAQI.AAR.alias(MemoryLocation::getBeforeOrAfter(Call), Loc, AAQI) ==
-        AliasResult::NoAlias)
-      return ModRefInfo::NoModRef;
-  }
+    return ModRefInfo::NoModRef;
+  
 
   // Like assumes, invariant.start intrinsics were also marked as arbitrarily
   // writing so that proper control dependencies are maintained but they never
@@ -1269,14 +1266,13 @@ AliasResult BasicAAResult::aliasGEP(
       (void)CR.getSignedMax().smul_ov(Scale, Overflows);
     }
 
-    if (!Overflows) {
+    if ((!Overflows) && (VLeftSize.hasValue() &&
+          Scale.abs().uge(VLeftSize.getValue().getKnownMinValue()))) 
       // Note that we do not check that the typesize is scalable, as vscale >= 1
       // so noalias still holds so long as the dependency distance is at least
       // as big as the typesize.
-      if (VLeftSize.hasValue() &&
-          Scale.abs().uge(VLeftSize.getValue().getKnownMinValue()))
-        return AliasResult::NoAlias;
-    }
+      return AliasResult::NoAlias;
+    
   }
 
   // If the difference between pointers is Offset +<nuw> Indices then we know
@@ -1399,15 +1395,15 @@ AliasResult BasicAAResult::aliasGEP(
   if (DecompGEP1.VarIndices.size() == 1) {
     // VarIndex = Scale*V.
     const VariableGEPIndex &Var = DecompGEP1.VarIndices[0];
-    if (Var.Val.TruncBits == 0 &&
-        isKnownNonZero(Var.Val.V, SimplifyQuery(DL, DT, &AC, Var.CxtI))) {
+    if ((Var.Val.TruncBits == 0 &&
+        isKnownNonZero(Var.Val.V, SimplifyQuery(DL, DT, &AC, Var.CxtI))) && (MultiplyByScaleNoWrap(Var))) 
       // Refine MinAbsVarIndex, if abs(Scale*V) >= abs(Scale) holds in the
       // presence of potentially wrapping math.
-      if (MultiplyByScaleNoWrap(Var)) {
+      {
         // If V != 0 then abs(VarIndex) >= abs(Scale).
         MinAbsVarIndex = Var.Scale.abs();
       }
-    }
+    
   } else if (DecompGEP1.VarIndices.size() == 2) {
     // VarIndex = Scale*V0 + (-Scale)*V1.
     // If V0 != V1 then abs(VarIndex) >= abs(Scale).
@@ -1464,9 +1460,9 @@ BasicAAResult::aliasSelect(const SelectInst *SI, LocationSize SISize,
                            AAQueryInfo &AAQI) {
   // If the values are Selects with the same condition, we can do a more precise
   // check: just check for aliases between the values on corresponding arms.
-  if (const SelectInst *SI2 = dyn_cast<SelectInst>(V2))
-    if (isValueEqualInPotentialCycles(SI->getCondition(), SI2->getCondition(),
-                                      AAQI)) {
+  if (const SelectInst *SI2 = dyn_cast<SelectInst>(V2); SI2 && (isValueEqualInPotentialCycles(SI->getCondition(), SI2->getCondition(),
+                                      AAQI)))
+    {
       AliasResult Alias =
           AAQI.AAR.alias(MemoryLocation(SI->getTrueValue(), SISize),
                          MemoryLocation(SI2->getTrueValue(), V2Size), AAQI);
@@ -1502,8 +1498,8 @@ AliasResult BasicAAResult::aliasPHI(const PHINode *PN, LocationSize PNSize,
   // as well as efficient check: just check for aliases between the values
   // on corresponding edges. Don't do this if we are analyzing across
   // iterations, as we may pick a different phi entry in different iterations.
-  if (const PHINode *PN2 = dyn_cast<PHINode>(V2))
-    if (PN2->getParent() == PN->getParent() && !AAQI.MayBeCrossIteration) {
+  if (const PHINode *PN2 = dyn_cast<PHINode>(V2); PN2 && (PN2->getParent() == PN->getParent() && !AAQI.MayBeCrossIteration))
+    {
       std::optional<AliasResult> Alias;
       for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
         AliasResult ThisAlias = AAQI.AAR.alias(
@@ -1655,12 +1651,10 @@ AliasResult BasicAAResult::aliasCheck(const Value *V1, LocationSize V1Size,
 
   // Null values in the default address space don't point to any object, so they
   // don't alias any other pointer.
-  if (const ConstantPointerNull *CPN = dyn_cast<ConstantPointerNull>(O1))
-    if (!NullPointerIsDefined(&F, CPN->getPointerType()->getAddressSpace()))
-      return AliasResult::NoAlias;
-  if (const ConstantPointerNull *CPN = dyn_cast<ConstantPointerNull>(O2))
-    if (!NullPointerIsDefined(&F, CPN->getPointerType()->getAddressSpace()))
-      return AliasResult::NoAlias;
+  if (const ConstantPointerNull *CPN = dyn_cast<ConstantPointerNull>(O1); CPN && (!NullPointerIsDefined(&F, CPN->getPointerType()->getAddressSpace())))
+    return AliasResult::NoAlias;
+  if (const ConstantPointerNull *CPN = dyn_cast<ConstantPointerNull>(O2); CPN && (!NullPointerIsDefined(&F, CPN->getPointerType()->getAddressSpace())))
+    return AliasResult::NoAlias;
 
   if (O1 != O2) {
     // If V1/V2 point to two different objects, we know that we have no alias.
@@ -1734,16 +1728,16 @@ AliasResult BasicAAResult::aliasCheck(const Value *V1, LocationSize V1Size,
           return false;
         };
 
-        if ((O1 == HintO1 && O2 == HintO2) || (O1 == HintO2 && O2 == HintO1)) {
+        if (((O1 == HintO1 && O2 == HintO2) || (O1 == HintO2 && O2 == HintO1)) && ((CtxI && isValidAssumeForContext(Assume, CtxI, DT,
+                                               /* AllowEphemerals */ true)) ||
+              ValidAssumeForPtrContext(V1) || ValidAssumeForPtrContext(V2))) 
           // Note that we go back to V1 and V2 for the
           // ValidAssumeForPtrContext checks; they're dominated by O1 and O2,
           // so strictly more assumptions are valid for them.
-          if ((CtxI && isValidAssumeForContext(Assume, CtxI, DT,
-                                               /* AllowEphemerals */ true)) ||
-              ValidAssumeForPtrContext(V1) || ValidAssumeForPtrContext(V2)) {
+          {
             return AliasResult::NoAlias;
           }
-        }
+        
       }
     }
   }

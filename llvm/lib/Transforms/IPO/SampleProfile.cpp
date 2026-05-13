@@ -624,18 +624,18 @@ inline void SampleProfileInference<Function>::findUnlikelyJumps(
     // Check if a block ends with InvokeInst and mark non-taken branch unlikely.
     // In that case block Succ should be a landing pad
     const auto &Succs = Successors[BB];
-    if (Succs.size() == 2 && Succs.back() == Succ) {
-      if (isa<InvokeInst>(TI)) {
+    if ((Succs.size() == 2 && Succs.back() == Succ) && (isa<InvokeInst>(TI))) 
+      {
         Jump.IsUnlikely = true;
       }
-    }
+    
     const Instruction *SuccTI = Succ->getTerminator();
     // Check if the target block contains UnreachableInst and mark it unlikely
-    if (SuccTI->getNumSuccessors() == 0) {
-      if (isa<UnreachableInst>(SuccTI)) {
+    if ((SuccTI->getNumSuccessors() == 0) && (isa<UnreachableInst>(SuccTI))) 
+      {
         Jump.IsUnlikely = true;
       }
-    }
+    
   }
 }
 
@@ -673,9 +673,8 @@ ErrorOr<uint64_t> SampleProfileLoader::getInstWeight(const Instruction &Inst) {
   // For CS profile, the callsite count of previously inlined callees is
   // populated with the entry count of the callees.
   if (!FunctionSamples::ProfileIsCS)
-    if (const auto *CB = dyn_cast<CallBase>(&Inst))
-      if (!CB->isIndirectCall() && findCalleeFunctionSamples(*CB))
-        return 0;
+    if (const auto *CB = dyn_cast<CallBase>(&Inst); CB && (!CB->isIndirectCall() && findCalleeFunctionSamples(*CB)))
+      return 0;
 
   return getInstWeightImpl(Inst);
 }
@@ -1153,8 +1152,8 @@ bool SampleProfileLoader::inlineHotFunctions(
       SmallVector<CallBase *, 10> ColdCandidates;
       for (auto &I : BB) {
         const FunctionSamples *FS = nullptr;
-        if (auto *CB = dyn_cast<CallBase>(&I)) {
-          if (!isa<IntrinsicInst>(I)) {
+        if (auto *CB = dyn_cast<CallBase>(&I); CB && (!isa<IntrinsicInst>(I))) 
+          {
             if ((FS = findCalleeFunctionSamples(*CB))) {
               assert((!FunctionSamples::UseMD5 || FS->GUIDToFuncNameMap) &&
                      "GUIDToFuncNameMap has to be populated");
@@ -1170,7 +1169,7 @@ bool SampleProfileLoader::inlineHotFunctions(
               AllCandidates.push_back(CB);
             }
           }
-        }
+        
       }
       if (Hot || ExternalInlineAdvisor) {
         CIS.insert(CIS.begin(), AllCandidates.begin(), AllCandidates.end());
@@ -1739,12 +1738,12 @@ void SampleProfileLoader::generateMDProfMetadata(Function &F) {
           W++;
         Weights.push_back(static_cast<uint32_t>(W));
       }
-      if (Weight != 0) {
-        if (Weight > MaxWeight) {
+      if ((Weight != 0) && (Weight > MaxWeight)) 
+        {
           MaxWeight = Weight;
           MaxDestInst = &*Succ->getFirstNonPHIOrDbgOrLifetime();
         }
-      }
+      
     }
 
     misexpect::checkExpectAnnotations(*TI, Weights, /*IsFrontend=*/false);
@@ -2030,10 +2029,9 @@ bool SampleProfileLoader::doInitialization(Module &M,
     if (!AllowRecursiveInline.getNumOccurrences())
       AllowRecursiveInline = true;
 
-    if (Reader->profileIsPreInlined()) {
-      if (!UsePreInlinerDecision.getNumOccurrences())
-        UsePreInlinerDecision = true;
-    }
+    if ((Reader->profileIsPreInlined()) && (!UsePreInlinerDecision.getNumOccurrences())) 
+      UsePreInlinerDecision = true;
+    
 
     // Enable stale profile matching by default for probe-based profile.
     // Currently the matching relies on if the checksum mismatch is detected,

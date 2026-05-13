@@ -78,29 +78,28 @@ void AArch64InstPrinter::printInst(const MCInst *MI, uint64_t Address,
 
   unsigned Opcode = MI->getOpcode();
 
-  if (Opcode == AArch64::SYSxt)
-    if (printSysAlias(MI, STI, O)) {
+  if ((Opcode == AArch64::SYSxt) && (printSysAlias(MI, STI, O)))
+    {
       printAnnotation(O, Annot);
       return;
     }
 
-  if (Opcode == AArch64::SYSLxt)
-    if (printSyslAlias(MI, STI, O)) {
+  if ((Opcode == AArch64::SYSLxt) && (printSyslAlias(MI, STI, O)))
+    {
       printAnnotation(O, Annot);
       return;
     }
 
-  if (Opcode == AArch64::SYSPxt || Opcode == AArch64::SYSPxt_XZR)
-    if (printSyspAlias(MI, STI, O)) {
+  if ((Opcode == AArch64::SYSPxt || Opcode == AArch64::SYSPxt_XZR) && (printSyspAlias(MI, STI, O)))
+    {
       printAnnotation(O, Annot);
       return;
     }
 
   // RPRFM overlaps PRFM (reg), so try to print it as RPRFM here.
-  if ((Opcode == AArch64::PRFMroX) || (Opcode == AArch64::PRFMroW)) {
-    if (printRangePrefetchAlias(MI, STI, O, Annot))
-      return;
-  }
+  if (((Opcode == AArch64::PRFMroX) || (Opcode == AArch64::PRFMroW)) && (printRangePrefetchAlias(MI, STI, O, Annot))) 
+    return;
+  
 
   // SBFM/UBFM should print to a nicer aliased form if possible.
   if (Opcode == AArch64::SBFMXri || Opcode == AArch64::SBFMWri ||

@@ -301,12 +301,11 @@ bool AArch64TTIImpl::areInlineCompatible(const Function *Caller,
   if (CallAttrs.callee().isNewZA() || CallAttrs.callee().isNewZT0())
     return false;
 
-  if (CallAttrs.requiresLazySave() || CallAttrs.requiresSMChange() ||
+  if ((CallAttrs.requiresLazySave() || CallAttrs.requiresSMChange() ||
       CallAttrs.requiresPreservingZT0() ||
-      CallAttrs.requiresPreservingAllZAState()) {
-    if (hasPossibleIncompatibleOps(Callee, *getTLI()))
-      return false;
-  }
+      CallAttrs.requiresPreservingAllZAState()) && (hasPossibleIncompatibleOps(Callee, *getTLI()))) 
+    return false;
+  
 
   const TargetMachine &TM = getTLI()->getTargetMachine();
   const FeatureBitset &CallerBits =
@@ -623,9 +622,8 @@ AArch64TTIImpl::getIntrinsicInstrCost(const IntrinsicCostAttributes &ICA,
   // it. This change will be removed when code-generation for these types is
   // sufficiently reliable.
   auto *RetTy = ICA.getReturnType();
-  if (auto *VTy = dyn_cast<ScalableVectorType>(RetTy))
-    if (VTy->getElementCount() == ElementCount::getScalable(1))
-      return InstructionCost::getInvalid();
+  if (auto *VTy = dyn_cast<ScalableVectorType>(RetTy); VTy && (VTy->getElementCount() == ElementCount::getScalable(1)))
+    return InstructionCost::getInvalid();
 
   switch (ICA.getID()) {
   case Intrinsic::experimental_vector_histogram_add: {
@@ -1796,14 +1794,13 @@ static bool isAllActivePredicate(Value *Pred) {
     auto *OrigPredTy = cast<ScalableVectorType>(Pred->getType());
     Pred = UncastedPred;
 
-    if (match(Pred, m_Intrinsic<Intrinsic::aarch64_sve_convert_to_svbool>(
-                        m_Value(UncastedPred))))
+    if ((match(Pred, m_Intrinsic<Intrinsic::aarch64_sve_convert_to_svbool>(
+                        m_Value(UncastedPred)))) && (OrigPredTy->getMinNumElements() <=
+          cast<ScalableVectorType>(UncastedPred->getType())
+              ->getMinNumElements()))
       // If the predicate has the same or less lanes than the uncasted predicate
       // then we know the casting has no effect.
-      if (OrigPredTy->getMinNumElements() <=
-          cast<ScalableVectorType>(UncastedPred->getType())
-              ->getMinNumElements())
-        Pred = UncastedPred;
+      Pred = UncastedPred;
   }
 
   auto *C = dyn_cast<Constant>(Pred);
@@ -2183,8 +2180,8 @@ static std::optional<Instruction *> instCombineSVELast(InstCombiner &IC,
   // If x and/or y is a splat value then:
   // lastX (binop (x, y)) --> binop(lastX(x), lastX(y))
   Value *LHS, *RHS;
-  if (match(Vec, m_OneUse(m_BinOp(m_Value(LHS), m_Value(RHS))))) {
-    if (isSplatValue(LHS) || isSplatValue(RHS)) {
+  if ((match(Vec, m_OneUse(m_BinOp(m_Value(LHS), m_Value(RHS))))) && (isSplatValue(LHS) || isSplatValue(RHS))) 
+    {
       auto *OldBinOp = cast<BinaryOperator>(Vec);
       auto OpC = OldBinOp->getOpcode();
       auto *NewLHS =
@@ -2195,7 +2192,7 @@ static std::optional<Instruction *> instCombineSVELast(InstCombiner &IC,
           OpC, NewLHS, NewRHS, OldBinOp, OldBinOp->getName(), II.getIterator());
       return IC.replaceInstUsesWith(II, NewBinOp);
     }
-  }
+  
 
   auto *C = dyn_cast<Constant>(Pg);
   if (IsAfter && C && C->isNullValue()) {
@@ -4362,9 +4359,8 @@ InstructionCost AArch64TTIImpl::getArithmeticInstrCost(
   // of <vscale x 1 x eltty> yet, so return an invalid cost to avoid selecting
   // it. This change will be removed when code-generation for these types is
   // sufficiently reliable.
-  if (auto *VTy = dyn_cast<ScalableVectorType>(Ty))
-    if (VTy->getElementCount() == ElementCount::getScalable(1))
-      return InstructionCost::getInvalid();
+  if (auto *VTy = dyn_cast<ScalableVectorType>(Ty); VTy && (VTy->getElementCount() == ElementCount::getScalable(1)))
+    return InstructionCost::getInvalid();
 
   // TODO: Handle more cost kinds.
   if (CostKind != TTI::TCK_RecipThroughput)
@@ -5043,12 +5039,11 @@ InstructionCost AArch64TTIImpl::getMemoryOpCost(unsigned Opcode, Type *Ty,
   // it. This change will be removed when code-generation for these types is
   // sufficiently reliable.
   // We also only support full register predicate loads and stores.
-  if (auto *VTy = dyn_cast<ScalableVectorType>(Ty))
-    if (VTy->getElementCount() == ElementCount::getScalable(1) ||
+  if (auto *VTy = dyn_cast<ScalableVectorType>(Ty); VTy && (VTy->getElementCount() == ElementCount::getScalable(1) ||
         (VTy->getElementType()->isIntegerTy(1) &&
          !VTy->getElementCount().isKnownMultipleOf(
-             ElementCount::getScalable(16))))
-      return InstructionCost::getInvalid();
+             ElementCount::getScalable(16)))))
+    return InstructionCost::getInvalid();
 
   // TODO: consider latency as well for TCK_SizeAndLatency.
   if (CostKind == TTI::TCK_CodeSize || CostKind == TTI::TCK_SizeAndLatency)
@@ -5489,9 +5484,8 @@ void AArch64TTIImpl::getUnrollingPreferences(
         return;
       if (isa<CallBase>(I)) {
         if (isa<CallInst>(I) || isa<InvokeInst>(I))
-          if (const Function *F = cast<CallBase>(I).getCalledFunction())
-            if (!isLoweredToCall(F))
-              continue;
+          if (const Function *F = cast<CallBase>(I).getCalledFunction(); F && (!isLoweredToCall(F)))
+            continue;
         return;
       }
 
@@ -5696,9 +5690,8 @@ AArch64TTIImpl::getMinMaxReductionCost(Intrinsic::ID IID, VectorType *Ty,
   // of <vscale x 1 x eltty> yet, so return an invalid cost to avoid selecting
   // it. This change will be removed when code-generation for these types is
   // sufficiently reliable.
-  if (auto *VTy = dyn_cast<ScalableVectorType>(Ty))
-    if (VTy->getElementCount() == ElementCount::getScalable(1))
-      return InstructionCost::getInvalid();
+  if (auto *VTy = dyn_cast<ScalableVectorType>(Ty); VTy && (VTy->getElementCount() == ElementCount::getScalable(1)))
+    return InstructionCost::getInvalid();
 
   std::pair<InstructionCost, MVT> LT = getTypeLegalizationCost(Ty);
 
@@ -5748,9 +5741,8 @@ AArch64TTIImpl::getArithmeticReductionCost(unsigned Opcode, VectorType *ValTy,
   // of <vscale x 1 x eltty> yet, so return an invalid cost to avoid selecting
   // it. This change will be removed when code-generation for these types is
   // sufficiently reliable.
-  if (auto *VTy = dyn_cast<ScalableVectorType>(ValTy))
-    if (VTy->getElementCount() == ElementCount::getScalable(1))
-      return InstructionCost::getInvalid();
+  if (auto *VTy = dyn_cast<ScalableVectorType>(ValTy); VTy && (VTy->getElementCount() == ElementCount::getScalable(1)))
+    return InstructionCost::getInvalid();
 
   if (TTI::requiresOrderedReduction(FMF)) {
     if (auto *FixedVTy = dyn_cast<FixedVectorType>(ValTy)) {
@@ -6834,9 +6826,8 @@ bool AArch64TTIImpl::isProfitableToSinkOperands(
       return !Ops.empty();
     case Intrinsic::aarch64_sve_ptest_first:
     case Intrinsic::aarch64_sve_ptest_last:
-      if (auto *IIOp = dyn_cast<IntrinsicInst>(II->getOperand(0)))
-        if (IIOp->getIntrinsicID() == Intrinsic::aarch64_sve_ptrue)
-          Ops.push_back(&II->getOperandUse(0));
+      if (auto *IIOp = dyn_cast<IntrinsicInst>(II->getOperand(0)); IIOp && (IIOp->getIntrinsicID() == Intrinsic::aarch64_sve_ptrue))
+        Ops.push_back(&II->getOperandUse(0));
       return !Ops.empty();
     case Intrinsic::aarch64_sme_write_horiz:
     case Intrinsic::aarch64_sme_write_vert:
@@ -7039,11 +7030,11 @@ bool AArch64TTIImpl::isProfitableToSinkOperands(
       Instruction *OtherAnd, *IA, *IB;
       Value *MaskValue;
       // MainAnd refers to And instruction that has 'Not' as one of its operands
-      if (match(I, m_c_Or(m_OneUse(m_Instruction(OtherAnd)),
+      if ((match(I, m_c_Or(m_OneUse(m_Instruction(OtherAnd)),
                           m_OneUse(m_c_And(m_OneUse(m_Not(m_Value(MaskValue))),
-                                           m_Instruction(IA)))))) {
-        if (match(OtherAnd,
-                  m_c_And(m_Specific(MaskValue), m_Instruction(IB)))) {
+                                           m_Instruction(IA)))))) && (match(OtherAnd,
+                  m_c_And(m_Specific(MaskValue), m_Instruction(IB))))) 
+        {
           Instruction *MainAnd = I->getOperand(0) == OtherAnd
                                      ? cast<Instruction>(I->getOperand(1))
                                      : cast<Instruction>(I->getOperand(0));
@@ -7065,7 +7056,7 @@ bool AArch64TTIImpl::isProfitableToSinkOperands(
 
           return true;
         }
-      }
+      
     }
 
     return false;

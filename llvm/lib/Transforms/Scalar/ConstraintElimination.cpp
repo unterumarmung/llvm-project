@@ -516,10 +516,9 @@ static Decomposition decompose(Value *V,
 
   // Decompose \p V used with a signed predicate.
   if (IsSigned) {
-    if (auto *CI = dyn_cast<ConstantInt>(V)) {
-      if (canUseSExt(CI))
-        return CI->getSExtValue();
-    }
+    if (auto *CI = dyn_cast<ConstantInt>(V); CI && (canUseSExt(CI))) 
+      return CI->getSExtValue();
+    
     Value *Op0;
     Value *Op1;
 
@@ -527,10 +526,9 @@ static Decomposition decompose(Value *V,
       V = Op0;
     else if (match(V, m_NNegZExt(m_Value(Op0)))) {
       V = Op0;
-    } else if (match(V, m_NSWTrunc(m_Value(Op0)))) {
-      if (Op0->getType()->getScalarSizeInBits() <= 64)
-        V = Op0;
-    }
+    } else if ((match(V, m_NSWTrunc(m_Value(Op0)))) && (Op0->getType()->getScalarSizeInBits() <= 64)) 
+      V = Op0;
+    
 
     if (match(V, m_NSWAdd(m_Value(Op0), m_Value(Op1)))) {
       if (auto Decomp = MergeResults(Op0, Op1, IsSigned))
@@ -583,16 +581,16 @@ static Decomposition decompose(Value *V,
     V = Op0;
     Preconditions.emplace_back(CmpInst::ICMP_SGE, Op0,
                                ConstantInt::get(Op0->getType(), 0));
-  } else if (auto *Trunc = dyn_cast<TruncInst>(V)) {
-    if (Trunc->getSrcTy()->getScalarSizeInBits() <= 64) {
-      if (Trunc->hasNoUnsignedWrap() || Trunc->hasNoSignedWrap()) {
+  } else if (auto *Trunc = dyn_cast<TruncInst>(V); Trunc && (Trunc->getSrcTy()->getScalarSizeInBits() <= 64) && (Trunc->hasNoUnsignedWrap() || Trunc->hasNoSignedWrap())) 
+    
+      {
         V = Trunc->getOperand(0);
         if (!Trunc->hasNoUnsignedWrap())
           Preconditions.emplace_back(CmpInst::ICMP_SGE, V,
                                      ConstantInt::get(V->getType(), 0));
       }
-    }
-  }
+    
+  
 
   Value *Op1;
   ConstantInt *CI;
@@ -757,9 +755,8 @@ ConstraintInfo::getConstraint(CmpInst::Predicate Pred, Value *Op0, Value *Op1,
   int64_t OffsetSum;
   if (AddOverflow(Offset1, Offset2, OffsetSum))
     return {};
-  if (Pred == CmpInst::ICMP_SLT || Pred == CmpInst::ICMP_ULT)
-    if (AddOverflow(OffsetSum, int64_t(-1), OffsetSum))
-      return {};
+  if ((Pred == CmpInst::ICMP_SLT || Pred == CmpInst::ICMP_ULT) && (AddOverflow(OffsetSum, int64_t(-1), OffsetSum)))
+    return {};
   R[0] = OffsetSum;
   Res.Preconditions = std::move(Preconditions);
 
@@ -1167,14 +1164,12 @@ void State::addInfoFor(BasicBlock &BB) {
       }
     };
 
-    if (auto *LI = dyn_cast<LoadInst>(&I)) {
-      if (!LI->isVolatile())
-        AddFactFromMemoryAccess(LI->getPointerOperand(), LI->getAccessType());
-    }
-    if (auto *SI = dyn_cast<StoreInst>(&I)) {
-      if (!SI->isVolatile())
-        AddFactFromMemoryAccess(SI->getPointerOperand(), SI->getAccessType());
-    }
+    if (auto *LI = dyn_cast<LoadInst>(&I); LI && (!LI->isVolatile())) 
+      AddFactFromMemoryAccess(LI->getPointerOperand(), LI->getAccessType());
+    
+    if (auto *SI = dyn_cast<StoreInst>(&I); SI && (!SI->isVolatile())) 
+      AddFactFromMemoryAccess(SI->getPointerOperand(), SI->getAccessType());
+    
 
     auto *II = dyn_cast<IntrinsicInst>(&I);
     Intrinsic::ID ID = II ? II->getIntrinsicID() : Intrinsic::not_intrinsic;
@@ -1226,12 +1221,11 @@ void State::addInfoFor(BasicBlock &BB) {
     // Add facts from unsigned division and remainder.
     //   urem x, n: result < n  and  result <= x
     //   udiv x, n: result <= x
-    if (auto *BO = dyn_cast<BinaryOperator>(&I)) {
-      if ((BO->getOpcode() == Instruction::URem ||
+    if (auto *BO = dyn_cast<BinaryOperator>(&I); BO && ((BO->getOpcode() == Instruction::URem ||
            BO->getOpcode() == Instruction::UDiv) &&
-          isGuaranteedNotToBePoison(BO))
-        WorkList.push_back(FactOrCheck::getInstFact(DT.getNode(&BB), BO));
-    }
+          isGuaranteedNotToBePoison(BO))) 
+      WorkList.push_back(FactOrCheck::getInstFact(DT.getNode(&BB), BO));
+    
 
     GuaranteedToExecute &= isGuaranteedToTransferExecutionToSuccessor(&I);
   }

@@ -297,9 +297,8 @@ InMemoryCAS::storeFromNullTerminatedRegion(ArrayRef<uint8_t> ComputedHash,
       cast<InMemoryObject>(I.Data.loadOrGenerate(Generator));
 
   // Save Map if the winning node uses it.
-  if (auto *RefNode = dyn_cast<InMemoryRefObject>(&Node))
-    if (RefNode->getData().data() == Map.data())
-      new (MemoryMaps.Allocate(1)) sys::fs::mapped_file_region(std::move(Map));
+  if (auto *RefNode = dyn_cast<InMemoryRefObject>(&Node); RefNode && (RefNode->getData().data() == Map.data()))
+    new (MemoryMaps.Allocate(1)) sys::fs::mapped_file_region(std::move(Map));
 
   return toReference(Node);
 }

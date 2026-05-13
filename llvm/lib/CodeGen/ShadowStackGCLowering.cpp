@@ -275,8 +275,8 @@ void ShadowStackGCLoweringImpl::CollectRoots(Function &F) {
   for (BasicBlock &BB : F)
     for (Instruction &I : BB)
       if (IntrinsicInst *CI = dyn_cast<IntrinsicInst>(&I))
-        if (Function *F = CI->getCalledFunction())
-          if (F->getIntrinsicID() == Intrinsic::gcroot) {
+        if (Function *F = CI->getCalledFunction(); F && (F->getIntrinsicID() == Intrinsic::gcroot))
+          {
             std::pair<CallInst *, AllocaInst *> Pair = std::make_pair(
                 CI,
                 cast<AllocaInst>(CI->getArgOperand(0)->stripPointerCasts()));

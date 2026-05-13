@@ -372,10 +372,9 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   } else if (mips::shouldUseFPXX(Args, Triple, CPUName, ABIName, FloatABI)) {
     Features.push_back("+fpxx");
     Features.push_back("+nooddspreg");
-  } else if (Arg *A = Args.getLastArg(options::OPT_mmsa)) {
-    if (A->getOption().matches(options::OPT_mmsa))
-      Features.push_back("+fp64");
-  }
+  } else if (Arg *A = Args.getLastArg(options::OPT_mmsa); A && (A->getOption().matches(options::OPT_mmsa))) 
+    Features.push_back("+fp64");
+  
 
   AddTargetFeature(Args, Features, options::OPT_mno_odd_spreg,
                    options::OPT_modd_spreg, "nooddspreg");
@@ -496,13 +495,11 @@ bool mips::shouldUseFPXX(const ArgList &Args, const llvm::Triple &Triple,
 
   // FPXX shouldn't be used if -msingle-float is present.
   if (Arg *A = Args.getLastArg(options::OPT_msingle_float,
-                               options::OPT_mdouble_float))
-    if (A->getOption().matches(options::OPT_msingle_float))
-      UseFPXX = false;
+                               options::OPT_mdouble_float); A && (A->getOption().matches(options::OPT_msingle_float)))
+    UseFPXX = false;
   // FP64 should be used for MSA.
-  if (Arg *A = Args.getLastArg(options::OPT_mmsa))
-    if (A->getOption().matches(options::OPT_mmsa))
-      UseFPXX = llvm::StringSwitch<bool>(CPUName)
+  if (Arg *A = Args.getLastArg(options::OPT_mmsa); A && (A->getOption().matches(options::OPT_mmsa)))
+    UseFPXX = llvm::StringSwitch<bool>(CPUName)
                     .Cases({"mips32r2", "mips32r3", "mips32r5"}, false)
                     .Cases({"mips64r2", "mips64r3", "mips64r5"}, false)
                     .Default(UseFPXX);

@@ -2247,23 +2247,23 @@ Error ASTNodeImporter::ImportDefinitionIfNeeded(Decl *FromD, Decl *ToD) {
       return Err;
 
   if (RecordDecl *FromRecord = dyn_cast<RecordDecl>(FromD)) {
-    if (RecordDecl *ToRecord = cast<RecordDecl>(ToD)) {
-      if (FromRecord->getDefinition() && FromRecord->isCompleteDefinition() &&
-          !ToRecord->getDefinition()) {
+    if (RecordDecl *ToRecord = cast<RecordDecl>(ToD); ToRecord && (FromRecord->getDefinition() && FromRecord->isCompleteDefinition() &&
+          !ToRecord->getDefinition())) 
+      {
         if (Error Err = ImportDefinition(FromRecord, ToRecord))
           return Err;
       }
-    }
+    
     return Error::success();
   }
 
   if (EnumDecl *FromEnum = dyn_cast<EnumDecl>(FromD)) {
-    if (EnumDecl *ToEnum = cast<EnumDecl>(ToD)) {
-      if (FromEnum->getDefinition() && !ToEnum->getDefinition()) {
+    if (EnumDecl *ToEnum = cast<EnumDecl>(ToD); ToEnum && (FromEnum->getDefinition() && !ToEnum->getDefinition())) 
+      {
         if (Error Err = ImportDefinition(FromEnum, ToEnum))
           return Err;
       }
-    }
+    
     return Error::success();
   }
 
@@ -2449,11 +2449,10 @@ Error ASTNodeImporter::ImportFieldDeclDefinition(const FieldDecl *From,
     }
   }
 
-  if (FromRecordDecl && ToRecordDecl) {
-    if (FromRecordDecl->isCompleteDefinition() &&
-        !ToRecordDecl->isCompleteDefinition())
-      return ImportDefinition(FromRecordDecl, ToRecordDecl);
-  }
+  if ((FromRecordDecl && ToRecordDecl) && (FromRecordDecl->isCompleteDefinition() &&
+        !ToRecordDecl->isCompleteDefinition())) 
+    return ImportDefinition(FromRecordDecl, ToRecordDecl);
+  
 
   return Error::success();
 }
@@ -3357,12 +3356,11 @@ ExpectedDecl ASTNodeImporter::VisitRecordDecl(RecordDecl *D) {
     SmallVector<NamedDecl *, 4> ConflictingDecls;
     auto FoundDecls =
         Importer.findDeclsInToCtx(DC, SearchName);
-    if (!FoundDecls.empty()) {
+    if ((!FoundDecls.empty()) && (D->hasExternalLexicalStorage() && !D->isCompleteDefinition())) 
       // We're going to have to compare D against potentially conflicting Decls,
       // so complete it.
-      if (D->hasExternalLexicalStorage() && !D->isCompleteDefinition())
-        D->getASTContext().getExternalSource()->CompleteType(D);
-    }
+      D->getASTContext().getExternalSource()->CompleteType(D);
+    
 
     for (auto *FoundDecl : FoundDecls) {
       if (!FoundDecl->isInIdentifierNamespace(IDNS))
@@ -3732,14 +3730,12 @@ static bool isAncestorDeclContextOf(const DeclContext *DC, const Stmt *S) {
     const Stmt *CurrentS = ToProcess.pop_back_val();
     ToProcess.append(CurrentS->child_begin(), CurrentS->child_end());
     if (const auto *DeclRef = dyn_cast<DeclRefExpr>(CurrentS)) {
-      if (const Decl *D = DeclRef->getDecl())
-        if (isAncestorDeclContextOf(DC, D))
-          return true;
+      if (const Decl *D = DeclRef->getDecl(); D && (isAncestorDeclContextOf(DC, D)))
+        return true;
     } else if (const auto *E =
                    dyn_cast_or_null<SubstNonTypeTemplateParmExpr>(CurrentS)) {
-      if (const Decl *D = E->getAssociatedDecl())
-        if (isAncestorDeclContextOf(DC, D))
-          return true;
+      if (const Decl *D = E->getAssociatedDecl(); D && (isAncestorDeclContextOf(DC, D)))
+        return true;
     }
   }
   return false;
@@ -4026,9 +4022,9 @@ ExpectedDecl ASTNodeImporter::VisitFunctionDecl(FunctionDecl *D) {
   // chain would result in more than one in-class declaration for
   // overrides (even if they are part of the same redecl chain inside the
   // derived class.)
-  if (FoundByLookup) {
-    if (isa<CXXMethodDecl>(FoundByLookup)) {
-      if (D->getLexicalDeclContext() == D->getDeclContext()) {
+  if ((FoundByLookup) && (isa<CXXMethodDecl>(FoundByLookup)) && (D->getLexicalDeclContext() == D->getDeclContext())) 
+    
+      {
         if (!D->doesThisDeclarationHaveABody()) {
           if (FunctionTemplateDecl *DescribedD =
                   D->getDescribedFunctionTemplate()) {
@@ -4046,8 +4042,8 @@ ExpectedDecl ASTNodeImporter::VisitFunctionDecl(FunctionDecl *D) {
           // FIXME Merge the functions into one decl.
         }
       }
-    }
-  }
+    
+  
 
   DeclarationNameInfo NameInfo(Name, Loc);
   // Import additional name location/type info.
@@ -10478,36 +10474,36 @@ Error ASTImporter::ImportDefinition(Decl *From) {
   auto *FromDC = cast<DeclContext>(From);
   ASTNodeImporter Importer(*this);
 
-  if (auto *ToRecord = dyn_cast<RecordDecl>(To)) {
-    if (!ToRecord->getDefinition()) {
+  if (auto *ToRecord = dyn_cast<RecordDecl>(To); ToRecord && (!ToRecord->getDefinition())) 
+    {
       return Importer.ImportDefinition(
           cast<RecordDecl>(FromDC), ToRecord,
           ASTNodeImporter::IDK_Everything);
     }
-  }
+  
 
-  if (auto *ToEnum = dyn_cast<EnumDecl>(To)) {
-    if (!ToEnum->getDefinition()) {
+  if (auto *ToEnum = dyn_cast<EnumDecl>(To); ToEnum && (!ToEnum->getDefinition())) 
+    {
       return Importer.ImportDefinition(
           cast<EnumDecl>(FromDC), ToEnum, ASTNodeImporter::IDK_Everything);
     }
-  }
+  
 
-  if (auto *ToIFace = dyn_cast<ObjCInterfaceDecl>(To)) {
-    if (!ToIFace->getDefinition()) {
+  if (auto *ToIFace = dyn_cast<ObjCInterfaceDecl>(To); ToIFace && (!ToIFace->getDefinition())) 
+    {
       return Importer.ImportDefinition(
           cast<ObjCInterfaceDecl>(FromDC), ToIFace,
           ASTNodeImporter::IDK_Everything);
     }
-  }
+  
 
-  if (auto *ToProto = dyn_cast<ObjCProtocolDecl>(To)) {
-    if (!ToProto->getDefinition()) {
+  if (auto *ToProto = dyn_cast<ObjCProtocolDecl>(To); ToProto && (!ToProto->getDefinition())) 
+    {
       return Importer.ImportDefinition(
           cast<ObjCProtocolDecl>(FromDC), ToProto,
           ASTNodeImporter::IDK_Everything);
     }
-  }
+  
 
   return Importer.ImportDeclContext(FromDC, true);
 }

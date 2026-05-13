@@ -195,9 +195,8 @@ bool randomizeStructureLayout(const ASTContext &Context, RecordDecl *RD,
       RD->hasFlexibleArrayMember() ? RandomizedFields.pop_back_val() : nullptr;
   if (!FlexibleArray) {
     if (const auto *CA =
-            dyn_cast<ConstantArrayType>(RandomizedFields.back()->getType()))
-      if (CA->getSize().sle(2))
-        FlexibleArray = RandomizedFields.pop_back_val();
+            dyn_cast<ConstantArrayType>(RandomizedFields.back()->getType()); CA && (CA->getSize().sle(2)))
+      FlexibleArray = RandomizedFields.pop_back_val();
   }
 
   std::string Seed =

@@ -829,24 +829,24 @@ ExprResult Sema::ImpCastExprToType(Expr *E, QualType Ty,
     // array declared with storage-class specifier register is sizeof.
     if (VK == VK_PRValue && !getLangOpts().CPlusPlus && !E->isPRValue()) {
       if (const auto *DRE = dyn_cast<DeclRefExpr>(E)) {
-        if (const auto *VD = dyn_cast<VarDecl>(DRE->getDecl())) {
-          if (VD->getStorageClass() == SC_Register) {
+        if (const auto *VD = dyn_cast<VarDecl>(DRE->getDecl()); VD && (VD->getStorageClass() == SC_Register)) 
+          {
             Diag(E->getExprLoc(), diag::err_typecheck_address_of)
                 << /*register variable*/ 3 << E->getSourceRange();
             return ExprError();
           }
-        }
+        
       }
     }
   }
 
-  if (ImplicitCastExpr *ImpCast = dyn_cast<ImplicitCastExpr>(E)) {
-    if (ImpCast->getCastKind() == Kind && (!BasePath || BasePath->empty())) {
+  if (ImplicitCastExpr *ImpCast = dyn_cast<ImplicitCastExpr>(E); ImpCast && (ImpCast->getCastKind() == Kind && (!BasePath || BasePath->empty()))) 
+    {
       ImpCast->setType(Ty);
       ImpCast->setValueKind(VK);
       return E;
     }
-  }
+  
 
   bool IsExplicitCast = isa<CStyleCastExpr>(E) || isa<CXXStaticCastExpr>(E) ||
                         isa<CXXFunctionalCastExpr>(E);
@@ -855,11 +855,11 @@ ExprResult Sema::ImpCastExprToType(Expr *E, QualType Ty,
        (Kind == CK_NoOp && E->getType()->isIntegerType() &&
         Ty->isIntegerType())) &&
       IsExplicitCast) {
-    if (const auto *SourceOBT = E->getType()->getAs<OverflowBehaviorType>()) {
-      if (Ty->isIntegerType() && !Ty->isOverflowBehaviorType()) {
+    if (const auto *SourceOBT = E->getType()->getAs<OverflowBehaviorType>(); SourceOBT && (Ty->isIntegerType() && !Ty->isOverflowBehaviorType())) 
+      {
         Ty = Context.getOverflowBehaviorType(SourceOBT->getBehaviorKind(), Ty);
       }
-    }
+    
   }
 
   return ImplicitCastExpr::Create(Context, Ty, Kind, E, BasePath, VK,
@@ -1997,9 +1997,9 @@ public:
   void VisitDeclStmt(DeclStmt *DS) {
     // Visit dtors called by variables that need destruction
     for (auto *D : DS->decls())
-      if (auto *VD = dyn_cast<VarDecl>(D))
-        if (VD->isThisDeclarationADefinition() &&
-            VD->needsDestruction(S.Context)) {
+      if (auto *VD = dyn_cast<VarDecl>(D); VD && (VD->isThisDeclarationADefinition() &&
+            VD->needsDestruction(S.Context)))
+        {
           QualType VT = VD->getType();
           if (const auto *ClassDecl = VT->getAsCXXRecordDecl();
               ClassDecl && (ClassDecl->isBeingDefined() ||
@@ -2228,9 +2228,8 @@ void Sema::checkTypeSupport(QualType Ty, SourceLocation Loc, ValueDecl *D) {
         MD->isTrivial())
       return;
 
-    if (const auto *Ctor = dyn_cast<CXXConstructorDecl>(MD))
-      if (Ctor->isCopyOrMoveConstructor() && Ctor->isTrivial())
-        return;
+    if (const auto *Ctor = dyn_cast<CXXConstructorDecl>(MD); Ctor && (Ctor->isCopyOrMoveConstructor() && Ctor->isTrivial()))
+      return;
   }
 
   // Try to associate errors with the lexical context, if that is a function, or
@@ -2360,13 +2359,13 @@ void Sema::checkTypeSupport(QualType Ty, SourceLocation Loc, ValueDecl *D) {
       if (IsArmStreamingFunction(FD, /*IncludeLocallyStreaming=*/true)) {
         Diag(Loc, diag::err_sve_fixed_vector_in_streaming_function)
             << Ty << /*Streaming*/ 0;
-      } else if (const auto *FTy = FD->getType()->getAs<FunctionProtoType>()) {
-        if (FTy->getAArch64SMEAttributes() &
-            FunctionType::SME_PStateSMCompatibleMask) {
+      } else if (const auto *FTy = FD->getType()->getAs<FunctionProtoType>(); FTy && (FTy->getAArch64SMEAttributes() &
+            FunctionType::SME_PStateSMCompatibleMask)) 
+        {
           Diag(Loc, diag::err_sve_fixed_vector_in_streaming_function)
               << Ty << /*StreamingCompatible*/ 1;
         }
-      }
+      
     }
   };
 
@@ -2407,9 +2406,8 @@ Scope *Sema::getScopeForContext(DeclContext *Ctx) {
     // Ignore scopes that cannot have declarations. This is important for
     // out-of-line definitions of static class members.
     if (S->getFlags() & (Scope::DeclScope | Scope::TemplateParamScope))
-      if (DeclContext *Entity = S->getEntity())
-        if (Ctx == Entity->getPrimaryContext())
-          return S;
+      if (DeclContext *Entity = S->getEntity(); Entity && (Ctx == Entity->getPrimaryContext()))
+        return S;
   }
 
   return nullptr;
@@ -2758,8 +2756,8 @@ bool Sema::tryExprAsCall(Expr &E, QualType &ZeroArgCallReturnTy,
       if (IsMemExpr)
         continue;
       if (const FunctionDecl *OverloadDecl
-            = dyn_cast<FunctionDecl>((*it)->getUnderlyingDecl())) {
-        if (OverloadDecl->getMinRequiredArguments() == 0) {
+            = dyn_cast<FunctionDecl>((*it)->getUnderlyingDecl()); OverloadDecl && (OverloadDecl->getMinRequiredArguments() == 0)) 
+        {
           if (!ZeroArgCallReturnTy.isNull() && !Ambiguous &&
               (!IsMV || !(OverloadDecl->isCPUDispatchMultiVersion() ||
                           OverloadDecl->isCPUSpecificMultiVersion()))) {
@@ -2771,7 +2769,7 @@ bool Sema::tryExprAsCall(Expr &E, QualType &ZeroArgCallReturnTy,
                    OverloadDecl->isCPUSpecificMultiVersion();
           }
         }
-      }
+      
     }
 
     // If it's not a member, use better machinery to try to resolve the call

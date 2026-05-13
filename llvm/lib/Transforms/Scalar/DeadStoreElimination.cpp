@@ -480,9 +480,8 @@ memoryIsNotModifiedBetween(Instruction *FirstI, Instruction *SecondI,
     }
     for (; BI != EI; ++BI) {
       Instruction *I = &*BI;
-      if (I->mayWriteToMemory() && I != SecondI)
-        if (isModSet(AA.getModRefInfo(I, MemLoc.getWithNewPtr(Ptr))))
-          return false;
+      if ((I->mayWriteToMemory() && I != SecondI) && (isModSet(AA.getModRefInfo(I, MemLoc.getWithNewPtr(Ptr)))))
+        return false;
     }
     if (B != FirstBB) {
       assert(B != &FirstBB->getParent()->getEntryBlock() &&
@@ -722,19 +721,19 @@ static bool tryToShortenEnd(Instruction *DeadI, OverlapIntervalsTy &IntervalMap,
 
   assert(OII->first - KillingStart >= 0 && "Size expected to be positive");
 
-  if (KillingStart > DeadStart &&
+  if ((KillingStart > DeadStart &&
       // Note: "KillingStart - KillingStart" is known to be positive due to
       // preceding check.
       (uint64_t)(KillingStart - DeadStart) < DeadSize &&
       // Note: "DeadSize - (uint64_t)(KillingStart - DeadStart)" is known to
       // be non negative due to preceding checks.
-      KillingSize >= DeadSize - (uint64_t)(KillingStart - DeadStart)) {
-    if (tryToShorten(DeadI, DeadStart, DeadSize, KillingStart, KillingSize,
-                     true)) {
+      KillingSize >= DeadSize - (uint64_t)(KillingStart - DeadStart)) && (tryToShorten(DeadI, DeadStart, DeadSize, KillingStart, KillingSize,
+                     true))) 
+    {
       IntervalMap.erase(OII);
       return true;
     }
-  }
+  
   return false;
 }
 
@@ -839,9 +838,8 @@ static bool canSkipDef(MemoryDef *D, bool DefVisibleToCaller) {
   Instruction *DI = D->getMemoryInst();
   // Calls that only access inaccessible memory cannot read or write any memory
   // locations we consider for elimination.
-  if (auto *CB = dyn_cast<CallBase>(DI))
-    if (CB->onlyAccessesInaccessibleMemory())
-      return true;
+  if (auto *CB = dyn_cast<CallBase>(DI); CB && (CB->onlyAccessesInaccessibleMemory()))
+    return true;
 
   // We can eliminate stores to locations not visible to the caller across
   // throwing instructions.
@@ -1481,9 +1479,8 @@ bool DSEState::isCompleteOverwrite(const MemoryLocation &DefLoc,
   if (!UseInst->mayWriteToMemory())
     return false;
 
-  if (auto *CB = dyn_cast<CallBase>(UseInst))
-    if (CB->onlyAccessesInaccessibleMemory())
-      return false;
+  if (auto *CB = dyn_cast<CallBase>(UseInst); CB && (CB->onlyAccessesInaccessibleMemory()))
+    return false;
 
   int64_t InstWriteOffset, DepWriteOffset;
   if (auto CC = getLocForWrite(UseInst))
@@ -1589,9 +1586,8 @@ bool DSEState::isReadClobber(const MemoryLocation &DefLoc,
   if (!UseInst->mayReadFromMemory())
     return false;
 
-  if (auto *CB = dyn_cast<CallBase>(UseInst))
-    if (CB->onlyAccessesInaccessibleMemory())
-      return false;
+  if (auto *CB = dyn_cast<CallBase>(UseInst); CB && (CB->onlyAccessesInaccessibleMemory()))
+    return false;
 
   return isRefSet(BatchAA.getModRefInfo(UseInst, DefLoc));
 }
@@ -1614,9 +1610,8 @@ bool DSEState::isGuaranteedLoopIndependent(const Instruction *Current,
 
 bool DSEState::isGuaranteedLoopInvariant(const Value *Ptr) {
   Ptr = Ptr->stripPointerCasts();
-  if (auto *GEP = dyn_cast<GEPOperator>(Ptr))
-    if (GEP->hasAllConstantIndices())
-      Ptr = GEP->getPointerOperand()->stripPointerCasts();
+  if (auto *GEP = dyn_cast<GEPOperator>(Ptr); GEP && (GEP->hasAllConstantIndices()))
+    Ptr = GEP->getPointerOperand()->stripPointerCasts();
 
   if (auto *I = dyn_cast<Instruction>(Ptr)) {
     return I->getParent()->isEntryBlock() || !CI.getCycle(I->getParent());
@@ -1868,11 +1863,10 @@ std::optional<MemoryAccess *> DSEState::getDomMemoryDef(
     // If KillingDef is a CallInst with "initializes" attribute, the reads in
     // the callee would be dominated by initializations, so it should be safe.
     bool IsKillingDefFromInitAttr = false;
-    if (IsInitializesAttrMemLoc) {
-      if (KillingI == UseInst &&
-          KillingUndObj == getUnderlyingObject(MaybeDeadLoc.Ptr))
-        IsKillingDefFromInitAttr = true;
-    }
+    if ((IsInitializesAttrMemLoc) && (KillingI == UseInst &&
+          KillingUndObj == getUnderlyingObject(MaybeDeadLoc.Ptr))) 
+      IsKillingDefFromInitAttr = true;
+    
 
     if (isReadClobber(MaybeDeadLoc, UseInst) && !IsKillingDefFromInitAttr) {
       LLVM_DEBUG(dbgs() << "    ... found read clobber\n");
@@ -2026,15 +2020,15 @@ void DSEState::deleteDeadInstruction(Instruction *SI,
         SkipStores.insert(MD);
         if (Deleted)
           Deleted->insert(MD);
-        if (auto *SI = dyn_cast<StoreInst>(MD->getMemoryInst())) {
-          if (SI->getValueOperand()->getType()->isPointerTy()) {
+        if (auto *SI = dyn_cast<StoreInst>(MD->getMemoryInst()); SI && (SI->getValueOperand()->getType()->isPointerTy())) 
+          {
             const Value *UO = getUnderlyingObject(SI->getValueOperand());
             if (CapturedBeforeReturn.erase(UO))
               ShouldIterateEndOfFunctionDSE = true;
             InvisibleToCallerAfterRet.erase(UO);
             InvisibleToCallerAfterRetBounded.erase(UO);
           }
-        }
+        
       }
 
       Updater.removeMemoryAccess(MA);
@@ -2381,8 +2375,8 @@ bool DSEState::storeIsNoop(MemoryDef *Def, const Value *DefUO) {
   if (!Store)
     return false;
 
-  if (auto *LoadI = dyn_cast<LoadInst>(Store->getOperand(0))) {
-    if (LoadI->getPointerOperand() == Store->getOperand(1)) {
+  if (auto *LoadI = dyn_cast<LoadInst>(Store->getOperand(0)); LoadI && (LoadI->getPointerOperand() == Store->getOperand(1))) 
+    {
       // Get the defining access for the load.
       auto *LoadAccess = MSSA.getMemoryAccess(LoadI)->getDefiningAccess();
       // Fast path: the defining accesses are the same.
@@ -2422,7 +2416,7 @@ bool DSEState::storeIsNoop(MemoryDef *Def, const Value *DefUO) {
       }
       return true;
     }
-  }
+  
 
   return false;
 }

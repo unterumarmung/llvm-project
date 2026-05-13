@@ -1105,17 +1105,15 @@ bool CombineRuleBuilder::typecheckPatterns() {
   CombineRuleOperandTypeChecker OTC(RuleDef, MatchOpTable);
 
   for (auto &Pat : values(MatchPats)) {
-    if (auto *IP = dyn_cast<InstructionPattern>(Pat.get())) {
-      if (!OTC.processMatchPattern(*IP))
-        return false;
-    }
+    if (auto *IP = dyn_cast<InstructionPattern>(Pat.get()); IP && (!OTC.processMatchPattern(*IP))) 
+      return false;
+    
   }
 
   for (auto &Pat : values(ApplyPats)) {
-    if (auto *IP = dyn_cast<InstructionPattern>(Pat.get())) {
-      if (!OTC.processApplyPattern(*IP))
-        return false;
-    }
+    if (auto *IP = dyn_cast<InstructionPattern>(Pat.get()); IP && (!OTC.processApplyPattern(*IP))) 
+      return false;
+    
   }
 
   OTC.propagateAndInferTypes();
@@ -1174,15 +1172,15 @@ bool CombineRuleBuilder::buildPermutationsToEmit() {
   }
 
   if (int64_t MaxPerms = RuleDef.getValueAsInt("MaxPermutations");
-      MaxPerms > 0) {
-    if ((int64_t)PermutationsToEmit.size() > MaxPerms) {
+      (MaxPerms > 0) && ((int64_t)PermutationsToEmit.size() > MaxPerms)) 
+    {
       PrintError("cannot emit rule '" + RuleDef.getName() + "'; " +
                  Twine(PermutationsToEmit.size()) +
                  " permutations would be emitted, but the max is " +
                  Twine(MaxPerms));
       return false;
     }
-  }
+  
 
   // Ensure we always have a single empty entry, it simplifies the emission
   // logic so it doesn't need to handle the case where there are no perms.
@@ -1246,15 +1244,15 @@ bool CombineRuleBuilder::checkSemantics() {
 
       // MIFlags in match cannot use the following syntax: (MIFlags $mi)
       if (const auto *CGP = dyn_cast<CodeGenInstructionPattern>(Pat)) {
-        if (auto *FI = CGP->getMIFlagsInfo()) {
-          if (!FI->copy_flags().empty()) {
+        if (auto *FI = CGP->getMIFlagsInfo(); FI && (!FI->copy_flags().empty())) 
+          {
             PrintError("'match' patterns cannot refer to flags from other "
                        "instructions");
             PrintNote("MIFlags in '" + CGP->getName() +
                       "' refer to: " + join(FI->copy_flags(), ", "));
             return false;
           }
-        }
+        
       }
       continue;
     }
@@ -1478,14 +1476,14 @@ bool CombineRuleBuilder::findRoots() {
       ApplyRoots.insert((InstructionPattern *)ApplyRedef);
     }
 
-    if (auto It = ApplyPats.find(RootName); It != ApplyPats.end()) {
-      if (find(ApplyRoots, It->second.get()) == ApplyRoots.end()) {
+    if (auto It = ApplyPats.find(RootName); (It != ApplyPats.end()) && (find(ApplyRoots, It->second.get()) == ApplyRoots.end())) 
+      {
         PrintError("apply pattern '" + RootName +
                    "' is supposed to be a root but it does not redefine any of "
                    "the defs of the match root");
         return false;
       }
-    }
+    
 
     return true;
   };

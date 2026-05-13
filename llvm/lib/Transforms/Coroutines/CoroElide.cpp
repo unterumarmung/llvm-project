@@ -104,10 +104,9 @@ static bool operandReferences(CallInst *CI, AllocaInst *Frame, AAResults &AA) {
 static void removeTailCallAttribute(AllocaInst *Frame, AAResults &AA) {
   Function &F = *Frame->getFunction();
   for (Instruction &I : instructions(F))
-    if (auto *Call = dyn_cast<CallInst>(&I))
-      if (Call->isTailCall() && operandReferences(Call, Frame, AA) &&
-          !Call->isMustTailCall())
-        Call->setTailCall(false);
+    if (auto *Call = dyn_cast<CallInst>(&I); Call && (Call->isTailCall() && operandReferences(Call, Frame, AA) &&
+          !Call->isMustTailCall()))
+      Call->setTailCall(false);
 }
 
 // Given a resume function @f.resume(%f.frame* %frame), returns the size
@@ -157,8 +156,8 @@ void FunctionElideInfo::collectPostSplitCoroIds() {
     // switch i8 %0, label %suspend [i8 0, label %resume
     //                              i8 1, label %cleanup]
     // and collect the SwitchInsts which are used by escape analysis later.
-    if (auto *CSI = dyn_cast<CoroSuspendInst>(&I))
-      if (CSI->hasOneUse() && isa<SwitchInst>(CSI->use_begin()->getUser())) {
+    if (auto *CSI = dyn_cast<CoroSuspendInst>(&I); CSI && (CSI->hasOneUse() && isa<SwitchInst>(CSI->use_begin()->getUser())))
+      {
         SwitchInst *SWI = cast<SwitchInst>(CSI->use_begin()->getUser());
         if (SWI->getNumCases() == 2)
           CoroSuspendSwitches.insert(SWI);

@@ -934,8 +934,8 @@ static Expr *findCapturingExpr(Sema &S, Expr *e, RetainCycleOwner &owner) {
         return nullptr;
       e = e->IgnoreParenCasts();
     }
-  } else if (CallExpr *CE = dyn_cast<CallExpr>(e)) {
-    if (CE->getNumArgs() == 1) {
+  } else if (CallExpr *CE = dyn_cast<CallExpr>(e); CE && (CE->getNumArgs() == 1)) 
+    {
       FunctionDecl *Fn = dyn_cast_or_null<FunctionDecl>(CE->getCalleeDecl());
       if (Fn) {
         const IdentifierInfo *FnI = Fn->getIdentifier();
@@ -944,7 +944,7 @@ static Expr *findCapturingExpr(Sema &S, Expr *e, RetainCycleOwner &owner) {
         }
       }
     }
-  }
+  
 
   BlockExpr *block = dyn_cast<BlockExpr>(e);
   if (!block || !block->getBlockDecl()->capturesVariable(owner.Variable))
@@ -1108,13 +1108,13 @@ void SemaObjC::CheckObjCCircularContainer(ObjCMessageExpr *Message) {
   }
 
   if (Message->getReceiverKind() == ObjCMessageExpr::SuperInstance) {
-    if (DeclRefExpr *ArgRE = dyn_cast<DeclRefExpr>(Arg)) {
-      if (ArgRE->isObjCSelfExpr()) {
+    if (DeclRefExpr *ArgRE = dyn_cast<DeclRefExpr>(Arg); ArgRE && (ArgRE->isObjCSelfExpr())) 
+      {
         Diag(Message->getSourceRange().getBegin(),
              diag::warn_objc_circular_container)
             << ArgRE->getDecl() << StringRef("'super'");
       }
-    }
+    
   } else {
     Expr *Receiver = Message->getInstanceReceiver()->IgnoreImpCasts();
 
@@ -1123,8 +1123,8 @@ void SemaObjC::CheckObjCCircularContainer(ObjCMessageExpr *Message) {
     }
 
     if (DeclRefExpr *ReceiverRE = dyn_cast<DeclRefExpr>(Receiver)) {
-      if (DeclRefExpr *ArgRE = dyn_cast<DeclRefExpr>(Arg)) {
-        if (ReceiverRE->getDecl() == ArgRE->getDecl()) {
+      if (DeclRefExpr *ArgRE = dyn_cast<DeclRefExpr>(Arg); ArgRE && (ReceiverRE->getDecl() == ArgRE->getDecl())) 
+        {
           ValueDecl *Decl = ReceiverRE->getDecl();
           Diag(Message->getSourceRange().getBegin(),
                diag::warn_objc_circular_container)
@@ -1135,10 +1135,10 @@ void SemaObjC::CheckObjCCircularContainer(ObjCMessageExpr *Message) {
                 << Decl;
           }
         }
-      }
+      
     } else if (ObjCIvarRefExpr *IvarRE = dyn_cast<ObjCIvarRefExpr>(Receiver)) {
-      if (ObjCIvarRefExpr *IvarArgRE = dyn_cast<ObjCIvarRefExpr>(Arg)) {
-        if (IvarRE->getDecl() == IvarArgRE->getDecl()) {
+      if (ObjCIvarRefExpr *IvarArgRE = dyn_cast<ObjCIvarRefExpr>(Arg); IvarArgRE && (IvarRE->getDecl() == IvarArgRE->getDecl())) 
+        {
           ObjCIvarDecl *Decl = IvarRE->getDecl();
           Diag(Message->getSourceRange().getBegin(),
                diag::warn_objc_circular_container)
@@ -1147,7 +1147,7 @@ void SemaObjC::CheckObjCCircularContainer(ObjCMessageExpr *Message) {
                diag::note_objc_circular_container_declared_here)
               << Decl;
         }
-      }
+      
     }
   }
 }
@@ -2335,11 +2335,10 @@ void SemaObjC::adornBoolConversionDiagWithTernaryFixit(
 static void checkCollectionLiteralElement(Sema &S, QualType TargetElementType,
                                           Expr *Element, unsigned ElementKind) {
   // Skip a bitcast to 'id' or qualified 'id'.
-  if (auto ICE = dyn_cast<ImplicitCastExpr>(Element)) {
-    if (ICE->getCastKind() == CK_BitCast &&
-        ICE->getSubExpr()->getType()->getAs<ObjCObjectPointerType>())
-      Element = ICE->getSubExpr();
-  }
+  if (auto ICE = dyn_cast<ImplicitCastExpr>(Element); ICE && (ICE->getCastKind() == CK_BitCast &&
+        ICE->getSubExpr()->getType()->getAs<ObjCObjectPointerType>())) 
+    Element = ICE->getSubExpr();
+  
 
   QualType ElementType = Element->getType();
   ExprResult ElementResult(Element);

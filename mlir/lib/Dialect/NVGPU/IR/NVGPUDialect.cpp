@@ -571,14 +571,12 @@ LogicalResult isAllowedSizeN(int sizeN, Type typeA) {
   SmallVector<int> allowedNshort = {8,   16,  24,  32,  48,  64,
                                     80,  96,  112, 128, 144, 160,
                                     176, 192, 208, 224, 240, 256};
-  if (typeA.isBF16() || typeA.isF16() || typeA.isF32() || typeA.isTF32() ||
-      isa<Float8E5M2Type, Float8E4M3FNType>(typeA))
-    if (llvm::is_contained(allowedN, sizeN))
-      return success();
+  if ((typeA.isBF16() || typeA.isF16() || typeA.isF32() || typeA.isTF32() ||
+      isa<Float8E5M2Type, Float8E4M3FNType>(typeA)) && (llvm::is_contained(allowedN, sizeN)))
+    return success();
 
-  if (typeA.isInteger(8) || typeA.isInteger(1))
-    if (llvm::is_contained(allowedNshort, sizeN))
-      return success();
+  if ((typeA.isInteger(8) || typeA.isInteger(1)) && (llvm::is_contained(allowedNshort, sizeN)))
+    return success();
   return failure();
 }
 

@@ -71,9 +71,8 @@ static bool distinctAllocAndBlockArgument(Value v1, Value v2) {
   Value v1Base = getViewBase(v1);
   Value v2Base = getViewBase(v2);
   auto areDistinct = [](Value v1, Value v2) {
-    if (Operation *op = v1.getDefiningOp())
-      if (hasEffect<MemoryEffects::Allocate>(op, v1))
-        if (auto bbArg = dyn_cast<BlockArgument>(v2))
+    if (Operation *op = v1.getDefiningOp(); op && (hasEffect<MemoryEffects::Allocate>(op, v1)))
+      if (auto bbArg = dyn_cast<BlockArgument>(v2))
           if (bbArg.getOwner()->findAncestorOpInBlock(*op))
             return true;
     return false;

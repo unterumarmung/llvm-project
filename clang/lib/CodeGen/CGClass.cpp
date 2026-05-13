@@ -1136,10 +1136,9 @@ private:
         RHS = EC->getSubExpr();
       if (!RHS)
         return nullptr;
-      if (MemberExpr *ME2 = dyn_cast<MemberExpr>(RHS)) {
-        if (ME2->getMemberDecl() == Field)
-          return Field;
-      }
+      if (MemberExpr *ME2 = dyn_cast<MemberExpr>(RHS); ME2 && (ME2->getMemberDecl() == Field)) 
+        return Field;
+      
       return nullptr;
     } else if (CXXMemberCallExpr *MCE = dyn_cast<CXXMemberCallExpr>(S)) {
       CXXMethodDecl *MD = dyn_cast<CXXMethodDecl>(MCE->getCalleeDecl());

@@ -445,11 +445,10 @@ bool StructurizeCFG::isHoistableInstruction(Instruction *I, BasicBlock *BB,
 
   // Check if all operands are available at the hoisting destination.
   for (auto &Op : I->operands()) {
-    if (auto *OpI = dyn_cast<Instruction>(Op)) {
+    if (auto *OpI = dyn_cast<Instruction>(Op); OpI && (!DT->dominates(OpI->getParent(), HoistTo))) 
       // Operand must dominate the hoisting destination.
-      if (!DT->dominates(OpI->getParent(), HoistTo))
-        return false;
-    }
+      return false;
+    
   }
 
   return true;
@@ -1269,10 +1268,9 @@ void StructurizeCFG::rebuildSSA() {
         Instruction *User = cast<Instruction>(U.getUser());
         if (User->getParent() == BB) {
           continue;
-        } else if (PHINode *UserPN = dyn_cast<PHINode>(User)) {
-          if (UserPN->getIncomingBlock(U) == BB)
-            continue;
-        }
+        } else if (PHINode *UserPN = dyn_cast<PHINode>(User); UserPN && (UserPN->getIncomingBlock(U) == BB)) 
+          continue;
+        
 
         if (DT->dominates(&I, User))
           continue;

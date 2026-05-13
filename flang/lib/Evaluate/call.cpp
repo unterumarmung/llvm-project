@@ -213,8 +213,8 @@ std::string ProcedureDesignator::GetName() const {
 }
 
 std::optional<Expr<SubscriptInteger>> ProcedureRef::LEN() const {
-  if (const auto *intrinsic{std::get_if<SpecificIntrinsic>(&proc_.u)}) {
-    if (intrinsic->name == "repeat") {
+  if (const auto *intrinsic{std::get_if<SpecificIntrinsic>(&proc_.u)}; intrinsic && (intrinsic->name == "repeat")) 
+    {
       // LEN(REPEAT(ch,n)) == LEN(ch) * n
       CHECK(arguments_.size() == 2);
       const auto *stringArg{
@@ -230,7 +230,7 @@ std::optional<Expr<SubscriptInteger>> ProcedureRef::LEN() const {
     // Some other cases (e.g., LEN(CHAR(...))) are handled in
     // ProcedureDesignator::LEN() because they're independent of the
     // lengths of the actual arguments.
-  }
+  
   if (auto len{proc_.LEN()}) {
     if (IsActuallyConstant(*len)) {
       return len;

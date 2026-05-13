@@ -8569,16 +8569,15 @@ static std::optional<EVT> findMemType(SelectionDAG &DAG,
       continue;
     unsigned MemVTWidth = MemVT.getSizeInBits().getKnownMinValue();
     auto Action = TLI.getTypeAction(*DAG.getContext(), MemVT);
-    if ((Action == TargetLowering::TypeLegal ||
+    if (((Action == TargetLowering::TypeLegal ||
          Action == TargetLowering::TypePromoteInteger) &&
         WidenEltVT == MemVT.getVectorElementType() &&
         (WidenWidth % MemVTWidth) == 0 &&
         isPowerOf2_32(WidenWidth / MemVTWidth) &&
         (MemVTWidth <= Width ||
-         (Align!=0 && MemVTWidth<=AlignInBits && MemVTWidth<=Width+WidenEx))) {
-      if (RetVT.getFixedSizeInBits() < MemVTWidth || MemVT == WidenVT)
-        return MemVT;
-    }
+         (Align!=0 && MemVTWidth<=AlignInBits && MemVTWidth<=Width+WidenEx))) && (RetVT.getFixedSizeInBits() < MemVTWidth || MemVT == WidenVT)) 
+      return MemVT;
+    
   }
 
   // Using element-wise loads and stores for widening operations is not

@@ -133,10 +133,9 @@ void darwin::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   // Applicable to darwin11+ and Xcode 4+.  darwin<10 lacked integrated-as.
   // FIXME: at run-time detect assembler capabilities or rely on version
   // information forwarded by -target-assembler-version.
-  if (Args.hasArg(options::OPT_fno_integrated_as)) {
-    if (!(T.isMacOSX() && T.isMacOSXVersionLT(10, 7)))
-      CmdArgs.push_back("-Q");
-  }
+  if ((Args.hasArg(options::OPT_fno_integrated_as)) && (!(T.isMacOSX() && T.isMacOSXVersionLT(10, 7)))) 
+    CmdArgs.push_back("-Q");
+  
 
   // Forward -g, assuming we are dealing with an actual assembly file.
   if (SourceAction->getType() == types::TY_Asm ||
@@ -404,15 +403,15 @@ void darwin::Linker::AddLinkArgs(Compilation &C, const ArgList &Args,
 
   // If GlobalISel is enabled, pass it through to LLVM.
   if (Arg *A = Args.getLastArg(options::OPT_fglobal_isel,
-                               options::OPT_fno_global_isel)) {
-    if (A->getOption().matches(options::OPT_fglobal_isel)) {
+                               options::OPT_fno_global_isel); A && (A->getOption().matches(options::OPT_fglobal_isel))) 
+    {
       CmdArgs.push_back("-mllvm");
       CmdArgs.push_back("-global-isel");
       // Disable abort and fall back to SDAG silently.
       CmdArgs.push_back("-mllvm");
       CmdArgs.push_back("-global-isel-abort=0");
     }
-  }
+  
 
   if (Args.hasArg(options::OPT_mkernel) ||
       Args.hasArg(options::OPT_fapple_kext) ||
@@ -816,12 +815,12 @@ void darwin::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(Args.MakeArgString(std::string("-F") + A->getValue()));
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
-    if (Arg *A = Args.getLastArg(options::OPT_fveclib)) {
-      if (A->getValue() == StringRef("Accelerate")) {
+    if (Arg *A = Args.getLastArg(options::OPT_fveclib); A && (A->getValue() == StringRef("Accelerate"))) 
+      {
         CmdArgs.push_back("-framework");
         CmdArgs.push_back("Accelerate");
       }
-    }
+    
   }
 
   // Add non-standard, platform-specific search paths, e.g., for DriverKit:
@@ -1771,9 +1770,8 @@ void DarwinClang::AddLinkRuntimeLibArgs(const ArgList &Args,
     }
   }
 
-  if (Sanitize.needsMemProfRt())
-    if (hasExportSymbolDirective(Args))
-      addExportedSymbol(
+  if ((Sanitize.needsMemProfRt()) && (hasExportSymbolDirective(Args)))
+    addExportedSymbol(
           CmdArgs,
           llvm::memprof::getMemprofOptionsSymbolDarwinLinkageName().data());
 
@@ -1985,10 +1983,9 @@ struct DarwinPlatform {
       // we need to use the minimum version as the native target version.
       if (TargetVariantTriple) {
         auto TargetVariantVersion = TargetVariantTriple->getOSVersion();
-        if (TargetVariantVersion.getMajor()) {
-          if (TargetVariantVersion < ZipperedOSVersion)
-            ZipperedOSVersion = std::move(TargetVariantVersion);
-        }
+        if ((TargetVariantVersion.getMajor()) && (TargetVariantVersion < ZipperedOSVersion)) 
+          ZipperedOSVersion = std::move(TargetVariantVersion);
+        
       }
       break;
     }
@@ -3686,12 +3683,11 @@ Darwin::TranslateArgs(const DerivedArgList &Args, StringRef BoundArch,
   }
 
   auto Arch = tools::darwin::getArchTypeForMachOArchName(BoundArch);
-  if ((Arch == llvm::Triple::arm || Arch == llvm::Triple::thumb)) {
-    if (Args.hasFlag(options::OPT_fomit_frame_pointer,
-                     options::OPT_fno_omit_frame_pointer, false))
-      getDriver().Diag(clang::diag::warn_drv_unsupported_opt_for_target)
+  if (((Arch == llvm::Triple::arm || Arch == llvm::Triple::thumb)) && (Args.hasFlag(options::OPT_fomit_frame_pointer,
+                     options::OPT_fno_omit_frame_pointer, false))) 
+    getDriver().Diag(clang::diag::warn_drv_unsupported_opt_for_target)
           << "-fomit-frame-pointer" << BoundArch;
-  }
+  
 
   return DAL;
 }

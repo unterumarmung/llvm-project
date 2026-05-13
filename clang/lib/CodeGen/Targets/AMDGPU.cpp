@@ -196,10 +196,10 @@ RValue AMDGPUABIInfo::EmitVAArg(CodeGenFunction &CGF, Address VAListAddr,
 }
 
 ABIArgInfo AMDGPUABIInfo::classifyReturnType(QualType RetTy) const {
-  if (isAggregateTypeForABI(RetTy)) {
+  if ((isAggregateTypeForABI(RetTy)) && (!getRecordArgABI(RetTy, getCXXABI()))) 
     // Records with non-trivial destructors/copy-constructors should not be
     // returned by value.
-    if (!getRecordArgABI(RetTy, getCXXABI())) {
+    {
       // Ignore empty structs/unions.
       if (isEmptyRecord(getContext(), RetTy, true))
         return ABIArgInfo::getIgnore();
@@ -238,7 +238,7 @@ ABIArgInfo AMDGPUABIInfo::classifyReturnType(QualType RetTy) const {
       if (numRegsForType(RetTy) <= MaxNumRegsForArgsRet)
         return ABIArgInfo::getDirect();
     }
-  }
+  
 
   // Otherwise just do the default thing.
   return DefaultABIInfo::classifyReturnType(RetTy);

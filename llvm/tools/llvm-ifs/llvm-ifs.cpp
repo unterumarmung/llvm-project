@@ -474,8 +474,8 @@ int llvm_ifs_main(int argc, char **argv, const llvm::ToolContext &) {
     PreviousInputFilePath = InputFilePath;
   }
 
-  if (Stub.IfsVersion != IfsVersionCurrent)
-    if (Stub.IfsVersion.getMajor() != IfsVersionCurrent.getMajor()) {
+  if ((Stub.IfsVersion != IfsVersionCurrent) && (Stub.IfsVersion.getMajor() != IfsVersionCurrent.getMajor()))
+    {
       WithColor::error() << "Interface Stub: Bad IfsVersion: "
                          << Stub.IfsVersion << ", llvm-ifs supported version: "
                          << IfsVersionCurrent << ".\n";

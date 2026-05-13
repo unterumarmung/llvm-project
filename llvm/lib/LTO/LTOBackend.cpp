@@ -605,12 +605,11 @@ Error lto::backend(const Config &C, AddStreamFn AddStream,
   std::unique_ptr<TargetMachine> TM = createTargetMachine(C, *TOrErr, Mod);
 
   LLVM_DEBUG(dbgs() << "Running regular LTO\n");
-  if (!C.CodeGenOnly) {
-    if (!opt(C, TM.get(), 0, Mod, /*IsThinLTO=*/false,
+  if ((!C.CodeGenOnly) && (!opt(C, TM.get(), 0, Mod, /*IsThinLTO=*/false,
              /*ExportSummary=*/&CombinedIndex, /*ImportSummary=*/nullptr,
-             /*CmdArgs*/ std::vector<uint8_t>(), BitcodeLibFuncs))
-      return Error::success();
-  }
+             /*CmdArgs*/ std::vector<uint8_t>(), BitcodeLibFuncs))) 
+    return Error::success();
+  
 
   if (ParallelCodeGenParallelismLevel == 1) {
     codegen(C, TM.get(), AddStream, 0, Mod, CombinedIndex);
@@ -626,8 +625,8 @@ static void dropDeadSymbols(Module &Mod, const GVSummaryMapTy &DefinedGlobals,
   llvm::TimeTraceScope timeScope("Drop dead symbols");
   std::vector<GlobalValue*> DeadGVs;
   for (auto &GV : Mod.global_values())
-    if (GlobalValueSummary *GVS = DefinedGlobals.lookup(GV.getGUID()))
-      if (!Index.isGlobalValueLive(GVS)) {
+    if (GlobalValueSummary *GVS = DefinedGlobals.lookup(GV.getGUID()); GVS && (!Index.isGlobalValueLive(GVS)))
+      {
         DeadGVs.push_back(&GV);
         convertToDeclaration(GV);
       }

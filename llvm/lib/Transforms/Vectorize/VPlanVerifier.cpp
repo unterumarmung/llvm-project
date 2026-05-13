@@ -104,15 +104,15 @@ bool VPlanVerifier::verifyPhiRecipes(const VPBasicBlock *VPBB) {
 
     // Check if the recipe operands match the number of predecessors.
     // TODO Extend to other phi-like recipes.
-    if (auto *PhiIRI = dyn_cast<VPIRPhi>(&*RecipeI)) {
-      if (PhiIRI->getNumOperands() != VPBB->getNumPredecessors()) {
+    if (auto *PhiIRI = dyn_cast<VPIRPhi>(&*RecipeI); PhiIRI && (PhiIRI->getNumOperands() != VPBB->getNumPredecessors())) 
+      {
         errs() << "Phi-like recipe with different number of operands and "
                   "predecessors.\n";
         // TODO: Print broken recipe. At the moment printing an ill-formed
         // phi-like recipe may crash.
         return false;
       }
-    }
+    
 
     RecipeI++;
   }

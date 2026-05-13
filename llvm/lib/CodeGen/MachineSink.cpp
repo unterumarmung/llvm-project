@@ -712,9 +712,8 @@ static bool mayLoadFromGOTOrConstantPool(MachineInstr &MI) {
     return true;
 
   for (MachineMemOperand *MemOp : MI.memoperands())
-    if (const PseudoSourceValue *PSV = MemOp->getPseudoValue())
-      if (PSV->isGOT() || PSV->isConstantPool())
-        return true;
+    if (const PseudoSourceValue *PSV = MemOp->getPseudoValue(); PSV && (PSV->isGOT() || PSV->isConstantPool()))
+      return true;
 
   return false;
 }
@@ -1178,19 +1177,19 @@ bool MachineSinking::PostponeSplitCriticalEdge(MachineInstr &MI,
                                                bool BreakPHIEdge) {
   bool Status = false;
   MachineBasicBlock *DeferredFromBB = nullptr;
-  if (isWorthBreakingCriticalEdge(MI, FromBB, ToBB, DeferredFromBB)) {
-    // If there is a DeferredFromBB, we consider FromBB only if _both_
-    // of them are legal to split.
-    if ((!DeferredFromBB ||
+  if ((isWorthBreakingCriticalEdge(MI, FromBB, ToBB, DeferredFromBB)) && ((!DeferredFromBB ||
          ToSplit.count(std::make_pair(DeferredFromBB, ToBB)) ||
          isLegalToBreakCriticalEdge(MI, DeferredFromBB, ToBB, BreakPHIEdge)) &&
-        isLegalToBreakCriticalEdge(MI, FromBB, ToBB, BreakPHIEdge)) {
+        isLegalToBreakCriticalEdge(MI, FromBB, ToBB, BreakPHIEdge))) 
+    // If there is a DeferredFromBB, we consider FromBB only if _both_
+    // of them are legal to split.
+    {
       ToSplit.insert(std::make_pair(FromBB, ToBB));
       if (DeferredFromBB)
         ToSplit.insert(std::make_pair(DeferredFromBB, ToBB));
       Status = true;
     }
-  }
+  
 
   return Status;
 }
@@ -1642,12 +1641,12 @@ static void performSink(MachineInstr &MI, MachineBasicBlock &SuccToSinkTo,
 
     bool PropagatedAllSunkOps = true;
     for (Register Reg : DbgValueToSink.second) {
-      if (DbgMI->hasDebugOperandForReg(Reg)) {
-        if (!attemptDebugCopyProp(MI, *DbgMI, Reg)) {
+      if ((DbgMI->hasDebugOperandForReg(Reg)) && (!attemptDebugCopyProp(MI, *DbgMI, Reg))) 
+        {
           PropagatedAllSunkOps = false;
           break;
         }
-      }
+      
     }
     if (!PropagatedAllSunkOps)
       DbgMI->setDebugValueUndef();

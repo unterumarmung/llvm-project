@@ -355,8 +355,8 @@ LogicalResult ModuleImport::processTBAAMetadata(const llvm::MDNode *node) {
     // front of the worklist.
     bool anyChildNotConverted = false;
     for (const llvm::MDOperand &operand : current->operands())
-      if (auto *childNode = dyn_cast_or_null<const llvm::MDNode>(operand.get()))
-        if (!tbaaMapping.contains(childNode)) {
+      if (auto *childNode = dyn_cast_or_null<const llvm::MDNode>(operand.get()); childNode && (!tbaaMapping.contains(childNode)))
+        {
           workList.push_back(childNode);
           anyChildNotConverted = true;
         }
@@ -932,9 +932,8 @@ LogicalResult ModuleImport::convertIdentMetadata() {
       continue;
 
     if (named.getNumOperands() == 1)
-      if (auto *md = dyn_cast<llvm::MDNode>(named.getOperand(0)))
-        if (md->getNumOperands() == 1)
-          if (auto *mdStr = dyn_cast<llvm::MDString>(md->getOperand(0)))
+      if (auto *md = dyn_cast<llvm::MDNode>(named.getOperand(0)); md && (md->getNumOperands() == 1))
+        if (auto *mdStr = dyn_cast<llvm::MDString>(md->getOperand(0)))
             mlirModule->setAttr(LLVMDialect::getIdentAttrName(),
                                 builder.getStringAttr(mdStr->getString()));
   }
@@ -949,9 +948,8 @@ LogicalResult ModuleImport::convertCommandlineMetadata() {
       continue;
 
     if (nmd.getNumOperands() == 1)
-      if (auto *md = dyn_cast<llvm::MDNode>(nmd.getOperand(0)))
-        if (md->getNumOperands() == 1)
-          if (auto *mdStr = dyn_cast<llvm::MDString>(md->getOperand(0)))
+      if (auto *md = dyn_cast<llvm::MDNode>(nmd.getOperand(0)); md && (md->getNumOperands() == 1))
+        if (auto *mdStr = dyn_cast<llvm::MDString>(md->getOperand(0)))
             mlirModule->setAttr(LLVMDialect::getCommandlineAttrName(),
                                 builder.getStringAttr(mdStr->getString()));
   }
@@ -965,23 +963,19 @@ LogicalResult ModuleImport::convertMetadata() {
     for (const llvm::Instruction &inst : llvm::instructions(func)) {
       // Convert access group metadata nodes.
       if (llvm::MDNode *node =
-              inst.getMetadata(llvm::LLVMContext::MD_access_group))
-        if (failed(processAccessGroupMetadata(node)))
-          return failure();
+              inst.getMetadata(llvm::LLVMContext::MD_access_group); node && (failed(processAccessGroupMetadata(node))))
+        return failure();
 
       // Convert alias analysis metadata nodes.
       llvm::AAMDNodes aliasAnalysisNodes = inst.getAAMetadata();
       if (!aliasAnalysisNodes)
         continue;
-      if (aliasAnalysisNodes.TBAA)
-        if (failed(processTBAAMetadata(aliasAnalysisNodes.TBAA)))
-          return failure();
-      if (aliasAnalysisNodes.Scope)
-        if (failed(processAliasScopeMetadata(aliasAnalysisNodes.Scope)))
-          return failure();
-      if (aliasAnalysisNodes.NoAlias)
-        if (failed(processAliasScopeMetadata(aliasAnalysisNodes.NoAlias)))
-          return failure();
+      if ((aliasAnalysisNodes.TBAA) && (failed(processTBAAMetadata(aliasAnalysisNodes.TBAA))))
+        return failure();
+      if ((aliasAnalysisNodes.Scope) && (failed(processAliasScopeMetadata(aliasAnalysisNodes.Scope))))
+        return failure();
+      if ((aliasAnalysisNodes.NoAlias) && (failed(processAliasScopeMetadata(aliasAnalysisNodes.NoAlias))))
+        return failure();
     }
   }
   if (failed(convertLinkerOptionsMetadata()))
@@ -1109,14 +1103,14 @@ void ModuleImport::setNonDebugMetadataAttrs(llvm::Instruction *inst,
   for (auto &[kind, node] : allMetadata) {
     if (!iface.isConvertibleMetadata(kind))
       continue;
-    if (failed(iface.setMetadataAttrs(builder, kind, node, op, *this))) {
-      if (emitExpensiveWarnings) {
+    if ((failed(iface.setMetadataAttrs(builder, kind, node, op, *this))) && (emitExpensiveWarnings)) 
+      {
         Location loc = debugImporter->translateLoc(inst->getDebugLoc());
         emitWarning(loc) << "unhandled metadata: "
                          << diagMD(node, llvmModule.get()) << " on "
                          << diag(*inst);
       }
-    }
+    
   }
 }
 
@@ -1593,10 +1587,9 @@ ModuleImport::convertGlobalCtorsAndDtors(llvm::GlobalVariable *globalVar) {
   // ConstantAggregateZero does not engage with the operand initialization
   // in the loop that follows - there should be no operands. This implies
   // empty ctor/dtor lists.
-  if (auto *caz = dyn_cast<llvm::ConstantAggregateZero>(initializer)) {
-    if (caz->getElementCount().getFixedValue() != 0)
-      return failure();
-  }
+  if (auto *caz = dyn_cast<llvm::ConstantAggregateZero>(initializer); caz && (caz->getElementCount().getFixedValue() != 0)) 
+    return failure();
+  
 
   SmallVector<Attribute> funcs;
   SmallVector<int32_t> priorities;
@@ -2641,13 +2634,13 @@ FlatSymbolRefAttr ModuleImport::getPersonalityAsAttr(llvm::Function *f) {
 
   // If it doesn't have a name, currently, only function pointers that are
   // bitcast to i8* are parsed.
-  if (auto *ce = dyn_cast<llvm::ConstantExpr>(pf)) {
-    if (ce->getOpcode() == llvm::Instruction::BitCast &&
-        ce->getType() == llvm::PointerType::getUnqual(f->getContext())) {
+  if (auto *ce = dyn_cast<llvm::ConstantExpr>(pf); ce && (ce->getOpcode() == llvm::Instruction::BitCast &&
+        ce->getType() == llvm::PointerType::getUnqual(f->getContext()))) 
+    {
       if (auto *func = dyn_cast<llvm::Function>(ce->getOperand(0)))
         return SymbolRefAttr::get(builder.getContext(), func->getName());
     }
-  }
+  
   return FlatSymbolRefAttr();
 }
 
@@ -3465,12 +3458,12 @@ LogicalResult ModuleImport::processBasicBlock(llvm::BasicBlock *bb,
     // during the import.
     if (Operation *op = lookupOperation(&inst)) {
       setNonDebugMetadataAttrs(&inst, op);
-    } else if (inst.getOpcode() != llvm::Instruction::PHI) {
-      if (emitExpensiveWarnings) {
+    } else if ((inst.getOpcode() != llvm::Instruction::PHI) && (emitExpensiveWarnings)) 
+      {
         Location loc = debugImporter->translateLoc(inst.getDebugLoc());
         emitWarning(loc) << "dropped instruction: " << diag(inst);
       }
-    }
+    
   }
 
   if (bb->hasAddressTaken()) {

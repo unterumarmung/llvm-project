@@ -78,16 +78,15 @@ static void orderValue(const Value *V, OrderMap &OM) {
   if (OM.lookup(V).first)
     return;
 
-  if (const Constant *C = dyn_cast<Constant>(V)) {
-    if (C->getNumOperands()) {
+  if (const Constant *C = dyn_cast<Constant>(V); C && (C->getNumOperands())) 
+    {
       for (const Value *Op : C->operands())
         if (!isa<BasicBlock>(Op) && !isa<GlobalValue>(Op))
           orderValue(Op, OM);
-      if (auto *CE = dyn_cast<ConstantExpr>(C))
-        if (CE->getOpcode() == Instruction::ShuffleVector)
-          orderValue(CE->getShuffleMaskForBitcode(), OM);
+      if (auto *CE = dyn_cast<ConstantExpr>(C); CE && (CE->getOpcode() == Instruction::ShuffleVector))
+        orderValue(CE->getShuffleMaskForBitcode(), OM);
     }
-  }
+  
 
   // Note: we cannot cache this lookup above, since inserting into the map
   // changes the map's size, and thus affects the other IDs.
@@ -249,17 +248,16 @@ static void predictValueUseListOrder(const Value *V, const Function *F,
     predictValueUseListOrderImpl(V, F, IDPair.first, OM, Stack);
 
   // Recursive descent into constants.
-  if (const Constant *C = dyn_cast<Constant>(V)) {
-    if (C->getNumOperands()) { // Visit GlobalValues.
+  if (const Constant *C = dyn_cast<Constant>(V); C && (C->getNumOperands())) 
+    { // Visit GlobalValues.
       for (const Value *Op : C->operands())
         if (isa<Constant>(Op)) // Visit GlobalValues.
           predictValueUseListOrder(Op, F, OM, Stack);
-      if (auto *CE = dyn_cast<ConstantExpr>(C))
-        if (CE->getOpcode() == Instruction::ShuffleVector)
-          predictValueUseListOrder(CE->getShuffleMaskForBitcode(), F, OM,
+      if (auto *CE = dyn_cast<ConstantExpr>(C); CE && (CE->getOpcode() == Instruction::ShuffleVector))
+        predictValueUseListOrder(CE->getShuffleMaskForBitcode(), F, OM,
                                    Stack);
     }
-  }
+  
 }
 
 static UseListOrderStack predictUseListOrder(const Module &M) {
@@ -977,9 +975,8 @@ void ValueEnumerator::EnumerateType(Type *Ty) {
   // If it is a non-anonymous struct, mark the type as being visited so that we
   // don't recursively visit it.  This is safe because we allow forward
   // references of these in the bitcode reader.
-  if (StructType *STy = dyn_cast<StructType>(Ty))
-    if (!STy->isLiteral())
-      *TypeID = ~0U;
+  if (StructType *STy = dyn_cast<StructType>(Ty); STy && (!STy->isLiteral()))
+    *TypeID = ~0U;
 
   // Enumerate all of the subtypes before we enumerate this type.  This ensures
   // that the type will be enumerated in an order that can be directly built.

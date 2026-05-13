@@ -768,11 +768,10 @@ InstrBuilder::createInstruction(const MCInst &MCI,
         // implicit input operands. If this register operand doesn't have a
         // corresponding bit in Mask, then conservatively assume that it is
         // dependent.
-        if (Mask.getBitWidth() > RD.UseIndex) {
+        if ((Mask.getBitWidth() > RD.UseIndex) && (Mask[RD.UseIndex])) 
           // Okay. This map describe register use `RD.UseIndex`.
-          if (Mask[RD.UseIndex])
-            RS->setIndependentFromDef();
-        }
+          RS->setIndependentFromDef();
+        
       }
     }
   }

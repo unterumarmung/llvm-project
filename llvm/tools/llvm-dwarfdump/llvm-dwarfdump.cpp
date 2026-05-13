@@ -422,9 +422,8 @@ static bool filterArch(ObjectFile &Obj) {
     for (const StringRef Arch : ArchFilters) {
       // Match architecture number.
       unsigned Value;
-      if (!Arch.getAsInteger(0, Value))
-        if (Value == getCPUType(*MachO))
-          return true;
+      if ((!Arch.getAsInteger(0, Value)) && (Value == getCPUType(*MachO)))
+        return true;
 
       // Match as name.
       if (MachO->getArchTriple().getArchName() == Triple(Arch).getArchName())
@@ -475,9 +474,8 @@ static void filterByName(
   auto filterDieNames = [&](DWARFUnit *Unit) {
     for (const auto &Entry : Unit->dies()) {
       DWARFDie Die = {Unit, &Entry};
-      if (const char *Name = Die.getName(DINameKind::ShortName))
-        if (filterByName(Names, Die, Name, OS, GetNameForDWARFReg))
-          continue;
+      if (const char *Name = Die.getName(DINameKind::ShortName); Name && (filterByName(Names, Die, Name, OS, GetNameForDWARFReg)))
+        continue;
       if (const char *Name = Die.getName(DINameKind::LinkageName))
         filterByName(Names, Die, Name, OS, GetNameForDWARFReg);
     }

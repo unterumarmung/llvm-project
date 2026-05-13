@@ -76,11 +76,10 @@ const NamedDecl *matchNamedDeclByFindEntityByName(const FindEntityByName &N,
             return nullptr;
           },
           [&D](const CXXCtorOfNumParms &L) -> const NamedDecl * {
-            if (auto *CD = dyn_cast<CXXConstructorDecl>(D)) {
-              if (CD->getNameAsString() == L.CXXCtorName &&
-                  CD->getNumParams() == L.NumParms)
-                return D;
-            }
+            if (auto *CD = dyn_cast<CXXConstructorDecl>(D); CD && (CD->getNameAsString() == L.CXXCtorName &&
+                  CD->getNumParams() == L.NumParms)) 
+              return D;
+            
             return nullptr;
           },
           [&D](const LambdaOfVar &L) -> const NamedDecl * {

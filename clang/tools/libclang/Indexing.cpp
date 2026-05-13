@@ -930,10 +930,9 @@ int clang_indexSourceFileFullArgv(
     fprintf(stderr, "}\n");
     
     return 1;
-  } else if (getenv("LIBCLANG_RESOURCE_USAGE")) {
-    if (out_TU)
-      PrintLibclangResourceUsage(*out_TU);
-  }
+  } else if ((getenv("LIBCLANG_RESOURCE_USAGE")) && (out_TU)) 
+    PrintLibclangResourceUsage(*out_TU);
+  
 
   return result;
 }

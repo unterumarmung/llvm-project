@@ -928,9 +928,8 @@ ParseResult MmaOp::parse(OpAsmParser &parser, OperationState &result) {
     return failure();
   if (failed(parser.parseTypeList(operandTypes)))
     return failure();
-  if (failed(parser.parseRParen()))
-    if (operandTypes.size() != 3)
-      return parser.emitError(
+  if ((failed(parser.parseRParen())) && (operandTypes.size() != 3))
+    return parser.emitError(
           parser.getNameLoc(),
           "expected one type for each operand segment but got " +
               Twine(operandTypes.size()) + " types");
@@ -1173,9 +1172,9 @@ LogicalResult MmaOp::verify() {
       (mmaShape[0] == 8 && mmaShape[1] == 8 && mmaShape[2] == 4 &&
        getMultiplicandAPtxType() == MMATypes::f16);
 
-  if (!isM8N8K4_F16) {
+  if ((!isM8N8K4_F16) && (getLayoutA() != MMALayout::row || getLayoutB() != MMALayout::col)) 
     // For all other shapes/types, layoutA must be row and layoutB must be col
-    if (getLayoutA() != MMALayout::row || getLayoutB() != MMALayout::col) {
+    {
       return emitOpError("requires layoutA = #nvvm.mma_layout<row> and "
                          "layoutB = #nvvm.mma_layout<col> for shape <")
              << mmaShape[0] << ", " << mmaShape[1] << ", " << mmaShape[2]
@@ -1183,7 +1182,7 @@ LogicalResult MmaOp::verify() {
              << *getMultiplicandBPtxType()
              << ". Only m8n8k4 with f16 supports other layouts.";
     }
-  }
+  
 
   return success();
 }
@@ -6092,12 +6091,12 @@ LogicalResult NVVMDialect::verifyOperationAttribute(Operation *op,
                                                     NamedAttribute attr) {
   StringAttr attrName = attr.getName();
   // Kernel function attribute should be attached to functions.
-  if (attrName == NVVMDialect::getKernelFuncAttrName()) {
-    if (!isa<LLVM::LLVMFuncOp>(op)) {
+  if ((attrName == NVVMDialect::getKernelFuncAttrName()) && (!isa<LLVM::LLVMFuncOp>(op))) 
+    {
       return op->emitError() << "'" << NVVMDialect::getKernelFuncAttrName()
                              << "' attribute attached to unexpected op";
     }
-  }
+  
   // If maxntid / reqntid / cluster_dim exist, it must be an array with max 3
   // dim
   if (attrName == NVVMDialect::getMaxntidAttrName() ||
@@ -6112,24 +6111,24 @@ LogicalResult NVVMDialect::verifyOperationAttribute(Operation *op,
   }
   // If minctasm / maxnreg / cluster_max_blocks exist, it must be an integer
   // attribute
-  if (attrName == NVVMDialect::getMinctasmAttrName() ||
+  if ((attrName == NVVMDialect::getMinctasmAttrName() ||
       attrName == NVVMDialect::getMaxnregAttrName() ||
-      attrName == NVVMDialect::getClusterMaxBlocksAttrName()) {
-    if (!llvm::dyn_cast<IntegerAttr>(attr.getValue())) {
+      attrName == NVVMDialect::getClusterMaxBlocksAttrName()) && (!llvm::dyn_cast<IntegerAttr>(attr.getValue()))) 
+    {
       return op->emitError()
              << "'" << attrName << "' attribute must be integer constant";
     }
-  }
+  
   // blocksareclusters must be used along with reqntid and cluster_dim
-  if (attrName == NVVMDialect::getBlocksAreClustersAttrName()) {
-    if (!op->hasAttr(NVVMDialect::getReqntidAttrName()) ||
-        !op->hasAttr(NVVMDialect::getClusterDimAttrName())) {
+  if ((attrName == NVVMDialect::getBlocksAreClustersAttrName()) && (!op->hasAttr(NVVMDialect::getReqntidAttrName()) ||
+        !op->hasAttr(NVVMDialect::getClusterDimAttrName()))) 
+    {
       return op->emitError()
              << "'" << attrName << "' attribute must be used along with "
              << "'" << NVVMDialect::getReqntidAttrName() << "' and "
              << "'" << NVVMDialect::getClusterDimAttrName() << "'";
     }
-  }
+  
 
   return success();
 }

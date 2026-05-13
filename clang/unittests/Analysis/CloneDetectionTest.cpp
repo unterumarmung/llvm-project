@@ -40,10 +40,9 @@ public:
           // with "bar".
           for (const StmtSequence &Arg : {A, B}) {
             if (const auto *D =
-                    dyn_cast<const FunctionDecl>(Arg.getContainingDecl())) {
-              if (D->getName().starts_with("bar"))
-                return false;
-            }
+                    dyn_cast<const FunctionDecl>(Arg.getContainingDecl()); D && (D->getName().starts_with("bar"))) 
+              return false;
+            
           }
           return true;
         });

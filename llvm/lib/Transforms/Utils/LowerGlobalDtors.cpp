@@ -145,12 +145,12 @@ static bool runImpl(Module &M) {
   // actually used (i.e. it's dummy/stub function as used in emscripten when
   // the program never exits) we can simply return early and clear out
   // @llvm.global_dtors.
-  if (auto F = dyn_cast<Function>(AtExit.getCallee())) {
-    if (F && F->hasExactDefinition() && F->getArg(0)->use_empty()) {
+  if (auto F = dyn_cast<Function>(AtExit.getCallee()); F && (F && F->hasExactDefinition() && F->getArg(0)->use_empty())) 
+    {
       GV->eraseFromParent();
       return true;
     }
-  }
+  
 
   // Declare __dso_local.
   Type *DsoHandleTy = Type::getInt8Ty(C);

@@ -267,10 +267,9 @@ bool IRSimilarity::isClose(const IRInstructionData &A,
   // If the instructions are functions calls, we make sure that the function
   // name is the same.  We already know that the types are since is
   // isSameOperationAs is true.
-  if (isa<CallInst>(A.Inst) && isa<CallInst>(B.Inst)) {
-    if (A.getCalleeName() != B.getCalleeName())
-      return false;
-  }
+  if ((isa<CallInst>(A.Inst) && isa<CallInst>(B.Inst)) && (A.getCalleeName() != B.getCalleeName())) 
+    return false;
+  
 
   if (isa<UncondBrInst, CondBrInst>(A.Inst) &&
       isa<UncondBrInst, CondBrInst>(B.Inst) &&

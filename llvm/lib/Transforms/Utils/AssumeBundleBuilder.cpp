@@ -159,8 +159,8 @@ struct AssumeBuilderState {
         return false;
       return true;
     }
-    if (auto *Inst = dyn_cast<Instruction>(RK.WasOn))
-      if (wouldInstructionBeTriviallyDead(Inst)) {
+    if (auto *Inst = dyn_cast<Instruction>(RK.WasOn); Inst && (wouldInstructionBeTriviallyDead(Inst)))
+      {
         if (RK.WasOn->use_empty())
           return false;
         Use *SingleUse = RK.WasOn->getSingleUndroppableUse();
@@ -419,10 +419,10 @@ struct AssumeSimplify {
             getKnowledgeFromBundle(cast<AssumeInst>(*Assume), BOI);
           if (auto *Arg = dyn_cast_or_null<Argument>(RK.WasOn)) {
             bool HasSameKindAttr = Arg->hasAttribute(RK.AttrKind);
-            if (HasSameKindAttr)
-              if (!Attribute::isIntAttrKind(RK.AttrKind) ||
+            if ((HasSameKindAttr) && (!Attribute::isIntAttrKind(RK.AttrKind) ||
                   Arg->getAttribute(RK.AttrKind).getValueAsInt() >=
-                      RK.ArgValue) {
+                      RK.ArgValue))
+              {
                 RemoveFromAssume();
                 continue;
               }
@@ -480,10 +480,9 @@ struct AssumeSimplify {
         if (!RK)
           continue;
         Builder.addKnowledge(RK);
-        if (auto *I = dyn_cast_or_null<Instruction>(RK.WasOn))
-          if (I->getParent() == InsertPt->getParent() &&
-              (InsertPt->comesBefore(I) || &*InsertPt == I))
-            InsertPt = I->getNextNode()->getIterator();
+        if (auto *I = dyn_cast_or_null<Instruction>(RK.WasOn); I && (I->getParent() == InsertPt->getParent() &&
+              (InsertPt->comesBefore(I) || &*InsertPt == I)))
+          InsertPt = I->getNextNode()->getIterator();
       }
     }
 

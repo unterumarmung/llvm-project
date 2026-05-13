@@ -404,10 +404,8 @@ static ElementCount getSmallConstantTripCount(ScalarEvolution *SE,
     return ElementCount::getScalable(1);
 
   const APInt *Scale;
-  if (match(ExitCount, m_scev_Mul(m_scev_APInt(Scale), m_SCEVVScale())))
-    if (cast<SCEVMulExpr>(ExitCount)->hasNoUnsignedWrap())
-      if (Scale->getActiveBits() <= 32)
-        return ElementCount::getScalable(Scale->getZExtValue());
+  if ((match(ExitCount, m_scev_Mul(m_scev_APInt(Scale), m_SCEVVScale()))) && (cast<SCEVMulExpr>(ExitCount)->hasNoUnsignedWrap()) && (Scale->getActiveBits() <= 32))
+    return ElementCount::getScalable(Scale->getZExtValue());
 
   return ElementCount::getFixed(0);
 }
@@ -692,9 +690,8 @@ static DebugLoc getDebugLocFromInstOrOperands(Instruction *I) {
     return I->getDebugLoc();
 
   for (Use &Op : I->operands()) {
-    if (Instruction *OpInst = dyn_cast<Instruction>(Op))
-      if (OpInst->getDebugLoc() != Empty)
-        return OpInst->getDebugLoc();
+    if (Instruction *OpInst = dyn_cast<Instruction>(Op); OpInst && (OpInst->getDebugLoc() != Empty))
+      return OpInst->getDebugLoc();
   }
 
   return I->getDebugLoc();
@@ -2198,9 +2195,8 @@ void LoopVectorizationCostModel::collectLoopScalars(ElementCount VF) {
     InstWidening WideningDecision = getWideningDecision(MemAccess, VF);
     assert(WideningDecision != CM_Unknown &&
            "Widening decision should be ready at this moment");
-    if (auto *Store = dyn_cast<StoreInst>(MemAccess))
-      if (Ptr == Store->getValueOperand())
-        return WideningDecision == CM_Scalarize;
+    if (auto *Store = dyn_cast<StoreInst>(MemAccess); Store && (Ptr == Store->getValueOperand()))
+      return WideningDecision == CM_Scalarize;
     assert(Ptr == getLoadStorePointerOperand(MemAccess) &&
            "Ptr is neither a value or pointer operand");
     return WideningDecision != CM_GatherScatter;
@@ -3009,18 +3005,18 @@ LoopVectorizationCostModel::computeMaxVF(ElementCount UserVF, unsigned UserIC) {
   if (ExpectedTC && ExpectedTC->isFixed() &&
       ExpectedTC->getFixedValue() <=
           TTI.getMinTripCountTailFoldingThreshold()) {
-    if (MaxPowerOf2RuntimeVF > 0u) {
+    if ((MaxPowerOf2RuntimeVF > 0u) && (EpilogueLoweringStatus == CM_EpilogueNotAllowedLowTripLoop &&
+          NoScalarEpilogueNeeded(MaxFactors.FixedVF.getFixedValue()))) 
       // If we have a low-trip-count, and the fixed-width VF is known to divide
       // the trip count but the scalable factor does not, use the fixed-width
       // factor in preference to allow the generation of a non-predicated loop.
-      if (EpilogueLoweringStatus == CM_EpilogueNotAllowedLowTripLoop &&
-          NoScalarEpilogueNeeded(MaxFactors.FixedVF.getFixedValue())) {
+      {
         LLVM_DEBUG(dbgs() << "LV: Picking a fixed-width so that no tail will "
                              "remain for any chosen VF.\n");
         MaxFactors.ScalableVF = ElementCount::getScalable(0);
         return MaxFactors;
       }
-    }
+    
 
     reportVectorizationFailure(
         "The trip count is below the minial threshold value.",
@@ -3091,10 +3087,9 @@ bool LoopVectorizationPlanner::isMoreProfitable(const VectorizationFactor &A,
   InstructionCost CostB = B.Cost;
 
   // When there is a hint to always prefer scalable vectors, honour that hint.
-  if (Hints.isScalableVectorizationAlwaysPreferred())
-    if (A.Width.isScalable() && CostA.isValid() && !B.Width.isScalable() &&
-        !B.Width.isScalar())
-      return true;
+  if ((Hints.isScalableVectorizationAlwaysPreferred()) && (A.Width.isScalable() && CostA.isValid() && !B.Width.isScalable() &&
+        !B.Width.isScalar()))
+    return true;
 
   // Improve estimate for the vector width if it is scalable.
   unsigned EstimatedWidthA = A.Width.getKnownMinValue();
@@ -4114,9 +4109,8 @@ InstructionCost LoopVectorizationCostModel::computePredInstDiscount(
     // for. This behavior can be changed by allowing getScalarValue to clone
     // the lane zero values for uniforms rather than asserting.
     for (Use &U : I->operands())
-      if (auto *J = dyn_cast<Instruction>(U.get()))
-        if (isUniformAfterVectorization(J, VF))
-          return false;
+      if (auto *J = dyn_cast<Instruction>(U.get()); J && (isUniformAfterVectorization(J, VF)))
+        return false;
 
     // Otherwise, we can scalarize the instruction.
     return true;
@@ -4858,10 +4852,9 @@ void LoopVectorizationCostModel::setCostBasedWideningDecision(ElementCount VF) {
   while (!Worklist.empty()) {
     Instruction *I = Worklist.pop_back_val();
     for (auto &Op : I->operands())
-      if (auto *InstOp = dyn_cast<Instruction>(Op))
-        if (TheLoop->contains(InstOp) && !isa<PHINode>(InstOp) &&
-            AddrDefs.insert(InstOp).second)
-          Worklist.push_back(InstOp);
+      if (auto *InstOp = dyn_cast<Instruction>(Op); InstOp && (TheLoop->contains(InstOp) && !isa<PHINode>(InstOp) &&
+            AddrDefs.insert(InstOp).second))
+        Worklist.push_back(InstOp);
   }
 
   auto UpdateMemOpUserCost = [this, VF](LoadInst *LI) {
@@ -5505,14 +5498,13 @@ LoopVectorizationCostModel::getInstructionCost(Instruction *I,
     Type *SrcVecTy =
         VectorTy->isVectorTy() ? toVectorTy(SrcScalarTy, VF) : SrcScalarTy;
 
-    if (canTruncateToMinimalBitwidth(I, VF)) {
+    if ((canTruncateToMinimalBitwidth(I, VF)) && (VectorTy->getScalarSizeInBits() <= SrcVecTy->getScalarSizeInBits() &&
+          (I->getOpcode() == Instruction::ZExt ||
+           I->getOpcode() == Instruction::SExt))) 
       // If the result type is <= the source type, there will be no extend
       // after truncating the users to the minimal required bitwidth.
-      if (VectorTy->getScalarSizeInBits() <= SrcVecTy->getScalarSizeInBits() &&
-          (I->getOpcode() == Instruction::ZExt ||
-           I->getOpcode() == Instruction::SExt))
-        return 0;
-    }
+      return 0;
+    
 
     return TTI.getCastInstrCost(Opcode, VectorTy, SrcVecTy, CCH,
                                 Config.CostKind, I);
@@ -5731,16 +5723,16 @@ void LoopVectorizationPlanner::plan(ElementCount UserVF, unsigned UserIC) {
         buildVPlans(EpilogueUserVF, EpilogueUserVF);
       }
       buildVPlans(UserVF, UserVF);
-      if (!VPlans.empty() && VPlans.back()->getSingleVF() == UserVF) {
+      if ((!VPlans.empty() && VPlans.back()->getSingleVF() == UserVF) && (UserVF.isScalar() ||
+            cost(*VPlans.back(), UserVF, /*RU=*/nullptr).isValid())) 
         // For scalar VF, skip VPlan cost check as VPlan cost is designed for
         // vector VFs only.
-        if (UserVF.isScalar() ||
-            cost(*VPlans.back(), UserVF, /*RU=*/nullptr).isValid()) {
+        {
           LLVM_DEBUG(dbgs() << "LV: Using user VF " << UserVF << ".\n");
           LLVM_DEBUG(printPlans(dbgs()));
           return;
         }
-      }
+      
       VPlans.clear();
       reportVectorizationInfo("UserVF ignored because of invalid costs.",
                               "InvalidCost", ORE, OrigLoop);
@@ -7110,16 +7102,16 @@ void LoopVectorizationPlanner::addReductionResultComputation(
     Type *PhiTy = TypeInfo.inferScalarType(PhiR);
 
     // Convert a VPBlendRecipe backedge to a select.
-    if (auto *Blend = dyn_cast<VPBlendRecipe>(PhiR->getBackedgeValue())) {
-      if (Blend->getNumIncomingValues() == 2 &&
-          Blend->getMask(0) == HeaderMask) {
+    if (auto *Blend = dyn_cast<VPBlendRecipe>(PhiR->getBackedgeValue()); Blend && (Blend->getNumIncomingValues() == 2 &&
+          Blend->getMask(0) == HeaderMask)) 
+      {
         auto *Sel = VPBuilder(Blend).createSelect(
             Blend->getMask(0), Blend->getIncomingValue(0),
             Blend->getIncomingValue(1), {}, "", *Blend);
         Blend->replaceAllUsesWith(Sel);
         Blend->eraseFromParent();
       }
-    }
+    
 
     auto *OrigExitingVPV = PhiR->getBackedgeValue();
     auto *NewExitingVPV = PhiR->getBackedgeValue();
@@ -7382,10 +7374,9 @@ static void checkMixedPrecision(Loop *L, OptimizationRemarkEmitter *ORE) {
   SmallVector<Instruction *, 4> Worklist;
   for (BasicBlock *BB : L->getBlocks()) {
     for (Instruction &Inst : *BB) {
-      if (auto *S = dyn_cast<StoreInst>(&Inst)) {
-        if (S->getValueOperand()->getType()->isFloatTy())
-          Worklist.push_back(S);
-      }
+      if (auto *S = dyn_cast<StoreInst>(&Inst); S && (S->getValueOperand()->getType()->isFloatTy())) 
+        Worklist.push_back(S);
+      
     }
   }
 

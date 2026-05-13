@@ -704,9 +704,8 @@ void ArrayBoundChecker::performCheck(const Expr *E, CheckerContext &C) const {
         // the common case is that 'idx' is tainted in 'arr[idx]' and then it's
         // nicer to say "tainted index".
         const char *OffsetName = "offset";
-        if (const auto *ASE = dyn_cast<ArraySubscriptExpr>(E))
-          if (isTainted(State, ASE->getIdx(), C.getLocationContext()))
-            OffsetName = "index";
+        if (const auto *ASE = dyn_cast<ArraySubscriptExpr>(E); ASE && (isTainted(State, ASE->getIdx(), C.getLocationContext())))
+          OffsetName = "index";
 
         Messages Msgs =
             getTaintMsgs(Space, Reg, OffsetName, AlsoMentionUnderflow);

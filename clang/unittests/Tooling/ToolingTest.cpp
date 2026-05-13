@@ -99,11 +99,11 @@ class FindClassDeclXConsumer : public clang::ASTConsumer {
       : FoundClassDeclX(FoundClassDeclX) {}
   bool HandleTopLevelDecl(clang::DeclGroupRef GroupRef) override {
     if (CXXRecordDecl* Record = dyn_cast<clang::CXXRecordDecl>(
-            *GroupRef.begin())) {
-      if (Record->getName() == "X") {
+            *GroupRef.begin()); Record && (Record->getName() == "X")) 
+      {
         *FoundClassDeclX = true;
       }
-    }
+    
     return true;
   }
  private:
@@ -113,11 +113,11 @@ bool FindClassDeclX(ASTUnit *AST) {
   for (std::vector<Decl *>::iterator i = AST->top_level_begin(),
                                      e = AST->top_level_end();
        i != e; ++i) {
-    if (CXXRecordDecl* Record = dyn_cast<clang::CXXRecordDecl>(*i)) {
-      if (Record->getName() == "X") {
+    if (CXXRecordDecl* Record = dyn_cast<clang::CXXRecordDecl>(*i); Record && (Record->getName() == "X")) 
+      {
         return true;
       }
-    }
+    
   }
   return false;
 }

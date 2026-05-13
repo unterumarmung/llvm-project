@@ -1590,8 +1590,8 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCAfterRoutineDecl(
   assert(DirInfo.DirKind == OpenACCDirectiveKind::Routine);
 
   DeclGroupPtrTy Ptr;
-  if (DirInfo.LParenLoc.isInvalid()) {
-    if (Tok.isNot(tok::r_brace) && !isEofOrEom()) {
+  if ((DirInfo.LParenLoc.isInvalid()) && (Tok.isNot(tok::r_brace) && !isEofOrEom())) 
+    {
       if (AS == AS_none) {
         // This is either an external declaration, or inside of a C struct. If
         // the latter, we have to diagnose if this is the 'implicit' named
@@ -1611,7 +1611,7 @@ Parser::DeclGroupPtrTy Parser::ParseOpenACCAfterRoutineDecl(
                                                         TagDecl);
       }
     }
-  }
+  
 
   return DeclGroupPtrTy::make(
       getActions().OpenACC().ActOnEndRoutineDeclDirective(

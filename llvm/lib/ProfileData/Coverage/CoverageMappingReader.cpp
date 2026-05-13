@@ -777,9 +777,8 @@ public:
       const FuncRecordType *NextCFR;
       std::tie(NextMappingBuf, NextCFR) =
           CFR->template advanceByOne<Endian>(OutOfLineMappingBuf);
-      if (Version < CovMapVersion::Version4)
-        if (NextMappingBuf > OutOfLineMappingBufEnd)
-          return make_error<CoverageMapError>(
+      if ((Version < CovMapVersion::Version4) && (NextMappingBuf > OutOfLineMappingBufEnd))
+        return make_error<CoverageMapError>(
               coveragemap_error::malformed,
               "next mapping buffer is larger than buffer size");
 

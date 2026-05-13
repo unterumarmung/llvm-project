@@ -1563,11 +1563,10 @@ updateScheduledPressure(const SUnit *SU,
     unsigned ID = PC.getPSet();
     while (CritIdx != CritEnd && RegionCriticalPSets[CritIdx].getPSet() < ID)
       ++CritIdx;
-    if (CritIdx != CritEnd && RegionCriticalPSets[CritIdx].getPSet() == ID) {
-      if ((int)NewMaxPressure[ID] > RegionCriticalPSets[CritIdx].getUnitInc()
-          && NewMaxPressure[ID] <= (unsigned)std::numeric_limits<int16_t>::max())
-        RegionCriticalPSets[CritIdx].setUnitInc(NewMaxPressure[ID]);
-    }
+    if ((CritIdx != CritEnd && RegionCriticalPSets[CritIdx].getPSet() == ID) && ((int)NewMaxPressure[ID] > RegionCriticalPSets[CritIdx].getUnitInc()
+          && NewMaxPressure[ID] <= (unsigned)std::numeric_limits<int16_t>::max())) 
+      RegionCriticalPSets[CritIdx].setUnitInc(NewMaxPressure[ID]);
+    
     unsigned Limit = RegClassInfo->getRegPressureSetLimit(ID);
     if (NewMaxPressure[ID] >= Limit - 2) {
       LLVM_DEBUG(dbgs() << "  " << TRI->getRegPressureSetName(ID) << ": "
@@ -3479,12 +3478,11 @@ bool llvm::tryLatency(GenericSchedulerBase::SchedCandidate &TryCand,
     // Prefer the candidate with the lesser depth, but only if one of them has
     // depth greater than the total latency scheduled so far, otherwise either
     // of them could be scheduled now with no stall.
-    if (std::max(TryCand.SU->getDepth(), Cand.SU->getDepth()) >
-        Zone.getScheduledLatency()) {
-      if (tryLess(TryCand.SU->getDepth(), Cand.SU->getDepth(),
-                  TryCand, Cand, GenericSchedulerBase::TopDepthReduce))
-        return true;
-    }
+    if ((std::max(TryCand.SU->getDepth(), Cand.SU->getDepth()) >
+        Zone.getScheduledLatency()) && (tryLess(TryCand.SU->getDepth(), Cand.SU->getDepth(),
+                  TryCand, Cand, GenericSchedulerBase::TopDepthReduce))) 
+      return true;
+    
     if (tryGreater(TryCand.SU->getHeight(), Cand.SU->getHeight(),
                    TryCand, Cand, GenericSchedulerBase::TopPathReduce))
       return true;
@@ -3492,12 +3490,11 @@ bool llvm::tryLatency(GenericSchedulerBase::SchedCandidate &TryCand,
     // Prefer the candidate with the lesser height, but only if one of them has
     // height greater than the total latency scheduled so far, otherwise either
     // of them could be scheduled now with no stall.
-    if (std::max(TryCand.SU->getHeight(), Cand.SU->getHeight()) >
-        Zone.getScheduledLatency()) {
-      if (tryLess(TryCand.SU->getHeight(), Cand.SU->getHeight(),
-                  TryCand, Cand, GenericSchedulerBase::BotHeightReduce))
-        return true;
-    }
+    if ((std::max(TryCand.SU->getHeight(), Cand.SU->getHeight()) >
+        Zone.getScheduledLatency()) && (tryLess(TryCand.SU->getHeight(), Cand.SU->getHeight(),
+                  TryCand, Cand, GenericSchedulerBase::BotHeightReduce))) 
+      return true;
+    
     if (tryGreater(TryCand.SU->getDepth(), Cand.SU->getDepth(),
                    TryCand, Cand, GenericSchedulerBase::BotPathReduce))
       return true;
@@ -4012,13 +4009,12 @@ bool GenericScheduler::tryCandidate(SchedCandidate &Cand,
                  Cluster))
     return TryCand.Reason != NoCand;
 
-  if (SameBoundary) {
-    // Weak edges are for clustering and other constraints.
-    if (tryLess(getWeakLeft(TryCand.SU, TryCand.AtTop),
+  if ((SameBoundary) && (tryLess(getWeakLeft(TryCand.SU, TryCand.AtTop),
                 getWeakLeft(Cand.SU, Cand.AtTop),
-                TryCand, Cand, Weak))
-      return TryCand.Reason != NoCand;
-  }
+                TryCand, Cand, Weak))) 
+    // Weak edges are for clustering and other constraints.
+    return TryCand.Reason != NoCand;
+  
 
   // Avoid increasing the max pressure of the entire region.
   if (DAG->isTrackingPressure() && tryPressure(TryCand.RPDelta.CurrentMax,
@@ -4416,12 +4412,11 @@ bool PostGenericScheduler::tryCandidate(SchedCandidate &Cand,
 
   // We only compare a subset of features when comparing nodes between
   // Top and Bottom boundary.
-  if (Cand.AtTop == TryCand.AtTop) {
+  if ((Cand.AtTop == TryCand.AtTop) && (Cand.Policy.ReduceLatency &&
+        tryLatency(TryCand, Cand, Cand.AtTop ? Top : Bot))) 
     // Avoid serializing long latency dependence chains.
-    if (Cand.Policy.ReduceLatency &&
-        tryLatency(TryCand, Cand, Cand.AtTop ? Top : Bot))
-      return TryCand.Reason != NoCand;
-  }
+    return TryCand.Reason != NoCand;
+  
 
   // Fall through to original instruction order.
   if (TryCand.SU->NodeNum < Cand.SU->NodeNum) {

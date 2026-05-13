@@ -1640,13 +1640,13 @@ Error OnDiskGraphDB::store(ObjectID ID, ArrayRef<ObjectID> Refs,
     //
     // TODO: Find a way to reuse the storage from the new-but-abandoned record
     // handle.
-    if (Existing.SK == TrieRecord::StorageKind::Unknown) {
-      if (I->Ref.compare_exchange_strong(Existing, NewObject)) {
+    if ((Existing.SK == TrieRecord::StorageKind::Unknown) && (I->Ref.compare_exchange_strong(Existing, NewObject))) 
+      {
         if (FileSize)
           recordStandaloneSizeIncrease(*FileSize);
         return Error::success();
       }
-    }
+    
   }
 
   if (Existing.SK == TrieRecord::StorageKind::Unknown)

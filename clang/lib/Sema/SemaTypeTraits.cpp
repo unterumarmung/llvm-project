@@ -394,9 +394,8 @@ static bool CheckUnaryTypeTraitTypeCompleteness(Sema &S, TypeTrait UTT,
   case UTT_IsEmpty:
   case UTT_IsPolymorphic:
   case UTT_IsAbstract:
-    if (const auto *RD = ArgTy->getAsCXXRecordDecl())
-      if (!RD->isUnion())
-        return !S.RequireCompleteType(
+    if (const auto *RD = ArgTy->getAsCXXRecordDecl(); RD && (!RD->isUnion()))
+      return !S.RequireCompleteType(
             Loc, ArgTy, diag::err_incomplete_type_used_in_type_trait_expr);
     return true;
 
@@ -588,10 +587,9 @@ static bool isTriviallyEqualityComparableType(Sema &S, QualType Type,
     return equalityComparisonIsDefaulted(S, ED, KeyLoc);
   }
 
-  if (const auto *RD = CanonicalType->getAsCXXRecordDecl()) {
-    if (!HasNonDeletedDefaultedEqualityComparison(S, RD, KeyLoc))
-      return false;
-  }
+  if (const auto *RD = CanonicalType->getAsCXXRecordDecl(); RD && (!HasNonDeletedDefaultedEqualityComparison(S, RD, KeyLoc))) 
+    return false;
+  
 
   return S.getASTContext().hasUniqueObjectRepresentations(
       CanonicalType, /*CheckIfTriviallyCopyable=*/false);
@@ -1116,10 +1114,9 @@ static bool EvaluateUnaryTypeTrait(Sema &Self, TypeTrait UTT,
   }
   case UTT_IsIntangibleType:
     assert(Self.getLangOpts().HLSL && "intangible types are HLSL-only feature");
-    if (!T->isVoidType() && !T->isIncompleteArrayType())
-      if (Self.RequireCompleteType(TInfo->getTypeLoc().getBeginLoc(), T,
-                                   diag::err_incomplete_type))
-        return false;
+    if ((!T->isVoidType() && !T->isIncompleteArrayType()) && (Self.RequireCompleteType(TInfo->getTypeLoc().getBeginLoc(), T,
+                                   diag::err_incomplete_type)))
+      return false;
     if (DiagnoseVLAInCXXTypeTrait(Self, TInfo,
                                   tok::kw___builtin_hlsl_is_intangible))
       return false;
@@ -2351,12 +2348,12 @@ static void DiagnoseIsEmptyReason(Sema &S, SourceLocation Loc, QualType T) {
   if (auto *AT = S.Context.getAsArrayType(T))
     T = AT->getElementType();
 
-  if (auto *D = T->getAsCXXRecordDecl()) {
-    if (D->hasDefinition()) {
+  if (auto *D = T->getAsCXXRecordDecl(); D && (D->hasDefinition())) 
+    {
       DiagnoseIsEmptyReason(S, Loc, D);
       S.Diag(D->getLocation(), diag::note_defined_here) << D;
     }
-  }
+  
 }
 
 static void DiagnoseIsFinalReason(Sema &S, SourceLocation Loc,

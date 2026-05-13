@@ -182,12 +182,10 @@ SeedCollector::SeedCollector(BasicBlock *BB, ScalarEvolution &SE,
 
   // Actually collect the seeds.
   for (auto &I : *BB) {
-    if (StoreInst *SI = dyn_cast<StoreInst>(&I))
-      if (CollectStores && isValidMemSeed(SI))
-        StoreSeeds.insert(SI, AllowDiffTypes);
-    if (LoadInst *LI = dyn_cast<LoadInst>(&I))
-      if (CollectLoads && isValidMemSeed(LI))
-        LoadSeeds.insert(LI, AllowDiffTypes);
+    if (StoreInst *SI = dyn_cast<StoreInst>(&I); SI && (CollectStores && isValidMemSeed(SI)))
+      StoreSeeds.insert(SI, AllowDiffTypes);
+    if (LoadInst *LI = dyn_cast<LoadInst>(&I); LI && (CollectLoads && isValidMemSeed(LI)))
+      LoadSeeds.insert(LI, AllowDiffTypes);
     // Cap compilation time.
     if (totalNumSeedGroups() > SeedGroupsLimit)
       break;

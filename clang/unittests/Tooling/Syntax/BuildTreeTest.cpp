@@ -76,14 +76,14 @@ protected:
 
 private:
   ::testing::AssertionResult errorOK(StringRef RawCode) {
-    if (!RawCode.contains("error-ok")) {
-      if (Diags->getClient()->getNumErrors() != 0) {
+    if ((!RawCode.contains("error-ok")) && (Diags->getClient()->getNumErrors() != 0)) 
+      {
         return ::testing::AssertionFailure()
                << "Source file has syntax errors (suppress with /*error-ok*/), "
                   "they were printed to the "
                   "test log";
       }
-    }
+    
     return ::testing::AssertionSuccess();
   }
 };

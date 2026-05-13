@@ -289,8 +289,8 @@ void Lint::visitCallBase(CallBase &I) {
     }
   }
 
-  if (const auto *CI = dyn_cast<CallInst>(&I)) {
-    if (CI->isTailCall()) {
+  if (const auto *CI = dyn_cast<CallInst>(&I); CI && (CI->isTailCall())) 
+    {
       const AttributeList &PAL = CI->getAttributes();
       unsigned ArgNo = 0;
       for (Value *Arg : I.args()) {
@@ -305,7 +305,7 @@ void Lint::visitCallBase(CallBase &I) {
               &I);
       }
     }
-  }
+  
 
   if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(&I))
     switch (II->getIntrinsicID()) {
@@ -328,9 +328,8 @@ void Lint::visitCallBase(CallBase &I) {
       auto Size = LocationSize::afterPointer();
       if (const ConstantInt *Len =
               dyn_cast<ConstantInt>(findValue(MCI->getLength(),
-                                              /*OffsetOk=*/false)))
-        if (Len->getValue().isIntN(32))
-          Size = LocationSize::precise(Len->getValue().getZExtValue());
+                                              /*OffsetOk=*/false)); Len && (Len->getValue().isIntN(32)))
+        Size = LocationSize::precise(Len->getValue().getZExtValue());
       Check(AA->alias(MCI->getSource(), Size, MCI->getDest(), Size) !=
                 AliasResult::MustAlias,
             "Undefined behavior: memcpy source and destination overlap", &I);
@@ -455,10 +454,10 @@ void Lint::visitMemoryReference(Instruction &I, const MemoryLocation &Loc,
       if (ATy && !ATy->isScalable())
         BaseSize = ATy->getFixedValue();
       BaseAlign = AI->getAlign();
-    } else if (GlobalVariable *GV = dyn_cast<GlobalVariable>(Base)) {
+    } else if (GlobalVariable *GV = dyn_cast<GlobalVariable>(Base); GV && (GV->hasDefinitiveInitializer())) 
       // If the global may be defined differently in another compilation unit
       // then don't warn about funky memory accesses.
-      if (GV->hasDefinitiveInitializer()) {
+      {
         Type *GTy = GV->getValueType();
         if (GTy->isSized())
           BaseSize = DL->getTypeAllocSize(GTy);
@@ -466,7 +465,7 @@ void Lint::visitMemoryReference(Instruction &I, const MemoryLocation &Loc,
         if (!BaseAlign && GTy->isSized())
           BaseAlign = DL->getABITypeAlign(GTy);
       }
-    }
+    
 
     // Accesses from before the start or after the end of the object are not
     // defined.
@@ -692,18 +691,16 @@ Value *Lint::findValueImpl(Value *V, bool OffsetOk,
       return findValueImpl(CI->getOperand(0), OffsetOk, Visited);
   } else if (ExtractValueInst *Ex = dyn_cast<ExtractValueInst>(V)) {
     if (Value *W =
-            FindInsertedValue(Ex->getAggregateOperand(), Ex->getIndices()))
-      if (W != V)
-        return findValueImpl(W, OffsetOk, Visited);
-  } else if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V)) {
-    // Same as above, but for ConstantExpr instead of Instruction.
-    if (Instruction::isCast(CE->getOpcode())) {
-      if (CastInst::isNoopCast(Instruction::CastOps(CE->getOpcode()),
+            FindInsertedValue(Ex->getAggregateOperand(), Ex->getIndices()); W && (W != V))
+      return findValueImpl(W, OffsetOk, Visited);
+  } else if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V); CE && (Instruction::isCast(CE->getOpcode())) && (CastInst::isNoopCast(Instruction::CastOps(CE->getOpcode()),
                                CE->getOperand(0)->getType(), CE->getType(),
-                               *DL))
-        return findValueImpl(CE->getOperand(0), OffsetOk, Visited);
-    }
-  }
+                               *DL))) 
+    // Same as above, but for ConstantExpr instead of Instruction.
+    
+      return findValueImpl(CE->getOperand(0), OffsetOk, Visited);
+    
+  
 
   // As a last resort, try SimplifyInstruction or constant folding.
   if (Instruction *Inst = dyn_cast<Instruction>(V)) {

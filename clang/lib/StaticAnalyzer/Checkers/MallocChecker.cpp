@@ -930,9 +930,8 @@ protected:
       if (Match.getNodeAs<CXXDeleteExpr>("delete"))
         return true;
 
-      if (const auto *Call = Match.getNodeAs<CallExpr>("call"))
-        if (isFreeingCallAsWritten(*Call))
-          return true;
+      if (const auto *Call = Match.getNodeAs<CallExpr>("call"); Call && (isFreeingCallAsWritten(*Call)))
+        return true;
     }
     // TODO: Ownership might change with an attempt to store the allocated
     // memory, not only through deallocation. Check for attempted stores as
@@ -1128,11 +1127,11 @@ class EscapeTrackedCallback final : public SymbolVisitor {
 
 public:
   bool VisitSymbol(SymbolRef Sym) override {
-    if (const RefState *RS = State->get<RegionState>(Sym)) {
-      if (RS->isAllocated() || RS->isAllocatedOfSizeZero()) {
+    if (const RefState *RS = State->get<RegionState>(Sym); RS && (RS->isAllocated() || RS->isAllocatedOfSizeZero())) 
+      {
         State = State->set<RegionState>(Sym, RefState::getEscaped(RS));
       }
-    }
+    
     return true;
   }
 
@@ -1645,12 +1644,11 @@ void MallocChecker::checkOwnershipAttr(ProgramStateRef State,
   const FunctionDecl *FD = C.getCalleeDecl(CE);
   if (!FD)
     return;
-  if (ShouldIncludeOwnershipAnnotatedFunctions ||
-      MismatchedDeallocatorChecker.isEnabled()) {
+  if ((ShouldIncludeOwnershipAnnotatedFunctions ||
+      MismatchedDeallocatorChecker.isEnabled()) && (FD->hasAttrs())) 
     // Check all the attributes, if there are any.
     // There can be multiple of these attributes.
-    if (FD->hasAttrs())
-      for (const auto *I : FD->specific_attrs<OwnershipAttr>()) {
+    for (const auto *I : FD->specific_attrs<OwnershipAttr>()) {
         switch (I->getOwnKind()) {
         case OwnershipAttr::Returns:
           State = MallocMemReturnsAttr(C, Call, I, State);
@@ -1661,7 +1659,7 @@ void MallocChecker::checkOwnershipAttr(ProgramStateRef State,
           break;
         }
       }
-  }
+  
   C.addTransition(State);
 }
 
@@ -3498,9 +3496,8 @@ void MallocChecker::checkEscapeOnReturn(const ReturnStmt *S,
   if (!Sym)
     // If we are returning a field of the allocated struct or an array element,
     // the callee could still free the memory.
-    if (const MemRegion *MR = RetVal.getAsRegion())
-      if (isa<FieldRegion, ElementRegion>(MR))
-        if (const SymbolicRegion *BMR =
+    if (const MemRegion *MR = RetVal.getAsRegion(); MR && (isa<FieldRegion, ElementRegion>(MR)))
+      if (const SymbolicRegion *BMR =
               dyn_cast<SymbolicRegion>(MR->getBaseRegion()))
           Sym = BMR->getSymbol();
 
@@ -3558,9 +3555,8 @@ bool MallocChecker::suppressDeallocationsInSuspiciousContexts(
 
   StringRef FunctionStr = "";
   if (const auto *FD = dyn_cast<FunctionDecl>(C.getStackFrame()->getDecl()))
-    if (const Stmt *Body = FD->getBody())
-      if (Body->getBeginLoc().isValid())
-        FunctionStr =
+    if (const Stmt *Body = FD->getBody(); Body && (Body->getBeginLoc().isValid()))
+      FunctionStr =
             Lexer::getSourceText(CharSourceRange::getTokenRange(
                                      {FD->getBeginLoc(), Body->getBeginLoc()}),
                                  C.getSourceManager(), C.getLangOpts());
@@ -3639,8 +3635,8 @@ ProgramStateRef MallocChecker::evalAssume(ProgramStateRef state,
       continue;
 
     SymbolRef ReallocSym = ReallocPair.ReallocatedSym;
-    if (const RefState *RS = state->get<RegionState>(ReallocSym)) {
-      if (RS->isReleased()) {
+    if (const RefState *RS = state->get<RegionState>(ReallocSym); RS && (RS->isReleased())) 
+      {
         switch (ReallocPair.Kind) {
         case OAR_ToBeFreedAfterFailure:
           state = state->set<RegionState>(ReallocSym,
@@ -3653,7 +3649,7 @@ ProgramStateRef MallocChecker::evalAssume(ProgramStateRef state,
           assert(ReallocPair.Kind == OAR_FreeOnFailure);
         }
       }
-    }
+    
     state = state->remove<ReallocPairs>(Sym);
   }
 
@@ -3766,23 +3762,21 @@ bool MallocChecker::mayFreeAnyEscapedMemoryOrIsModeledExplicitly(
   // 'closefn' is specified (and if that function does free memory),
   // but it will not if closefn is not specified.
   // Currently, we do not inspect the 'closefn' function (PR12101).
-  if (FName == "funopen")
-    if (Call->getNumArgs() >= 4 && Call->getArgSVal(4).isConstant(0))
-      return false;
+  if ((FName == "funopen") && (Call->getNumArgs() >= 4 && Call->getArgSVal(4).isConstant(0)))
+    return false;
 
   // Do not warn on pointers passed to 'setbuf' when used with std streams,
   // these leaks might be intentional when setting the buffer for stdio.
   // http://stackoverflow.com/questions/2671151/who-frees-setvbuf-buffer
-  if (FName == "setbuf" || FName =="setbuffer" ||
-      FName == "setlinebuf" || FName == "setvbuf") {
-    if (Call->getNumArgs() >= 1) {
+  if ((FName == "setbuf" || FName =="setbuffer" ||
+      FName == "setlinebuf" || FName == "setvbuf") && (Call->getNumArgs() >= 1)) 
+    {
       const Expr *ArgE = Call->getArgExpr(0)->IgnoreParenCasts();
       if (const DeclRefExpr *ArgDRE = dyn_cast<DeclRefExpr>(ArgE))
-        if (const VarDecl *D = dyn_cast<VarDecl>(ArgDRE->getDecl()))
-          if (D->getCanonicalDecl()->getName().contains("std"))
-            return true;
+        if (const VarDecl *D = dyn_cast<VarDecl>(ArgDRE->getDecl()); D && (D->getCanonicalDecl()->getName().contains("std")))
+          return true;
     }
-  }
+  
 
   // A bunch of other functions which either take ownership of a pointer or
   // wrap the result up in a struct or object, meaning it can be freed later.
@@ -3873,10 +3867,8 @@ ProgramStateRef MallocChecker::checkPointerEscapeAux(
     if (EscapingSymbol && EscapingSymbol != sym)
       continue;
 
-    if (const RefState *RS = State->get<RegionState>(sym))
-      if (RS->isAllocated() || RS->isAllocatedOfSizeZero())
-        if (!IsConstPointerEscape || checkIfNewOrNewArrayFamily(RS))
-          State = State->set<RegionState>(sym, RefState::getEscaped(RS));
+    if (const RefState *RS = State->get<RegionState>(sym); RS && (RS->isAllocated() || RS->isAllocatedOfSizeZero()) && (!IsConstPointerEscape || checkIfNewOrNewArrayFamily(RS)))
+      State = State->set<RegionState>(sym, RefState::getEscaped(RS));
   }
   return State;
 }
@@ -3910,13 +3902,13 @@ static SymbolRef findFailedReallocSymbol(ProgramStateRef currState,
 static bool isReferenceCountingPointerDestructor(const CXXDestructorDecl *DD) {
   if (const IdentifierInfo *II = DD->getParent()->getIdentifier()) {
     StringRef N = II->getName();
-    if (N.contains_insensitive("ptr") || N.contains_insensitive("pointer")) {
-      if (N.contains_insensitive("ref") || N.contains_insensitive("cnt") ||
+    if ((N.contains_insensitive("ptr") || N.contains_insensitive("pointer")) && (N.contains_insensitive("ref") || N.contains_insensitive("cnt") ||
           N.contains_insensitive("intrusive") ||
-          N.contains_insensitive("shared") || N.ends_with_insensitive("rc")) {
+          N.contains_insensitive("shared") || N.ends_with_insensitive("rc"))) 
+      {
         return true;
       }
-    }
+    
   }
   return false;
 }

@@ -92,16 +92,14 @@ bool Fortran::lower::CallerInterface::isIndirectCall() const {
 bool Fortran::lower::CallerInterface::requireDispatchCall() const {
   // Procedure pointer component reference do not require dispatch, but
   // have PASS/NOPASS argument.
-  if (const Fortran::semantics::Symbol *sym = procRef.proc().GetSymbol())
-    if (Fortran::semantics::IsPointer(*sym))
-      return false;
+  if (const Fortran::semantics::Symbol *sym = procRef.proc().GetSymbol(); sym && (Fortran::semantics::IsPointer(*sym)))
+    return false;
   // calls with NOPASS attribute still have their component so check if it is
   // polymorphic.
   if (const Fortran::evaluate::Component *component =
-          procRef.proc().GetComponent()) {
-    if (Fortran::semantics::IsPolymorphic(component->base().GetLastSymbol()))
-      return true;
-  }
+          procRef.proc().GetComponent(); component && (Fortran::semantics::IsPolymorphic(component->base().GetLastSymbol()))) 
+    return true;
+  
   // calls with PASS attribute have the passed-object already set in its
   // arguments. Just check if there is one.
   std::optional<unsigned> passArg = getPassArgIndex();
@@ -146,10 +144,9 @@ mlir::Value Fortran::lower::CallerInterface::getIfPassedArg() const {
 
 const Fortran::evaluate::ProcedureDesignator *
 Fortran::lower::CallerInterface::getIfIndirectCall() const {
-  if (const Fortran::semantics::Symbol *symbol = procRef.proc().GetSymbol())
-    if (Fortran::semantics::IsPointer(*symbol) ||
-        Fortran::semantics::IsDummy(*symbol))
-      return &procRef.proc();
+  if (const Fortran::semantics::Symbol *symbol = procRef.proc().GetSymbol(); symbol && (Fortran::semantics::IsPointer(*symbol) ||
+        Fortran::semantics::IsDummy(*symbol)))
+    return &procRef.proc();
   return nullptr;
 }
 
@@ -374,10 +371,9 @@ static void
 walkExtents(const Fortran::semantics::Symbol &symbol,
             const Fortran::lower::CallerInterface::ExprVisitor &visitor) {
   if (const auto *objectDetails =
-          symbol.detailsIf<Fortran::semantics::ObjectEntityDetails>())
-    if (objectDetails->shape().IsExplicitShape() ||
-        Fortran::semantics::IsAssumedSizeArray(symbol))
-      for (const Fortran::semantics::ShapeSpec &shapeSpec :
+          symbol.detailsIf<Fortran::semantics::ObjectEntityDetails>(); objectDetails && (objectDetails->shape().IsExplicitShape() ||
+        Fortran::semantics::IsAssumedSizeArray(symbol)))
+    for (const Fortran::semantics::ShapeSpec &shapeSpec :
            objectDetails->shape())
         visitor(Fortran::evaluate::AsGenericExpr(getExtentExpr(shapeSpec)),
                 /*assumedSize=*/shapeSpec.ubound().isStar());
@@ -725,12 +721,12 @@ void Fortran::lower::CallInterface<T>::declare() {
                                        subpDetails->openACCRoutineInfos());
           }
         } else if (const auto *procDetails{ultimate.detailsIf<
-                       Fortran::semantics::ProcEntityDetails>()}) {
-          if (!procDetails->openACCRoutineInfos().empty()) {
+                       Fortran::semantics::ProcEntityDetails>()}; procDetails && (!procDetails->openACCRoutineInfos().empty())) 
+          {
             genOpenACCRoutineConstruct(converter, module, func,
                                        procDetails->openACCRoutineInfos());
           }
-        }
+        
       }
     }
   }

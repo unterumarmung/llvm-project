@@ -55,9 +55,8 @@ bool containsStaticLocal(const Stmt *S) {
   const DeclRefExpr *DR = dyn_cast<DeclRefExpr>(S);
 
   if (DR)
-    if (const VarDecl *VD = dyn_cast<VarDecl>(DR->getDecl()))
-      if (VD->isStaticLocal())
-        return true;
+    if (const VarDecl *VD = dyn_cast<VarDecl>(DR->getDecl()); VD && (VD->isStaticLocal()))
+      return true;
 
   for (const Stmt *Child : S->children())
     if (Child && containsStaticLocal(Child))
@@ -150,15 +149,15 @@ std::optional<int> tryExpandAsInteger(StringRef Macro, const Preprocessor &PP) {
 
   // Parse an optional minus sign.
   size_t Size = FilteredTokens.size();
-  if (Size >= 2) {
-    if (FilteredTokens[Size - 2].is(tok::minus)) {
+  if ((Size >= 2) && (FilteredTokens[Size - 2].is(tok::minus))) 
+    {
       // Make sure there's space for a sign bit
       if (IntValue.isSignBitSet())
         IntValue = IntValue.extend(IntValue.getBitWidth() + 1);
       IntValue.setIsUnsigned(false);
       IntValue = -IntValue;
     }
-  }
+  
 
   return IntValue.getExtValue();
 }

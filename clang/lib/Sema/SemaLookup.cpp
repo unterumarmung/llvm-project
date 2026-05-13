@@ -322,10 +322,9 @@ void LookupResult::configure() {
   // Compiler builtins are always visible, regardless of where they end
   // up being declared.
   if (IdentifierInfo *Id = NameInfo.getName().getAsIdentifierInfo()) {
-    if (unsigned BuiltinID = Id->getBuiltinID()) {
-      if (!getSema().Context.BuiltinInfo.isPredefinedLibFunction(BuiltinID))
-        AllowHidden = true;
-    }
+    if (unsigned BuiltinID = Id->getBuiltinID(); BuiltinID && (!getSema().Context.BuiltinInfo.isPredefinedLibFunction(BuiltinID))) 
+      AllowHidden = true;
+    
   }
 }
 
@@ -1080,8 +1079,8 @@ static void DeclareImplicitMemberFunctionsWithName(Sema &S,
 
   switch (Name.getNameKind()) {
   case DeclarationName::CXXConstructorName:
-    if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(DC))
-      if (Record->getDefinition() && CanDeclareSpecialMemberFunction(Record)) {
+    if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(DC); Record && (Record->getDefinition() && CanDeclareSpecialMemberFunction(Record)))
+      {
         CXXRecordDecl *Class = const_cast<CXXRecordDecl *>(Record);
         if (Record->needsImplicitDefaultConstructor())
           S.DeclareImplicitDefaultConstructor(Class);
@@ -1094,18 +1093,17 @@ static void DeclareImplicitMemberFunctionsWithName(Sema &S,
     break;
 
   case DeclarationName::CXXDestructorName:
-    if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(DC))
-      if (Record->getDefinition() && Record->needsImplicitDestructor() &&
-          CanDeclareSpecialMemberFunction(Record))
-        S.DeclareImplicitDestructor(const_cast<CXXRecordDecl *>(Record));
+    if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(DC); Record && (Record->getDefinition() && Record->needsImplicitDestructor() &&
+          CanDeclareSpecialMemberFunction(Record)))
+      S.DeclareImplicitDestructor(const_cast<CXXRecordDecl *>(Record));
     break;
 
   case DeclarationName::CXXOperatorName:
     if (Name.getCXXOverloadedOperator() != OO_Equal)
       break;
 
-    if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(DC)) {
-      if (Record->getDefinition() && CanDeclareSpecialMemberFunction(Record)) {
+    if (const CXXRecordDecl *Record = dyn_cast<CXXRecordDecl>(DC); Record && (Record->getDefinition() && CanDeclareSpecialMemberFunction(Record))) 
+      {
         CXXRecordDecl *Class = const_cast<CXXRecordDecl *>(Record);
         if (Record->needsImplicitCopyAssignment())
           S.DeclareImplicitCopyAssignment(Class);
@@ -1113,7 +1111,7 @@ static void DeclareImplicitMemberFunctionsWithName(Sema &S,
             Record->needsImplicitMoveAssignment())
           S.DeclareImplicitMoveAssignment(Class);
       }
-    }
+    
     break;
 
   case DeclarationName::CXXDeductionGuideName:
@@ -1404,9 +1402,8 @@ bool Sema::CppLookupName(LookupResult &R, Scope *S) {
         if (Ctx->isFunctionOrMethod()) {
           // If we have an Objective-C instance method, look for ivars
           // in the corresponding interface.
-          if (ObjCMethodDecl *Method = dyn_cast<ObjCMethodDecl>(Ctx)) {
-            if (Method->isInstanceMethod() && Name.getAsIdentifierInfo())
-              if (ObjCInterfaceDecl *Class = Method->getClassInterface()) {
+          if (ObjCMethodDecl *Method = dyn_cast<ObjCMethodDecl>(Ctx); Method && (Method->isInstanceMethod() && Name.getAsIdentifierInfo())) 
+            if (ObjCInterfaceDecl *Class = Method->getClassInterface()) {
                 ObjCInterfaceDecl *ClassDeclared;
                 if (ObjCIvarDecl *Ivar = Class->lookupInstanceVariable(
                                                  Name.getAsIdentifierInfo(),
@@ -1418,7 +1415,7 @@ bool Sema::CppLookupName(LookupResult &R, Scope *S) {
                   }
                 }
               }
-          }
+          
 
           continue;
         }
@@ -4359,8 +4356,8 @@ private:
       // decls to the scope as part of deserialization, so make a copy first.
       SmallVector<Decl *, 8> ScopeDecls(S->decls().begin(), S->decls().end());
       for (Decl *D : ScopeDecls) {
-        if (NamedDecl *ND = dyn_cast<NamedDecl>(D))
-          if ((ND = Result.getAcceptableDecl(ND))) {
+        if (NamedDecl *ND = dyn_cast<NamedDecl>(D); ND && ((ND = Result.getAcceptableDecl(ND))))
+          {
             Consumer.FoundDecl(ND, Visited.checkHidden(ND), nullptr, false);
             Visited.add(ND);
           }
@@ -5101,18 +5098,18 @@ static void LookupPotentialTypoResult(Sema &SemaRef,
 
   // Fake ivar lookup; this should really be part of
   // LookupParsedName.
-  if (ObjCMethodDecl *Method = SemaRef.getCurMethodDecl()) {
-    if (Method->isInstanceMethod() && Method->getClassInterface() &&
+  if (ObjCMethodDecl *Method = SemaRef.getCurMethodDecl(); Method && (Method->isInstanceMethod() && Method->getClassInterface() &&
         (Res.empty() ||
          (Res.isSingleResult() &&
-          Res.getFoundDecl()->isDefinedOutsideFunctionOrMethod()))) {
+          Res.getFoundDecl()->isDefinedOutsideFunctionOrMethod())))) 
+    {
        if (ObjCIvarDecl *IV
              = Method->getClassInterface()->lookupInstanceVariable(Name)) {
          Res.addDecl(IV);
          Res.resolveKind();
        }
      }
-  }
+  
 }
 
 /// Add keywords to the consumer as possible typo corrections.
@@ -5585,8 +5582,8 @@ bool FunctionCallFilterCCC::ValidateCandidate(const TypoCorrection &candidate) {
     NamedDecl *ND = C->getUnderlyingDecl();
     if (FunctionTemplateDecl *FTD = dyn_cast<FunctionTemplateDecl>(ND))
       FD = FTD->getTemplatedDecl();
-    if (!HasExplicitTemplateArgs && !FD) {
-      if (!(FD = dyn_cast<FunctionDecl>(ND)) && isa<ValueDecl>(ND)) {
+    if ((!HasExplicitTemplateArgs && !FD) && (!(FD = dyn_cast<FunctionDecl>(ND)) && isa<ValueDecl>(ND))) 
+      {
         // If the Decl is neither a function nor a template function,
         // determine if it is a pointer or reference to a function. If so,
         // check against the number of arguments expected for the pointee.
@@ -5595,11 +5592,10 @@ bool FunctionCallFilterCCC::ValidateCandidate(const TypoCorrection &candidate) {
           continue;
         if (ValType->isAnyPointerType() || ValType->isReferenceType())
           ValType = ValType->getPointeeType();
-        if (const FunctionProtoType *FPT = ValType->getAs<FunctionProtoType>())
-          if (FPT->getNumParams() == NumArgs)
-            return true;
+        if (const FunctionProtoType *FPT = ValType->getAs<FunctionProtoType>(); FPT && (FPT->getNumParams() == NumArgs))
+          return true;
       }
-    }
+    
 
     // A typo for a function-style cast can look like a function call in C++.
     if ((HasExplicitTemplateArgs ? getAsTypeTemplateDecl(ND) != nullptr
@@ -5618,8 +5614,8 @@ bool FunctionCallFilterCCC::ValidateCandidate(const TypoCorrection &candidate) {
     // unless the method being corrected--or the current DeclContext, if the
     // function being corrected is not a method--is a method in the same class
     // or a descendent class of the candidate's parent class.
-    if (const auto *MD = dyn_cast<CXXMethodDecl>(FD)) {
-      if (MemberFn || !MD->isStatic()) {
+    if (const auto *MD = dyn_cast<CXXMethodDecl>(FD); MD && (MemberFn || !MD->isStatic())) 
+      {
         const auto *CurMD =
             MemberFn
                 ? dyn_cast_if_present<CXXMethodDecl>(MemberFn->getMemberDecl())
@@ -5630,7 +5626,7 @@ bool FunctionCallFilterCCC::ValidateCandidate(const TypoCorrection &candidate) {
         if (!CurRD || (CurRD != RD && !CurRD->isDerivedFrom(RD)))
           continue;
       }
-    }
+    
     return true;
   }
   return false;

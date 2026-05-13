@@ -64,9 +64,8 @@ void UndefResultChecker::checkPostStmt(const BinaryOperator *B,
     // Do not report assignments of uninitialized values inside swap functions.
     // This should allow to swap partially uninitialized structs
     if (const FunctionDecl *EnclosingFunctionDecl =
-        dyn_cast<FunctionDecl>(C.getStackFrame()->getDecl()))
-      if (C.getCalleeName(EnclosingFunctionDecl) == "swap")
-        return;
+        dyn_cast<FunctionDecl>(C.getStackFrame()->getDecl()); EnclosingFunctionDecl && (C.getCalleeName(EnclosingFunctionDecl) == "swap"))
+      return;
 
     // Generate an error node.
     ExplodedNode *N = C.generateErrorNode();

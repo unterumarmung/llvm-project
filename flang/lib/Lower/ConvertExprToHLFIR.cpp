@@ -1669,9 +1669,8 @@ private:
     fir::FirOpBuilder &builder = getBuilder();
     fir::ExtendedValue exv = Fortran::lower::convertConstant(
         converter, loc, expr, /*outlineBigConstantInReadOnlyMemory=*/true);
-    if (const auto *scalarBox = exv.getUnboxed())
-      if (fir::isa_trivial(scalarBox->getType()))
-        return hlfir::EntityWithAttributes(*scalarBox);
+    if (const auto *scalarBox = exv.getUnboxed(); scalarBox && (fir::isa_trivial(scalarBox->getType())))
+      return hlfir::EntityWithAttributes(*scalarBox);
     if (auto addressOf = fir::getBase(exv).getDefiningOp<fir::AddrOfOp>()) {
       auto flags = fir::FortranVariableFlagsAttr::get(
           builder.getContext(), fir::FortranVariableFlagsEnum::parameter);

@@ -875,11 +875,10 @@ static bool IsEquivalentExceptionSpec(StructuralEquivalenceContext &Context,
                                     Proto2->getExceptionType(I)))
         return false;
     }
-  } else if (isComputedNoexcept(Spec1)) {
-    if (!IsStructurallyEquivalent(Context, Proto1->getNoexceptExpr(),
-                                  Proto2->getNoexceptExpr()))
-      return false;
-  }
+  } else if ((isComputedNoexcept(Spec1)) && (!IsStructurallyEquivalent(Context, Proto1->getNoexceptExpr(),
+                                  Proto2->getNoexceptExpr()))) 
+    return false;
+  
 
   return true;
 }
@@ -1447,13 +1446,12 @@ bool ASTStructuralEquivalence::isEquivalent(
     break;
 
   case Type::PackIndexing:
-    if (!IsStructurallyEquivalent(Context,
+    if ((!IsStructurallyEquivalent(Context,
                                   cast<PackIndexingType>(T1)->getPattern(),
-                                  cast<PackIndexingType>(T2)->getPattern()))
-      if (!IsStructurallyEquivalent(Context,
+                                  cast<PackIndexingType>(T2)->getPattern())) && (!IsStructurallyEquivalent(Context,
                                     cast<PackIndexingType>(T1)->getIndexExpr(),
-                                    cast<PackIndexingType>(T2)->getIndexExpr()))
-        return false;
+                                    cast<PackIndexingType>(T2)->getIndexExpr())))
+      return false;
     break;
 
   case Type::ObjCInterface: {
@@ -1912,9 +1910,8 @@ static bool IsStructurallyEquivalent(StructuralEquivalenceContext &Context,
   // assumption then `RecordDecl::LoadFieldsFromExternalStorage` could trigger
   // another AST import which in turn would call the structural equivalency
   // check again and finally we'd have an improper result.)
-  if (Context.EqKind == StructuralEquivalenceKind::Minimal)
-    if (D1->hasExternalLexicalStorage() || D2->hasExternalLexicalStorage())
-      return true;
+  if ((Context.EqKind == StructuralEquivalenceKind::Minimal) && (D1->hasExternalLexicalStorage() || D2->hasExternalLexicalStorage()))
+    return true;
 
   // If one definition is currently being defined, we do not compare for
   // equality and we assume that the decls are equal.
@@ -1930,10 +1927,9 @@ static bool IsStructurallyEquivalent(StructuralEquivalenceContext &Context,
 
       if (D1CXX->isLambda() != D2CXX->isLambda())
         return false;
-      if (D1CXX->isLambda()) {
-        if (!IsStructurallyEquivalentLambdas(Context, D1CXX, D2CXX))
-          return false;
-      }
+      if ((D1CXX->isLambda()) && (!IsStructurallyEquivalentLambdas(Context, D1CXX, D2CXX))) 
+        return false;
+      
 
       if (D1CXX->getNumBases() != D2CXX->getNumBases()) {
         if (Context.Complain) {
@@ -2359,9 +2355,8 @@ static bool IsTemplateDeclCommonStructurallyEquivalent(
     StructuralEquivalenceContext &Ctx, TemplateDecl *D1, TemplateDecl *D2) {
   if (!IsStructurallyEquivalent(D1->getIdentifier(), D2->getIdentifier()))
     return false;
-  if (!D1->getIdentifier()) // Special name
-    if (D1->getNameAsString() != D2->getNameAsString())
-      return false;
+  if ((!D1->getIdentifier()) && (D1->getNameAsString() != D2->getNameAsString())) // Special name
+    return false;
   return IsStructurallyEquivalent(Ctx, D1->getTemplateParameters(),
                                   D2->getTemplateParameters());
 }

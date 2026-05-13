@@ -338,14 +338,14 @@ private:
     std::vector<std::pair<SymbolStringPtr, Symbol *>> NameToSym;
 
     auto ProcessSymbol = [&](Symbol *Sym) {
-      if (Sym->hasName() && Sym->getLinkage() == Linkage::Weak &&
-          Sym->getScope() != Scope::Local) {
-        if (!MR->getSymbols().count(Sym->getName())) {
+      if ((Sym->hasName() && Sym->getLinkage() == Linkage::Weak &&
+          Sym->getScope() != Scope::Local) && (!MR->getSymbols().count(Sym->getName()))) 
+        {
           NewSymbolsToClaim[Sym->getName()] =
               getJITSymbolFlagsForSymbol(*Sym) | JITSymbolFlags::Weak;
           NameToSym.push_back(std::make_pair(Sym->getName(), Sym));
         }
-      }
+      
     };
 
     for (auto *Sym : G.defined_symbols())

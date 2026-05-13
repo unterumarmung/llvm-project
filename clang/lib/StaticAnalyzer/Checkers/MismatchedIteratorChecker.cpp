@@ -203,10 +203,9 @@ void MismatchedIteratorChecker::verifyMatch(CheckerContext &C, SVal Iter,
   // Verify match between a container and the container of an iterator
   Cont = Cont->getMostDerivedObjectRegion();
 
-  if (const auto *ContSym = Cont->getSymbolicBase()) {
-    if (isa<SymbolConjured>(ContSym->getSymbol()))
-      return;
-  }
+  if (const auto *ContSym = Cont->getSymbolicBase(); ContSym && (isa<SymbolConjured>(ContSym->getSymbol()))) 
+    return;
+  
 
   auto State = C.getState();
   const auto *Pos = getIteratorPosition(State, Iter);
@@ -219,10 +218,9 @@ void MismatchedIteratorChecker::verifyMatch(CheckerContext &C, SVal Iter,
   // may or may not be the same. For example, the same function can return
   // the same or a different container but we get different conjured symbols
   // for each call. This may cause false positives so omit them from the check.
-  if (const auto *ContSym = IterCont->getSymbolicBase()) {
-    if (isa<SymbolConjured>(ContSym->getSymbol()))
-      return;
-  }
+  if (const auto *ContSym = IterCont->getSymbolicBase(); ContSym && (isa<SymbolConjured>(ContSym->getSymbol()))) 
+    return;
+  
 
   if (IterCont != Cont) {
     auto *N = C.generateNonFatalErrorNode(State);
@@ -248,20 +246,18 @@ void MismatchedIteratorChecker::verifyMatch(CheckerContext &C, SVal Iter1,
   // may or may not be the same. For example, the same function can return
   // the same or a different container but we get different conjured symbols
   // for each call. This may cause false positives so omit them from the check.
-  if (const auto *ContSym = IterCont1->getSymbolicBase()) {
-    if (isa<SymbolConjured>(ContSym->getSymbol()))
-      return;
-  }
+  if (const auto *ContSym = IterCont1->getSymbolicBase(); ContSym && (isa<SymbolConjured>(ContSym->getSymbol()))) 
+    return;
+  
 
   const auto *Pos2 = getIteratorPosition(State, Iter2);
   if (!Pos2)
     return;
 
   const auto *IterCont2 = Pos2->getContainer();
-  if (const auto *ContSym = IterCont2->getSymbolicBase()) {
-    if (isa<SymbolConjured>(ContSym->getSymbol()))
-      return;
-  }
+  if (const auto *ContSym = IterCont2->getSymbolicBase(); ContSym && (isa<SymbolConjured>(ContSym->getSymbol()))) 
+    return;
+  
 
   if (IterCont1 != IterCont2) {
     auto *N = C.generateNonFatalErrorNode(State);

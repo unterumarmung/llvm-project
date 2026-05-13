@@ -859,9 +859,8 @@ LogicalResult RegionPatternRewriteDriver::simplify(bool *changed) && {
       // Check for existing constants when populating the worklist. This avoids
       // accidentally reversing the constant order during processing.
       Attribute constValue;
-      if (matchPattern(op, m_Constant(&constValue)))
-        if (!folder.insertKnownConstant(op, constValue))
-          return true;
+      if ((matchPattern(op, m_Constant(&constValue))) && (!folder.insertKnownConstant(op, constValue)))
+        return true;
       return false;
     };
 
